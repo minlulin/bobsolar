@@ -61,7 +61,7 @@
   --accent: oklch(0.573 0.233 277.117);
   --accent-foreground: oklch(0.985 0.005 80);
   /* WCAG AA: L=0.580 achieves 4.51:1 on light bg (was 0.6 → 4.17:1) */
-  --destructive: oklch(0.580 0.2 25);
+  --destructive: oklch(0.58 0.2 25);
   --destructive-foreground: oklch(0.985 0.005 80);
   --border: oklch(0.92 0.01 80);
   --input: oklch(0.92 0.01 80);
@@ -107,7 +107,6 @@
 
   --surface-elevated: oklch(0.25 0 0);
 }
-
 
 @layer base {
   * {
