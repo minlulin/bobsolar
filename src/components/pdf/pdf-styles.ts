@@ -59,6 +59,13 @@ export const pdfStyles = StyleSheet.create({
     flex: 1,
   },
 
+  companyLogo: {
+    width: 72,
+    maxHeight: 72,
+    objectFit: 'contain',
+    marginBottom: 10,
+  },
+
   companyName: {
     fontSize: 24,
     fontWeight: 'bold',

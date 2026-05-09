@@ -12,6 +12,8 @@ import {
   Moon,
   Sun,
   Laptop,
+  ShieldCheck,
+  Settings,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
@@ -118,6 +120,18 @@ export function CommandBar() {
             >
               <Users className="mr-2 h-4 w-4" />
               <span>Customers</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push('/warranty'))}
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span>Warranty</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => runCommand(() => router.push('/settings'))}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />

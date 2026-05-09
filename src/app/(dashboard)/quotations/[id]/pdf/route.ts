@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { quotations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
+import { getCompanyLogoUrl } from '@/actions/settings-actions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -44,12 +45,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const companyLogoUrl = await getCompanyLogoUrl();
+
     // Render PDF
     const pdfStream = await renderToStream(
       QuoteDocument({
         quotation: quotation as Parameters<
           typeof QuoteDocument
         >[0]['quotation'],
+        companyLogoUrl,
       }),
     );
 

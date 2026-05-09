@@ -79,7 +79,13 @@ export async function getQuotations(
 export async function getQuotation(
   id: string,
 ): Promise<
-  ActionResponse<Quotation & { items: QuotationItem[]; customer: Customer }>
+  ActionResponse<
+    Quotation & {
+      items: QuotationItem[];
+      customer: Customer;
+      project: { id: string; projectNumber: string } | null;
+    }
+  >
 > {
   try {
     await requireAuth();
@@ -89,6 +95,12 @@ export async function getQuotation(
       with: {
         items: true,
         customer: true,
+        project: {
+          columns: {
+            id: true,
+            projectNumber: true,
+          },
+        },
       },
     });
 
@@ -98,7 +110,11 @@ export async function getQuotation(
 
     return {
       success: true,
-      data: item as Quotation & { items: QuotationItem[]; customer: Customer },
+      data: item as Quotation & {
+        items: QuotationItem[];
+        customer: Customer;
+        project: { id: string; projectNumber: string } | null;
+      },
     };
   } catch (error) {
     return handleActionError(

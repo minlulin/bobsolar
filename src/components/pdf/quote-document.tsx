@@ -1,6 +1,6 @@
 'use client';
 
-import { Document, Page, Text, View, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Font, Image } from '@react-pdf/renderer';
 import { formatMMK } from '@/lib/pricing/engine';
 import { pdfStyles } from './pdf-styles';
 import { format } from 'date-fns';
@@ -43,9 +43,13 @@ AYA Bank | A/C: 987-654-321-0 | Name: BOB Solar Co., Ltd.
 
 interface QuoteDocumentProps {
   quotation: Quotation & { items: QuotationItem[]; customer: Customer };
+  companyLogoUrl?: string | null;
 }
 
-export function QuoteDocument({ quotation }: QuoteDocumentProps) {
+export function QuoteDocument({
+  quotation,
+  companyLogoUrl,
+}: QuoteDocumentProps) {
   const { customer, items } = quotation;
 
   return (
@@ -54,6 +58,12 @@ export function QuoteDocument({ quotation }: QuoteDocumentProps) {
         {/* Header */}
         <View style={pdfStyles.header}>
           <View style={pdfStyles.headerLeft}>
+            {companyLogoUrl ? (
+              <>
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer Image */}
+                <Image src={companyLogoUrl} style={pdfStyles.companyLogo} />
+              </>
+            ) : null}
             <Text style={pdfStyles.companyName}>{COMPANY_INFO.name}</Text>
             <Text style={pdfStyles.companyTagline}>{COMPANY_INFO.tagline}</Text>
             <Text style={pdfStyles.companyDetails}>

@@ -25,8 +25,13 @@ export function useQuotations(filters: QuotationFilter = {}) {
 export function useQuotation(id: string) {
   return useQuery({
     queryKey: ['quotations', id],
-    queryFn: () => getQuotation(id),
+    queryFn: async () => {
+      const response = await getQuotation(id);
+      if (!response.success) throw new Error(response.error);
+      return response.data;
+    },
     enabled: !!id,
+    staleTime: 15 * 1000,
   });
 }
 

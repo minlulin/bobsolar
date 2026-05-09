@@ -138,7 +138,7 @@
 - [x] Soft delete (sets `isActive: false`)
 - [x] **Phase 2.1: Foundation & Shared Logic**
 - [x] **Phase 2.2: Inventory & Pricing Management**
-- [/] **Phase 2.3: Customer Management (Basic CRM)**
+- [x] **Phase 2.3: Customer Management (Basic CRM)**
 
 ---
 
@@ -278,7 +278,7 @@
   - [x] `notes: string`
   - [x] `validUntil: Date | null`
   - [x] Derived: `subtotal`, `discountAmount`, `taxAmount`, `total` (auto-calculated)
-- [ ] Actions:
+- [x] Actions:
   - [x] `addItem(inventoryItem)` — add from search
   - [x] `removeItem(index)`
   - [x] `updateItemQuantity(index, qty)`
@@ -407,13 +407,13 @@
 
 ## Part 2 Completion Criteria
 
-- [ ] Inventory CRUD fully functional with inline editing
-- [ ] Customer CRUD fully functional with detail pages
-- [ ] Quote builder creates quotes with correct calculations
-- [ ] Quote status workflow transitions work correctly
-- [ ] PDF generation produces professional documents
-- [ ] All forms validate with Zod
-- [ ] Optimistic updates work for common operations
-- [ ] All pages have loading/empty/error states
-- [ ] Search and filtering work across all list pages
-- [ ] MMK formatting consistent throughout
+- [x] Inventory CRUD fully functional with inline editing
+- [x] Customer CRUD fully functional with detail pages
+- [x] Quote builder creates quotes with correct calculations
+- [x] Quote status workflow transitions work correctly
+- [x] PDF generation produces professional documents
+- [x] All forms validate with Zod
+- [x] Optimistic updates work for common operations
+- [x] All pages have loading/empty/error states
+- [x] Search and filtering work across all list pages
+- [x] MMK formatting consistent throughout

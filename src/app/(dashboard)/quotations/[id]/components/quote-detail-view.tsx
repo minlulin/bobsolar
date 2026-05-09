@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
@@ -33,7 +34,11 @@ import { QuotePreview } from '@/app/(dashboard)/quotations/new/components/quote-
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 
 interface QuoteDetailViewProps {
-  quotation: Quotation & { items: QuotationItem[]; customer: Customer };
+  quotation: Quotation & {
+    items: QuotationItem[];
+    customer: Customer;
+    project?: { id: string; projectNumber: string } | null;
+  };
 }
 
 const STATUS_CONFIG = {
@@ -178,17 +183,28 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
             </Button>
           )}
 
-          {status === 'accepted' && (
-            <Button
-              className="bg-gradient-to-r from-amber-500 to-orange-600 font-bold text-white"
-              onClick={() =>
-                router.push(`/projects/new?quoteId=${quotation.id}`)
-              }
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Convert to Project
-            </Button>
-          )}
+          {status === 'accepted' &&
+            (quotation.project ? (
+              <Button
+                asChild
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white hover:brightness-110"
+              >
+                <Link href={`/projects/${quotation.project.id}`}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Project {quotation.project.projectNumber}
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                className="bg-gradient-to-r from-amber-500 to-orange-600 font-bold text-white"
+                onClick={() =>
+                  router.push(`/projects/new?quoteId=${quotation.id}`)
+                }
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Convert to Project
+              </Button>
+            ))}
 
           <Button
             variant="outline"
