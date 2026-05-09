@@ -7,19 +7,20 @@
 | Decision | Choice | Rationale |
 |---|---|---|
 | **Framework** | Next.js 16.2+ (App Router) | RSC, Server Actions, PPR, Turbopack |
-| **Runtime** | Cloudflare Workers via `@opennextjs/cloudflare` | Edge-first, full SSR support |
-| **Database** | Neon PostgreSQL + Cloudflare Hyperdrive | D1 is SQLite-only; Neon gives real Postgres |
-| **ORM** | Drizzle ORM (`pg` dialect) | Type-safe, lightweight, edge-compatible |
-| **Auth** | Custom session-based (KV store) | Simple, no third-party dependency |
-| **Storage** | Cloudflare R2 (S3-compatible) | Photos, PDF assets, company logos |
-| **Cache/Session** | Cloudflare KV | Sub-ms reads, TTL-based sessions |
-| **PDF** | `@react-pdf/renderer` via Route Handler | Server-side generation, streaming response |
+| **Runtime** | Vercel Functions (Node.js + Edge) | Native Next.js platform, zero config |
+| **Database** | Neon PostgreSQL (serverless driver) | Real Postgres, free tier, auto-scaling |
+| **ORM** | Drizzle ORM (`pg` dialect) | Type-safe, lightweight, serverless-compatible |
+| **Auth** | Custom session-based (DB-backed) | Simple, no third-party dependency |
+| **Storage** | Vercel Blob | File uploads, company logos (1GB free) |
+| **PDF** | `@react-pdf/renderer` via Route Handler | Server-side generation with Node.js runtime |
 | **PWA** | Serwist (`@serwist/next`) | Modern, maintained, Next.js native |
 | **Package Manager** | pnpm | Fast, strict, disk-efficient |
 | **TypeScript** | 6.0 (latest stable, strict mode) | TS 5.9 is outdated; 6.0 is current |
 
 > [!IMPORTANT]
-> **Cloudflare D1 is SQLite-based, NOT PostgreSQL.** We use **Neon Postgres + Hyperdrive** for the relational DB, **D1 is dropped**. R2 and KV remain as specified.
+> **Deployment target: Vercel (Hobby plan, $0/month).** Vercel is the native Next.js platform,
+> providing zero-config deployment, automatic preview URLs, built-in image optimization,
+> and full Node.js runtime support (critical for `@react-pdf/renderer`).
 
 ### Architecture Diagram
 
@@ -28,20 +29,18 @@ graph TB
     subgraph Client
         A["Next.js App (PWA)"]
     end
-    subgraph "Cloudflare Edge"
-        B["Workers Runtime (@opennextjs/cloudflare)"]
-        C["KV (Sessions)"]
-        D["R2 (File Storage)"]
+    subgraph "Vercel Platform"
+        B["Vercel Functions (Node.js)"]
+        C["Vercel Edge Network (CDN)"]
+        D["Vercel Blob (File Storage)"]
     end
     subgraph "Database"
-        E["Neon PostgreSQL"]
-        F["Hyperdrive (Connection Pool)"]
+        E["Neon PostgreSQL (serverless)"]
     end
 
-    A --> B
-    B --> C
+    A --> C --> B
     B --> D
-    B --> F --> E
+    B --> E
 ```
 
 ---
@@ -83,7 +82,7 @@ bobsolar/
 │   │   │       └── page.tsx
 │   │   ├── api/
 │   │   │   ├── auth/route.ts
-│   │   │   └── upload/route.ts   # R2 presigned URL
+│   │   │   └── upload/route.ts   # Vercel Blob upload
 │   │   ├── manifest.ts           # PWA manifest
 │   │   ├── layout.tsx            # Root layout
 │   │   └── globals.css
@@ -119,10 +118,11 @@ bobsolar/
 │   │   │   ├── schema.ts         # All table schemas
 │   │   │   └── migrations/
 │   │   ├── auth/
-│   │   │   ├── session.ts        # KV session helpers
+│   │   │   ├── session.ts        # DB session helpers
+│   │   │   ├── validate.ts       # requireAuth() for Server Actions
 │   │   │   └── middleware.ts
 │   │   ├── storage/
-│   │   │   └── r2.ts             # R2 upload helpers
+│   │   │   └── blob.ts            # Vercel Blob upload helpers
 │   │   ├── pdf/
 │   │   │   └── generator.ts      # PDF render helpers
 │   │   ├── pricing/
@@ -155,7 +155,6 @@ bobsolar/
 │   └── migrations/
 ├── drizzle.config.ts
 ├── next.config.ts
-├── wrangler.jsonc
 ├── tailwind.config.ts
 ├── components.json               # shadcn config
 ├── tsconfig.json
@@ -181,6 +180,7 @@ erDiagram
     PROJECTS ||--o{ WARRANTY_ALERTS : triggers
     INVENTORY_ITEMS ||--o{ QUOTATION_ITEMS : referenced_by
     INVENTORY_ITEMS ||--o{ PROJECT_COSTS : referenced_by
+    USERS ||--o{ SESSIONS : has
 
     USERS {
         uuid id PK
@@ -188,6 +188,14 @@ erDiagram
         text password_hash
         text name
         text role "admin | staff"
+        timestamp created_at
+    }
+
+    SESSIONS {
+        text id PK "crypto.randomUUID"
+        uuid user_id FK
+        text role
+        timestamp expires_at
         timestamp created_at
     }
 
@@ -310,7 +318,7 @@ erDiagram
 ```
 
 > [!NOTE]
-> `COMPANY_SETTINGS` stores logo URL (R2), company name, address, phone, tax registration, bank details — all used in PDF generation. Simple key-value for flexibility.
+> `COMPANY_SETTINGS` stores logo URL (Vercel Blob), company name, address, phone, tax registration, bank details — all used in PDF generation. Simple key-value for flexibility.
 
 ---
 
@@ -424,20 +432,22 @@ graph LR
 ```
 Login → Validate credentials against Users table
       → Generate session ID (crypto.randomUUID)
-      → Store in KV: key=session:{id}, value={userId, role, exp}, TTL=7d
+      → Store session in DB: sessions table (id, userId, role, expiresAt)
       → Set httpOnly secure cookie with session ID
-      → Middleware reads cookie, validates against KV on every request
+      → Middleware checks cookie existence → Server Actions validate against DB
 ```
 
 - **No third-party auth provider** — simple, self-contained
 - **Role-based:** `admin` (full access) and `staff` (limited)
-- Middleware in `src/lib/auth/middleware.ts` protects `(dashboard)` routes
+- **Password hashing:** `bcryptjs` (pure JS, works on Vercel's Node.js runtime)
+- Middleware checks cookie for fast redirects; full session validation in Server Actions
 
 ### PDF Generation
 
 - Use `@react-pdf/renderer` in a **Route Handler** (`app/(dashboard)/quotations/[id]/pdf/route.ts`)
+- Set `export const runtime = 'nodejs'` — works natively on Vercel
 - `renderToStream()` for memory efficiency
-- Template pulls company settings (logo from R2, address) + quotation data
+- Template pulls company settings (logo from Vercel Blob, address) + quotation data
 - Returns `Content-Type: application/pdf` with `Content-Disposition` header
 - Client triggers via `<a href="/quotations/{id}/pdf" target="_blank">`
 
@@ -459,14 +469,14 @@ function calculateQuotation(input: {
 
 - **Single source of truth:** `INVENTORY_ITEMS.unit_price` is canonical
 - **Snapshot on quote creation:** `QUOTATION_ITEMS.unit_price` freezes the price at quote time
-- Calculations use `Decimal.js` or integer cents to avoid floating-point errors
+- Calculations use integer math with `Math.round()` — no `Decimal.js` needed for MMK
 
-### Image/File Upload (R2)
+### Image/File Upload (Vercel Blob)
 
-1. Client requests presigned URL via `/api/upload` route
-2. Server generates presigned `PutObject` URL using `@aws-sdk/s3-request-presigner`
-3. Client uploads directly to R2
-4. Server stores R2 key in database
+1. Client sends file to `/api/upload` route
+2. Server uploads to Vercel Blob using `@vercel/blob`
+3. Returns public URL
+4. Server stores URL in database
 
 ---
 
@@ -476,51 +486,36 @@ function calculateQuotation(input: {
 
 ```mermaid
 graph LR
-    A["GitHub Repo"] -->|push| B["GitHub Actions"]
-    B -->|build| C["@opennextjs/cloudflare"]
-    C -->|deploy| D["Cloudflare Workers"]
-    D --> E["KV (Sessions)"]
-    D --> F["R2 (Files)"]
-    D -->|Hyperdrive| G["Neon PostgreSQL"]
+    A["GitHub Repo"] -->|push to main| B["Vercel"]
+    B -->|auto build & deploy| C["Vercel Edge Network"]
+    C --> D["Vercel Functions (Node.js)"]
+    D --> E["Neon PostgreSQL"]
+    D --> F["Vercel Blob (Files)"]
 ```
 
-### Wrangler Configuration (`wrangler.jsonc`)
+### Vercel Project Setup
 
-```jsonc
+1. Connect GitHub repository to Vercel
+2. Framework auto-detected as Next.js
+3. Set environment variables in Vercel dashboard:
+   - `DATABASE_URL` — Neon connection string
+   - `BLOB_READ_WRITE_TOKEN` — Vercel Blob access token
+   - `SESSION_SECRET` — for cookie signing
+4. Deploy with `git push` — fully automatic
+
+### CI/CD Pipeline
+
+Vercel provides built-in CI/CD:
+- **Production:** Auto-deploys on push to `main`
+- **Preview:** Auto-deploys on every PR with unique URL
+- **Checks:** Add `pnpm typecheck && pnpm lint` as build command prefix
+
+```json
+// vercel.json (optional — most config is auto-detected)
 {
-  "name": "bobsolar",
-  "compatibility_date": "2026-05-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "kv_namespaces": [
-    { "binding": "SESSION_KV", "id": "<kv-id>" }
-  ],
-  "r2_buckets": [
-    { "binding": "FILE_STORAGE", "bucket_name": "bobsolar-files" }
-  ],
-  "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "<hyperdrive-id>" }
-  ]
+  "buildCommand": "pnpm typecheck && pnpm lint && pnpm build",
+  "installCommand": "pnpm install --frozen-lockfile"
 }
-```
-
-### CI/CD Pipeline (GitHub Actions)
-
-```yaml
-# .github/workflows/deploy.yml
-on:
-  push:
-    branches: [main]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint && pnpm typecheck
-      - run: pnpm build          # Turbopack production build
-      - run: pnpm dlx wrangler deploy
 ```
 
 ### Environments
@@ -575,7 +570,7 @@ jobs:
   - In-app notifications (warranty due, quote expiring)
   - Notification bell with unread count
   - Mark as read, clear all
-- [ ] R2 file upload (project photos, company logo)
+- [ ] Vercel Blob upload (project photos, company logo)
 
 ### Phase 5 — Production Hardening (Week 10)
 - [ ] Error boundaries & fallback UI
@@ -591,14 +586,12 @@ jobs:
 
 | Challenge | Risk | Solution |
 |---|---|---|
-| **D1 is SQLite, not Postgres** | High — schema incompatibility | ✅ Use Neon Postgres + Hyperdrive instead |
-| **@react-pdf in Edge runtime** | Medium — Node.js API deps | Use Route Handler with `nodejs` runtime, not edge |
-| **Floating point in pricing** | Medium — rounding errors | Use integer cents or `Decimal.js` library |
-| **KV eventual consistency** | Low — session race conditions | Acceptable for auth; user always hits same PoP |
-| **Large PDF generation** | Medium — memory/timeout | Stream response, limit line items per page |
+| **Floating point in pricing** | Medium — rounding errors | Use integer math with `Math.round()` — MMK has no decimals |
+| **Large PDF generation** | Medium — memory/timeout | Stream response via `renderToStream()`, limit line items per page |
 | **Framer Motion bundle size** | Medium — client JS bloat | Tree-shake, lazy load heavy animations, use `LazyMotion` |
 | **Offline PWA with dynamic data** | Medium — stale data UX | Cache shell + show "offline" banner; sync on reconnect |
-| **Hyperdrive cold starts** | Low — first-request latency | Hyperdrive keeps warm connections; minimal impact |
+| **Vercel cold starts** | Low — first-request latency | ~250ms cold start, acceptable for 3 users |
+| **Neon cold starts** | Low — DB compute wake | Neon wakes in ~500ms from suspended state; minimal impact |
 | **shadcn/ui heavy customization** | Low — maintenance burden | Use CSS variables only; never modify component source |
 
 ---
@@ -620,16 +613,15 @@ jobs:
 | Service | Free Tier | BOB Solar Usage (3 users) | Verdict |
 |---|---|---|---|
 | **Neon PostgreSQL** | 0.5 GB storage, 100 CU-hours/month | ~50MB data, ~10 CU-hours/month | ✅ More than enough |
-| **Cloudflare Workers** | 100K requests/day | ~500 requests/day max | ✅ Overkill |
-| **Cloudflare KV** | 100K reads/day, 1K writes/day, 1 GB | ~100 reads, ~10 writes/day | ✅ Overkill |
-| **Cloudflare R2** | 10 GB storage, free egress | ~100MB photos/logos | ✅ Overkill |
-| **Cloudflare Hyperdrive** | Included with Workers | Connection pooling | ✅ Free |
-| **GitHub** | Unlimited private repos | CI/CD Actions free tier | ✅ Free |
+| **Vercel Hobby** | 100 GB bandwidth, 100 GB-hrs functions | ~1 GB bandwidth, ~2 GB-hrs/month | ✅ More than enough |
+| **Vercel Blob** | 1 GB storage | ~100MB photos/logos | ✅ More than enough |
+| **Vercel Image Optimization** | 5,000 transforms/month | ~500/month | ✅ More than enough |
+| **GitHub** | Unlimited private repos | Source control | ✅ Free |
 
 > [!TIP]
 > **Total monthly cost: $0.00** — All free tiers are more than sufficient for 3 users.
 > Neon auto-scales to zero when idle, so compute hours are only consumed during active use.
-> The only caveat: Neon free tier suspends compute after 100 CU-hours (won't happen with 3 users).
+> Vercel Hobby plan is free for personal, non-commercial projects (this is a gift!).
 
 ---
 
@@ -645,4 +637,4 @@ jobs:
 - Responsive testing across mobile/tablet/desktop breakpoints
 - PWA install flow on Chrome & Safari
 - Lighthouse audit targeting 90+ on all metrics
-- Cloudflare preview deployment smoke test
+- Vercel production deployment smoke test

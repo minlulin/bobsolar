@@ -101,7 +101,7 @@
 ### 5.3.2 Image Optimization
 - [ ] All static images use `next/image` with proper sizing
 - [ ] PWA icons optimized (PNG, compressed)
-- [ ] Company logo: served from R2 with appropriate caching headers
+- [ ] Company logo: served from Vercel Blob with appropriate caching headers
 - [ ] Lazy load images below the fold
 
 ### 5.3.3 Caching Strategy
@@ -174,82 +174,59 @@
 ### 5.5.1 GitHub Repository Setup
 - [ ] Initialize git: `git init`
 - [ ] Create `.gitignore`:
-  - [ ] `node_modules/`, `.next/`, `.env.local`, `public/sw.js`
+  - [ ] `node_modules/`, `.next/`, `.vercel/`, `.env.local`, `public/sw.js`
   - [ ] `drizzle/migrations/*.sql` (track in git for reproducibility)
 - [ ] Create GitHub repository: `bobsolar` (private)
 - [ ] Push initial commit
 - [ ] Set up branch protection on `main` (optional for 3 users)
 
-### 5.5.2 GitHub Actions Workflow
-- [ ] Create `.github/workflows/deploy.yml`:
-  ```yaml
-  name: Deploy BOB Solar
-  on:
-    push:
-      branches: [main]
-  
-  jobs:
-    deploy:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v4
-        - uses: pnpm/action-setup@v4
-          with:
-            version: latest
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 22
-            cache: 'pnpm'
-        - run: pnpm install --frozen-lockfile
-        - run: pnpm typecheck
-        - run: pnpm lint
-        - run: pnpm build
-        - uses: cloudflare/wrangler-action@v3
-          with:
-            apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  ```
-- [ ] Add GitHub Secrets:
-  - [ ] `CLOUDFLARE_API_TOKEN`
-  - [ ] `DATABASE_URL` (for migrations if needed)
-- [ ] Test: push to main → verify automatic deployment
+### 5.5.2 Vercel Project Setup
+- [ ] Sign up for Vercel (Hobby plan — free, non-commercial)
+- [ ] Import GitHub repository in Vercel dashboard
+- [ ] Framework auto-detected as Next.js
+- [ ] Set build command: `pnpm typecheck && pnpm lint && pnpm build`
+- [ ] Set install command: `pnpm install --frozen-lockfile`
+- [ ] Configure environment variables:
+  - [ ] `DATABASE_URL` — Neon connection string
+  - [ ] `BLOB_READ_WRITE_TOKEN` — Vercel Blob access token
+  - [ ] `SESSION_SECRET` — for cookie signing (generate random 64-char string)
+- [ ] Deploy: push to `main` → automatic deployment
+- [ ] Verify deployment URL is accessible
 
-### 5.5.3 Preview Deployments (Optional)
-- [ ] Create `.github/workflows/preview.yml` for PRs
-- [ ] Deploy to Cloudflare preview URL on PR push
-- [ ] Comment preview URL on PR
+### 5.5.3 Preview Deployments (Automatic)
+- [ ] Vercel auto-creates preview URLs for every PR
+- [ ] Verify: create a test PR → preview URL generated
+- [ ] Preview uses same environment variables (or set separate preview env vars)
+
+### 5.5.4 Optional: vercel.json
+- [ ] Create `vercel.json` (only if custom config needed):
+  ```json
+  {
+    "buildCommand": "pnpm typecheck && pnpm lint && pnpm build",
+    "installCommand": "pnpm install --frozen-lockfile"
+  }
+  ```
 
 ---
 
-## 5.6 Cloudflare Production Setup
+## 5.6 Vercel Production Setup
 
-### 5.6.1 Cloudflare Account Configuration
-- [ ] **Workers:**
-  - [ ] Verify `bobsolar` worker is created
-  - [ ] Set compatibility date and flags
-- [ ] **KV Namespace:**
-  - [ ] Create production namespace: `BOBSOLAR_SESSIONS`
-  - [ ] Bind in `wrangler.jsonc` production config
-- [ ] **R2 Bucket:**
-  - [ ] Create production bucket: `bobsolar-files`
-  - [ ] Configure CORS rules for production domain
-  - [ ] Bind in `wrangler.jsonc`
-- [ ] **Hyperdrive:**
-  - [ ] Create Hyperdrive config with Neon connection string
-  - [ ] `npx wrangler hyperdrive create bobsolar-db --connection-string="..."`
-  - [ ] Bind in `wrangler.jsonc`
-- [ ] **Environment Variables (Secrets):**
-  - [ ] Set via `wrangler secret put`:
-    - [ ] `DATABASE_URL`
-    - [ ] `R2_ACCESS_KEY_ID`
-    - [ ] `R2_SECRET_ACCESS_KEY`
-    - [ ] `SESSION_SECRET` (for cookie signing)
+### 5.6.1 Vercel Configuration
+- [ ] **Vercel Blob:**
+  - [ ] Create Blob store in Vercel dashboard
+  - [ ] Copy `BLOB_READ_WRITE_TOKEN` to environment variables
+  - [ ] Verify blob upload works from deployed app
+- [ ] **Environment Variables:**
+  - [ ] `DATABASE_URL` — Neon production connection string
+  - [ ] `BLOB_READ_WRITE_TOKEN` — Vercel Blob token
+  - [ ] `SESSION_SECRET` — cookie signing secret
 
 ### 5.6.2 Custom Domain (Optional)
 - [ ] If using custom domain (e.g., `app.bobsolar.com`):
-  - [ ] Add domain to Cloudflare
-  - [ ] Configure DNS record for Worker
-  - [ ] Enable SSL (automatic with Cloudflare)
-- [ ] If no custom domain: use `bobsolar.<account>.workers.dev`
+  - [ ] Add domain in Vercel dashboard
+  - [ ] Update DNS records (CNAME to `cname.vercel-dns.com`)
+  - [ ] SSL is automatic
+- [ ] If no custom domain: use `bobsolar.vercel.app`
 
 ### 5.6.3 Database Migration (Production)
 - [ ] Run Drizzle migrations against production Neon DB:
@@ -261,14 +238,13 @@
   - [ ] Seed initial inventory items
 
 ### 5.6.4 First Deployment
-- [ ] Run `pnpm build` locally — verify success
-- [ ] Deploy: `npx wrangler deploy`
+- [ ] Push to `main` — Vercel auto-builds and deploys
 - [ ] Verify deployment URL is accessible
 - [ ] Verify login works
 - [ ] Verify all pages load
 - [ ] Verify database operations work
-- [ ] Verify KV sessions work
-- [ ] Verify R2 upload works
+- [ ] Verify sessions work (login persists across refreshes)
+- [ ] Verify Blob upload works
 
 ---
 
@@ -375,7 +351,7 @@
 - [ ] Zero TypeScript errors (`pnpm typecheck`)
 - [ ] Zero ESLint errors (`pnpm lint`)
 - [ ] Production build succeeds (`pnpm build`)
-- [ ] Deployed to Cloudflare Workers and accessible
+- [ ] Deployed to Vercel and accessible
 - [ ] All functional smoke tests pass
 - [ ] Lighthouse scores meet targets
 - [ ] PWA installable and functional
@@ -384,4 +360,4 @@
 - [ ] All pages responsive across mobile/tablet/desktop
 - [ ] README documentation complete
 - [ ] Git repository clean with meaningful commit history
-- [ ] **Zero monthly cost** infrastructure verified ✅
+- [ ] **Zero monthly cost** infrastructure verified (Vercel Hobby + Neon free) ✅

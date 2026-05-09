@@ -253,37 +253,30 @@
 
 ---
 
-## 3.4 File Upload System (Cloudflare R2)
+## 3.4 File Upload System (Vercel Blob)
 
-### 3.4.1 R2 Configuration
-- [ ] Create R2 bucket: `bobsolar-files` in Cloudflare dashboard
-- [ ] Generate R2 API token (Object Read & Write)
-- [ ] Store credentials in `.env.local`:
-  - [ ] `R2_ACCOUNT_ID`
-  - [ ] `R2_ACCESS_KEY_ID`
-  - [ ] `R2_SECRET_ACCESS_KEY`
-  - [ ] `R2_BUCKET_NAME`
-- [ ] Configure CORS on R2 bucket (allow PUT from app domain)
+### 3.4.1 Vercel Blob Configuration
+- [ ] Install `@vercel/blob` (already in dependencies)
+- [ ] Obtain `BLOB_READ_WRITE_TOKEN` from Vercel dashboard
+- [ ] Store in `.env.local`: `BLOB_READ_WRITE_TOKEN`
+- [ ] Note: Vercel Blob works locally via the token — no emulation needed
 
-### 3.4.2 R2 Upload Helpers (`src/lib/storage/r2.ts`)
-- [ ] Install: `pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner`
-- [ ] Create S3Client configured for R2 endpoint
-- [ ] `generateUploadUrl(filename, contentType)`:
-  - [ ] Generate unique key: `{folder}/{uuid}-{filename}`
-  - [ ] Create presigned PutObject URL (expires: 10min)
-  - [ ] Return: `{ uploadUrl, fileKey }`
-- [ ] `getPublicUrl(fileKey)`:
-  - [ ] Return public R2 URL or presigned GET URL
-- [ ] `deleteFile(fileKey)`:
-  - [ ] Delete object from R2
+### 3.4.2 Blob Upload Helpers (`src/lib/storage/blob.ts`)
+- [ ] `uploadFile(file: File, folder: string): Promise<string>`:
+  - [ ] Upload to Vercel Blob with `put()`
+  - [ ] Key pattern: `{folder}/{uuid}-{filename}`
+  - [ ] Set `access: 'public'`
+  - [ ] Return public URL
+- [ ] `deleteFile(url: string): Promise<void>`:
+  - [ ] Delete blob by URL with `del()`
 
 ### 3.4.3 Upload API Route (`src/app/api/upload/route.ts`)
 - [ ] POST endpoint — authenticated
-- [ ] Accept: `{ filename, contentType, folder }` (folder = "logos" | "photos")
+- [ ] Accept `FormData` with `file` and `folder` fields
 - [ ] Validate content type (images only: jpeg, png, webp)
 - [ ] Validate file size limit (5MB max)
-- [ ] Generate presigned URL
-- [ ] Return `{ uploadUrl, fileKey }`
+- [ ] Upload to Vercel Blob
+- [ ] Return `{ url: string }`
 
 ### 3.4.4 Upload Component (`src/components/shared/file-upload.tsx`)
 - [ ] Drag-and-drop zone with visual feedback
@@ -299,7 +292,7 @@
 ### 3.4.5 Company Logo Upload
 - [ ] In Settings page: "Company Logo" section
 - [ ] Upload component instance for logo
-- [ ] On upload success: update `companySettings` table with R2 file key
+- [ ] On upload success: update `companySettings` table with Blob URL
 - [ ] Logo appears in:
   - [ ] PDF header
   - [ ] App header (optional)
@@ -317,7 +310,7 @@
 - [ ] Completed projects list with warranty status indicators
 - [ ] Warranty alerts page with filter/resolve workflow
 - [ ] Overdue alerts are visually prominent
-- [ ] R2 file upload works end-to-end (presigned URL flow)
+- [ ] Vercel Blob upload works end-to-end
 - [ ] Company logo uploads and appears in PDF
 - [ ] All pages responsive (mobile + desktop)
 - [ ] All loading/empty/error states implemented

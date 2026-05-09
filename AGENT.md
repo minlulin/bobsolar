@@ -38,7 +38,7 @@ Before writing ANY code, read these files in this exact order:
 ### Phase 1: Foundation (MUST complete before Phase 2)
 ```
 1.1 Project Scaffolding
-    → Initialize Next.js 16 with Cloudflare Workers adapter
+    → Initialize Next.js 16 (standard Vercel deployment)
     → Configure TypeScript strict mode
     → Install ALL dependencies (see SKILLS.md for exact list)
     → Create folder structure
@@ -56,7 +56,7 @@ Before writing ANY code, read these files in this exact order:
     → Create seed data (3 users, sample inventory)
 
 1.4 Authentication
-    → Session management with Cloudflare KV
+    → Session management with database-backed sessions (httpOnly cookies)
     → Login page with Solar Flow design
     → Middleware to protect (dashboard) routes
     → Logout functionality
@@ -129,8 +129,8 @@ Before writing ANY code, read these files in this exact order:
     → Warranty page with filter/resolve workflow
     → Overdue alert highlighting
 
-3.3 File Upload (R2)
-    → Presigned URL generation
+3.3 File Upload (Vercel Blob)
+    → Upload via Vercel Blob API (1GB free)
     → Upload component (drag-and-drop)
     → Company logo upload in settings
 ```
@@ -173,9 +173,9 @@ Before writing ANY code, read these files in this exact order:
     → Lighthouse audit (target 90+)
 
 5.3 CI/CD
-    → GitHub Actions workflow (typecheck → lint → build → deploy)
-    → Cloudflare Workers deployment
-    → Environment secrets configuration
+    → Vercel Git integration (auto-deploy on push to main)
+    → Preview deployments per PR (automatic)
+    → Environment variables in Vercel dashboard
 
 5.4 Production Verification
     → Full smoke test checklist
@@ -190,7 +190,7 @@ Before writing ANY code, read these files in this exact order:
 ### This App Is
 - A **gift** for a friend's company — not commercial
 - Used by **3 people only** (1 admin, 2 staff)
-- **Zero cost** — all free tiers (Neon 0.5GB, Cloudflare free plan)
+- **Zero cost** — all free tiers (Neon 0.5GB, Vercel Hobby plan)
 - **MMK currency** (Myanmar Kyat) — integers only, no decimals
 - **Single company** — no multi-tenant
 
@@ -294,7 +294,7 @@ docs/05_progress_log_final_deployment.md
 1. **Don't create a left sidebar** — Use bottom dock navigation
 2. **Don't use npm** — Use pnpm exclusively
 3. **Don't fetch data in client components** — Use Server Actions + TanStack Query
-4. **Don't use D1** — D1 is SQLite. Use Neon PostgreSQL + Hyperdrive
+4. **Don't use Vercel Postgres** — Use Neon PostgreSQL (free tier, already chosen)
 5. **Don't use `any` type** — TypeScript strict mode is mandatory
 6. **Don't skip Zod validation** — Validate in EVERY Server Action
 7. **Don't hardcode colors** — Use CSS variables

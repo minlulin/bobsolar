@@ -205,7 +205,7 @@
 ### 4.3.2 Company Info Tab
 - [ ] **Company Logo:**
   - [ ] Current logo preview (or placeholder)
-  - [ ] Upload button → R2 upload flow
+  - [ ] Upload button → Vercel Blob upload flow
   - [ ] Logo used in PDF header + login page
 - [ ] **Company Details Form:**
   - [ ] Company name

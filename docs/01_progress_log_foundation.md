@@ -8,11 +8,10 @@
 ## 1.1 Project Scaffolding
 
 ### 1.1.1 Initialize Next.js Project
-- [ ] Run `npx -y create-cloudflare@latest -- bobsolar --framework=next --platform=workers`
+- [ ] Run `npx -y create-next-app@latest ./ --typescript --tailwind --eslint --app --src-dir --import-alias "@/*"` --use-pnpm
 - [ ] Verify Next.js 16.2+ and React 19 are installed
-- [ ] Switch to `pnpm` — delete `node_modules` + `package-lock.json`, run `pnpm install`
 - [ ] Verify Turbopack dev server starts: `pnpm dev`
-- [ ] Confirm `@opennextjs/cloudflare` adapter is configured in `next.config.ts`
+- [ ] Confirm standard Next.js config in `next.config.ts` (no adapter needed)
 
 ### 1.1.2 TypeScript Configuration
 - [ ] Update `tsconfig.json` — enable `strict: true`
@@ -44,6 +43,8 @@
 - [ ] Install `@react-pdf/renderer`: `pnpm add @react-pdf/renderer`
 - [ ] Install Drizzle ORM + Kit: `pnpm add drizzle-orm postgres` + `pnpm add -D drizzle-kit`
 - [ ] Install Serwist: `pnpm add @serwist/next serwist`
+- [ ] Install Vercel Blob: `pnpm add @vercel/blob`
+- [ ] Install bcrypt: `pnpm add bcryptjs` + `pnpm add -D @types/bcryptjs`
 - [ ] Verify `pnpm dev` still works after all installs
 - [ ] Verify `pnpm build` succeeds
 
@@ -191,9 +192,9 @@
   dbCredentials: { url: process.env.DATABASE_URL }
   ```
 - [ ] Create `src/lib/db/index.ts` — Drizzle client initialization:
-  - [ ] Import `postgres` driver
+  - [ ] Import `postgres` driver (Neon serverless)
   - [ ] Export typed `db` instance
-  - [ ] Handle Hyperdrive connection string for production vs direct for dev
+  - [ ] Use `DATABASE_URL` env var directly (no Hyperdrive needed on Vercel)
 - [ ] Verify Drizzle Studio works: `pnpm drizzle-kit studio`
 
 ### 1.3.3 Schema Definition (`src/lib/db/schema.ts`)
@@ -238,6 +239,12 @@
   - [ ] `link` (nullable), `isRead`, `createdAt`
 - [ ] Define `companySettings` table:
   - [ ] `key` (text, PK), `value` (text), `updatedAt`
+- [ ] Define `sessions` table (for DB-backed auth):
+  - [ ] `id` (text, PK) — crypto.randomUUID()
+  - [ ] `userId` (uuid, FK → users)
+  - [ ] `role` (text)
+  - [ ] `expiresAt` (timestamp)
+  - [ ] `createdAt` (timestamp, default now)
 - [ ] Define all relations using `relations()` helper
 - [ ] Export all table types using `InferSelectModel` / `InferInsertModel`
 
@@ -262,43 +269,43 @@
 
 ## 1.4 Authentication System
 
-### 1.4.1 Cloudflare KV Setup
-- [ ] Create KV namespace in Cloudflare dashboard: `BOBSOLAR_SESSIONS`
-- [ ] Add binding to `wrangler.jsonc`: `SESSION_KV`
-- [ ] For local dev: configure `wrangler` KV emulation
-- [ ] Verify KV read/write works locally
-
-### 1.4.2 Password Hashing
-- [ ] Choose hashing approach compatible with Workers runtime
-- [ ] Implement `hashPassword(plain: string): Promise<string>`
-- [ ] Implement `verifyPassword(plain: string, hash: string): Promise<boolean>`
+### 1.4.1 Password Hashing
+- [ ] Implement using `bcryptjs` (pure JS, works everywhere):
+  - [ ] `hashPassword(plain: string): Promise<string>` — bcrypt with 12 rounds
+  - [ ] `verifyPassword(plain: string, hash: string): Promise<boolean>`
 - [ ] Test hash + verify roundtrip
 
-### 1.4.3 Session Management (`src/lib/auth/session.ts`)
+### 1.4.2 Session Management (`src/lib/auth/session.ts`)
 - [ ] Implement `createSession(userId: string, role: string): Promise<string>`
   - [ ] Generate `crypto.randomUUID()` session ID
-  - [ ] Store in KV: key = `session:{id}`, value = `{userId, role, createdAt}`
-  - [ ] Set TTL = 7 days (604800 seconds)
+  - [ ] Store in DB: `sessions` table (id, userId, role, expiresAt = 7 days)
   - [ ] Return session ID
 - [ ] Implement `getSession(sessionId: string): Promise<SessionData | null>`
-  - [ ] Read from KV, parse JSON, validate
+  - [ ] Read from DB, check expiry
+  - [ ] Return null if expired or not found
 - [ ] Implement `deleteSession(sessionId: string): Promise<void>`
-  - [ ] Delete key from KV
+  - [ ] Delete row from sessions table
 - [ ] Implement cookie helpers:
   - [ ] `setSessionCookie(response, sessionId)` — httpOnly, secure, sameSite: lax, maxAge: 7d
   - [ ] `getSessionFromCookie(request): string | null`
   - [ ] `clearSessionCookie(response)`
 
-### 1.4.4 Auth Middleware (`src/lib/auth/middleware.ts`)
-- [ ] Create Next.js middleware (`src/middleware.ts`):
+### 1.4.3 Auth Middleware (`src/middleware.ts`)
+- [ ] Create Next.js middleware:
   - [ ] Match `/(dashboard)/*` routes
   - [ ] Read session cookie
-  - [ ] Validate against KV
-  - [ ] If invalid → redirect to `/login`
-  - [ ] If valid → pass `userId` and `role` in request headers
+  - [ ] If no cookie → redirect to `/login`
+  - [ ] If cookie exists → allow through (full validation happens in Server Actions)
+  - [ ] Note: Middleware runs at Edge on Vercel — keep it lightweight (no DB calls)
 - [ ] Test: unauthenticated user redirected to login
 - [ ] Test: authenticated user can access dashboard
-- [ ] Test: expired session redirected to login
+
+### 1.4.4 Auth Helper for Server Actions (`src/lib/auth/validate.ts`)
+- [ ] Create `requireAuth()` helper:
+  - [ ] Reads session cookie from `cookies()` API
+  - [ ] Validates session against DB (checks expiry)
+  - [ ] Returns `{ userId, role }` or throws redirect to `/login`
+  - [ ] Used at the top of every Server Action
 
 ### 1.4.5 Login Page (`src/app/(auth)/login/page.tsx`)
 - [ ] Design login page with Solar Flow aesthetics:
@@ -311,10 +318,10 @@
 - [ ] Implement login Server Action (`src/actions/auth-actions.ts`):
   - [ ] Validate with Zod schema
   - [ ] Query user by email
-  - [ ] Verify password hash
+  - [ ] Verify password hash with bcrypt
   - [ ] Create session → set cookie → redirect to dashboard
 - [ ] Implement logout Server Action:
-  - [ ] Delete session from KV
+  - [ ] Delete session from DB
   - [ ] Clear cookie
   - [ ] Redirect to login
 - [ ] Test: valid login → redirects to dashboard
@@ -441,26 +448,6 @@
 - [ ] Verify app is installable (Chrome install prompt)
 - [ ] Test offline shell loading
 - [ ] Verify manifest is detected correctly
-
----
-
-## 1.8 Wrangler Configuration
-
-### 1.8.1 Configure `wrangler.jsonc`
-- [ ] Set `name: "bobsolar"`
-- [ ] Set `compatibility_date: "2026-05-01"`
-- [ ] Set `compatibility_flags: ["nodejs_compat"]`
-- [ ] Add KV namespace binding: `SESSION_KV`
-- [ ] Add R2 bucket binding: `FILE_STORAGE`
-- [ ] Add Hyperdrive binding: `HYPERDRIVE`
-- [ ] Set environment variables for production
-
-### 1.8.2 Local Development Verification
-- [ ] Run `pnpm dev` — app starts without errors
-- [ ] Run `wrangler dev` — app starts with Cloudflare bindings
-- [ ] Verify KV operations work locally
-- [ ] Verify database connection works locally
-- [ ] Verify R2 operations work locally (or mock)
 
 ---
 

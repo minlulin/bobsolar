@@ -154,14 +154,14 @@
 - Session cookies: `httpOnly`, `secure`, `sameSite: 'lax'`, `maxAge: 7d`.
 - Never expose database IDs in error messages.
 - Validate file upload types server-side (don't trust client).
-- Rate limit login attempts (basic counter in KV).
+- Rate limit login attempts (basic counter in DB).
 - Never log sensitive data (passwords, session IDs).
 
 ### R19: Git Conventions
 - Commit messages: `<type>: <description>` (e.g., `feat: add quotation PDF generation`)
 - Types: `feat`, `fix`, `refactor`, `style`, `docs`, `chore`, `perf`
 - One feature per commit — atomic commits.
-- Never commit `.env.local`, `node_modules`, `public/sw.js`, `.next/`.
+- Never commit `.env.local`, `node_modules`, `public/sw.js`, `.next/`, `.vercel/`.
 
 ### R20: Code Comments
 - Don't comment obvious code.

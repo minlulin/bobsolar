@@ -10,7 +10,7 @@
 - **Type:** Progressive Web App (PWA) for solar installation management
 - **Users:** 3 people (1 admin, 2 staff) — single company, non-commercial
 - **Currency:** MMK (Myanmar Kyat) — no decimals needed, integer math only
-- **Cost:** $0/month — all free tiers (Neon, Cloudflare Workers/KV/R2)
+- **Cost:** $0/month — all free tiers (Neon, Vercel Hobby)
 
 ---
 
@@ -31,9 +31,10 @@
 | Zod | Latest | Schema validation |
 | Drizzle ORM | Latest | PostgreSQL dialect (`pg`) |
 | PostgreSQL | Neon (free tier) | 0.5GB storage, 100 CU-hours/month |
-| @react-pdf/renderer | 4.5+ | PDF generation |
+| @react-pdf/renderer | 4.5+ | PDF generation (runs on Node.js runtime) |
 | Serwist | Latest | PWA service worker |
-| @opennextjs/cloudflare | Latest | Deploy Next.js to Cloudflare Workers |
+| Vercel | Hobby plan | Zero-config Next.js deployment (free tier) |
+| @vercel/blob | Latest | File storage (logos, uploads — 1GB free) |
 
 ---
 
@@ -445,7 +446,7 @@ export function QuoteDocument({ quotation, company }: Props) {
 import { renderToStream } from '@react-pdf/renderer';
 import { QuoteDocument } from '@/components/pdf/quote-document';
 
-export const runtime = 'nodejs'; // NOT edge — react-pdf needs Node APIs
+export const runtime = 'nodejs'; // react-pdf requires Node.js APIs — works natively on Vercel
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const quotation = await getQuotationWithDetails(params.id);
@@ -466,24 +467,33 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
 ---
 
-## Skill: Authentication with Cloudflare KV
+## Skill: Authentication with Database Sessions
 
 ### Session Flow
 ```tsx
 // src/lib/auth/session.ts
-export async function createSession(userId: string, role: string, kv: KVNamespace) {
+import { db } from '@/lib/db';
+import { sessions } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+
+export async function createSession(userId: string, role: string) {
   const sessionId = crypto.randomUUID();
-  await kv.put(`session:${sessionId}`, JSON.stringify({ userId, role }), { expirationTtl: 604800 });
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  await db.insert(sessions).values({ id: sessionId, userId, role, expiresAt });
   return sessionId;
 }
 
-export async function getSession(sessionId: string, kv: KVNamespace) {
-  const data = await kv.get(`session:${sessionId}`);
-  return data ? JSON.parse(data) : null;
+export async function getSession(sessionId: string) {
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId));
+  if (!session || session.expiresAt < new Date()) return null;
+  return session;
 }
 
-export async function deleteSession(sessionId: string, kv: KVNamespace) {
-  await kv.delete(`session:${sessionId}`);
+export async function deleteSession(sessionId: string) {
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
 }
 ```
 
@@ -510,32 +520,47 @@ export function middleware(request: NextRequest) {
 export const config = { matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icons|fonts).*)'] };
 ```
 
+> **Note:** Middleware on Vercel runs at the Edge by default. For session validation
+> that needs DB access, validate the session in Server Components/Actions instead
+> of middleware. Middleware only checks cookie existence for fast redirects.
+
 ---
 
-## Skill: Cloudflare R2 Upload
+## Skill: File Upload with Vercel Blob
 
-### Presigned URL Pattern
+### Upload Pattern
 ```tsx
-// src/lib/storage/r2.ts
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+// src/lib/storage/blob.ts
+import { put, del } from '@vercel/blob';
 
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
-
-export async function generateUploadUrl(key: string, contentType: string) {
-  const command = new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET_NAME,
-    Key: key,
-    ContentType: contentType,
+export async function uploadFile(file: File, folder: string) {
+  const blob = await put(`${folder}/${file.name}`, file, {
+    access: 'public',
   });
-  return getSignedUrl(r2Client, command, { expiresIn: 600 }); // 10 min
+  return blob.url;
+}
+
+export async function deleteFile(url: string) {
+  await del(url);
+}
+```
+
+### Upload API Route
+```tsx
+// app/api/upload/route.ts
+import { put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+  const form = await request.formData();
+  const file = form.get('file') as File;
+  const folder = form.get('folder') as string;
+
+  const blob = await put(`${folder}/${file.name}`, file, {
+    access: 'public',
+  });
+
+  return NextResponse.json({ url: blob.url });
 }
 ```
 

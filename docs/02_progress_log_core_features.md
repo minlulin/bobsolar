@@ -349,7 +349,7 @@
 ### 2.4.9 PDF Generation
 - [ ] **PDF Template (`src/components/pdf/quote-document.tsx`):**
   - [ ] Company header:
-    - [ ] Logo (from R2 / company settings)
+    - [ ] Logo (from Vercel Blob / company settings)
     - [ ] Company name, address, phone
     - [ ] Tax registration number
   - [ ] Quote details:
