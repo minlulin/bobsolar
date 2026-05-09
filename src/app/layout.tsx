@@ -6,16 +6,22 @@ import './globals.css';
 const fontHeading = Outfit({
   subsets: ['latin'],
   variable: '--font-heading',
+  display: 'swap',
+  preload: true,
 });
 
 const fontBody = Inter({
   subsets: ['latin'],
   variable: '--font-body',
+  display: 'swap',
+  preload: true,
 });
 
 const fontMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
+  display: 'swap',
+  preload: true,
 });
 
 export const metadata: Metadata = {
