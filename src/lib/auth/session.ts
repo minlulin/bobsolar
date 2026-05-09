@@ -5,7 +5,10 @@ import { eq } from 'drizzle-orm';
 
 const SESSION_COOKIE_NAME = 'session_id';
 
-export async function createSession(userId: string, role: string): Promise<string> {
+export async function createSession(
+  userId: string,
+  role: string,
+): Promise<string> {
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 

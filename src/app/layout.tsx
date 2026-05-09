@@ -1,31 +1,31 @@
-import type { Metadata, Viewport } from "next";
-import { Outfit, Inter, JetBrains_Mono } from "next/font/google";
-import { Providers } from "@/components/providers";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Outfit, Inter, JetBrains_Mono } from 'next/font/google';
+import { Providers } from '@/components/providers';
+import './globals.css';
 
 const fontHeading = Outfit({
-  subsets: ["latin"],
-  variable: "--font-heading",
+  subsets: ['latin'],
+  variable: '--font-heading',
 });
 
 const fontBody = Inter({
-  subsets: ["latin"],
-  variable: "--font-body",
+  subsets: ['latin'],
+  variable: '--font-body',
 });
 
 const fontMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
+  subsets: ['latin'],
+  variable: '--font-mono',
 });
 
 export const metadata: Metadata = {
-  title: "BOB Solar — Solar Installation Management",
-  description: "A premium management system for BOB Solar.",
-  manifest: "/manifest.json",
+  title: 'BOB Solar — Solar Installation Management',
+  description: 'A premium management system for BOB Solar.',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "BOB Solar",
+    statusBarStyle: 'default',
+    title: 'BOB Solar',
   },
   formatDetection: {
     telephone: false,
@@ -33,12 +33,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F59E0B",
-  width: "device-width",
+  themeColor: '#F59E0B',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
 };
+
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function RootLayout({
   children,
@@ -51,8 +53,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${fontHeading.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-body">
-        <Providers>{children}</Providers>
+      <body className="font-body flex min-h-full flex-col">
+        <Providers>
+          <TooltipProvider>{children}</TooltipProvider>
+        </Providers>
       </body>
     </html>
   );

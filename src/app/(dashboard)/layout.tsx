@@ -5,6 +5,7 @@ import { BottomDock } from '@/components/layout/nav-orbit';
 import { CommandBar } from '@/components/layout/command-bar';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { RouteTransition } from '@/components/shared/route-transition';
 
 export default async function DashboardLayout({
   children,
@@ -14,15 +15,15 @@ export default async function DashboardLayout({
   await requireAuth();
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="bg-background relative min-h-screen">
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/80 backdrop-blur-md">
+      <header className="bg-background/80 sticky top-0 z-40 w-full border-b border-white/5 backdrop-blur-md">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-solar shadow-solar">
+            <div className="bg-solar shadow-solar flex h-10 w-10 items-center justify-center rounded-xl">
               <Sun className="h-6 w-6 text-white" />
             </div>
-            <span className="hidden font-heading text-xl font-bold tracking-tight sm:block">
+            <span className="font-heading hidden text-xl font-bold tracking-tight sm:block">
               BOB Solar
             </span>
           </div>
@@ -32,14 +33,18 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-10 w-10 rounded-full"
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-solar" />
+              <span className="bg-solar absolute top-2.5 right-2.5 h-2 w-2 rounded-full" />
             </Button>
-            
+
             <ThemeToggle />
-            
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border-2 border-white/10 overflow-hidden">
+
+            <div className="bg-muted flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-white/10">
               <User className="h-6 w-6" />
             </div>
           </div>
@@ -48,7 +53,7 @@ export default async function DashboardLayout({
 
       {/* Main Content */}
       <main className="container mx-auto max-w-7xl px-4 py-8 pb-32">
-        {children}
+        <RouteTransition>{children}</RouteTransition>
       </main>
 
       {/* Bottom Dock */}

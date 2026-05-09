@@ -8,6 +8,7 @@
 ## 4.1 Dashboard — "Energy Flow Canvas"
 
 ### 4.1.1 Dashboard Data Server Actions
+
 - [ ] `getDashboardStats()`:
   - [ ] Total revenue (sum of completed projects' actualTotal)
   - [ ] Active projects count (by status)
@@ -32,18 +33,21 @@
   - [ ] Next 5 warranty/maintenance alerts due
 
 ### 4.1.2 TanStack Query Hooks
+
 - [ ] `useDashboardStats()` — queryKey: `['dashboard', 'stats']`, stale: 60s
 - [ ] `useDashboardPipeline()` — queryKey: `['dashboard', 'pipeline']`, stale: 60s
 - [ ] `useRecentActivity()` — queryKey: `['dashboard', 'activity']`, stale: 30s
 - [ ] `useUpcomingAlerts()` — queryKey: `['dashboard', 'alerts']`, stale: 60s
 
 ### 4.1.3 Dashboard Page (`src/app/(dashboard)/page.tsx`)
+
 - [ ] Page title: "Dashboard" (no generic subtitle)
 - [ ] Greeting: "Good morning, {userName}" with time-based greeting
 - [ ] Layout: CSS Grid, responsive (1 col mobile → 2 col tablet → 3 col desktop)
 - [ ] All sections animate in with staggered fade-up
 
 ### 4.1.4 Solar System Metrics (`src/components/dashboard/sun-gauge.tsx`)
+
 - [ ] **Central visualization — "Solar Orbit":**
   - [ ] Animated SVG with central glowing sun
   - [ ] 4 orbiting "planets" representing key metrics:
@@ -63,6 +67,7 @@
   - [ ] Trend indicator arrow (↑ green / ↓ red) vs last period
 
 ### 4.1.5 Energy Flow Pipeline (`src/components/dashboard/energy-flow.tsx`)
+
 - [ ] **Sankey-style flow diagram:**
   - [ ] Horizontal flow: Customers → Quotations → Projects → Completed
   - [ ] Each node shows count + total MMK value
@@ -77,6 +82,7 @@
 - [ ] Fallback: if too complex, use a horizontal stepper with connected progress bars
 
 ### 4.1.6 Activity Stream (`src/components/dashboard/activity-stream.tsx`)
+
 - [ ] **Timeline layout:**
   - [ ] Vertical line with dots at each event
   - [ ] Each event card:
@@ -89,6 +95,7 @@
 - [ ] Auto-refresh every 30s
 
 ### 4.1.7 Quick Actions Panel
+
 - [ ] Floating card section:
   - [ ] 3 glowing action cards:
     - [ ] ➕ "New Quote" → `/quotations/new`
@@ -99,6 +106,7 @@
   - [ ] Solar gradient border on hover
 
 ### 4.1.8 Upcoming Alerts Widget
+
 - [ ] Compact card listing next 5 warranty/maintenance alerts
 - [ ] Each item: project number, alert type icon, due date, urgency color
 - [ ] "View All" link → `/warranty`
@@ -109,6 +117,7 @@
 ## 4.2 Notification System
 
 ### 4.2.1 Notification Server Actions (`src/actions/notification-actions.ts`)
+
 - [ ] `getNotifications(userId, filters?)`:
   - [ ] Filter: unread, all
   - [ ] Order by created_at DESC
@@ -128,6 +137,7 @@
   - [ ] Optional `link` for deep navigation
 
 ### 4.2.2 Notification Triggers (integrate into existing actions)
+
 - [ ] **Quotation accepted** → notify all users
 - [ ] **Project cost exceeds budget by >10%** → notify admin
 - [ ] **Project marked completed** → notify all users
@@ -140,6 +150,7 @@
   - [ ] Check overdue warranty alerts → create notifications
 
 ### 4.2.3 Notification Store (`src/stores/notification-store.ts`)
+
 - [ ] Zustand store:
   - [ ] `unreadCount: number`
   - [ ] `isOpen: boolean` (notification panel)
@@ -148,6 +159,7 @@
   - [ ] `decrementUnread()`
 
 ### 4.2.4 TanStack Query Hooks (`src/hooks/use-notifications.ts`)
+
 - [ ] `useNotifications()` — queryKey: `['notifications']`, stale: 15s
 - [ ] `useUnreadCount()` — queryKey: `['notifications', 'unread']`, stale: 15s, refetchInterval: 30s
 - [ ] `useMarkAsRead()` — mutation + optimistic (decrement count)
@@ -155,6 +167,7 @@
 - [ ] `useDeleteNotification()` — mutation
 
 ### 4.2.5 Notification Bell (`src/components/shared/notification-bell.tsx`)
+
 - [ ] Bell icon in top bar
 - [ ] Unread count badge:
   - [ ] Red circle with white number
@@ -165,6 +178,7 @@
 - [ ] Click → toggles notification panel
 
 ### 4.2.6 Notification Panel
+
 - [ ] **Slide-in panel** from right (desktop) or bottom sheet (mobile)
 - [ ] Header: "Notifications" + "Mark all as read" button
 - [ ] **Notification list:**
@@ -181,6 +195,7 @@
 - [ ] Close on backdrop click or Escape
 
 ### 4.2.7 Notification Toast (`src/components/shared/notification-toast.tsx`)
+
 - [ ] Use Sonner for toast notifications
 - [ ] Style toasts to match Solar Flow:
   - [ ] Custom toast component with type-specific icon + color
@@ -197,12 +212,14 @@
 ## 4.3 Settings Page
 
 ### 4.3.1 Settings Page (`src/app/(dashboard)/settings/page.tsx`)
+
 - [ ] **Tabs:**
   - [ ] Company Info
   - [ ] User Management
   - [ ] Preferences
 
 ### 4.3.2 Company Info Tab
+
 - [ ] **Company Logo:**
   - [ ] Current logo preview (or placeholder)
   - [ ] Upload button → Vercel Blob upload flow
@@ -221,6 +238,7 @@
 - [ ] React Hook Form + Zod validation
 
 ### 4.3.3 User Management Tab (Admin only)
+
 - [ ] **User list:**
   - [ ] Show all 3 users: name, email, role badge
   - [ ] Edit button per user
@@ -235,6 +253,7 @@
 - [ ] Non-admin users: only see own profile, can change own password
 
 ### 4.3.4 Preferences Tab
+
 - [ ] **Theme:** Light / Dark / System toggle (visual selector)
 - [ ] **Default tax %** for new quotations
 - [ ] **Default warranty alert durations** (months)
@@ -243,6 +262,7 @@
 ---
 
 ## Part 4 Completion Criteria
+
 - [ ] Dashboard loads with all visualizations
 - [ ] Solar orbit / radial metrics display real data with animations
 - [ ] Energy flow pipeline shows business pipeline accurately

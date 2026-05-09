@@ -8,6 +8,7 @@
 ## 5.1 Error Handling & Resilience
 
 ### 5.1.1 Error Boundaries
+
 - [ ] Create `src/app/error.tsx` — root error boundary
   - [ ] Solar-themed error illustration
   - [ ] "Something went wrong" message
@@ -26,6 +27,7 @@
 - [ ] Test: "Try Again" button recovers correctly
 
 ### 5.1.2 Loading States
+
 - [ ] Create `src/app/(dashboard)/loading.tsx` — dashboard skeleton
 - [ ] Create per-page loading states:
   - [ ] `src/app/(dashboard)/quotations/loading.tsx` — skeleton card list
@@ -40,6 +42,7 @@
 - [ ] Verify: no layout shift between skeleton and loaded content (CLS = 0)
 
 ### 5.1.3 Global Error Handling
+
 - [ ] Create TanStack Query error handler:
   - [ ] Default `onError`: show error toast
   - [ ] Network error: show "Connection lost" toast with retry button
@@ -56,6 +59,7 @@
 ## 5.2 SEO & Metadata
 
 ### 5.2.1 Root Metadata (`src/app/layout.tsx`)
+
 - [ ] Title template: `%s | BOB Solar`
 - [ ] Default title: `BOB Solar — Solar Installation Management`
 - [ ] Description: `Professional solar installation management for BOB Solar`
@@ -64,6 +68,7 @@
 - [ ] Icons: reference PWA icons
 
 ### 5.2.2 Per-Page Metadata
+
 - [ ] Dashboard: `title: "Dashboard"`
 - [ ] Quotations: `title: "Quotations"`
 - [ ] Projects: `title: "Projects"`
@@ -74,6 +79,7 @@
 - [ ] Login: `title: "Sign In"`
 
 ### 5.2.3 Semantic HTML Audit
+
 - [ ] Each page has exactly one `<h1>`
 - [ ] Proper heading hierarchy (h1 → h2 → h3)
 - [ ] Interactive elements have unique `id` attributes
@@ -88,6 +94,7 @@
 ## 5.3 Performance Optimization
 
 ### 5.3.1 Bundle Analysis
+
 - [ ] Run bundle analyzer: `ANALYZE=true pnpm build`
 - [ ] Identify large dependencies:
   - [ ] Framer Motion: verify tree-shaking, use `LazyMotion`
@@ -99,12 +106,14 @@
   - [ ] PDF components NOT included in main bundle
 
 ### 5.3.2 Image Optimization
+
 - [ ] All static images use `next/image` with proper sizing
 - [ ] PWA icons optimized (PNG, compressed)
 - [ ] Company logo: served from Vercel Blob with appropriate caching headers
 - [ ] Lazy load images below the fold
 
 ### 5.3.3 Caching Strategy
+
 - [ ] TanStack Query stale times reviewed:
   - [ ] Dashboard stats: 60s
   - [ ] Lists (quotes, projects, customers): 30s
@@ -117,6 +126,7 @@
   - [ ] `use cache` directive for appropriate Server Components
 
 ### 5.3.4 Core Web Vitals Targets
+
 - [ ] **LCP** (Largest Contentful Paint): < 2.5s
   - [ ] Verify: dashboard loads within target
   - [ ] Optimize: prioritize above-fold content
@@ -128,6 +138,7 @@
   - [ ] Optimize: skeleton dimensions match content
 
 ### 5.3.5 Lighthouse Audit
+
 - [ ] Run Lighthouse on all key pages:
   - [ ] Login page: target 95+ all categories
   - [ ] Dashboard: target 90+ all categories
@@ -141,6 +152,7 @@
 ## 5.4 Responsive Testing
 
 ### 5.4.1 Breakpoint Testing
+
 - [ ] **Mobile (375px — iPhone SE):**
   - [ ] Bottom nav visible and functional
   - [ ] All content readable without horizontal scroll
@@ -162,6 +174,7 @@
   - [ ] Comfortable reading width maintained
 
 ### 5.4.2 Touch Interaction Testing
+
 - [ ] All tap targets ≥ 44x44px on mobile
 - [ ] Swipe gestures don't conflict with navigation
 - [ ] Drag-and-drop works on touch devices (quote builder)
@@ -172,6 +185,7 @@
 ## 5.5 CI/CD Pipeline
 
 ### 5.5.1 GitHub Repository Setup
+
 - [ ] Initialize git: `git init`
 - [ ] Create `.gitignore`:
   - [ ] `node_modules/`, `.next/`, `.vercel/`, `.env.local`, `public/sw.js`
@@ -181,6 +195,7 @@
 - [ ] Set up branch protection on `main` (optional for 3 users)
 
 ### 5.5.2 Vercel Project Setup
+
 - [ ] Sign up for Vercel (Hobby plan — free, non-commercial)
 - [ ] Import GitHub repository in Vercel dashboard
 - [ ] Framework auto-detected as Next.js
@@ -194,11 +209,13 @@
 - [ ] Verify deployment URL is accessible
 
 ### 5.5.3 Preview Deployments (Automatic)
+
 - [ ] Vercel auto-creates preview URLs for every PR
 - [ ] Verify: create a test PR → preview URL generated
 - [ ] Preview uses same environment variables (or set separate preview env vars)
 
 ### 5.5.4 Optional: vercel.json
+
 - [ ] Create `vercel.json` (only if custom config needed):
   ```json
   {
@@ -212,6 +229,7 @@
 ## 5.6 Vercel Production Setup
 
 ### 5.6.1 Vercel Configuration
+
 - [ ] **Vercel Blob:**
   - [ ] Create Blob store in Vercel dashboard
   - [ ] Copy `BLOB_READ_WRITE_TOKEN` to environment variables
@@ -222,6 +240,7 @@
   - [ ] `SESSION_SECRET` — cookie signing secret
 
 ### 5.6.2 Custom Domain (Optional)
+
 - [ ] If using custom domain (e.g., `app.bobsolar.com`):
   - [ ] Add domain in Vercel dashboard
   - [ ] Update DNS records (CNAME to `cname.vercel-dns.com`)
@@ -229,6 +248,7 @@
 - [ ] If no custom domain: use `bobsolar.vercel.app`
 
 ### 5.6.3 Database Migration (Production)
+
 - [ ] Run Drizzle migrations against production Neon DB:
   - [ ] `pnpm drizzle-kit push` (or `drizzle-kit migrate`)
 - [ ] Verify all tables created
@@ -238,6 +258,7 @@
   - [ ] Seed initial inventory items
 
 ### 5.6.4 First Deployment
+
 - [ ] Push to `main` — Vercel auto-builds and deploys
 - [ ] Verify deployment URL is accessible
 - [ ] Verify login works
@@ -251,6 +272,7 @@
 ## 5.7 Post-Deployment Verification Checklist
 
 ### 5.7.1 Functional Smoke Test
+
 - [ ] **Auth:**
   - [ ] Login with admin credentials ✓
   - [ ] Navigate all pages as authenticated user ✓
@@ -304,6 +326,7 @@
   - [ ] Offline shell loads ✓
 
 ### 5.7.2 Cross-Browser Testing
+
 - [ ] Chrome (latest) — all features ✓
 - [ ] Firefox (latest) — all features ✓
 - [ ] Safari (latest) — all features ✓
@@ -311,6 +334,7 @@
 - [ ] Mobile Safari (iOS) — responsive ✓
 
 ### 5.7.3 Performance Verification (Production)
+
 - [ ] Lighthouse scores on production URL:
   - [ ] Performance: ≥ 90
   - [ ] Accessibility: ≥ 95
@@ -326,6 +350,7 @@
 ## 5.8 Documentation
 
 ### 5.8.1 README.md
+
 - [ ] Project overview
 - [ ] Tech stack summary
 - [ ] Getting started (dev setup):
@@ -338,6 +363,7 @@
 - [ ] Folder structure overview
 
 ### 5.8.2 .env.example
+
 - [ ] Create with all required environment variables (values blank)
 - [ ] Comments explaining each variable
 

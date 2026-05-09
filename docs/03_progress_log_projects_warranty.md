@@ -8,6 +8,7 @@
 ## 3.1 Project Validators
 
 ### 3.1.1 Project Validators (`src/lib/validators/project.ts`)
+
 - [ ] `convertToProjectSchema`:
   - [ ] `quotationId` — uuid, required
   - [ ] `siteAddress` — string, optional (defaults from customer address)
@@ -42,6 +43,7 @@
 ## 3.2 Active Projects Management
 
 ### 3.2.1 Server Actions (`src/actions/project-actions.ts`)
+
 - [ ] `convertQuotationToProject(data)`:
   - [ ] Validate quotation status is `accepted`
   - [ ] Generate project number: `PJ-{YEAR}-{SEQ}` (e.g., `PJ-2026-0001`)
@@ -99,6 +101,7 @@
   - [ ] Create notification: "Project {number} completed!"
 
 ### 3.2.2 TanStack Query Hooks (`src/hooks/use-projects.ts`)
+
 - [ ] `useProjects(filters)` — queryKey: `['projects', filters]`, stale: 30s
 - [ ] `useProject(id)` — single with all relations
 - [ ] `useConvertToProject()` — mutation
@@ -109,6 +112,7 @@
 - [ ] `useMarkProjectCompleted()` — mutation
 
 ### 3.2.3 Project List Page (`src/app/(dashboard)/projects/page.tsx`)
+
 - [ ] Page header: "Active Projects" with count
 - [ ] **Status filter pills:**
   - [ ] All Active | Planning | In Progress | On Hold
@@ -131,6 +135,7 @@
 - [ ] Loading skeletons
 
 ### 3.2.4 Project Detail Page (`src/app/(dashboard)/projects/[id]/page.tsx`)
+
 - [ ] **Header:**
   - [ ] Project number + status badge
   - [ ] Customer name (link to customer detail)
@@ -197,6 +202,7 @@
 ## 3.3 Completed Projects & Warranty
 
 ### 3.3.1 Completed Projects Page (`src/app/(dashboard)/projects/completed/page.tsx`)
+
 - [ ] Page header: "Completed Projects" with count
 - [ ] **Search & filter:**
   - [ ] Search by project number, customer name
@@ -217,6 +223,7 @@
 ### 3.3.2 Warranty & Aftersales Alerts
 
 #### Server Actions
+
 - [ ] `getWarrantyAlerts(filters?)`:
   - [ ] Filter: upcoming (next 30 days), overdue, all, resolved
   - [ ] Join project + customer data
@@ -232,6 +239,7 @@
   - [ ] Set `isResolved: false`
 
 #### Warranty Page (`src/app/(dashboard)/warranty/page.tsx`)
+
 - [ ] Page header: "Warranty & Aftersales"
 - [ ] **Alert summary cards (top):**
   - [ ] 🔴 Overdue count
@@ -256,12 +264,14 @@
 ## 3.4 File Upload System (Vercel Blob)
 
 ### 3.4.1 Vercel Blob Configuration
+
 - [ ] Install `@vercel/blob` (already in dependencies)
 - [ ] Obtain `BLOB_READ_WRITE_TOKEN` from Vercel dashboard
 - [ ] Store in `.env.local`: `BLOB_READ_WRITE_TOKEN`
 - [ ] Note: Vercel Blob works locally via the token — no emulation needed
 
 ### 3.4.2 Blob Upload Helpers (`src/lib/storage/blob.ts`)
+
 - [ ] `uploadFile(file: File, folder: string): Promise<string>`:
   - [ ] Upload to Vercel Blob with `put()`
   - [ ] Key pattern: `{folder}/{uuid}-{filename}`
@@ -271,6 +281,7 @@
   - [ ] Delete blob by URL with `del()`
 
 ### 3.4.3 Upload API Route (`src/app/api/upload/route.ts`)
+
 - [ ] POST endpoint — authenticated
 - [ ] Accept `FormData` with `file` and `folder` fields
 - [ ] Validate content type (images only: jpeg, png, webp)
@@ -279,6 +290,7 @@
 - [ ] Return `{ url: string }`
 
 ### 3.4.4 Upload Component (`src/components/shared/file-upload.tsx`)
+
 - [ ] Drag-and-drop zone with visual feedback
 - [ ] Click to browse files
 - [ ] Image preview before upload
@@ -290,6 +302,7 @@
   - [ ] Project photos (future)
 
 ### 3.4.5 Company Logo Upload
+
 - [ ] In Settings page: "Company Logo" section
 - [ ] Upload component instance for logo
 - [ ] On upload success: update `companySettings` table with Blob URL
@@ -301,6 +314,7 @@
 ---
 
 ## Part 3 Completion Criteria
+
 - [ ] Accepted quotation can be converted to a project
 - [ ] Project status transitions work correctly
 - [ ] Extra costs can be added/deleted with real-time total updates

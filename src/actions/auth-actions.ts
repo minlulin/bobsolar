@@ -6,7 +6,11 @@ import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
 import { verifyPassword } from '@/lib/auth/password';
-import { createSession, deleteSession, getSessionFromCookie } from '@/lib/auth/session';
+import {
+  createSession,
+  deleteSession,
+  getSessionFromCookie,
+} from '@/lib/auth/session';
 
 export async function login(data: LoginInput) {
   const result = loginSchema.safeParse(data);

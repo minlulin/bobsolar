@@ -4,18 +4,18 @@
 
 ### Core Decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| **Framework** | Next.js 16.2+ (App Router) | RSC, Server Actions, PPR, Turbopack |
-| **Runtime** | Vercel Functions (Node.js + Edge) | Native Next.js platform, zero config |
-| **Database** | Neon PostgreSQL (serverless driver) | Real Postgres, free tier, auto-scaling |
-| **ORM** | Drizzle ORM (`pg` dialect) | Type-safe, lightweight, serverless-compatible |
-| **Auth** | Custom session-based (DB-backed) | Simple, no third-party dependency |
-| **Storage** | Vercel Blob | File uploads, company logos (1GB free) |
-| **PDF** | `@react-pdf/renderer` via Route Handler | Server-side generation with Node.js runtime |
-| **PWA** | Serwist (`@serwist/next`) | Modern, maintained, Next.js native |
-| **Package Manager** | pnpm | Fast, strict, disk-efficient |
-| **TypeScript** | 6.0 (latest stable, strict mode) | TS 5.9 is outdated; 6.0 is current |
+| Decision            | Choice                                  | Rationale                                     |
+| ------------------- | --------------------------------------- | --------------------------------------------- |
+| **Framework**       | Next.js 16.2+ (App Router)              | RSC, Server Actions, PPR, Turbopack           |
+| **Runtime**         | Vercel Functions (Node.js + Edge)       | Native Next.js platform, zero config          |
+| **Database**        | Neon PostgreSQL (serverless driver)     | Real Postgres, free tier, auto-scaling        |
+| **ORM**             | Drizzle ORM (`pg` dialect)              | Type-safe, lightweight, serverless-compatible |
+| **Auth**            | Custom session-based (DB-backed)        | Simple, no third-party dependency             |
+| **Storage**         | Vercel Blob                             | File uploads, company logos (1GB free)        |
+| **PDF**             | `@react-pdf/renderer` via Route Handler | Server-side generation with Node.js runtime   |
+| **PWA**             | Serwist (`@serwist/next`)               | Modern, maintained, Next.js native            |
+| **Package Manager** | pnpm                                    | Fast, strict, disk-efficient                  |
+| **TypeScript**      | 6.0 (latest stable, strict mode)        | TS 5.9 is outdated; 6.0 is current            |
 
 > [!IMPORTANT]
 > **Deployment target: Vercel (Hobby plan, $0/month).** Vercel is the native Next.js platform,
@@ -330,18 +330,18 @@ erDiagram
 
 ### Color Palette
 
-| Token | Light Mode | Dark Mode (Spotify-inspired) |
-|---|---|---|
-| `--bg-primary` | `#FAFAF8` warm white | `#121212` true dark |
-| `--bg-surface` | `#FFFFFF` | `#181818` |
-| `--bg-elevated` | `#F5F3EF` | `#282828` |
-| `--accent-solar` | `#F59E0B` amber | `#FBBF24` bright amber |
-| `--accent-energy` | `#10B981` emerald | `#34D399` mint |
-| `--accent-flow` | `#6366F1` indigo | `#818CF8` soft indigo |
-| `--text-primary` | `#1A1A1A` | `#EDEDED` |
-| `--text-secondary` | `#6B7280` | `#A1A1A1` |
-| `--gradient-solar` | `amber-400 → orange-500` | `amber-300 → orange-400` |
-| `--gradient-energy` | `emerald-400 → teal-500` | `emerald-300 → teal-400` |
+| Token               | Light Mode               | Dark Mode (Spotify-inspired) |
+| ------------------- | ------------------------ | ---------------------------- |
+| `--bg-primary`      | `#FAFAF8` warm white     | `#121212` true dark          |
+| `--bg-surface`      | `#FFFFFF`                | `#181818`                    |
+| `--bg-elevated`     | `#F5F3EF`                | `#282828`                    |
+| `--accent-solar`    | `#F59E0B` amber          | `#FBBF24` bright amber       |
+| `--accent-energy`   | `#10B981` emerald        | `#34D399` mint               |
+| `--accent-flow`     | `#6366F1` indigo         | `#818CF8` soft indigo        |
+| `--text-primary`    | `#1A1A1A`                | `#EDEDED`                    |
+| `--text-secondary`  | `#6B7280`                | `#A1A1A1`                    |
+| `--gradient-solar`  | `amber-400 → orange-500` | `amber-300 → orange-400`     |
+| `--gradient-energy` | `emerald-400 → teal-500` | `emerald-300 → teal-400`     |
 
 ### Typography
 
@@ -360,6 +360,7 @@ Instead of a traditional left sidebar, use a **bottom dock + floating command ba
 ### Key Screen Designs
 
 #### Dashboard — "Energy Flow Canvas"
+
 - **NOT** generic stat cards. Instead:
   - **Animated Solar System visualization** — a central sun with orbiting planets representing key metrics (revenue, active projects, pending quotes, warranty alerts). Each planet's size = relative value. Click to drill down.
   - **Energy Flow Sankey-style diagram** — shows pipeline: Leads → Quotes → Projects → Completed. Animated particles flow through the paths.
@@ -367,18 +368,21 @@ Instead of a traditional left sidebar, use a **bottom dock + floating command ba
   - **Quick Actions** floating panel — "New Quote", "Add Customer", styled as glowing cards.
 
 #### Quotation Builder
+
 - **Split-pane layout:** Left = line items editor (drag-to-reorder), Right = live PDF-like preview
 - Items auto-pull from Inventory (with search-as-you-type)
 - Running total with tax/discount calculations update in real-time
 - Status transitions with smooth morph animations
 
 #### Project Detail
+
 - **Horizontal timeline** at top showing project phases
 - **Tab panels** below: Overview, Costs, Remarks, Warranty
 - Cost tracker with bar chart showing quoted vs actual
 - Add cost/remark via slide-up sheet (mobile) or modal (desktop)
 
 #### Inventory / Price Management
+
 - **Card grid** with category filters (pill tabs)
 - Inline editing with optimistic updates
 - Stock level indicators with color-coded badges
@@ -386,16 +390,16 @@ Instead of a traditional left sidebar, use a **bottom dock + floating command ba
 
 ### Micro-Interactions & Animations (Framer Motion)
 
-| Interaction | Animation |
-|---|---|
-| Page transitions | Shared layout + crossfade (300ms) |
-| List items appear | Staggered fade-up (50ms delay each) |
-| Status changes | Morph pill color + icon swap |
-| Navigation active | Glow pulse on active dock item |
-| Notifications | Slide-in from top-right + fade |
-| Card hover | Subtle lift (translateY -2px) + shadow grow |
-| Dashboard metrics | Number count-up on mount |
-| Delete actions | Scale-down + fade-out |
+| Interaction       | Animation                                   |
+| ----------------- | ------------------------------------------- |
+| Page transitions  | Shared layout + crossfade (300ms)           |
+| List items appear | Staggered fade-up (50ms delay each)         |
+| Status changes    | Morph pill color + icon swap                |
+| Navigation active | Glow pulse on active dock item              |
+| Notifications     | Slide-in from top-right + fade              |
+| Card hover        | Subtle lift (translateY -2px) + shadow grow |
+| Dashboard metrics | Number count-up on mount                    |
+| Delete actions    | Scale-down + fade-out                       |
 
 ---
 
@@ -409,12 +413,12 @@ graph LR
     G["URL State"] --> H["Next.js searchParams"]
 ```
 
-| Layer | Tool | What It Manages |
-|---|---|---|
-| **Server state** | TanStack Query v5 | All DB data — quotations, projects, customers, inventory. Caching, refetching, optimistic updates. |
-| **UI state** | Zustand | Theme preference, notification panel open/closed, modal states, command bar visibility |
-| **Form state** | React Hook Form + Zod | All forms — quote builder, customer forms, cost entry. Zod for runtime validation matching DB schema. |
-| **URL state** | `searchParams` | Filters, pagination, active tabs — shareable & bookmarkable |
+| Layer            | Tool                  | What It Manages                                                                                       |
+| ---------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Server state** | TanStack Query v5     | All DB data — quotations, projects, customers, inventory. Caching, refetching, optimistic updates.    |
+| **UI state**     | Zustand               | Theme preference, notification panel open/closed, modal states, command bar visibility                |
+| **Form state**   | React Hook Form + Zod | All forms — quote builder, customer forms, cost entry. Zod for runtime validation matching DB schema. |
+| **URL state**    | `searchParams`        | Filters, pagination, active tabs — shareable & bookmarkable                                           |
 
 ### Key Patterns
 
@@ -464,7 +468,7 @@ function calculateQuotation(input: {
   discountAmount: number;
   taxAmount: number;
   total: number;
-}
+};
 ```
 
 - **Single source of truth:** `INVENTORY_ITEMS.unit_price` is canonical
@@ -506,6 +510,7 @@ graph LR
 ### CI/CD Pipeline
 
 Vercel provides built-in CI/CD:
+
 - **Production:** Auto-deploys on push to `main`
 - **Preview:** Auto-deploys on every PR with unique URL
 - **Checks:** Add `pnpm typecheck && pnpm lint` as build command prefix
@@ -520,16 +525,17 @@ Vercel provides built-in CI/CD:
 
 ### Environments
 
-| Environment | Trigger | Database |
-|---|---|---|
-| **Preview** | PR push | Neon branch (auto) |
-| **Production** | `main` merge | Neon main branch |
+| Environment    | Trigger      | Database           |
+| -------------- | ------------ | ------------------ |
+| **Preview**    | PR push      | Neon branch (auto) |
+| **Production** | `main` merge | Neon main branch   |
 
 ---
 
 ## 8. Feature Breakdown & Priority
 
 ### Phase 1 — Foundation (Week 1-2)
+
 - [x] Project scaffolding (Next.js 16, Tailwind, shadcn/ui)
 - [ ] Design system tokens (colors, typography, spacing)
 - [ ] Database schema + Drizzle setup + migrations
@@ -539,6 +545,7 @@ Vercel provides built-in CI/CD:
 - [ ] PWA setup (Serwist, manifest, icons)
 
 ### Phase 2 — Core Features (Week 3-5)
+
 - [ ] **Inventory/Price Management** ← build first (dependency for quotes)
   - CRUD, category filters, inline edit, stock tracking
 - [ ] **Customer Management**
@@ -550,6 +557,7 @@ Vercel provides built-in CI/CD:
   - Auto-numbering (QT-2026-XXXX)
 
 ### Phase 3 — Projects & Lifecycle (Week 6-7)
+
 - [ ] **Active Projects**
   - Convert accepted quote → project
   - Timeline view, status management
@@ -561,6 +569,7 @@ Vercel provides built-in CI/CD:
   - Aftersales service reminders
 
 ### Phase 4 — Dashboard & Polish (Week 8-9)
+
 - [ ] **Dashboard visualization**
   - Solar system metrics visualization
   - Energy flow pipeline diagram
@@ -573,6 +582,7 @@ Vercel provides built-in CI/CD:
 - [ ] Vercel Blob upload (project photos, company logo)
 
 ### Phase 5 — Production Hardening (Week 10)
+
 - [ ] Error boundaries & fallback UI
 - [ ] Loading skeletons for all pages
 - [ ] SEO metadata
@@ -584,39 +594,39 @@ Vercel provides built-in CI/CD:
 
 ## 9. Potential Challenges & Solutions
 
-| Challenge | Risk | Solution |
-|---|---|---|
-| **Floating point in pricing** | Medium — rounding errors | Use integer math with `Math.round()` — MMK has no decimals |
-| **Large PDF generation** | Medium — memory/timeout | Stream response via `renderToStream()`, limit line items per page |
-| **Framer Motion bundle size** | Medium — client JS bloat | Tree-shake, lazy load heavy animations, use `LazyMotion` |
-| **Offline PWA with dynamic data** | Medium — stale data UX | Cache shell + show "offline" banner; sync on reconnect |
-| **Vercel cold starts** | Low — first-request latency | ~250ms cold start, acceptable for 3 users |
-| **Neon cold starts** | Low — DB compute wake | Neon wakes in ~500ms from suspended state; minimal impact |
-| **shadcn/ui heavy customization** | Low — maintenance burden | Use CSS variables only; never modify component source |
+| Challenge                         | Risk                        | Solution                                                          |
+| --------------------------------- | --------------------------- | ----------------------------------------------------------------- |
+| **Floating point in pricing**     | Medium — rounding errors    | Use integer math with `Math.round()` — MMK has no decimals        |
+| **Large PDF generation**          | Medium — memory/timeout     | Stream response via `renderToStream()`, limit line items per page |
+| **Framer Motion bundle size**     | Medium — client JS bloat    | Tree-shake, lazy load heavy animations, use `LazyMotion`          |
+| **Offline PWA with dynamic data** | Medium — stale data UX      | Cache shell + show "offline" banner; sync on reconnect            |
+| **Vercel cold starts**            | Low — first-request latency | ~250ms cold start, acceptable for 3 users                         |
+| **Neon cold starts**              | Low — DB compute wake       | Neon wakes in ~500ms from suspended state; minimal impact         |
+| **shadcn/ui heavy customization** | Low — maintenance burden    | Use CSS variables only; never modify component source             |
 
 ---
 
 ## Resolved Questions
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | Multi-user / Multi-tenant? | **Single company (BOB Solar), 3 users only** — no multi-tenant needed |
-| 2 | Authentication scope? | **Simple email/password login** — gift project, not commercial |
-| 3 | Notification delivery? | **In-app notifications only** — no email/SMS |
-| 4 | Currency & Locale? | **MMK (Myanmar Kyat) only** — no multi-currency |
-| 5 | Existing data? | **Fresh start** — no migration needed |
+| #   | Question                   | Answer                                                                |
+| --- | -------------------------- | --------------------------------------------------------------------- |
+| 1   | Multi-user / Multi-tenant? | **Single company (BOB Solar), 3 users only** — no multi-tenant needed |
+| 2   | Authentication scope?      | **Simple email/password login** — gift project, not commercial        |
+| 3   | Notification delivery?     | **In-app notifications only** — no email/SMS                          |
+| 4   | Currency & Locale?         | **MMK (Myanmar Kyat) only** — no multi-currency                       |
+| 5   | Existing data?             | **Fresh start** — no migration needed                                 |
 
 ---
 
 ## Zero-Cost Infrastructure Analysis ✅
 
-| Service | Free Tier | BOB Solar Usage (3 users) | Verdict |
-|---|---|---|---|
-| **Neon PostgreSQL** | 0.5 GB storage, 100 CU-hours/month | ~50MB data, ~10 CU-hours/month | ✅ More than enough |
-| **Vercel Hobby** | 100 GB bandwidth, 100 GB-hrs functions | ~1 GB bandwidth, ~2 GB-hrs/month | ✅ More than enough |
-| **Vercel Blob** | 1 GB storage | ~100MB photos/logos | ✅ More than enough |
-| **Vercel Image Optimization** | 5,000 transforms/month | ~500/month | ✅ More than enough |
-| **GitHub** | Unlimited private repos | Source control | ✅ Free |
+| Service                       | Free Tier                              | BOB Solar Usage (3 users)        | Verdict             |
+| ----------------------------- | -------------------------------------- | -------------------------------- | ------------------- |
+| **Neon PostgreSQL**           | 0.5 GB storage, 100 CU-hours/month     | ~50MB data, ~10 CU-hours/month   | ✅ More than enough |
+| **Vercel Hobby**              | 100 GB bandwidth, 100 GB-hrs functions | ~1 GB bandwidth, ~2 GB-hrs/month | ✅ More than enough |
+| **Vercel Blob**               | 1 GB storage                           | ~100MB photos/logos              | ✅ More than enough |
+| **Vercel Image Optimization** | 5,000 transforms/month                 | ~500/month                       | ✅ More than enough |
+| **GitHub**                    | Unlimited private repos                | Source control                   | ✅ Free             |
 
 > [!TIP]
 > **Total monthly cost: $0.00** — All free tiers are more than sufficient for 3 users.
@@ -628,12 +638,14 @@ Vercel provides built-in CI/CD:
 ## Verification Plan
 
 ### Automated
+
 - `pnpm typecheck` — zero errors in strict mode
 - `pnpm lint` — ESLint with Next.js recommended rules
 - `pnpm build` — successful Turbopack production build
 - Browser testing — verify all CRUD flows, PDF generation, theme switching
 
 ### Manual
+
 - Responsive testing across mobile/tablet/desktop breakpoints
 - PWA install flow on Chrome & Safari
 - Lighthouse audit targeting 90+ on all metrics

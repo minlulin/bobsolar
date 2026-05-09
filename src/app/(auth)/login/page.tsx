@@ -50,7 +50,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
+    <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
       {/* Animated Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,#F59E0B20,transparent_50%)]" />
@@ -62,7 +62,7 @@ export default function LoginPage() {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
           className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-amber-500/10 blur-[100px]"
         />
@@ -74,10 +74,10 @@ export default function LoginPage() {
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
             delay: 1,
           }}
-          className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] rounded-full bg-emerald-500/10 blur-[100px]"
+          className="absolute -right-[10%] -bottom-[10%] h-[40%] w-[40%] rounded-full bg-emerald-500/10 blur-[100px]"
         />
       </div>
 
@@ -90,16 +90,20 @@ export default function LoginPage() {
         <Card className="glass border-none shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-solar shadow-solar">
+              <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center rounded-2xl">
                 <Sun className="h-10 w-10 text-white" />
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  transition={{
+                    duration: 20,
+                    repeat: Infinity,
+                    ease: 'linear',
+                  }}
                   className="absolute inset-0 rounded-2xl border-2 border-white/20"
                 />
               </div>
             </div>
-            <CardTitle className="text-3xl font-heading font-bold tracking-tight">
+            <CardTitle className="font-heading text-3xl font-bold tracking-tight">
               BOB Solar
             </CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -119,7 +123,9 @@ export default function LoginPage() {
                   className={errors.email ? 'border-destructive' : ''}
                 />
                 {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                  <p className="text-destructive text-xs">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -134,13 +140,15 @@ export default function LoginPage() {
                   className={errors.password ? 'border-destructive' : ''}
                 />
                 {errors.password && (
-                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                  <p className="text-destructive text-xs">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-solar shadow-solar hover:opacity-90 transition-all active:scale-95 h-11 text-base font-medium text-white"
+                className="bg-solar shadow-solar h-11 w-full text-base font-medium text-white transition-all hover:opacity-90 active:scale-95"
               >
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -151,8 +159,8 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-        
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+
+        <p className="text-muted-foreground mt-8 text-center text-sm">
           © 2026 BOB Solar. All rights reserved.
         </p>
       </motion.div>

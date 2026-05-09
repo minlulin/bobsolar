@@ -1,0 +1,208 @@
+'use server';
+
+import { db } from '@/lib/db';
+import { inventoryItems, type InventoryItem } from '@/lib/db/schema';
+import {
+  createInventoryItemSchema,
+  updateInventoryItemSchema,
+  type InventoryFilter,
+} from '@/lib/validators/inventory';
+import { requireAuth, requireAdmin } from '@/lib/auth/validate';
+import { eq, and, ilike, or, asc, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+
+export type ActionResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+export async function getInventoryItems(
+  filters: InventoryFilter = {},
+): Promise<ActionResponse<{ items: InventoryItem[]; total: number }>> {
+  try {
+    await requireAuth();
+
+    const { category, search, isActive = true } = filters;
+
+    const where = and(
+      isActive !== null ? eq(inventoryItems.isActive, isActive!) : undefined,
+      category ? eq(inventoryItems.category, category) : undefined,
+      search
+        ? or(
+            ilike(inventoryItems.name, `%${search}%`),
+            ilike(inventoryItems.brand, `%${search}%`),
+            ilike(inventoryItems.modelNumber, `%${search}%`),
+          )
+        : undefined,
+    );
+
+    const items = await db.query.inventoryItems.findMany({
+      where,
+      orderBy: [asc(inventoryItems.name)],
+    });
+
+    const total = items.length;
+
+    return { success: true, data: { items, total } };
+  } catch {
+    return { success: false, error: 'Failed to fetch inventory items' };
+  }
+}
+
+export async function getInventoryItem(
+  id: string,
+): Promise<ActionResponse<InventoryItem>> {
+  try {
+    await requireAuth();
+
+    const item = await db.query.inventoryItems.findFirst({
+      where: eq(inventoryItems.id, id),
+    });
+
+    if (!item) {
+      return { success: false, error: 'Item not found' };
+    }
+
+    return { success: true, data: item };
+  } catch {
+    return { success: false, error: 'Failed to fetch inventory item' };
+  }
+}
+
+export async function createInventoryItem(
+  raw: unknown,
+): Promise<ActionResponse<InventoryItem>> {
+  try {
+    await requireAdmin();
+
+    const validated = createInventoryItemSchema.parse(raw);
+
+    const [item] = await db
+      .insert(inventoryItems)
+      .values({
+        ...validated,
+        unitPrice: validated.unitPrice.toString(),
+      })
+      .returning();
+
+    if (!item) {
+      return { success: false, error: 'Failed to create inventory item' };
+    }
+
+    revalidatePath('/inventory');
+    return { success: true, data: item };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || 'Validation failed',
+      };
+    }
+    return { success: false, error: 'Failed to create inventory item' };
+  }
+}
+
+export async function updateInventoryItem(
+  id: string,
+  raw: unknown,
+): Promise<ActionResponse<InventoryItem>> {
+  try {
+    await requireAdmin();
+
+    const validated = updateInventoryItemSchema.parse({
+      ...(raw as Record<string, unknown>),
+      id,
+    });
+
+    const [item] = await db
+      .update(inventoryItems)
+      .set({
+        ...validated,
+        unitPrice: validated.unitPrice
+          ? validated.unitPrice.toString()
+          : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(inventoryItems.id, id))
+      .returning();
+
+    if (!item) {
+      return { success: false, error: 'Item not found or failed to update' };
+    }
+
+    revalidatePath('/inventory');
+    return { success: true, data: item };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || 'Validation failed',
+      };
+    }
+    return { success: false, error: 'Failed to update inventory item' };
+  }
+}
+
+export async function deleteInventoryItem(
+  id: string,
+): Promise<ActionResponse<void>> {
+  try {
+    await requireAdmin();
+
+    await db
+      .update(inventoryItems)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(inventoryItems.id, id));
+
+    revalidatePath('/inventory');
+    return { success: true, data: undefined };
+  } catch {
+    return { success: false, error: 'Failed to delete inventory item' };
+  }
+}
+
+export async function bulkUpdatePrices(
+  updates: { id: string; unitPrice: number }[],
+): Promise<ActionResponse<void>> {
+  try {
+    await requireAdmin();
+
+    await db.transaction(async (tx) => {
+      for (const update of updates) {
+        await tx
+          .update(inventoryItems)
+          .set({
+            unitPrice: update.unitPrice.toString(),
+            updatedAt: new Date(),
+          })
+          .where(eq(inventoryItems.id, update.id));
+      }
+    });
+
+    revalidatePath('/inventory');
+    return { success: true, data: undefined };
+  } catch {
+    return { success: false, error: 'Failed to bulk update prices' };
+  }
+}
+
+export async function getInventoryCategories(): Promise<
+  ActionResponse<{ category: string; count: number }[]>
+> {
+  try {
+    await requireAuth();
+
+    const results = await db
+      .select({
+        category: inventoryItems.category,
+        count: sql<number>`count(*)`.mapWith(Number),
+      })
+      .from(inventoryItems)
+      .where(eq(inventoryItems.isActive, true))
+      .groupBy(inventoryItems.category);
+
+    return { success: true, data: results };
+  } catch {
+    return { success: false, error: 'Failed to fetch categories' };
+  }
+}

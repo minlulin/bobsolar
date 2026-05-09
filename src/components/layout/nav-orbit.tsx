@@ -19,8 +19,8 @@ export function BottomDock() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 px-4 w-full max-w-lg">
-      <nav className="flex h-16 items-center justify-around gap-1 rounded-2xl border border-white/10 bg-black/80 p-2 backdrop-blur-xl shadow-2xl">
+    <div className="fixed bottom-6 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 px-4">
+      <nav className="flex h-16 items-center justify-around gap-1 rounded-2xl border border-white/10 bg-black/80 p-2 shadow-2xl backdrop-blur-xl">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -34,20 +34,20 @@ export function BottomDock() {
               {isActive && (
                 <motion.div
                   layoutId="dock-active"
-                  className="absolute inset-0 rounded-xl bg-solar/10 shadow-glow-solar"
+                  className="bg-solar/10 shadow-glow-solar absolute inset-0 rounded-xl"
                   transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                 />
               )}
               <Icon
                 className={cn(
-                  "h-5 w-5 transition-colors",
-                  isActive ? "text-solar" : "text-muted-foreground"
+                  'h-5 w-5 transition-colors',
+                  isActive ? 'text-solar' : 'text-muted-foreground',
                 )}
               />
               <span
                 className={cn(
-                  "text-[10px] font-medium transition-colors",
-                  isActive ? "text-solar" : "text-muted-foreground"
+                  'text-[10px] font-medium transition-colors',
+                  isActive ? 'text-solar' : 'text-muted-foreground',
                 )}
               >
                 {item.name}
@@ -55,7 +55,7 @@ export function BottomDock() {
               {isActive && (
                 <motion.div
                   layoutId="dock-dot"
-                  className="absolute -bottom-1 h-1 w-1 rounded-full bg-solar"
+                  className="bg-solar absolute -bottom-1 h-1 w-1 rounded-full"
                 />
               )}
             </Link>

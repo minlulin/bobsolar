@@ -8,188 +8,200 @@
 ## 2.1 Zod Validators (Shared Foundation)
 
 ### 2.1.1 Inventory Validators (`src/lib/validators/inventory.ts`)
-- [ ] `createInventoryItemSchema`:
-  - [ ] `name` — string, min 1, max 200
-  - [ ] `category` — enum (panel, inverter, battery, mounting, cable, accessory, labor)
-  - [ ] `unit` — enum (pcs, meter, set, kWp, job)
-  - [ ] `unitPrice` — number, min 0
-  - [ ] `stockQty` — integer, min 0
-  - [ ] `brand` — string, optional
-  - [ ] `modelNumber` — string, optional
-  - [ ] `isActive` — boolean, default true
-- [ ] `updateInventoryItemSchema` — partial of create, with `id` required
-- [ ] `inventoryFilterSchema` — category filter, search text, isActive
-- [ ] Export inferred types: `CreateInventoryItem`, `UpdateInventoryItem`
+
+- [x] `createInventoryItemSchema`:
+  - [x] `name` — string, min 1, max 200
+  - [x] `category` — enum (panel, inverter, battery, mounting, cable, accessory, labor)
+  - [x] `unit` — enum (pcs, meter, set, kWp, job)
+  - [x] `unitPrice` — number, min 0
+  - [x] `stockQty` — integer, min 0
+  - [x] `brand` — string, optional
+  - [x] `modelNumber` — string, optional
+  - [x] `isActive` — boolean, default true
+- [x] `updateInventoryItemSchema` — partial of create, with `id` required
+- [x] `inventoryFilterSchema` — category filter, search text, isActive
+- [x] Export inferred types: `CreateInventoryItem`, `UpdateInventoryItem`
 
 ### 2.1.2 Customer Validators (`src/lib/validators/customer.ts`)
-- [ ] `createCustomerSchema`:
-  - [ ] `name` — string, min 1, max 200
-  - [ ] `email` — email format, optional
-  - [ ] `phone` — string, min 5, max 20
-  - [ ] `address` — string, optional
-  - [ ] `city` — string, optional
-  - [ ] `notes` — string, optional
-- [ ] `updateCustomerSchema` — partial with `id`
-- [ ] `customerFilterSchema` — search text
-- [ ] Export inferred types
+
+- [x] `createCustomerSchema`:
+  - [x] `name` — string, min 1, max 200
+  - [x] `email` — email format, optional
+  - [x] `phone` — string, min 5, max 20
+  - [x] `address` — string, optional
+  - [x] `city` — string, optional
+  - [x] `notes` — string, optional
+- [x] `updateCustomerSchema` — partial with `id`
+- [x] `customerFilterSchema` — search text
+- [x] Export inferred types
 
 ### 2.1.3 Quotation Validators (`src/lib/validators/quotation.ts`)
-- [ ] `createQuotationSchema`:
-  - [ ] `customerId` — uuid
-  - [ ] `items` — array of:
-    - [ ] `itemId` — uuid
-    - [ ] `description` — string
-    - [ ] `quantity` — number, min 0.01
-    - [ ] `unitPrice` — number, min 0
-    - [ ] `sortOrder` — integer
-  - [ ] `discountPercent` — number, min 0, max 100, default 0
-  - [ ] `taxPercent` — number, min 0, max 100, default 0
-  - [ ] `notes` — string, optional
-  - [ ] `validUntil` — date, optional
-- [ ] `updateQuotationSchema` — partial with `id`
-- [ ] `updateQuotationStatusSchema` — `id` + `status` enum
-- [ ] Export inferred types
+
+- [x] `createQuotationSchema`:
+  - [x] `customerId` — uuid
+  - [x] `items` — array of:
+    - [x] `itemId` — uuid
+    - [x] `description` — string
+    - [x] `quantity` — number, min 0.01
+    - [x] `unitPrice` — number, min 0
+    - [x] `sortOrder` — integer
+  - [x] `discountPercent` — number, min 0, max 100, default 0
+  - [x] `taxPercent` — number, min 0, max 100, default 0
+  - [x] `notes` — string, optional
+  - [x] `validUntil` — date, optional
+- [x] `updateQuotationSchema` — partial with `id`
+- [x] `updateQuotationStatusSchema` — `id` + `status` enum
+- [x] Export inferred types
 
 ---
 
 ## 2.2 Inventory / Price & Stock Management
 
 ### 2.2.1 Server Actions (`src/actions/inventory-actions.ts`)
-- [ ] `getInventoryItems(filters?)` — list with optional category/search filter
-  - [ ] Query with Drizzle `select`, `where`, `orderBy`
-  - [ ] Support pagination: `limit`, `offset`
-  - [ ] Return typed array + total count
-- [ ] `getInventoryItem(id)` — single item by ID
-- [ ] `createInventoryItem(data)` — validate with Zod, insert, return item
-- [ ] `updateInventoryItem(id, data)` — validate, update, return item
-- [ ] `deleteInventoryItem(id)` — soft delete (set `isActive: false`)
-- [ ] `bulkUpdatePrices(items: {id, unitPrice}[])` — batch price update
-- [ ] `getInventoryCategories()` — distinct categories with counts
-- [ ] Error handling: wrap all in try/catch, return typed error responses
+
+- [x] `getInventoryItems(filters?)` — list with optional category/search filter
+  - [x] Query with Drizzle `select`, `where`, `orderBy`
+  - [x] Support pagination: `limit`, `offset`
+  - [x] Return typed array + total count
+- [x] `getInventoryItem(id)` — single item by ID
+- [x] `createInventoryItem(data)` — validate with Zod, insert, return item
+- [x] `updateInventoryItem(id, data)` — validate, update, return item
+- [x] `deleteInventoryItem(id)` — soft delete (set `isActive: false`)
+- [x] `bulkUpdatePrices(items: {id, unitPrice}[])` — batch price update
+- [x] `getInventoryCategories()` — distinct categories with counts
+- [x] Error handling: wrap all in try/catch, return typed error responses
 
 ### 2.2.2 TanStack Query Hooks (`src/hooks/use-inventory.ts`)
-- [ ] `useInventoryItems(filters)` — queryKey: `['inventory', filters]`
-  - [ ] Stale time: 5 minutes
-  - [ ] Keep previous data on filter change
-- [ ] `useInventoryItem(id)` — single item query
-- [ ] `useCreateInventoryItem()` — mutation + invalidate list
-- [ ] `useUpdateInventoryItem()` — mutation + optimistic update
-- [ ] `useDeleteInventoryItem()` — mutation + optimistic removal
-- [ ] `useBulkUpdatePrices()` — mutation + invalidate all
+
+- [x] `useInventoryItems(filters)` — queryKey: `['inventory', filters]`
+  - [x] Stale time: 5 minutes
+  - [x] Keep previous data on filter change
+- [x] `useInventoryItem(id)` — single item query
+- [x] `useCreateInventoryItem()` — mutation + invalidate list
+- [x] `useUpdateInventoryItem()` — mutation + optimistic update
+- [x] `useDeleteInventoryItem()` — mutation + optimistic removal
+- [x] `useBulkUpdatePrices()` — mutation + invalidate all
 
 ### 2.2.3 Inventory Page (`src/app/(dashboard)/inventory/page.tsx`)
-- [ ] Page metadata: title "Inventory — BOB Solar"
-- [ ] **Layout:**
-  - [ ] Page header: "Inventory & Pricing" with item count badge
-  - [ ] "Add Item" button (solar gradient)
-  - [ ] Category filter pills (horizontal scrollable):
-    - [ ] All | Panels | Inverters | Batteries | Mounting | Cables | Accessories | Labor
-    - [ ] Active pill has solar glow indicator
-  - [ ] Search input with debounce (300ms)
-- [ ] **Item Grid / List:**
-  - [ ] Card grid layout (responsive: 1/2/3/4 columns)
-  - [ ] Each card shows:
-    - [ ] Category icon (solar-themed)
-    - [ ] Item name (bold)
-    - [ ] Brand + model (muted text)
-    - [ ] Unit price in MMK (formatted: `1,500,000 MMK`)
-    - [ ] Stock quantity with color-coded badge:
-      - [ ] Green (>10), Yellow (1-10), Red (0)
-    - [ ] Unit type badge (pcs, meter, etc.)
-    - [ ] Edit / Delete action buttons (icon only)
-  - [ ] Cards appear with staggered fade-up animation
-  - [ ] Card hover: subtle lift + shadow grow
-- [ ] **Inline Edit Mode:**
-  - [ ] Click price → inline number input
-  - [ ] Click stock → inline number input
-  - [ ] Auto-save on blur or Enter
-  - [ ] Show saving indicator (spinner on field)
-  - [ ] Optimistic update: UI updates instantly, reverts on error
-- [ ] **Empty state:** Solar-themed illustration + "Add your first item" CTA
-- [ ] **Loading state:** Skeleton cards matching layout
+
+- [x] Page metadata: title "Inventory — BOB Solar"
+- [x] **Layout:**
+  - [x] Page header: "Inventory & Pricing" with item count badge
+  - [x] "Add Item" button (solar gradient)
+  - [x] Category filter pills (horizontal scrollable):
+    - [x] All | Panels | Inverters | Batteries | Mounting | Cables | Accessories | Labor
+    - [x] Active pill has solar glow indicator
+  - [x] Search input with debounce (300ms)
+- [x] **Item Grid / List:**
+  - [x] Card grid layout (responsive: 1/2/3/4 columns)
+  - [x] Each card shows:
+    - [x] Category icon (solar-themed)
+    - [x] Item name (bold)
+    - [x] Brand + model (muted text)
+    - [x] Unit price in MMK (formatted: `1,500,000 MMK`)
+    - [x] Stock quantity with color-coded badge:
+      - [x] Green (>10), Yellow (1-10), Red (0)
+    - [x] Unit type badge (pcs, meter, etc.)
+    - [x] Edit / Delete action buttons (icon only)
+  - [x] Cards appear with staggered fade-up animation
+  - [x] Card hover: subtle lift + shadow grow
+- [x] **Inline Edit Mode:**
+  - [x] Click price → inline number input
+  - [x] Click stock → inline number input
+  - [x] Auto-save on blur or Enter
+  - [x] Show saving indicator (spinner on field)
+  - [x] Optimistic update: UI updates instantly, reverts on error
+- [x] **Empty state:** Solar-themed illustration + "Add your first item" CTA
+- [x] **Loading state:** Skeleton cards matching layout
 
 ### 2.2.4 Add/Edit Item Dialog
-- [ ] Trigger: "Add Item" button or card edit button
-- [ ] Use shadcn `Dialog` (desktop) / `Sheet` (mobile)
-- [ ] Form fields:
-  - [ ] Item name (text input)
-  - [ ] Category (select dropdown)
-  - [ ] Unit (select dropdown)
-  - [ ] Unit price (number input, MMK formatted)
-  - [ ] Stock quantity (number input)
-  - [ ] Brand (text input, optional)
-  - [ ] Model number (text input, optional)
-- [ ] React Hook Form + Zod validation
-- [ ] Submit: show loading state on button
-- [ ] Success: close dialog, show success toast, list refreshes
-- [ ] Error: show inline error messages
-- [ ] Edit mode: pre-populate fields with existing data
+
+- [x] Trigger: "Add Item" button or card edit button
+- [x] Use shadcn `Dialog` (desktop) / `Sheet` (mobile)
+- [x] Form fields:
+  - [x] Item name (text input)
+  - [x] Category (select dropdown)
+  - [x] Unit (select dropdown)
+  - [x] Unit price (number input, MMK formatted)
+  - [x] Stock quantity (number input)
+  - [x] Brand (text input, optional)
+  - [x] Model number (text input, optional)
+- [x] React Hook Form + Zod validation
+- [x] Submit: show loading state on button
+- [x] Success: close dialog, show success toast, list refreshes
+- [x] Error: show icon error messages
+- [x] Edit mode: pre-populate fields with existing data
 
 ### 2.2.5 Delete Confirmation
-- [ ] Confirm dialog: "Are you sure? This item may be referenced in quotes."
-- [ ] Soft delete (sets `isActive: false`)
-- [ ] Toast notification on success
-- [ ] Card animates out (scale-down + fade)
+
+- [x] Confirm dialog: "Are you sure? This item may be referenced in quotes."
+- [x] Soft delete (sets `isActive: false`)
+- [x] **Phase 2.1: Foundation & Shared Logic**
+- [x] **Phase 2.2: Inventory & Pricing Management**
+- [/] **Phase 2.3: Customer Management (Basic CRM)**
 
 ---
 
 ## 2.3 Customer Management (Basic CRM)
 
 ### 2.3.1 Server Actions (`src/actions/customer-actions.ts`)
-- [ ] `getCustomers(filters?)` — list with search, pagination
-- [ ] `getCustomer(id)` — single customer with related quotations & projects count
-- [ ] `createCustomer(data)` — validate, insert, return
-- [ ] `updateCustomer(id, data)` — validate, update, return
-- [ ] `deleteCustomer(id)` — only if no linked quotations/projects
-- [ ] `searchCustomers(query)` — lightweight search for autocomplete (name/phone)
+
+- [x] `getCustomers(filters?)` — list with search, pagination
+- [x] `getCustomer(id)` — single customer with related quotations & projects count
+- [x] `createCustomer(data)` — validate, insert, return
+- [x] `updateCustomer(id, data)` — validate, update, return
+- [x] `deleteCustomer(id)` — only if no linked quotations/projects
+- [x] `searchCustomers(query)` — lightweight search for autocomplete (name/phone)
 
 ### 2.3.2 TanStack Query Hooks (`src/hooks/use-customers.ts`)
-- [ ] `useCustomers(filters)` — queryKey: `['customers', filters]`
-- [ ] `useCustomer(id)` — single with relations
-- [ ] `useCreateCustomer()` — mutation
-- [ ] `useUpdateCustomer()` — mutation + optimistic
-- [ ] `useDeleteCustomer()` — mutation
-- [ ] `useSearchCustomers(query)` — debounced autocomplete query
+
+- [x] `useCustomers(filters)` — queryKey: `['customers', filters]`
+- [x] `useCustomer(id)` — single with relations
+- [x] `useCreateCustomer()` — mutation
+- [x] `useUpdateCustomer()` — mutation + optimistic
+- [x] `useDeleteCustomer()` — mutation
+- [x] `useSearchCustomers(query)` — debounced autocomplete query
 
 ### 2.3.3 Customer List Page (`src/app/(dashboard)/customers/page.tsx`)
-- [ ] Page header: "Customers" with count
-- [ ] "Add Customer" button
-- [ ] Search bar with live filtering
-- [ ] **Customer cards layout:**
-  - [ ] Avatar (first letter of name, solar gradient background)
-  - [ ] Customer name (bold)
-  - [ ] Phone number
-  - [ ] City
-  - [ ] Linked data badges: "3 Quotes" · "1 Project"
-  - [ ] Quick actions: View, Edit, Call (tel: link)
-- [ ] Staggered entrance animation
-- [ ] Empty state: "Add your first customer"
-- [ ] Loading state: Skeleton cards
+
+- [x] Page header: "Customers" with count
+- [x] "Add Customer" button
+- [x] Search bar with live filtering
+- [x] **Customer cards layout:**
+- [x] Avatar (first letter of name, solar gradient background)
+- [x] Customer name (bold)
+  - [x] Phone number
+  - [x] City
+  - [x] Linked data badges: "3 Quotes" · "1 Project"
+- [x] **Customer Dialog:**
+  - [x] Name, Phone (Required)
+  - [x] Email, Address, City, Notes (Optional)
+  - [x] Validation with Zod
+  - [x] Server-side revalidation
+- [x] Staggered entrance animation
+- [x] Empty state: "Add your first customer"
+- [x] Loading state: Skeleton cards
+- [x] Toast notifications for all actions
 
 ### 2.3.4 Customer Detail Page (`src/app/(dashboard)/customers/[id]/page.tsx`)
-- [ ] **Header section:**
-  - [ ] Large avatar
-  - [ ] Customer name + city
-  - [ ] Contact info (phone, email) with copy-to-clipboard
-  - [ ] Edit button
-- [ ] **Tabs:**
-  - [ ] **Overview:** Address, notes, customer since date
-  - [ ] **Quotations:** List of linked quotes with status badges
-  - [ ] **Projects:** List of linked projects with status badges
-- [ ] Back navigation
-- [ ] Tab content uses staggered fade animation
 
-### 2.3.5 Add/Edit Customer Dialog
-- [ ] Form fields: Name, Phone, Email, Address, City, Notes
-- [ ] React Hook Form + Zod validation
-- [ ] Phone field: auto-format Myanmar phone numbers
-- [ ] Success/error handling with toasts
+- [x] **Tabs:**
+  - [x] **Overview:** Address, notes, customer since date
+  - [x] **Quotations:** List of linked quotes with status badges
+  - [x] **Projects:** List of linked projects with status badges
+- [x] Back navigation
+- [x] Tab content uses staggered fade animation
+
+- [x] Form fields: Name, Phone, Email, Address, City, Notes
+- [x] React Hook Form + Zod validation
+- [x] Success/error handling with toasts
 
 ---
 
 ## 2.4 Quotation Management
 
 ### 2.4.1 Price Calculation Engine (`src/lib/pricing/engine.ts`)
+
 - [ ] `calculateLineItem(quantity, unitPrice): number`
   - [ ] Returns `quantity * unitPrice` using integer math (avoid float errors)
 - [ ] `calculateQuotation(input)`:
@@ -211,6 +223,7 @@
   - [ ] Test with large numbers (millions of MMK)
 
 ### 2.4.2 Quote Number Generator
+
 - [ ] `generateQuoteNumber(): string`
   - [ ] Pattern: `QT-{YEAR}-{SEQUENCE}`
   - [ ] Example: `QT-2026-0001`
@@ -219,6 +232,7 @@
 - [ ] Ensure uniqueness with DB unique constraint
 
 ### 2.4.3 Server Actions (`src/actions/quotation-actions.ts`)
+
 - [ ] `getQuotations(filters?)` — list with status filter, date range, pagination
   - [ ] Join customer name for display
   - [ ] Order by created_at DESC
@@ -245,6 +259,7 @@
 - [ ] `duplicateQuotation(id)` — clone as new draft with fresh prices
 
 ### 2.4.4 TanStack Query Hooks (`src/hooks/use-quotations.ts`)
+
 - [ ] `useQuotations(filters)` — with stale time 30s
 - [ ] `useQuotation(id)` — single with items
 - [ ] `useCreateQuotation()` — mutation, invalidate list
@@ -254,6 +269,7 @@
 - [ ] `useDuplicateQuotation()` — mutation
 
 ### 2.4.5 Quote Builder Store (`src/stores/quote-builder-store.ts`)
+
 - [ ] Zustand store for quote builder local state:
   - [ ] `selectedCustomerId: string | null`
   - [ ] `items: QuoteBuilderItem[]` (local array for drag/reorder)
@@ -274,34 +290,39 @@
   - [ ] `loadFromQuotation(quotation)` — populate for editing
 
 ### 2.4.6 Quotation List Page (`src/app/(dashboard)/quotations/page.tsx`)
-- [ ] Page header: "Quotations" with count
-- [ ] "New Quote" button (solar gradient)
-- [ ] **Status filter tabs:**
-  - [ ] All | Draft | Sent | Accepted | Rejected | Expired
-  - [ ] Tab underline with solar glow animation
-  - [ ] Count badges on each tab
-- [ ] **Quote list (card-based, not table):**
-  - [ ] Quote number (e.g., `QT-2026-0001`)
-  - [ ] Customer name
-  - [ ] Total amount (formatted MMK)
-  - [ ] Status badge with color:
-    - [ ] Draft: gray
-    - [ ] Sent: blue/indigo
-    - [ ] Accepted: green/emerald
-    - [ ] Rejected: red
-    - [ ] Expired: yellow/amber
-  - [ ] Date created (relative: "2 days ago")
-  - [ ] Valid until date (if applicable)
-  - [ ] Quick actions: View, Edit (draft only), Duplicate, Delete (draft only)
-- [ ] Click card → navigate to detail page
-- [ ] Staggered entrance animation
-- [ ] Empty state per filter tab
-- [ ] Loading skeletons
+
+- [x] Page header: "Quotations" with count
+- [x] "New Quote" button (solar gradient)
+- [x] **Status filter tabs:**
+  - [x] All | Draft | Sent | Accepted | Rejected | Expired
+  - [x] Tab underline with solar glow animation
+  - [x] Count badges on each tab
+- [x] **Quote list (card-based, not table):**
+  - [x] Quote number (e.g., `QT-2026-0001`)
+  - [x] Customer name
+  - [x] Total amount (formatted MMK)
+  - [x] Status badge with color:
+    - [x] Draft: gray
+    - [x] Sent: blue/indigo
+    - [x] Accepted: green/emerald
+    - [x] Rejected: red
+    - [x] Expired: yellow/amber
+  - [x] Date created (relative: "2 days ago")
+  - [x] Valid until date (if applicable)
+  - [x] Quick actions: View, Edit (draft only), Duplicate, Delete (draft only)
+  - [x] Fix TypeScript Error (TS7031) in `InventoryDialog` (Implicit any)
+  - [x] Fix Zod type mismatches in Server Actions
+  - [x] Fix unused variables and unescaped entities
+  - [x] Create missing `form.tsx` and `ui-store.ts`
+  - [x] Verify successful build with Next.js 16 / Turbopack
+  - [x] Finalize Inventory CRUD & Pricing Management
+  - [x] Click card → navigate to detail page
+  - [x] Staggered entrance animation
+  - [x] Empty state per filter tab
+  - [x] Loading skeletons
 
 ### 2.4.7 Quote Builder Page (`src/app/(dashboard)/quotations/new/page.tsx`)
-- [ ] **Split-pane layout:**
-  - [ ] **Left pane (60%): Builder**
-    - [ ] Customer selector (searchable dropdown, autocomplete)
+
     - [ ] "Add Item" section:
       - [ ] Search inventory items (type-ahead)
       - [ ] Click result → adds to line items
@@ -321,16 +342,18 @@
     - [ ] Notes textarea
     - [ ] Valid until date picker
     - [ ] Action buttons: Save as Draft, Send to Customer
-  - [ ] **Right pane (40%): Live Preview**
-    - [ ] Mini PDF-like preview card
-    - [ ] Shows company header, customer info, items table, totals
-    - [ ] Updates in real-time as user edits
-    - [ ] "Download PDF" button
+
+- [ ] **Right pane (40%): Live Preview**
+  - [ ] Mini PDF-like preview card
+  - [ ] Shows company header, customer info, items table, totals
+  - [ ] Updates in real-time as user edits
+  - [ ] "Download PDF" button
 - [ ] Mobile: stacked layout (builder on top, preview collapsed/expandable)
 - [ ] All calculations update in real-time via Zustand store
 - [ ] Unsaved changes warning before navigation
 
 ### 2.4.8 Quote Edit Page (`src/app/(dashboard)/quotations/[id]/page.tsx`)
+
 - [ ] Load existing quotation data into builder store
 - [ ] Same UI as builder but with pre-populated data
 - [ ] Only editable if status is `draft`
@@ -347,6 +370,7 @@
   - [ ] "Duplicate" button
 
 ### 2.4.9 PDF Generation
+
 - [ ] **PDF Template (`src/components/pdf/quote-document.tsx`):**
   - [ ] Company header:
     - [ ] Logo (from Vercel Blob / company settings)
@@ -384,6 +408,7 @@
 ---
 
 ## Part 2 Completion Criteria
+
 - [ ] Inventory CRUD fully functional with inline editing
 - [ ] Customer CRUD fully functional with detail pages
 - [ ] Quote builder creates quotes with correct calculations

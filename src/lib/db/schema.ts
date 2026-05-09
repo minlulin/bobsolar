@@ -8,7 +8,11 @@ import {
   boolean,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { relations, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
+import {
+  relations,
+  type InferSelectModel,
+  type InferInsertModel,
+} from 'drizzle-orm';
 
 // --- Enums ---
 
@@ -103,6 +107,7 @@ export const customers = pgTable('customers', {
   city: text('city'),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const inventoryItems = pgTable('inventory_items', {
@@ -258,10 +263,13 @@ export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
 }));
 
-export const inventoryItemsRelations = relations(inventoryItems, ({ many }) => ({
-  quotationItems: many(quotationItems),
-  projectCosts: many(projectCosts),
-}));
+export const inventoryItemsRelations = relations(
+  inventoryItems,
+  ({ many }) => ({
+    quotationItems: many(quotationItems),
+    projectCosts: many(projectCosts),
+  }),
+);
 
 export const quotationsRelations = relations(quotations, ({ one, many }) => ({
   customer: one(customers, {

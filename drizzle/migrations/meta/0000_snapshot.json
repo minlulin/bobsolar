@@ -242,12 +242,8 @@
           "name": "notifications_user_id_users_id_fk",
           "tableFrom": "notifications",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -320,12 +316,8 @@
           "name": "project_costs_project_id_projects_id_fk",
           "tableFrom": "project_costs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -333,12 +325,8 @@
           "name": "project_costs_item_id_inventory_items_id_fk",
           "tableFrom": "project_costs",
           "tableTo": "inventory_items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -346,12 +334,8 @@
           "name": "project_costs_added_by_users_id_fk",
           "tableFrom": "project_costs",
           "tableTo": "users",
-          "columnsFrom": [
-            "added_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["added_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -413,12 +397,8 @@
           "name": "project_remarks_project_id_projects_id_fk",
           "tableFrom": "project_remarks",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -426,12 +406,8 @@
           "name": "project_remarks_author_id_users_id_fk",
           "tableFrom": "project_remarks",
           "tableTo": "users",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -542,12 +518,8 @@
           "name": "projects_quotation_id_quotations_id_fk",
           "tableFrom": "projects",
           "tableTo": "quotations",
-          "columnsFrom": [
-            "quotation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["quotation_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -555,12 +527,8 @@
           "name": "projects_customer_id_customers_id_fk",
           "tableFrom": "projects",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -570,9 +538,7 @@
         "projects_project_number_unique": {
           "name": "projects_project_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "project_number"
-          ]
+          "columns": ["project_number"]
         }
       },
       "policies": {},
@@ -639,12 +605,8 @@
           "name": "quotation_items_quotation_id_quotations_id_fk",
           "tableFrom": "quotation_items",
           "tableTo": "quotations",
-          "columnsFrom": [
-            "quotation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["quotation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -652,12 +614,8 @@
           "name": "quotation_items_item_id_inventory_items_id_fk",
           "tableFrom": "quotation_items",
           "tableTo": "inventory_items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -778,12 +736,8 @@
           "name": "quotations_customer_id_customers_id_fk",
           "tableFrom": "quotations",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -791,12 +745,8 @@
           "name": "quotations_created_by_users_id_fk",
           "tableFrom": "quotations",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -806,9 +756,7 @@
         "quotations_quote_number_unique": {
           "name": "quotations_quote_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "quote_number"
-          ]
+          "columns": ["quote_number"]
         }
       },
       "policies": {},
@@ -857,12 +805,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -925,9 +869,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -991,12 +933,8 @@
           "name": "warranty_alerts_project_id_projects_id_fk",
           "tableFrom": "warranty_alerts",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1012,21 +950,12 @@
     "public.alert_type": {
       "name": "alert_type",
       "schema": "public",
-      "values": [
-        "warranty_expiry",
-        "maintenance_due",
-        "follow_up"
-      ]
+      "values": ["warranty_expiry", "maintenance_due", "follow_up"]
     },
     "public.cost_type": {
       "name": "cost_type",
       "schema": "public",
-      "values": [
-        "material",
-        "labor",
-        "transport",
-        "misc"
-      ]
+      "values": ["material", "labor", "transport", "misc"]
     },
     "public.inventory_category": {
       "name": "inventory_category",
@@ -1044,61 +973,32 @@
     "public.inventory_unit": {
       "name": "inventory_unit",
       "schema": "public",
-      "values": [
-        "pcs",
-        "meter",
-        "set",
-        "kWp",
-        "job"
-      ]
+      "values": ["pcs", "meter", "set", "kWp", "job"]
     },
     "public.notification_type": {
       "name": "notification_type",
       "schema": "public",
-      "values": [
-        "info",
-        "warning",
-        "action"
-      ]
+      "values": ["info", "warning", "action"]
     },
     "public.project_status": {
       "name": "project_status",
       "schema": "public",
-      "values": [
-        "planning",
-        "in_progress",
-        "on_hold",
-        "completed",
-        "cancelled"
-      ]
+      "values": ["planning", "in_progress", "on_hold", "completed", "cancelled"]
     },
     "public.quotation_status": {
       "name": "quotation_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "sent",
-        "accepted",
-        "rejected",
-        "expired"
-      ]
+      "values": ["draft", "sent", "accepted", "rejected", "expired"]
     },
     "public.remark_type": {
       "name": "remark_type",
       "schema": "public",
-      "values": [
-        "note",
-        "issue",
-        "update"
-      ]
+      "values": ["note", "issue", "update"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "staff"
-      ]
+      "values": ["admin", "staff"]
     }
   },
   "schemas": {},

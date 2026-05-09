@@ -11,6 +11,7 @@
 Build a production-ready, zero-cost Progressive Web App for BOB Solar — a small solar installation company in Myanmar. The app manages quotations, projects, inventory, customers, and warranty tracking for 3 users.
 
 **This is NOT a generic admin dashboard.** It uses a unique "Solar Flow" design system with:
+
 - Bottom dock navigation (like Spotify/macOS Dock) — NO left sidebar
 - Spotify-inspired dark theme
 - Solar-themed animations and visualizations
@@ -36,6 +37,7 @@ Before writing ANY code, read these files in this exact order:
 ## 🏗️ Build Order (STRICT — Do Not Skip Ahead)
 
 ### Phase 1: Foundation (MUST complete before Phase 2)
+
 ```
 1.1 Project Scaffolding
     → Initialize Next.js 16 (standard Vercel deployment)
@@ -81,6 +83,7 @@ Before writing ANY code, read these files in this exact order:
 ```
 
 ### Phase 2: Core Features (MUST complete before Phase 3)
+
 ```
 2.1 Inventory / Price & Stock Management
     → CRUD operations via Server Actions
@@ -111,6 +114,7 @@ Before writing ANY code, read these files in this exact order:
 ```
 
 ### Phase 3: Projects & Warranty (MUST complete before Phase 4)
+
 ```
 3.1 Active Projects
     → Convert accepted quotation → project
@@ -136,6 +140,7 @@ Before writing ANY code, read these files in this exact order:
 ```
 
 ### Phase 4: Dashboard & Notifications (MUST complete before Phase 5)
+
 ```
 4.1 Dashboard — "Energy Flow Canvas"
     → Solar orbit/radial metrics visualization
@@ -159,6 +164,7 @@ Before writing ANY code, read these files in this exact order:
 ```
 
 ### Phase 5: Final Polish & Deployment
+
 ```
 5.1 Error Handling
     → error.tsx for each route segment
@@ -188,6 +194,7 @@ Before writing ANY code, read these files in this exact order:
 ## ⚙️ Key Context You Need
 
 ### This App Is
+
 - A **gift** for a friend's company — not commercial
 - Used by **3 people only** (1 admin, 2 staff)
 - **Zero cost** — all free tiers (Neon 0.5GB, Vercel Hobby plan)
@@ -195,6 +202,7 @@ Before writing ANY code, read these files in this exact order:
 - **Single company** — no multi-tenant
 
 ### Design Philosophy: "Solar Flow"
+
 - **NOT a generic admin dashboard** — avoid left sidebars, generic stat cards
 - **Bottom dock navigation** — like Spotify mobile / macOS Dock
 - **Command bar** (⌘K / Ctrl+K) — for power users, quick actions, search
@@ -208,6 +216,7 @@ Before writing ANY code, read these files in this exact order:
 - **Premium feel:** Glassmorphism cards in dark mode, gradient buttons, subtle shadows
 
 ### Database: Important Relationships
+
 ```
 Customers → Quotations → Quotation Items ← Inventory Items
                 ↓
@@ -221,6 +230,7 @@ Users → Quotations (created_by)
 ```
 
 ### Price Flow: Critical Business Logic
+
 ```
 1. Admin sets base price in Inventory → inventory_items.unit_price
 2. Quote Builder pulls current price → user can override per-line-item
@@ -231,6 +241,7 @@ Users → Quotations (created_by)
 ```
 
 ### Auto-Generated Numbers
+
 ```
 Quotations: QT-{YEAR}-{0001..9999}  → QT-2026-0001
 Projects:   PJ-{YEAR}-{0001..9999}  → PJ-2026-0001
@@ -238,6 +249,7 @@ Sequence resets each year.
 ```
 
 ### Status Workflows
+
 ```
 Quotation: draft → sent → accepted → [convert to project]
                        → rejected → draft (reopen)
@@ -275,10 +287,12 @@ pnpm build              # Production build with Turbopack
 ## 📝 Progress Tracking
 
 After completing each task, update the corresponding progress log file:
+
 - Change `- [ ]` to `- [x]` for completed items
 - Add any notes about deviations or decisions made
 
 The progress logs are in:
+
 ```
 docs/01_progress_log_foundation.md
 docs/02_progress_log_core_features.md
@@ -307,6 +321,7 @@ docs/05_progress_log_final_deployment.md
 ## 🎨 Design Reference: Key Screens
 
 ### Login Page
+
 - Full-screen with animated gradient background (warm amber → soft orange)
 - Centered glassmorphism card
 - BOB Solar logo
@@ -315,6 +330,7 @@ docs/05_progress_log_final_deployment.md
 - Subtle sun ray animation in background
 
 ### Dashboard
+
 - Greeting: "Good morning, {name}" (time-based)
 - Solar orbit visualization (key metrics as orbiting planets)
 - Energy flow pipeline (Sankey-style: customers → quotes → projects → done)
@@ -323,6 +339,7 @@ docs/05_progress_log_final_deployment.md
 - Upcoming alerts widget
 
 ### Quotation Builder
+
 - Split-pane: left = editor (60%), right = live preview (40%)
 - Customer search dropdown at top
 - "Add Item" with inventory search
@@ -331,6 +348,7 @@ docs/05_progress_log_final_deployment.md
 - Mobile: stacked layout
 
 ### Bottom Dock Navigation
+
 - Fixed at bottom of screen
 - 5 items: Dashboard, Quotes, Projects, Inventory, Customers
 - Active item: glowing solar amber indicator
