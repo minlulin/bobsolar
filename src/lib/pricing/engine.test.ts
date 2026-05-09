@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calculateLineItem, calculateQuotation, formatMMK, type LineItem } from './engine';
+import {
+  calculateLineItem,
+  calculateQuotation,
+  formatMMK,
+  type LineItem,
+} from './engine';
 
 describe('calculateLineItem', () => {
   it('calculates basic line item', () => {
@@ -8,7 +13,11 @@ describe('calculateLineItem', () => {
   });
 
   it('calculates with discount', () => {
-    const item: LineItem = { quantity: 2, unitPrice: 1000, discountPercentage: 10 };
+    const item: LineItem = {
+      quantity: 2,
+      unitPrice: 1000,
+      discountPercentage: 10,
+    };
     expect(calculateLineItem(item)).toBe(1800);
   });
 

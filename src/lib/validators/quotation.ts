@@ -40,11 +40,9 @@ export const quotationFilterSchema = z.object({
 export type QuotationFilter = z.infer<typeof quotationFilterSchema>;
 export type QuotationItemInput = z.infer<typeof quotationItemSchema>;
 
-export const updateQuotationSchema = createQuotationSchema
-  .partial()
-  .extend({
-    id: z.string().uuid(),
-  });
+export const updateQuotationSchema = createQuotationSchema.partial().extend({
+  id: z.string().uuid(),
+});
 
 export type UpdateQuotation = z.input<typeof updateQuotationSchema>;
 
@@ -59,7 +57,12 @@ export const QUOTATION_STATUS_TRANSITIONS: Record<
   expired: [],
 };
 
-export type QuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+export type QuotationStatus =
+  | 'draft'
+  | 'sent'
+  | 'accepted'
+  | 'rejected'
+  | 'expired';
 
 export function canTransitionStatus(
   currentStatus: QuotationStatus,

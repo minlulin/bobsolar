@@ -28,7 +28,8 @@ export const inventoryCategoryEnum = pgEnum('inventory_category', [
   'labor',
 ]);
 
-export type InventoryCategory = (typeof inventoryCategoryEnum.enumValues)[number];
+export type InventoryCategory =
+  (typeof inventoryCategoryEnum.enumValues)[number];
 
 export const inventoryUnitEnum = pgEnum('inventory_unit', [
   'pcs',

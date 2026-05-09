@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { sessions } from '@/lib/db/schema';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, lt } from 'drizzle-orm';
 
 const SESSION_COOKIE_NAME = 'session_id';
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -97,9 +97,7 @@ export async function getSessionAndRefresh(): Promise<{
 }
 
 export async function cleanupExpiredSessions(): Promise<number> {
-  const result = await db
-    .delete(sessions)
-    .where(lt(sessions.expiresAt, new Date()));
+  await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 
   return 0;
 }

@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuotationCard } from '@/components/quotations/quotation-card';
 import { useQuotations } from '@/hooks/use-quotations';
 import { useRouter } from 'next/navigation';
-import { type QuotationStatus, quotationStatusEnum } from '@/lib/db/schema';
+import { type QuotationStatus } from '@/lib/db/schema';
 
 const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
   { id: 'all', label: 'All' },
@@ -27,10 +27,7 @@ export default function QuotationsPage() {
 
   const { data: response, isLoading } = useQuotations({
     search,
-    status:
-      status === 'all'
-        ? undefined
-        : (status as QuotationStatus),
+    status: status === 'all' ? undefined : (status as QuotationStatus),
   });
 
   const quotations = response?.success ? response.data.items : [];

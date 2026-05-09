@@ -12,15 +12,26 @@ import {
   createQuotationSchema,
   type QuotationFilter,
 } from '@/lib/validators/quotation';
-import { requireAuth, requireAdmin, getCurrentUser } from '@/lib/auth/validate';
+import { requireAuth, requireAdmin } from '@/lib/auth/validate';
 import { eq, and, ilike, desc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import { ActionResponse } from './inventory-actions';
-import { calculateQuotation, calculateLineItem, LineItem } from '@/lib/pricing/engine';
+import {
+  calculateQuotation,
+  calculateLineItem,
+  LineItem,
+} from '@/lib/pricing/engine';
 import { formatQuoteNumber, extractSequence } from '@/lib/utils/quote-number';
-import { updateQuotationSchema, canTransitionStatus, type QuotationStatus } from '@/lib/validators/quotation';
-import { handleActionError, handleNotFoundError, handleStateError } from '@/lib/utils/error';
+import {
+  updateQuotationSchema,
+  canTransitionStatus,
+  type QuotationStatus,
+} from '@/lib/validators/quotation';
+import {
+  handleActionError,
+  handleNotFoundError,
+  handleStateError,
+} from '@/lib/utils/error';
 
 export type QuotationWithCustomer = Quotation & {
   customer: {
@@ -57,7 +68,11 @@ export async function getQuotations(
       data: { items: items as QuotationWithCustomer[], total: items.length },
     };
   } catch (error) {
-    return handleActionError(error, 'getQuotations', 'Failed to fetch quotations');
+    return handleActionError(
+      error,
+      'getQuotations',
+      'Failed to fetch quotations',
+    );
   }
 }
 
@@ -86,7 +101,11 @@ export async function getQuotation(
       data: item as Quotation & { items: QuotationItem[]; customer: Customer },
     };
   } catch (error) {
-    return handleActionError(error, 'getQuotation', 'Failed to fetch quotation');
+    return handleActionError(
+      error,
+      'getQuotation',
+      'Failed to fetch quotation',
+    );
   }
 }
 
@@ -141,7 +160,8 @@ export async function createQuotation(
         })
         .returning();
 
-      if (!quote) throw new Error('Failed to create quotation record in database');
+      if (!quote)
+        throw new Error('Failed to create quotation record in database');
 
       const itemsToInsert = validated.items.map((item, index) => ({
         quotationId: quote.id,
@@ -165,7 +185,11 @@ export async function createQuotation(
     revalidatePath('/quotations');
     return { success: true, data: result };
   } catch (error) {
-    return handleActionError(error, 'createQuotation', 'Failed to create quotation');
+    return handleActionError(
+      error,
+      'createQuotation',
+      'Failed to create quotation',
+    );
   }
 }
 
@@ -183,7 +207,9 @@ export async function updateQuotationStatus(
     if (!quote) return handleNotFoundError('Quotation', id);
 
     if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
-      return handleStateError(`Cannot change status from "${quote.status}" to "${status}"`);
+      return handleStateError(
+        `Cannot change status from "${quote.status}" to "${status}"`,
+      );
     }
 
     await db
@@ -195,7 +221,11 @@ export async function updateQuotationStatus(
     revalidatePath(`/quotations/${id}`);
     return { success: true, data: undefined };
   } catch (error) {
-    return handleActionError(error, 'updateQuotationStatus', 'Failed to update quotation status');
+    return handleActionError(
+      error,
+      'updateQuotationStatus',
+      'Failed to update quotation status',
+    );
   }
 }
 
@@ -219,7 +249,11 @@ export async function deleteQuotation(
     revalidatePath('/quotations');
     return { success: true, data: undefined };
   } catch (error) {
-    return handleActionError(error, 'deleteQuotation', 'Failed to delete quotation');
+    return handleActionError(
+      error,
+      'deleteQuotation',
+      'Failed to delete quotation',
+    );
   }
 }
 
@@ -241,11 +275,12 @@ export async function updateQuotation(
 
     const validated = updateQuotationSchema.parse(raw);
 
-    const lineItems: LineItem[] = validated.items?.map((item) => ({
-      quantity: item?.quantity || 0,
-      unitPrice: item?.unitPrice || 0,
-      discountPercentage: item?.discountPercentage || 0,
-    })) || [];
+    const lineItems: LineItem[] =
+      validated.items?.map((item) => ({
+        quantity: item?.quantity || 0,
+        unitPrice: item?.unitPrice || 0,
+        discountPercentage: item?.discountPercentage || 0,
+      })) || [];
 
     const pricing = calculateQuotation(
       lineItems,
@@ -271,7 +306,9 @@ export async function updateQuotation(
         .where(eq(quotations.id, id));
 
       if (validated.items) {
-        await tx.delete(quotationItems).where(eq(quotationItems.quotationId, id));
+        await tx
+          .delete(quotationItems)
+          .where(eq(quotationItems.quotationId, id));
 
         const itemsToInsert = validated.items.map((item, index) => ({
           quotationId: id,
@@ -298,9 +335,15 @@ export async function updateQuotation(
       where: eq(quotations.id, id),
     });
 
-    return { success: true, data: updated! };
+    if (!updated) return handleNotFoundError('Quotation', id);
+
+    return { success: true, data: updated };
   } catch (error) {
-    return handleActionError(error, 'updateQuotation', 'Failed to update quotation');
+    return handleActionError(
+      error,
+      'updateQuotation',
+      'Failed to update quotation',
+    );
   }
 }
 
@@ -348,7 +391,8 @@ export async function duplicateQuotation(
         })
         .returning();
 
-      if (!quote) throw new Error('Failed to create duplicated quotation in database');
+      if (!quote)
+        throw new Error('Failed to create duplicated quotation in database');
 
       const itemsToInsert = original.items.map((item, index) => ({
         quotationId: quote.id,
@@ -368,6 +412,10 @@ export async function duplicateQuotation(
     revalidatePath('/quotations');
     return { success: true, data: result };
   } catch (error) {
-    return handleActionError(error, 'duplicateQuotation', 'Failed to duplicate quotation');
+    return handleActionError(
+      error,
+      'duplicateQuotation',
+      'Failed to duplicate quotation',
+    );
   }
 }

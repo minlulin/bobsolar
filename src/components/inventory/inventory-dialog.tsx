@@ -32,7 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { inventoryCategoryEnum, inventoryUnitEnum, type InventoryItem as DBInventoryItem } from '@/lib/db/schema';
+import {
+  inventoryCategoryEnum,
+  inventoryUnitEnum,
+  type InventoryItem as DBInventoryItem,
+} from '@/lib/db/schema';
 import {
   useCreateInventoryItem,
   useUpdateInventoryItem,
@@ -60,7 +64,8 @@ export function InventoryDialog({
     resolver: zodResolver(createInventoryItemSchema),
     defaultValues: {
       name: '',
-      category: inventoryCategoryEnum.enumValues[0] as DBInventoryItem['category'],
+      category: inventoryCategoryEnum
+        .enumValues[0] as DBInventoryItem['category'],
       unit: inventoryUnitEnum.enumValues[0] as DBInventoryItem['unit'],
       unitPrice: 0,
       stockQty: 0,

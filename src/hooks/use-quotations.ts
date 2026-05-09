@@ -8,7 +8,10 @@ import {
   deleteQuotation,
   duplicateQuotation,
 } from '@/actions/quotation-actions';
-import { type QuotationFilter, type UpdateQuotation } from '@/lib/validators/quotation';
+import {
+  type QuotationFilter,
+  type UpdateQuotation,
+} from '@/lib/validators/quotation';
 import { toast } from 'sonner';
 
 export function useQuotations(filters: QuotationFilter = {}) {

@@ -1,4 +1,9 @@
-import { calculateLineItem, calculateQuotation, formatMMK, type LineItem } from './engine';
+import {
+  calculateLineItem,
+  calculateQuotation,
+  formatMMK,
+  type LineItem,
+} from './engine';
 
 let passed = 0;
 let failed = 0;
@@ -33,7 +38,11 @@ test('basic line item', () => {
 });
 
 test('with discount', () => {
-  const item: LineItem = { quantity: 2, unitPrice: 1000, discountPercentage: 10 };
+  const item: LineItem = {
+    quantity: 2,
+    unitPrice: 1000,
+    discountPercentage: 10,
+  };
   expect(calculateLineItem(item)).toBe(1800);
 });
 
