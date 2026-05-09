@@ -3,17 +3,19 @@ import {
   getQuotations,
   getQuotation,
   createQuotation,
+  updateQuotation,
   updateQuotationStatus,
   deleteQuotation,
+  duplicateQuotation,
 } from '@/actions/quotation-actions';
-import { type QuotationFilter } from '@/lib/validators/quotation';
+import { type QuotationFilter, type UpdateQuotation } from '@/lib/validators/quotation';
 import { toast } from 'sonner';
 
 export function useQuotations(filters: QuotationFilter = {}) {
   return useQuery({
     queryKey: ['quotations', filters],
     queryFn: () => getQuotations(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -84,6 +86,45 @@ export function useDeleteQuotation() {
     },
     onError: () => {
       toast.error('Failed to delete quotation');
+    },
+  });
+}
+
+export function useUpdateQuotation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateQuotation }) =>
+      updateQuotation(id, data),
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: ['quotations'] });
+        toast.success('Quotation updated successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update quotation');
+    },
+  });
+}
+
+export function useDuplicateQuotation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: duplicateQuotation,
+    onSuccess: (response) => {
+      if (response.success) {
+        queryClient.invalidateQueries({ queryKey: ['quotations'] });
+        toast.success('Quotation duplicated successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to duplicate quotation');
     },
   });
 }

@@ -202,71 +202,71 @@
 
 ### 2.4.1 Price Calculation Engine (`src/lib/pricing/engine.ts`)
 
-- [ ] `calculateLineItem(quantity, unitPrice): number`
-  - [ ] Returns `quantity * unitPrice` using integer math (avoid float errors)
-- [ ] `calculateQuotation(input)`:
-  - [ ] Input: `items[]`, `discountPercent`, `taxPercent`
-  - [ ] Calculate `subtotal` = sum of all line item totals
-  - [ ] Calculate `discountAmount` = `subtotal * discountPercent / 100`
-  - [ ] Calculate `afterDiscount` = `subtotal - discountAmount`
-  - [ ] Calculate `taxAmount` = `afterDiscount * taxPercent / 100`
-  - [ ] Calculate `total` = `afterDiscount + taxAmount`
-  - [ ] Return all calculated values
-- [ ] All calculations in integer smallest unit (e.g., 1 MMK = 1 unit, no decimals needed for MMK)
-- [ ] Format helper: `formatMMK(amount: number): string` → `"1,500,000 MMK"`
-- [ ] Unit tests for calculation engine:
-  - [ ] Test basic calculation
-  - [ ] Test with discount
-  - [ ] Test with tax
-  - [ ] Test with discount + tax
-  - [ ] Test with zero items
-  - [ ] Test with large numbers (millions of MMK)
+- [x] `calculateLineItem(quantity, unitPrice): number`
+   - [x] Returns `quantity * unitPrice` using integer math (avoid float errors)
+- [x] `calculateQuotation(input)`:
+   - [x] Input: `items[]`, `discountPercent`, `taxPercent`
+   - [x] Calculate `subtotal` = sum of all line item totals
+   - [x] Calculate `discountAmount` = `subtotal * discountPercent / 100`
+   - [x] Calculate `afterDiscount` = `subtotal - discountAmount`
+   - [x] Calculate `taxAmount` = `afterDiscount * taxPercent / 100`
+   - [x] Calculate `total` = `afterDiscount + taxAmount`
+   - [x] Return all calculated values
+   - [x] All calculations in integer smallest unit (e.g., 1 MMK = 1 unit, no decimals needed for MMK)
+   - [x] Format helper: `formatMMK(amount: number): string` → `"1,500,000 MMK"`
+   - [x] Unit tests for calculation engine:
+   - [x] Test basic calculation
+   - [x] Test with discount
+   - [x] Test with tax
+   - [x] Test with discount + tax
+   - [x] Test with zero items
+   - [x] Test with large numbers (millions of MMK)
 
 ### 2.4.2 Quote Number Generator
 
-- [ ] `generateQuoteNumber(): string`
-  - [ ] Pattern: `QT-{YEAR}-{SEQUENCE}`
-  - [ ] Example: `QT-2026-0001`
-  - [ ] Query last quote number from DB, increment sequence
-  - [ ] Handle year rollover (reset sequence on new year)
-- [ ] Ensure uniqueness with DB unique constraint
+- [x] `generateQuoteNumber(): string`
+   - [x] Pattern: `QT-{YEAR}-{SEQUENCE}`
+   - [x] Example: `QT-2026-0001`
+   - [x] Query last quote number from DB, increment sequence
+   - [x] Handle year rollover (reset sequence on new year)
+- [x] Ensure uniqueness with DB unique constraint
 
 ### 2.4.3 Server Actions (`src/actions/quotation-actions.ts`)
 
-- [ ] `getQuotations(filters?)` — list with status filter, date range, pagination
-  - [ ] Join customer name for display
-  - [ ] Order by created_at DESC
-- [ ] `getQuotation(id)` — single with items + customer details
-- [ ] `createQuotation(data)`:
-  - [ ] Validate with Zod
-  - [ ] Generate quote number
-  - [ ] Snapshot current prices from inventory
-  - [ ] Calculate totals with pricing engine
-  - [ ] Insert quotation + items in transaction
-  - [ ] Return created quotation
-- [ ] `updateQuotation(id, data)`:
-  - [ ] Only if status is `draft`
-  - [ ] Recalculate totals
-  - [ ] Update items (delete old + insert new in transaction)
-- [ ] `updateQuotationStatus(id, status)`:
-  - [ ] Validate status transition rules:
-    - [ ] `draft` → `sent` | `draft`
-    - [ ] `sent` → `accepted` | `rejected` | `expired`
-    - [ ] `accepted` → (no change, proceed to project conversion)
-    - [ ] `rejected` → `draft` (reopen)
-  - [ ] If `accepted` → trigger project creation option
-- [ ] `deleteQuotation(id)` — only if status is `draft`
-- [ ] `duplicateQuotation(id)` — clone as new draft with fresh prices
+- [x] `getQuotations(filters?)` — list with status filter, date range, pagination
+  - [x] Join customer name for display
+  - [x] Order by created_at DESC
+- [x] `getQuotation(id)` — single with items + customer details
+- [x] `createQuotation(data)`:
+  - [x] Validate with Zod
+  - [x] Generate quote number
+  - [x] Snapshot current prices from inventory
+  - [x] Calculate totals with pricing engine
+  - [x] Insert quotation + items in transaction
+  - [x] Return created quotation
+- [x] `updateQuotation(id, data)`:
+  - [x] Only if status is `draft`
+  - [x] Recalculate totals
+  - [x] Update items (delete old + insert new in transaction)
+- [x] `updateQuotationStatus(id, status)`:
+  - [x] Validate status transition rules:
+    - [x] `draft` → `sent` | `draft`
+    - [x] `sent` → `accepted` | `rejected` | `expired`
+    - [x] `accepted` → (no change, proceed to project conversion)
+    - [x] `rejected` → `draft` (reopen)
+  - [ ] If `accepted` → trigger project creation option (Phase 3)
+- [x] `deleteQuotation(id)` — only if status is `draft`
+- [x] `duplicateQuotation(id)` — clone as new draft with fresh prices
 
 ### 2.4.4 TanStack Query Hooks (`src/hooks/use-quotations.ts`)
 
-- [ ] `useQuotations(filters)` — with stale time 30s
-- [ ] `useQuotation(id)` — single with items
-- [ ] `useCreateQuotation()` — mutation, invalidate list
-- [ ] `useUpdateQuotation()` — mutation, optimistic
-- [ ] `useUpdateQuotationStatus()` — mutation, optimistic status change
-- [ ] `useDeleteQuotation()` — mutation
-- [ ] `useDuplicateQuotation()` — mutation
+- [x] `useQuotations(filters)` — with stale time 30s
+- [x] `useQuotation(id)` — single with items
+- [x] `useCreateQuotation()` — mutation, invalidate list
+- [x] `useUpdateQuotation()` — mutation, optimistic
+- [x] `useUpdateQuotationStatus()` — mutation, optimistic status change
+- [x] `useDeleteQuotation()` — mutation
+- [x] `useDuplicateQuotation()` — mutation
 
 ### 2.4.5 Quote Builder Store (`src/stores/quote-builder-store.ts`)
 

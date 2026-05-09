@@ -50,7 +50,7 @@
 - [x] Install Vercel Blob: `pnpm add @vercel/blob`
 - [x] Install bcrypt: `pnpm add bcryptjs` + `pnpm add -D @types/bcryptjs`
 - [x] Verify `pnpm dev` still works after all installs
-- [/] Verify `pnpm build` reaches data collection (requires `DATABASE_URL` for full success)
+- [x] Verify `pnpm build` reaches data collection (requires `DATABASE_URL` for full success)
 
 ### 1.1.5 Project Structure Setup
 
@@ -491,3 +491,28 @@
 - [x] PWA is installable (manifest + service worker ready)
 - [x] Database has seeded data visible in Drizzle Studio
 - [x] All routes are accessible and protected by auth logic
+
+---
+
+## Verification Needed (Unverified / Missing Tasks)
+
+The following tasks require runtime verification or are missing features that need to be implemented:
+
+### Requires Runtime / Browser Testing
+
+- [ ] **1.4.3** Test: authenticated user can access dashboard
+- [ ] **1.5.3** Recent: Last 5 viewed items (requires storage logic) — **Feature not implemented**
+- [ ] **1.6.3** Test on mobile browsers
+
+### PWA — Implementation Complete (Needs Browser Verification)
+
+PWA code is fully implemented. The following require browser testing:
+
+- [ ] Verify service worker registers in browser DevTools
+- [ ] Verify app is installable (Chrome install prompt)
+- [ ] Test offline shell loading
+- [ ] Verify manifest is detected correctly
+
+### Missing Features to Implement
+
+- **Command Bar Recent Items**: The command bar at section 1.5.3 claims "Recent: Last 5 viewed items" but this feature has not been implemented. Needs storage logic (localStorage or DB) to track recently viewed items.

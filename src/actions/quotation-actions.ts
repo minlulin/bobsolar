@@ -20,6 +20,7 @@ import { ActionResponse } from './inventory-actions';
 import { calculateQuotation, LineItem } from '@/lib/pricing/engine';
 import { formatQuoteNumber, extractSequence } from '@/lib/utils/quote-number';
 import { getSessionFromCookie } from '@/lib/auth/session';
+import { updateQuotationSchema, canTransitionStatus, type QuotationStatus } from '@/lib/validators/quotation';
 
 export type QuotationWithCustomer = Quotation & {
   customer: {
@@ -186,10 +187,23 @@ export async function createQuotation(
 
 export async function updateQuotationStatus(
   id: string,
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired',
+  status: QuotationStatus,
 ): Promise<ActionResponse<void>> {
   try {
     await requireAuth();
+
+    const quote = await db.query.quotations.findFirst({
+      where: eq(quotations.id, id),
+    });
+
+    if (!quote) return { success: false, error: 'Quotation not found' };
+
+    if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
+      return {
+        success: false,
+        error: `Cannot transition from ${quote.status} to ${status}`,
+      };
+    }
 
     await db
       .update(quotations)
@@ -225,5 +239,164 @@ export async function deleteQuotation(
     return { success: true, data: undefined };
   } catch {
     return { success: false, error: 'Failed to delete quotation' };
+  }
+}
+
+export async function updateQuotation(
+  id: string,
+  raw: unknown,
+): Promise<ActionResponse<Quotation>> {
+  try {
+    const session = await getSessionFromCookie();
+    if (!session) return { success: false, error: 'Unauthorized' };
+
+    const quote = await db.query.quotations.findFirst({
+      where: eq(quotations.id, id),
+    });
+
+    if (!quote) return { success: false, error: 'Quotation not found' };
+    if (quote.status !== 'draft') {
+      return { success: false, error: 'Only draft quotations can be updated' };
+    }
+
+    const validated = updateQuotationSchema.parse(raw);
+
+    const lineItems: LineItem[] = validated.items?.map((item) => ({
+      quantity: item?.quantity || 0,
+      unitPrice: item?.unitPrice || 0,
+      discountPercentage: item?.discountPercentage || 0,
+    })) || [];
+
+    const pricing = calculateQuotation(
+      lineItems,
+      validated.discountPercent || 0,
+      validated.taxPercent || 0,
+    );
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(quotations)
+        .set({
+          customerId: validated.customerId,
+          subtotal: pricing.subtotal.toString(),
+          discountPercent: (validated.discountPercent || 0).toString(),
+          discountAmount: pricing.discountAmount.toString(),
+          taxPercent: (validated.taxPercent || 0).toString(),
+          taxAmount: pricing.taxAmount.toString(),
+          total: pricing.total.toString(),
+          notes: validated.notes,
+          validUntil: validated.validUntil,
+          updatedAt: new Date(),
+        })
+        .where(eq(quotations.id, id));
+
+      if (validated.items) {
+        await tx.delete(quotationItems).where(eq(quotationItems.quotationId, id));
+
+        const itemsToInsert = validated.items.map((item, index) => ({
+          quotationId: id,
+          itemId: item.itemId,
+          description: item.description,
+          quantity: item.quantity.toString(),
+          unitPrice: item.unitPrice.toString(),
+          totalPrice: (
+            item.quantity *
+            item.unitPrice *
+            (1 - (item.discountPercentage || 0) / 100)
+          ).toString(),
+          sortOrder: index,
+        }));
+
+        await tx.insert(quotationItems).values(itemsToInsert);
+      }
+    });
+
+    revalidatePath('/quotations');
+    revalidatePath(`/quotations/${id}`);
+
+    const updated = await db.query.quotations.findFirst({
+      where: eq(quotations.id, id),
+    });
+
+    return { success: true, data: updated! };
+  } catch (error) {
+    console.error('updateQuotation error:', error);
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || 'Validation failed',
+      };
+    }
+    return { success: false, error: 'Failed to update quotation' };
+  }
+}
+
+export async function duplicateQuotation(
+  id: string,
+): Promise<ActionResponse<Quotation>> {
+  try {
+    const session = await getSessionFromCookie();
+    if (!session) return { success: false, error: 'Unauthorized' };
+
+    const original = await db.query.quotations.findFirst({
+      where: eq(quotations.id, id),
+      with: { items: true },
+    });
+
+    if (!original) return { success: false, error: 'Quotation not found' };
+
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    const lastQuote = await db.query.quotations.findFirst({
+      where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+      orderBy: [desc(quotations.quoteNumber)],
+    });
+
+    let nextSequence = 1;
+    if (lastQuote) {
+      nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+    }
+    const quoteNumber = formatQuoteNumber(nextSequence);
+
+    const result = await db.transaction(async (tx) => {
+      const [quote] = await tx
+        .insert(quotations)
+        .values({
+          quoteNumber,
+          customerId: original.customerId,
+          createdBy: session.userId,
+          subtotal: original.subtotal,
+          discountPercent: original.discountPercent,
+          discountAmount: original.discountAmount,
+          taxPercent: original.taxPercent,
+          taxAmount: original.taxAmount,
+          total: original.total,
+          notes: original.notes,
+          validUntil: original.validUntil,
+          status: 'draft',
+        })
+        .returning();
+
+      if (!quote) throw new Error('Failed to create quotation');
+
+      const itemsToInsert = original.items.map((item, index) => ({
+        quotationId: quote.id,
+        itemId: item.itemId,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        sortOrder: index,
+      }));
+
+      await tx.insert(quotationItems).values(itemsToInsert);
+
+      return quote;
+    });
+
+    revalidatePath('/quotations');
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('duplicateQuotation error:', error);
+    return { success: false, error: 'Failed to duplicate quotation' };
   }
 }
