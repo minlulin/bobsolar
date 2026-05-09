@@ -28,6 +28,8 @@ export const inventoryCategoryEnum = pgEnum('inventory_category', [
   'labor',
 ]);
 
+export type InventoryCategory = (typeof inventoryCategoryEnum.enumValues)[number];
+
 export const inventoryUnitEnum = pgEnum('inventory_unit', [
   'pcs',
   'meter',
@@ -36,6 +38,8 @@ export const inventoryUnitEnum = pgEnum('inventory_unit', [
   'job',
 ]);
 
+export type InventoryUnit = (typeof inventoryUnitEnum.enumValues)[number];
+
 export const quotationStatusEnum = pgEnum('quotation_status', [
   'draft',
   'sent',
@@ -43,6 +47,8 @@ export const quotationStatusEnum = pgEnum('quotation_status', [
   'rejected',
   'expired',
 ]);
+
+export type QuotationStatus = (typeof quotationStatusEnum.enumValues)[number];
 
 export const projectStatusEnum = pgEnum('project_status', [
   'planning',

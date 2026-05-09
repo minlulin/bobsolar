@@ -10,13 +10,14 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuotationCard } from '@/components/quotations/quotation-card';
 import { useQuotations } from '@/hooks/use-quotations';
 import { useRouter } from 'next/navigation';
+import { type QuotationStatus, quotationStatusEnum } from '@/lib/db/schema';
 
-const TABS = [
+const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
   { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Drafts' },
-  { id: 'sent', label: 'Sent' },
-  { id: 'accepted', label: 'Accepted' },
-  { id: 'rejected', label: 'Rejected' },
+  { id: 'draft', label: 'Drafts', status: 'draft' },
+  { id: 'sent', label: 'Sent', status: 'sent' },
+  { id: 'accepted', label: 'Accepted', status: 'accepted' },
+  { id: 'rejected', label: 'Rejected', status: 'rejected' },
 ];
 
 export default function QuotationsPage() {
@@ -29,7 +30,7 @@ export default function QuotationsPage() {
     status:
       status === 'all'
         ? undefined
-        : (status as 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired'),
+        : (status as QuotationStatus),
   });
 
   const quotations = response?.success ? response.data.items : [];

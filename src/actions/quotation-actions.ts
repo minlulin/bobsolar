@@ -12,15 +12,15 @@ import {
   createQuotationSchema,
   type QuotationFilter,
 } from '@/lib/validators/quotation';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
+import { requireAuth, requireAdmin, getCurrentUser } from '@/lib/auth/validate';
 import { eq, and, ilike, desc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { ActionResponse } from './inventory-actions';
-import { calculateQuotation, LineItem } from '@/lib/pricing/engine';
+import { calculateQuotation, calculateLineItem, LineItem } from '@/lib/pricing/engine';
 import { formatQuoteNumber, extractSequence } from '@/lib/utils/quote-number';
-import { getSessionFromCookie } from '@/lib/auth/session';
 import { updateQuotationSchema, canTransitionStatus, type QuotationStatus } from '@/lib/validators/quotation';
+import { handleActionError, handleNotFoundError, handleStateError } from '@/lib/utils/error';
 
 export type QuotationWithCustomer = Quotation & {
   customer: {
@@ -36,8 +36,6 @@ export async function getQuotations(
 
     const { status, customerId, search } = filters;
 
-    // Build filters
-    // Note: Drizzle query API makes it easier to join
     const items = await db.query.quotations.findMany({
       where: and(
         status ? eq(quotations.status, status) : undefined,
@@ -59,8 +57,7 @@ export async function getQuotations(
       data: { items: items as QuotationWithCustomer[], total: items.length },
     };
   } catch (error) {
-    console.error('getQuotations error:', error);
-    return { success: false, error: 'Failed to fetch quotations' };
+    return handleActionError(error, 'getQuotations', 'Failed to fetch quotations');
   }
 }
 
@@ -81,15 +78,15 @@ export async function getQuotation(
     });
 
     if (!item) {
-      return { success: false, error: 'Quotation not found' };
+      return handleNotFoundError('Quotation', id);
     }
 
     return {
       success: true,
       data: item as Quotation & { items: QuotationItem[]; customer: Customer },
     };
-  } catch {
-    return { success: false, error: 'Failed to fetch quotation' };
+  } catch (error) {
+    return handleActionError(error, 'getQuotation', 'Failed to fetch quotation');
   }
 }
 
@@ -97,12 +94,10 @@ export async function createQuotation(
   raw: unknown,
 ): Promise<ActionResponse<Quotation>> {
   try {
-    const session = await getSessionFromCookie();
-    if (!session) return { success: false, error: 'Unauthorized' };
+    const auth = await requireAuth();
 
     const validated = createQuotationSchema.parse(raw);
 
-    // 1. Calculate pricing
     const lineItems: LineItem[] = validated.items.map((item) => ({
       quantity: item.quantity,
       unitPrice: item.unitPrice,
@@ -115,8 +110,6 @@ export async function createQuotation(
       validated.taxPercent,
     );
 
-    // 2. Generate Quote Number (QT-YYYY-NNNN)
-    // We get the max sequence for the current year
     const yearStart = new Date(new Date().getFullYear(), 0, 1);
     const lastQuote = await db.query.quotations.findFirst({
       where: and(sql`${quotations.createdAt} >= ${yearStart}`),
@@ -129,14 +122,13 @@ export async function createQuotation(
     }
     const quoteNumber = formatQuoteNumber(nextSequence);
 
-    // 3. Transactional Insert
     const result = await db.transaction(async (tx) => {
       const [quote] = await tx
         .insert(quotations)
         .values({
           quoteNumber,
           customerId: validated.customerId,
-          createdBy: session.userId,
+          createdBy: auth.userId,
           subtotal: pricing.subtotal.toString(),
           discountPercent: validated.discountPercent.toString(),
           discountAmount: pricing.discountAmount.toString(),
@@ -149,20 +141,19 @@ export async function createQuotation(
         })
         .returning();
 
-      if (!quote) throw new Error('Failed to create quotation');
+      if (!quote) throw new Error('Failed to create quotation record in database');
 
-      // Insert line items
       const itemsToInsert = validated.items.map((item, index) => ({
         quotationId: quote.id,
         itemId: item.itemId,
         description: item.description,
         quantity: item.quantity.toString(),
         unitPrice: item.unitPrice.toString(),
-        totalPrice: (
-          item.quantity *
-          item.unitPrice *
-          (1 - (item.discountPercentage || 0) / 100)
-        ).toString(),
+        totalPrice: calculateLineItem({
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountPercentage: item.discountPercentage,
+        }).toString(),
         sortOrder: index,
       }));
 
@@ -174,14 +165,7 @@ export async function createQuotation(
     revalidatePath('/quotations');
     return { success: true, data: result };
   } catch (error) {
-    console.error('createQuotation error:', error);
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.issues[0]?.message || 'Validation failed',
-      };
-    }
-    return { success: false, error: 'Failed to create quotation' };
+    return handleActionError(error, 'createQuotation', 'Failed to create quotation');
   }
 }
 
@@ -196,13 +180,10 @@ export async function updateQuotationStatus(
       where: eq(quotations.id, id),
     });
 
-    if (!quote) return { success: false, error: 'Quotation not found' };
+    if (!quote) return handleNotFoundError('Quotation', id);
 
     if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
-      return {
-        success: false,
-        error: `Cannot transition from ${quote.status} to ${status}`,
-      };
+      return handleStateError(`Cannot change status from "${quote.status}" to "${status}"`);
     }
 
     await db
@@ -213,8 +194,8 @@ export async function updateQuotationStatus(
     revalidatePath('/quotations');
     revalidatePath(`/quotations/${id}`);
     return { success: true, data: undefined };
-  } catch {
-    return { success: false, error: 'Failed to update status' };
+  } catch (error) {
+    return handleActionError(error, 'updateQuotationStatus', 'Failed to update quotation status');
   }
 }
 
@@ -228,17 +209,17 @@ export async function deleteQuotation(
       where: eq(quotations.id, id),
     });
 
-    if (!quote) return { success: false, error: 'Quotation not found' };
+    if (!quote) return handleNotFoundError('Quotation', id);
     if (quote.status !== 'draft') {
-      return { success: false, error: 'Only draft quotations can be deleted' };
+      return handleStateError('Only draft quotations can be deleted');
     }
 
     await db.delete(quotations).where(eq(quotations.id, id));
 
     revalidatePath('/quotations');
     return { success: true, data: undefined };
-  } catch {
-    return { success: false, error: 'Failed to delete quotation' };
+  } catch (error) {
+    return handleActionError(error, 'deleteQuotation', 'Failed to delete quotation');
   }
 }
 
@@ -247,16 +228,15 @@ export async function updateQuotation(
   raw: unknown,
 ): Promise<ActionResponse<Quotation>> {
   try {
-    const session = await getSessionFromCookie();
-    if (!session) return { success: false, error: 'Unauthorized' };
+    await requireAuth();
 
     const quote = await db.query.quotations.findFirst({
       where: eq(quotations.id, id),
     });
 
-    if (!quote) return { success: false, error: 'Quotation not found' };
+    if (!quote) return handleNotFoundError('Quotation', id);
     if (quote.status !== 'draft') {
-      return { success: false, error: 'Only draft quotations can be updated' };
+      return handleStateError('Only draft quotations can be updated');
     }
 
     const validated = updateQuotationSchema.parse(raw);
@@ -299,11 +279,11 @@ export async function updateQuotation(
           description: item.description,
           quantity: item.quantity.toString(),
           unitPrice: item.unitPrice.toString(),
-          totalPrice: (
-            item.quantity *
-            item.unitPrice *
-            (1 - (item.discountPercentage || 0) / 100)
-          ).toString(),
+          totalPrice: calculateLineItem({
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discountPercentage: item.discountPercentage,
+          }).toString(),
           sortOrder: index,
         }));
 
@@ -320,14 +300,7 @@ export async function updateQuotation(
 
     return { success: true, data: updated! };
   } catch (error) {
-    console.error('updateQuotation error:', error);
-    if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.issues[0]?.message || 'Validation failed',
-      };
-    }
-    return { success: false, error: 'Failed to update quotation' };
+    return handleActionError(error, 'updateQuotation', 'Failed to update quotation');
   }
 }
 
@@ -335,15 +308,14 @@ export async function duplicateQuotation(
   id: string,
 ): Promise<ActionResponse<Quotation>> {
   try {
-    const session = await getSessionFromCookie();
-    if (!session) return { success: false, error: 'Unauthorized' };
+    const auth = await requireAuth();
 
     const original = await db.query.quotations.findFirst({
       where: eq(quotations.id, id),
       with: { items: true },
     });
 
-    if (!original) return { success: false, error: 'Quotation not found' };
+    if (!original) return handleNotFoundError('Quotation', id);
 
     const yearStart = new Date(new Date().getFullYear(), 0, 1);
     const lastQuote = await db.query.quotations.findFirst({
@@ -363,7 +335,7 @@ export async function duplicateQuotation(
         .values({
           quoteNumber,
           customerId: original.customerId,
-          createdBy: session.userId,
+          createdBy: auth.userId,
           subtotal: original.subtotal,
           discountPercent: original.discountPercent,
           discountAmount: original.discountAmount,
@@ -376,7 +348,7 @@ export async function duplicateQuotation(
         })
         .returning();
 
-      if (!quote) throw new Error('Failed to create quotation');
+      if (!quote) throw new Error('Failed to create duplicated quotation in database');
 
       const itemsToInsert = original.items.map((item, index) => ({
         quotationId: quote.id,
@@ -396,7 +368,6 @@ export async function duplicateQuotation(
     revalidatePath('/quotations');
     return { success: true, data: result };
   } catch (error) {
-    console.error('duplicateQuotation error:', error);
-    return { success: false, error: 'Failed to duplicate quotation' };
+    return handleActionError(error, 'duplicateQuotation', 'Failed to duplicate quotation');
   }
 }

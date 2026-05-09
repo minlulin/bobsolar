@@ -22,6 +22,11 @@ import { useInventoryItems } from '@/hooks/use-inventory';
 import { useDebounce } from '@/hooks/use-debounce';
 import { type InventoryItem } from '@/lib/db/schema';
 import { calculateQuotation, formatMMK } from '@/lib/pricing/engine';
+import {
+  parsePositiveInteger,
+  parseNonNegativeNumber,
+  parsePercentage,
+} from '@/lib/utils/number';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -196,7 +201,7 @@ export default function NewQuotationPage() {
                                   );
                                   form.setValue(
                                     `items.${index}.unitPrice`,
-                                    parseFloat(invItem.unitPrice.toString()),
+                                    parseNonNegativeNumber(invItem.unitPrice.toString()),
                                   );
                                   form.setValue(
                                     `items.${index}.itemId`,
@@ -221,10 +226,12 @@ export default function NewQuotationPage() {
                               </label>
                               <Input
                                 type="number"
+                                min="1"
+                                step="1"
                                 {...field}
                                 onChange={(e) =>
                                   field.onChange(
-                                    parseFloat(e.target.value) || 0,
+                                    parsePositiveInteger(e.target.value),
                                   )
                                 }
                               />
@@ -243,10 +250,12 @@ export default function NewQuotationPage() {
                               </label>
                               <Input
                                 type="number"
+                                min="0"
+                                step="100"
                                 {...field}
                                 onChange={(e) =>
                                   field.onChange(
-                                    parseFloat(e.target.value) || 0,
+                                    parseNonNegativeNumber(e.target.value),
                                   )
                                 }
                               />
@@ -315,9 +324,13 @@ export default function NewQuotationPage() {
                   </span>
                   <Input
                     type="number"
+                    min="0"
+                    max="100"
+                    step="1"
                     className="h-8 w-20 bg-white/5 text-right"
                     {...form.register('discountPercent', {
                       valueAsNumber: true,
+                      setValueAs: (v) => parsePercentage(v),
                     })}
                   />
                 </div>
@@ -325,8 +338,14 @@ export default function NewQuotationPage() {
                   <span className="text-muted-foreground text-sm">Tax (%)</span>
                   <Input
                     type="number"
+                    min="0"
+                    max="100"
+                    step="1"
                     className="h-8 w-20 bg-white/5 text-right"
-                    {...form.register('taxPercent', { valueAsNumber: true })}
+                    {...form.register('taxPercent', {
+                      valueAsNumber: true,
+                      setValueAs: (v) => parsePercentage(v),
+                    })}
                   />
                 </div>
               </div>
@@ -407,7 +426,7 @@ function InventorySearchSelector({
                   <div className="text-muted-foreground flex w-full justify-between text-[10px]">
                     <span>{item.brand}</span>
                     <span className="text-solar font-bold">
-                      {formatMMK(parseFloat(item.unitPrice.toString()))}
+                      {formatMMK(parseNonNegativeNumber(item.unitPrice.toString()))}
                     </span>
                   </div>
                 </CommandItem>

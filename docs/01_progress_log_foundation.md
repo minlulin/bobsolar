@@ -516,3 +516,7 @@ PWA code is fully implemented. The following require browser testing:
 ### Missing Features to Implement
 
 - **Command Bar Recent Items**: The command bar at section 1.5.3 claims "Recent: Last 5 viewed items" but this feature has not been implemented. Needs storage logic (localStorage or DB) to track recently viewed items.
+
+- **Command Bar Dead Links (Phase 3)**: The following routes in command-bar.tsx lead to non-existent pages:
+  - `/customers/new` — Needs customer creation page or add via dialog
+  - `/projects/new` — Needs project creation page (depends on "Convert to Project" from accepted quotation — Phase 3)

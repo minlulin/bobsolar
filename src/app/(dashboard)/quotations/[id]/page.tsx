@@ -29,7 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { formatMMK } from '@/lib/pricing/engine';
 import { cn } from '@/lib/utils';
-import { type QuotationItem } from '@/lib/db/schema';
+import { type QuotationItem, type QuotationStatus } from '@/lib/db/schema';
 import {
   Table,
   TableBody,
@@ -107,7 +107,7 @@ export default function QuotationDetailPage() {
   const StatusIcon = config.icon;
 
   const handleStatusChange = (
-    newStatus: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired',
+    newStatus: QuotationStatus,
   ) => {
     updateStatus({ id: quotation.id, status: newStatus });
   };
