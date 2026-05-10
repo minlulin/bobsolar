@@ -51,11 +51,16 @@ export function QuoteDocument({
 }: QuoteDocumentProps) {
   const { customer, items } = quotation;
 
-  const companyName = companySettings['company_name'] || FALLBACK_COMPANY_INFO.name;
-  const companyAddress = companySettings['company_address'] || FALLBACK_COMPANY_INFO.address;
-  const companyPhone = companySettings['company_phone'] || FALLBACK_COMPANY_INFO.phone;
-  const companyEmail = companySettings['company_email'] || FALLBACK_COMPANY_INFO.email;
-  const companyTaxId = companySettings['company_tax_id'] || FALLBACK_COMPANY_INFO.taxId;
+  const companyName =
+    companySettings['company_name'] || FALLBACK_COMPANY_INFO.name;
+  const companyAddress =
+    companySettings['company_address'] || FALLBACK_COMPANY_INFO.address;
+  const companyPhone =
+    companySettings['company_phone'] || FALLBACK_COMPANY_INFO.phone;
+  const companyEmail =
+    companySettings['company_email'] || FALLBACK_COMPANY_INFO.email;
+  const companyTaxId =
+    companySettings['company_tax_id'] || FALLBACK_COMPANY_INFO.taxId;
 
   return (
     <Document>
@@ -70,7 +75,9 @@ export function QuoteDocument({
               </>
             ) : null}
             <Text style={pdfStyles.companyName}>{companyName}</Text>
-            <Text style={pdfStyles.companyTagline}>{FALLBACK_COMPANY_INFO.tagline}</Text>
+            <Text style={pdfStyles.companyTagline}>
+              {FALLBACK_COMPANY_INFO.tagline}
+            </Text>
             <Text style={pdfStyles.companyDetails}>
               {companyAddress}
               {'\n'}
@@ -226,7 +233,8 @@ export function QuoteDocument({
             invoice date.
           </Text>
           <Text style={pdfStyles.bankDetails}>
-            {companySettings['company_bank_details'] || FALLBACK_COMPANY_INFO.bankDetails}
+            {companySettings['company_bank_details'] ||
+              FALLBACK_COMPANY_INFO.bankDetails}
           </Text>
           <Text style={pdfStyles.thankYou}>
             Thank you for choosing {companyName}

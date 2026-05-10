@@ -237,7 +237,7 @@ export async function convertQuotationToProject(
 
     const year = new Date().getFullYear();
     let retries = 3;
-    
+
     while (retries > 0) {
       try {
         const seq = await nextProjectSequence(year);
@@ -269,16 +269,25 @@ export async function convertQuotationToProject(
         revalidatePath('/quotations');
 
         return { success: true, data: created };
-      } catch (error: any) {
-        if (error.code === '23505' && retries > 1) { // 23505 is unique_violation
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === '23505' &&
+          retries > 1
+        ) {
+          // 23505 is unique_violation
           retries--;
           continue;
         }
         throw error;
       }
     }
-    
-    return handleStateError('Failed to generate unique project number after retries.');
+
+    return handleStateError(
+      'Failed to generate unique project number after retries.',
+    );
   } catch (error) {
     return handleActionError(
       error,
@@ -355,11 +364,17 @@ export async function getProjects(
         project: projects,
         customerName: customers.name,
         quoteNumber: quotations.quoteNumber,
+        costTotal:
+          sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
+            'cost_total',
+          ),
       })
       .from(projects)
       .innerJoin(customers, eq(projects.customerId, customers.id))
       .leftJoin(quotations, eq(projects.quotationId, quotations.id))
+      .leftJoin(projectCosts, eq(projectCosts.projectId, projects.id))
       .where(whereClause)
+      .groupBy(projects.id, customers.name, quotations.quoteNumber)
       .orderBy(
         scope === 'completed'
           ? desc(projects.actualCompletion)
@@ -377,17 +392,12 @@ export async function getProjects(
 
     const totalCount = Number(countRows[0]?.count ?? 0);
 
-    const items: ProjectListRow[] = await Promise.all(
-      rows.map(async (r) => {
-        const costTotal = await sumProjectCosts(r.project.id);
-        return {
-          ...r.project,
-          customerName: r.customerName,
-          quoteNumber: r.quoteNumber,
-          costTotal,
-        };
-      }),
-    );
+    const items: ProjectListRow[] = rows.map((r) => ({
+      ...r.project,
+      customerName: r.customerName,
+      quoteNumber: r.quoteNumber,
+      costTotal: Math.round(Number(r.costTotal)),
+    }));
 
     if (scope === 'completed') {
       const ids = rows.map((r) => r.project.id);
@@ -464,8 +474,6 @@ export async function getProject(
     if (!row) {
       return handleNotFoundError('Project', id);
     }
-
-    await persistActualTotal(id);
 
     const actualTotalComputed = await sumProjectCosts(id);
     const quoted = Math.round(Number(row.quotedTotal));

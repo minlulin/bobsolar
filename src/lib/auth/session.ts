@@ -85,7 +85,7 @@ export async function getSessionAndRefresh(): Promise<{
   // Only refresh if more than 1 day has passed to avoid excessive DB writes
   const ONE_DAY_MS = 24 * 60 * 60 * 1000;
   const timeUntilExpiry = session.expiresAt.getTime() - Date.now();
-  
+
   if (SESSION_DURATION_MS - timeUntilExpiry > ONE_DAY_MS) {
     const refreshed = await refreshSession(sessionId);
     if (refreshed) {
@@ -104,6 +104,9 @@ export async function getSessionAndRefresh(): Promise<{
 }
 
 export async function cleanupExpiredSessions(): Promise<number> {
-  const result = await db.delete(sessions).where(lt(sessions.expiresAt, new Date())).returning({ id: sessions.id });
+  const result = await db
+    .delete(sessions)
+    .where(lt(sessions.expiresAt, new Date()))
+    .returning({ id: sessions.id });
   return result.length;
 }

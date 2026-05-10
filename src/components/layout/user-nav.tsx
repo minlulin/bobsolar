@@ -13,7 +13,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { logout } from '@/actions/auth-actions';
 
-export function UserNav({ userName, userRole }: { userName: string, userRole: string }) {
+export function UserNav({
+  userName,
+  userRole,
+}: {
+  userName: string;
+  userRole: string;
+}) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -23,15 +29,18 @@ export function UserNav({ userName, userRole }: { userName: string, userRole: st
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full border-2 border-white/10 bg-muted overflow-hidden hover:bg-muted/80">
+        <Button
+          variant="ghost"
+          className="bg-muted hover:bg-muted/80 relative h-10 w-10 overflow-hidden rounded-full border-2 border-white/10"
+        >
           <User className="h-6 w-6" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{userName}</p>
-            <p className="text-xs leading-none text-muted-foreground capitalize">
+            <p className="text-sm leading-none font-medium">{userName}</p>
+            <p className="text-muted-foreground text-xs leading-none capitalize">
               {userRole}
             </p>
           </div>

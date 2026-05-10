@@ -10,10 +10,11 @@ import {
 } from '@/lib/db/schema';
 import {
   createQuotationSchema,
-  type QuotationFilter,
+  quotationFilterSchema,
+  type QuotationFilterInput,
 } from '@/lib/validators/quotation';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
-import { eq, and, ilike, desc, sql, lt } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth/validate';
+import { eq, and, ilike, desc, sql, lt, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { ActionResponse } from './inventory-actions';
 import {
@@ -43,12 +44,14 @@ export type QuotationWithCustomer = Quotation & {
 };
 
 export async function getQuotations(
-  filters: QuotationFilter = {},
+  filters: QuotationFilterInput = {},
 ): Promise<ActionResponse<{ items: QuotationWithCustomer[]; total: number }>> {
   try {
     await requireAuth();
 
-    const { status, customerId, search } = filters;
+    const parsedFilters = quotationFilterSchema.parse(filters);
+    const { status, customerId, search, page, limit } = parsedFilters;
+    const offset = (page - 1) * limit;
 
     // Auto-expire sent quotes that have passed their validUntil date
     await db
@@ -57,16 +60,18 @@ export async function getQuotations(
       .where(
         and(
           eq(quotations.status, 'sent'),
-          lt(quotations.validUntil, new Date())
-        )
+          lt(quotations.validUntil, new Date()),
+        ),
       );
 
+    const whereClause = and(
+      status ? eq(quotations.status, status) : undefined,
+      customerId ? eq(quotations.customerId, customerId) : undefined,
+      search ? ilike(quotations.quoteNumber, `%${search}%`) : undefined,
+    );
+
     const items = await db.query.quotations.findMany({
-      where: and(
-        status ? eq(quotations.status, status) : undefined,
-        customerId ? eq(quotations.customerId, customerId) : undefined,
-        search ? ilike(quotations.quoteNumber, `%${search}%`) : undefined,
-      ),
+      where: whereClause,
       with: {
         customer: {
           columns: {
@@ -80,11 +85,19 @@ export async function getQuotations(
         },
       },
       orderBy: [desc(quotations.createdAt)],
+      limit,
+      offset,
     });
+
+    const totals = await db
+      .select({ total: count() })
+      .from(quotations)
+      .where(whereClause);
+    const total = totals[0]?.total ?? 0;
 
     return {
       success: true,
-      data: { items: items as QuotationWithCustomer[], total: items.length },
+      data: { items: items as QuotationWithCustomer[], total },
     };
   } catch (error) {
     return handleActionError(
@@ -115,8 +128,8 @@ export async function getQuotation(id: string): Promise<
         and(
           eq(quotations.id, id),
           eq(quotations.status, 'sent'),
-          lt(quotations.validUntil, new Date())
-        )
+          lt(quotations.validUntil, new Date()),
+        ),
       );
 
     const item = await db.query.quotations.findFirst({
@@ -233,16 +246,24 @@ export async function createQuotation(
 
         revalidatePath('/quotations');
         return { success: true, data: result };
-      } catch (error: any) {
-        if (error.code === '23505' && retries > 1) {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === '23505' &&
+          retries > 1
+        ) {
           retries--;
           continue;
         }
         throw error;
       }
     }
-    
-    return handleStateError('Failed to generate unique quote number after retries.');
+
+    return handleStateError(
+      'Failed to generate unique quote number after retries.',
+    );
   } catch (error) {
     return handleActionError(
       error,
@@ -288,34 +309,6 @@ export async function updateQuotationStatus(
   }
 }
 
-export async function deleteQuotation(
-  id: string,
-): Promise<ActionResponse<void>> {
-  try {
-    await requireAdmin();
-
-    const quote = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
-    });
-
-    if (!quote) return handleNotFoundError('Quotation', id);
-    if (quote.status !== 'draft') {
-      return handleStateError('Only draft quotations can be deleted');
-    }
-
-    await db.delete(quotations).where(eq(quotations.id, id));
-
-    revalidatePath('/quotations');
-    return { success: true, data: undefined };
-  } catch (error) {
-    return handleActionError(
-      error,
-      'deleteQuotation',
-      'Failed to delete quotation',
-    );
-  }
-}
-
 export async function updateQuotation(
   id: string,
   raw: unknown,
@@ -338,9 +331,11 @@ export async function updateQuotation(
     const patch: Partial<typeof quotations.$inferInsert> = {
       updatedAt: new Date(),
     };
-    if (validated.customerId !== undefined) patch.customerId = validated.customerId;
+    if (validated.customerId !== undefined)
+      patch.customerId = validated.customerId;
     if (validated.notes !== undefined) patch.notes = validated.notes;
-    if (validated.validUntil !== undefined) patch.validUntil = validated.validUntil;
+    if (validated.validUntil !== undefined)
+      patch.validUntil = validated.validUntil;
 
     let shouldRecalculatePricing = false;
     if (validated.items !== undefined) shouldRecalculatePricing = true;
@@ -479,7 +474,9 @@ export async function duplicateQuotation(
             .returning();
 
           if (!quote)
-            throw new Error('Failed to create duplicated quotation in database');
+            throw new Error(
+              'Failed to create duplicated quotation in database',
+            );
 
           const itemsToInsert = original.items.map((item, index) => ({
             quotationId: quote.id,
@@ -499,15 +496,21 @@ export async function duplicateQuotation(
 
         revalidatePath('/quotations');
         return { success: true, data: result };
-      } catch (error: any) {
-        if (error.code === '23505' && retries > 1) {
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === '23505' &&
+          retries > 1
+        ) {
           retries--;
           continue;
         }
         throw error;
       }
     }
-    
+
     return handleStateError('Failed to duplicate quote after retries.');
   } catch (error) {
     return handleActionError(
@@ -529,7 +532,7 @@ export async function deleteQuotation(
     });
 
     if (!quotation) {
-      return handleNotFoundError('Quotation');
+      return handleNotFoundError('Quotation', id);
     }
 
     // Only allow deleting drafts
@@ -548,6 +551,10 @@ export async function deleteQuotation(
     revalidatePath('/', 'layout');
     return { success: true, data: undefined };
   } catch (error) {
-    return handleActionError(error, 'delete quotation');
+    return handleActionError(
+      error,
+      'deleteQuotation',
+      'Failed to delete quotation',
+    );
   }
 }

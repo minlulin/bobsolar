@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, Check, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
+import { Bell, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -19,6 +19,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import type { Notification } from '@/lib/db/schema';
 
 export function NotificationBell() {
   const { data: notifications, isLoading } = useNotifications();
@@ -27,10 +28,9 @@ export function NotificationBell() {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
 
-  const unreadCount =
-    notifications?.filter((n) => !n.isRead).length || 0;
+  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
       markAsRead.mutate(notification.id);
     }
@@ -66,7 +66,7 @@ export function NotificationBell() {
                 size="sm"
                 onClick={() => markAllAsRead.mutate()}
                 disabled={markAllAsRead.isPending}
-                className="h-8 text-xs text-muted-foreground hover:text-white"
+                className="text-muted-foreground h-8 text-xs hover:text-white"
               >
                 {markAllAsRead.isPending && (
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
@@ -76,15 +76,15 @@ export function NotificationBell() {
             )}
           </div>
         </SheetHeader>
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="-mx-6 flex-1 px-6">
           {isLoading ? (
             <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
             </div>
           ) : notifications?.length === 0 ? (
             <div className="flex h-32 flex-col items-center justify-center text-center">
               <Bell className="mb-2 h-8 w-8 text-white/10" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
+              <p className="text-muted-foreground text-sm">No notifications</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2 py-4">
@@ -114,12 +114,14 @@ export function NotificationBell() {
                     <p
                       className={cn(
                         'text-sm font-medium',
-                        notification.isRead ? 'text-muted-foreground' : 'text-white',
+                        notification.isRead
+                          ? 'text-muted-foreground'
+                          : 'text-white',
                       )}
                     >
                       {notification.title}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {notification.message}
                     </p>
                     <p className="text-xs text-white/40">

@@ -35,9 +35,12 @@ export const quotationFilterSchema = z.object({
     .nullable(),
   customerId: z.string().uuid().optional().nullable(),
   search: z.string().optional().nullable(),
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(20),
 });
 
 export type QuotationFilter = z.infer<typeof quotationFilterSchema>;
+export type QuotationFilterInput = z.input<typeof quotationFilterSchema>;
 export type QuotationItemInput = z.infer<typeof quotationItemSchema>;
 
 export const updateQuotationSchema = createQuotationSchema.partial().extend({

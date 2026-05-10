@@ -1,12 +1,10 @@
 import * as React from 'react';
 import Image from 'next/image';
-import { Bell, User } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/validate';
 import { BottomDock } from '@/components/layout/nav-orbit';
 import { CommandBar } from '@/components/layout/command-bar';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
-import { Button } from '@/components/ui/button';
 import { RouteTransition } from '@/components/shared/route-transition';
 import { UserNav } from '@/components/layout/user-nav';
 import { db } from '@/lib/db';

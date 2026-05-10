@@ -9,12 +9,12 @@ import {
   duplicateQuotation,
 } from '@/actions/quotation-actions';
 import {
-  type QuotationFilter,
+  type QuotationFilterInput,
   type UpdateQuotation,
 } from '@/lib/validators/quotation';
 import { toast } from 'sonner';
 
-export function useQuotations(filters: QuotationFilter = {}) {
+export function useQuotations(filters: QuotationFilterInput = {}) {
   return useQuery({
     queryKey: ['quotations', filters],
     queryFn: () => getQuotations(filters),

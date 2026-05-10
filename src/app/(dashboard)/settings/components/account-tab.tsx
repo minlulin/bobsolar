@@ -40,48 +40,67 @@ export function AccountTab() {
 
   return (
     <div className="space-y-8">
-      <div className="border-border space-y-6 rounded-[2rem] border bg-black/55 p-8 backdrop-blur max-w-2xl">
+      <div className="border-border max-w-2xl space-y-6 rounded-[2rem] border bg-black/55 p-8 backdrop-blur">
         <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
           Change Password
         </Label>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="currentPassword" className="text-xs text-muted-foreground">Current Password</Label>
-            <Input 
-              id="currentPassword" 
+            <Label
+              htmlFor="currentPassword"
+              className="text-muted-foreground text-xs"
+            >
+              Current Password
+            </Label>
+            <Input
+              id="currentPassword"
               name="currentPassword"
               type="password"
               required
-              className="bg-white/5 border-white/10"
+              className="border-white/10 bg-white/5"
             />
           </div>
-          
+
           <div className="space-y-1">
-            <Label htmlFor="newPassword" className="text-xs text-muted-foreground">New Password</Label>
-            <Input 
-              id="newPassword" 
+            <Label
+              htmlFor="newPassword"
+              className="text-muted-foreground text-xs"
+            >
+              New Password
+            </Label>
+            <Input
+              id="newPassword"
               name="newPassword"
               type="password"
               required
               minLength={8}
-              className="bg-white/5 border-white/10"
+              className="border-white/10 bg-white/5"
             />
           </div>
-          
+
           <div className="space-y-1">
-            <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground">Confirm New Password</Label>
-            <Input 
-              id="confirmPassword" 
+            <Label
+              htmlFor="confirmPassword"
+              className="text-muted-foreground text-xs"
+            >
+              Confirm New Password
+            </Label>
+            <Input
+              id="confirmPassword"
               name="confirmPassword"
               type="password"
               required
               minLength={8}
-              className="bg-white/5 border-white/10"
+              className="border-white/10 bg-white/5"
             />
           </div>
 
-          <Button type="submit" disabled={isPending} className="bg-solar text-white hover:bg-solar/90 w-full sm:w-auto mt-4">
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="bg-solar hover:bg-solar/90 mt-4 w-full text-white sm:w-auto"
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Update Password
           </Button>

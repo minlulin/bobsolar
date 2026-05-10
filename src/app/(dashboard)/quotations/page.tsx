@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QuotationCard } from '@/components/quotations/quotation-card';
 import { useQuotations } from '@/hooks/use-quotations';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { type QuotationStatus } from '@/lib/db/schema';
 
 const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
@@ -22,15 +22,30 @@ const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
 
 export default function QuotationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('all');
+  const page = Number(searchParams.get('page') ?? '1');
+  const currentPage = Number.isNaN(page) || page < 1 ? 1 : page;
+  const limit = 20;
 
   const { data: response, isLoading } = useQuotations({
     search,
     status: status === 'all' ? undefined : (status as QuotationStatus),
+    page: currentPage,
+    limit,
   });
 
   const quotations = response?.success ? response.data.items : [];
+  const total = response?.success ? response.data.total : 0;
+  const hasPrevious = currentPage > 1;
+  const hasNext = currentPage * limit < total;
+
+  const navigatePage = (nextPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', String(nextPage));
+    router.push(`/quotations?${params.toString()}`);
+  };
 
   return (
     <div className="space-y-8">
@@ -118,6 +133,30 @@ export default function QuotationsPage() {
               Create your first quote
             </Button>
           )}
+        </div>
+      )}
+
+      {quotations.length > 0 && (
+        <div className="flex items-center justify-between border-t border-white/5 pt-4">
+          <p className="text-muted-foreground text-sm">
+            Page {currentPage} of {Math.max(1, Math.ceil(total / limit))}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigatePage(currentPage - 1)}
+              disabled={!hasPrevious}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigatePage(currentPage + 1)}
+              disabled={!hasNext}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>

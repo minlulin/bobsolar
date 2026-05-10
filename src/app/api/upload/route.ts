@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const entry = formData.get('file');
     const folderRaw = String(formData.get('folder') || 'uploads');
-    const folder = folderRaw.replace(/[^a-zA-Z0-9_/-]/g, '').replace(/^\/+|\/+$/g, '') || 'uploads';
+    const folder =
+      folderRaw.replace(/[^a-zA-Z0-9_/-]/g, '').replace(/^\/+|\/+$/g, '') ||
+      'uploads';
 
     if (!(entry instanceof Blob)) {
       return NextResponse.json(

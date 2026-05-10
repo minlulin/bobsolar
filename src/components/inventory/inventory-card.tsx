@@ -27,6 +27,18 @@ import {
 } from '@/hooks/use-inventory';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { STOCK_WARNING_THRESHOLDS } from '@/lib/constants';
 
 interface InventoryCardProps {
   item: InventoryItem;
@@ -56,8 +68,12 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
   const [stock, setStock] = useState(item.stockQty.toString());
 
   const getStockColor = (qty: number) => {
+    const threshold =
+      STOCK_WARNING_THRESHOLDS[item.category] ??
+      STOCK_WARNING_THRESHOLDS.default;
     if (qty === 0) return 'bg-red-500/10 text-red-500 border-red-500/20';
-    if (qty <= 10) return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+    if (qty <= threshold)
+      return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
     return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
   };
 
@@ -89,11 +105,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
     setIsEditingStock(false);
   };
 
-  const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this item?')) {
-      deleteItem(item.id);
-    }
-  };
+  const handleDelete = () => deleteItem(item.id);
 
   return (
     <motion.div
@@ -116,14 +128,32 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
               >
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-destructive h-8 w-8"
-                onClick={handleDelete}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-destructive h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone and will permanently remove{' '}
+                      {item.name}.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>

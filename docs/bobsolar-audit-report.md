@@ -42,7 +42,7 @@ A non-trivial amount of the AGENT.md spec is missing entirely (dashboard "Energy
 
 **File:** `src/app/(dashboard)/quotations/new/components/quote-editor.tsx:41-88`, `src/actions/quotation-actions.ts:126-208`, `src/actions/quotation-actions.ts:274-362`
 
-`handleSave` is called with `'draft'` or `'sent'`, but neither `createQuotation` nor `updateQuotation` accepts a `status` parameter — they hardcode `status: 'draft'` (create) or omit it entirely (update). The toast lies to the user: it shows *"Quotation sent successfully"* while the DB still has `status='draft'`.
+`handleSave` is called with `'draft'` or `'sent'`, but neither `createQuotation` nor `updateQuotation` accepts a `status` parameter — they hardcode `status: 'draft'` (create) or omit it entirely (update). The toast lies to the user: it shows _"Quotation sent successfully"_ while the DB still has `status='draft'`.
 
 ```ts
 // quote-editor.tsx:41
@@ -75,11 +75,12 @@ discountPercentage: 0, // Drizzle schema doesn't have per-item discount yet, but
 ```
 
 **Impact loop on edit:**
+
 1. Save quote with line item: 1 panel × 100,000 MMK × 10% off → totalPrice = 90,000 (stored).
 2. Reopen draft. Editor loads with `discountPercentage: 0`. UI now shows 100,000.
 3. User saves any unrelated edit → editor recalculates totalPrice = 100,000 → DB now has 100,000.
 
-Per-line-item discounts are silently destroyed on *every* re-save. This is destructive **data loss** and a customer-facing pricing inconsistency between the saved/sent quote and the next iteration.
+Per-line-item discounts are silently destroyed on _every_ re-save. This is destructive **data loss** and a customer-facing pricing inconsistency between the saved/sent quote and the next iteration.
 
 **Fix:** Either (a) add `discount_percentage` column to `quotation_items` and persist it, or (b) remove the per-line discount UI and only support a global discount.
 
@@ -95,9 +96,9 @@ export default function NewQuotationPage() {
 }
 ```
 
-`QuoteEditor` does **not** call `reset()` on mount. The Zustand store is module-scoped and survives navigation. After viewing or editing an existing draft (which calls `loadFromQuotation`), clicking "New Quote" lands on `/quotations/new` with the *previous* customer, items, discount, and notes pre-loaded. The user can easily save a "new" quote that is in fact a copy of someone else's.
+`QuoteEditor` does **not** call `reset()` on mount. The Zustand store is module-scoped and survives navigation. After viewing or editing an existing draft (which calls `loadFromQuotation`), clicking "New Quote" lands on `/quotations/new` with the _previous_ customer, items, discount, and notes pre-loaded. The user can easily save a "new" quote that is in fact a copy of someone else's.
 
-**Impact:** Wrong customer billed, wrong items shipped. In a 3-person shop sharing the same admin login this *will* happen.
+**Impact:** Wrong customer billed, wrong items shipped. In a 3-person shop sharing the same admin login this _will_ happen.
 
 **Fix:** In `NewQuotationPage` (server) or `QuoteEditor` (client), `useEffect(() => reset(), [])` when `mode === 'create'`, OR scope the store per-quote ID, OR put builder state in URL/query params.
 
@@ -121,6 +122,7 @@ const validated = updateQuotationSchema.parse(raw); // .partial() — all option
 ```
 
 If a future caller (or a partial PATCH) sends only `notes`, the action will:
+
 1. Try to set `customer_id = NULL` (NOT NULL constraint → throws).
 2. Replace `discountPercent` and `taxPercent` with `0` even if user only wanted to update notes.
 3. Recompute `subtotal/total` to `0` from an empty `items` array (since `validated.items` is undefined).
@@ -144,7 +146,7 @@ const taxAmount = afterDiscount * (taxPercentage / 100); // float
 
 - Displayed total in the editor preview ≠ stored total in DB ≠ total on PDF.
 - Sum of `quotation_items.totalPrice` ≠ `quotations.subtotal` because each line is rounded independently.
-- The pricing tests in `engine.test.ts` only cover cases that *happen* to produce integers, so this never gets caught.
+- The pricing tests in `engine.test.ts` only cover cases that _happen_ to produce integers, so this never gets caught.
 
 In MMK terms 1–2 MMK doesn't matter, but the **inconsistency** between three views of the same quote will be flagged by the customer ("the email said 1,234,568, the PDF says 1,234,567"). For a small business this destroys trust.
 
@@ -164,7 +166,8 @@ In MMK terms 1–2 MMK doesn't matter, but the **inconsistency** between three v
 // dashboard/layout.tsx
 <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full">
   <Bell className="h-5 w-5" />
-  <span className="bg-solar absolute top-2.5 right-2.5 h-2 w-2 rounded-full" /> {/* hardcoded */}
+  <span className="bg-solar absolute top-2.5 right-2.5 h-2 w-2 rounded-full" />{' '}
+  {/* hardcoded */}
 </Button>
 ```
 
@@ -202,10 +205,10 @@ Required by AGENT.md Phase 5.1. Without these:
 ```ts
 const COMPANY_INFO = {
   name: 'BOB Solar',
-  address: '123 Solar Street, Yangon, Myanmar',  // placeholder
-  phone: '+95 9 123 456 789',                    // placeholder
+  address: '123 Solar Street, Yangon, Myanmar', // placeholder
+  phone: '+95 9 123 456 789', // placeholder
   email: 'info@bobsolar.com',
-  taxId: 'TIN-2026-XXXXX',                       // placeholder
+  taxId: 'TIN-2026-XXXXX', // placeholder
 };
 const BANK_DETAILS = `KBZ Bank | A/C: 123-456-789-0 | ...`;
 ```
@@ -236,6 +239,7 @@ The proxy lets any `/api/*` route through. The route handler does its own sessio
 **Impact:** An authenticated user (or a CSRF-tricked browser) can upload arbitrary content into the company's Vercel Blob, potentially blowing the 1GB free tier and serving anything (HTML, JS) under the trusted domain.
 
 **Fix:**
+
 1. Replace `/api` blanket whitelist with per-route `/api/auth/*` etc.
 2. Add `Origin`/`Sec-Fetch-Site` checks or a CSRF token to upload.
 3. Server-side validate `file.type` against an allowlist and `file.size` against a max.
@@ -332,7 +336,7 @@ The schema has `quotations.createdBy` joined to `users.name`, but the card hardc
 </DropdownMenuItem>
 ```
 
-No `onClick`. Clicking does nothing. Item is shown for *every* status (drafts, sent, accepted, rejected, expired) — even though `deleteQuotation` rejects non-draft.
+No `onClick`. Clicking does nothing. Item is shown for _every_ status (drafts, sent, accepted, rejected, expired) — even though `deleteQuotation` rejects non-draft.
 
 **Fix:** Wire to `useDeleteQuotation()` mutation. Conditionally render only for `status === 'draft'`.
 
@@ -346,7 +350,7 @@ No `onClick`. Clicking does nothing. Item is shown for *every* status (drafts, s
 export const QUOTATION_STATUS_TRANSITIONS = {
   draft: ['sent', 'draft'],
   sent: ['accepted', 'rejected', 'expired'],
-  accepted: [],   // terminal — cannot go back
+  accepted: [], // terminal — cannot go back
   rejected: ['draft'],
   expired: [],
 };
@@ -403,6 +407,7 @@ await db.delete(customers).where(eq(customers.id, id));
 `customers → quotations` has `onDelete: 'cascade'` → deleting a customer wipes every quote you ever sent them, including accepted ones with money attached. `customers → projects` has no cascade → delete fails with FK error → the user sees "Failed to delete customer" with no hint why.
 
 **Impact:**
+
 - Quotations are the company's record of what was offered. Cascading them on customer delete is a destructive operation with no undo.
 - "Failed to delete customer" without a reason is a known support-cost generator.
 
@@ -415,10 +420,10 @@ await db.delete(customers).where(eq(customers.id, id));
 **File:** `src/actions/quotation-actions.ts:54`, `src/app/(dashboard)/quotations/page.tsx:75`
 
 ```ts
-search ? ilike(quotations.quoteNumber, `%${search}%`) : undefined
+search ? ilike(quotations.quoteNumber, `%${search}%`) : undefined;
 ```
 
-The placeholder says *"Search by quote number..."* but real-world workflow is "search by customer name". Salesperson asking "what's the latest quote for U Hla?" has to scroll the list.
+The placeholder says _"Search by quote number..."_ but real-world workflow is "search by customer name". Salesperson asking "what's the latest quote for U Hla?" has to scroll the list.
 
 **Fix:** Also search joined `customers.name`.
 
@@ -511,7 +516,7 @@ Vercel installs devDependencies during build so production builds work, but **an
 
 **File:** `src/components/pdf/quote-document.tsx:1`
 
-`@react-pdf/renderer` runs on the server (Node) inside the route handler. Marking the file `'use client'` is incorrect: it tells the bundler this is a client component, then it's imported and called from a Server Component / Route Handler. In Next 16 / React 19 this *can* compile but creates an extra client-bundle entry that ships unused JS to every page that touches anything in the import chain, and confuses tree-shaking.
+`@react-pdf/renderer` runs on the server (Node) inside the route handler. Marking the file `'use client'` is incorrect: it tells the bundler this is a client component, then it's imported and called from a Server Component / Route Handler. In Next 16 / React 19 this _can_ compile but creates an extra client-bundle entry that ships unused JS to every page that touches anything in the import chain, and confuses tree-shaking.
 
 **Fix:** Remove `'use client'`. The PDF renderer is server-only.
 
@@ -582,7 +587,7 @@ Combined with P1-11 (no auto-expire), this means expired quotes only appear unde
 
 ---
 
-### P2-2. `getQuotations` returns *all* rows, no pagination
+### P2-2. `getQuotations` returns _all_ rows, no pagination
 
 **File:** `src/actions/quotation-actions.ts:50-69`
 
@@ -616,7 +621,7 @@ For a list of 50 projects, this is 50+ extra DB round-trips just for cost totals
 **File:** `src/actions/project-actions.ts:454`
 
 ```ts
-await persistActualTotal(id);  // recalculates actualTotal from costs and writes it
+await persistActualTotal(id); // recalculates actualTotal from costs and writes it
 const actualTotalComputed = await sumProjectCosts(id);
 ```
 
@@ -630,7 +635,7 @@ Every project detail page-load issues an UPDATE. Two of the three users opening 
 
 **File:** `src/actions/project-actions.ts:182-200`
 
-`maybeNotifyBudgetOverrun` only fires when `actual` *crosses* 110% of `quoted`. Logic:
+`maybeNotifyBudgetOverrun` only fires when `actual` _crosses_ 110% of `quoted`. Logic:
 
 ```ts
 if (actual <= threshold) return;
@@ -652,10 +657,10 @@ If a cost is deleted bringing `actual` below threshold, the "previousSpend" snap
 **File:** `src/actions/project-actions.ts:124-148`, `src/lib/db/schema.ts` (warranty_alerts)
 
 ```ts
-dueDate: addYears(now, 1)  // server's `now` in UTC
+dueDate: addYears(now, 1); // server's `now` in UTC
 ```
 
-Server runs UTC. Customers and staff are in `Asia/Yangon` (UTC+6:30). A project completed at 22:00 Yangon time (15:30 UTC) gets warranty `dueDate` of next year 15:30 UTC, which is the *day after* in Yangon. Off-by-one-day errors when displaying "Due tomorrow" / "Due today".
+Server runs UTC. Customers and staff are in `Asia/Yangon` (UTC+6:30). A project completed at 22:00 Yangon time (15:30 UTC) gets warranty `dueDate` of next year 15:30 UTC, which is the _day after_ in Yangon. Off-by-one-day errors when displaying "Due tomorrow" / "Due today".
 
 **Fix:** Render with `formatInTimeZone(date, 'Asia/Yangon', 'yyyy-MM-dd')`. Be consistent — never trust local `Date` formatting in serverless.
 
@@ -734,7 +739,7 @@ Vitest is in `devDependencies` and `engine.test.ts` is written in Vitest format,
 
 ```ts
 if (qty === 0) return 'red';
-if (qty <= 10) return 'amber';  // hardcoded 10 for *every* category
+if (qty <= 10) return 'amber'; // hardcoded 10 for *every* category
 ```
 
 Cable is sold per meter (10m is nothing). Panels per piece (10 panels is a lot). The same threshold makes "low stock" alarm misleading.
@@ -772,6 +777,7 @@ Native browser confirm is jarring on a custom-themed PWA, looks especially out o
 **File:** `src/lib/auth/validate.ts`
 
 Two patterns coexist:
+
 - `getCurrentUser()` → `null` on no session.
 - `requireAuth()` → throws via `redirect('/login')`.
 
@@ -924,26 +930,26 @@ The inline price/stock edits use `<Input>` without `type="number"`, so the user 
 
 ## Real-World Business Blockers
 
-These are the items that would prevent BOB Solar's two staff from running their day-to-day business with this app *as-is*:
+These are the items that would prevent BOB Solar's two staff from running their day-to-day business with this app _as-is_:
 
-| # | Blocker | Reference |
-|---|---|---|
-| 1 | "Send" button does not send | P0-1 |
-| 2 | Per-line discounts vanish on edit | P0-2 |
-| 3 | New Quote shows previous customer's data | P0-3 |
-| 4 | Notifications written, never displayed | P0-6 |
-| 5 | Hardcoded company info & bank details in every PDF | P0-8 |
-| 6 | No way to log out from the UI | P1-19 |
-| 7 | No password change UI; admin password is `admin123` in version control | P1-18 |
-| 8 | Customer delete cascades or fails silently | P1-9 |
-| 9 | "Sales Team" placeholder instead of real creator name | P1-4 |
-| 10 | "Delete Draft" dropdown does nothing | P1-5 |
-| 11 | Accepted quotes are terminal (no fix-up path) | P1-6 |
-| 12 | Expired quotes never auto-expire and aren't filterable | P1-11, P2-1 |
-| 13 | Dashboard is empty | P3-4 |
-| 14 | Warranty page is hard to find | P3-3 |
-| 15 | No error/loading/not-found pages — production crashes look broken | P0-7 |
-| 16 | Settings page has only logo upload (no company info, no users) | P0-8 |
+| #   | Blocker                                                                | Reference   |
+| --- | ---------------------------------------------------------------------- | ----------- |
+| 1   | "Send" button does not send                                            | P0-1        |
+| 2   | Per-line discounts vanish on edit                                      | P0-2        |
+| 3   | New Quote shows previous customer's data                               | P0-3        |
+| 4   | Notifications written, never displayed                                 | P0-6        |
+| 5   | Hardcoded company info & bank details in every PDF                     | P0-8        |
+| 6   | No way to log out from the UI                                          | P1-19       |
+| 7   | No password change UI; admin password is `admin123` in version control | P1-18       |
+| 8   | Customer delete cascades or fails silently                             | P1-9        |
+| 9   | "Sales Team" placeholder instead of real creator name                  | P1-4        |
+| 10  | "Delete Draft" dropdown does nothing                                   | P1-5        |
+| 11  | Accepted quotes are terminal (no fix-up path)                          | P1-6        |
+| 12  | Expired quotes never auto-expire and aren't filterable                 | P1-11, P2-1 |
+| 13  | Dashboard is empty                                                     | P3-4        |
+| 14  | Warranty page is hard to find                                          | P3-3        |
+| 15  | No error/loading/not-found pages — production crashes look broken      | P0-7        |
+| 16  | Settings page has only logo upload (no company info, no users)         | P0-8        |
 
 A salesperson onboarding tomorrow would hit at least 5 of these in their first hour.
 
@@ -952,6 +958,7 @@ A salesperson onboarding tomorrow would hit at least 5 of these in their first h
 ## Recommendations (suggested order)
 
 **Sprint 1 — Stop the bleeding (P0):**
+
 1. Fix the "Send" button (P0-1).
 2. Reset Zustand store on `/quotations/new` mount (P0-3).
 3. Stop clobbering discount/tax/customer in `updateQuotation` (P0-4).
@@ -964,6 +971,7 @@ A salesperson onboarding tomorrow would hit at least 5 of these in their first h
 10. Make sequence generation race-safe with retry on conflict (P0-10).
 
 **Sprint 2 — Fix UX deception (P1):**
+
 - Wire up `Delete Draft` (P1-5), real creator name (P1-4), logout (P1-19), expired auto-transition (P1-11).
 - Allow `accepted → rejected/draft` (P1-6).
 - Hide admin-only UI for staff (P1-7).
@@ -976,6 +984,7 @@ A salesperson onboarding tomorrow would hit at least 5 of these in their first h
 - Build basic Settings → Company form & user management (covers P0-8 + P1-18).
 
 **Sprint 3 — Performance + polish (P2/P3):**
+
 - Pagination on quotations (P2-2), single-query cost rollup (P2-3), drop write-on-read in `getProject` (P2-4).
 - Switch to Neon serverless driver (P2-9).
 - Standardize on Vitest, drop `run-tests.ts` (P2-11).
@@ -1005,4 +1014,4 @@ To balance the report — these areas are well-implemented and shouldn't be touc
 
 ---
 
-*End of audit.*
+_End of audit._

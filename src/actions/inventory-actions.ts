@@ -114,7 +114,8 @@ export async function updateInventoryItem(
       id,
     });
 
-    const { id: _id, ...updateData } = validated;
+    const { id: parsedId, ...updateData } = validated;
+    void parsedId;
 
     const [item] = await db
       .update(inventoryItems)
@@ -167,7 +168,7 @@ const bulkUpdateSchema = z.array(
   z.object({
     id: z.string().uuid(),
     unitPrice: z.number().min(0, 'Unit price must be positive'),
-  })
+  }),
 );
 
 export async function bulkUpdatePrices(

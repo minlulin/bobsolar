@@ -17,24 +17,27 @@ export default function DashboardError({
   }, [error]);
 
   return (
-    <div className="flex h-[60vh] flex-col items-center justify-center text-center px-4">
+    <div className="flex h-[60vh] flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
         <AlertCircle className="h-10 w-10 text-red-500" />
       </div>
-      <h2 className="mb-2 text-2xl font-bold text-white">Something went wrong!</h2>
-      <p className="mb-8 max-w-md text-muted-foreground">
-        We encountered an unexpected error while loading this page. Our team has been notified.
+      <h2 className="mb-2 text-2xl font-bold text-white">
+        Something went wrong!
+      </h2>
+      <p className="text-muted-foreground mb-8 max-w-md">
+        We encountered an unexpected error while loading this page. Our team has
+        been notified.
       </p>
       <div className="flex gap-4">
         <Button
           onClick={() => reset()}
-          className="bg-white text-black hover:bg-white/90 font-medium"
+          className="bg-white font-medium text-black hover:bg-white/90"
         >
           Try again
         </Button>
         <Button
           variant="outline"
-          onClick={() => window.location.href = '/'}
+          onClick={() => (window.location.href = '/')}
           className="border-white/10 hover:bg-white/5"
         >
           Go to Dashboard

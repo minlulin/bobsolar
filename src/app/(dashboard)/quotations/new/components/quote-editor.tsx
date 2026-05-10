@@ -12,7 +12,11 @@ import { QuoteItems } from './quote-items';
 import { QuoteSummary } from './quote-summary';
 import { QuotePreview } from './quote-preview';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { createQuotation, updateQuotation, updateQuotationStatus } from '@/actions/quotation-actions';
+import {
+  createQuotation,
+  updateQuotation,
+  updateQuotationStatus,
+} from '@/actions/quotation-actions';
 import { motion } from 'framer-motion';
 
 interface QuoteEditorProps {

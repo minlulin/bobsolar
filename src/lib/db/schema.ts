@@ -145,13 +145,21 @@ export const quotations = pgTable('quotations', {
   discountPercent: decimal('discount_percent', {
     precision: 5,
     scale: 2,
-  }).default('0').notNull(),
+  })
+    .default('0')
+    .notNull(),
   discountAmount: decimal('discount_amount', {
     precision: 15,
     scale: 0,
-  }).default('0').notNull(),
-  taxPercent: decimal('tax_percent', { precision: 5, scale: 2 }).default('0').notNull(),
-  taxAmount: decimal('tax_amount', { precision: 15, scale: 0 }).default('0').notNull(),
+  })
+    .default('0')
+    .notNull(),
+  taxPercent: decimal('tax_percent', { precision: 5, scale: 2 })
+    .default('0')
+    .notNull(),
+  taxAmount: decimal('tax_amount', { precision: 15, scale: 0 })
+    .default('0')
+    .notNull(),
   total: decimal('total', { precision: 15, scale: 0 }).notNull(),
   notes: text('notes'),
   validUntil: timestamp('valid_until'),
@@ -167,7 +175,10 @@ export const quotationItems = pgTable('quotation_items', {
   itemId: uuid('item_id').references(() => inventoryItems.id),
   description: text('description').notNull(),
   quantity: decimal('quantity', { precision: 12, scale: 2 }).notNull(),
-  discountPercentage: decimal('discount_percentage', { precision: 5, scale: 2 }).default('0'),
+  discountPercentage: decimal('discount_percentage', {
+    precision: 5,
+    scale: 2,
+  }).default('0'),
   unitPrice: decimal('unit_price', { precision: 15, scale: 0 }).notNull(), // Snapshot
   totalPrice: decimal('total_price', { precision: 15, scale: 0 }).notNull(),
   sortOrder: integer('sort_order').notNull(),

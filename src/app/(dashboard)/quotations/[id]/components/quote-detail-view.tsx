@@ -9,9 +9,6 @@ import {
   ChevronLeft,
   Download,
   Copy,
-  CheckCircle2,
-  XCircle,
-  Clock,
   RefreshCw,
   ExternalLink,
 } from 'lucide-react';
@@ -32,6 +29,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { QuotePreview } from '@/app/(dashboard)/quotations/new/components/quote-preview';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
+import { STATUS_CONFIG } from '@/lib/constants';
 
 interface QuoteDetailViewProps {
   quotation: Quotation & {
@@ -40,36 +38,6 @@ interface QuoteDetailViewProps {
     project?: { id: string; projectNumber: string } | null;
   };
 }
-
-const STATUS_CONFIG = {
-  draft: {
-    label: 'Draft',
-    color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
-    icon: Clock,
-  },
-  sent: {
-    label: 'Sent',
-    color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-    icon: SendHorizontal,
-  },
-  accepted: {
-    label: 'Accepted',
-    color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    icon: CheckCircle2,
-  },
-  rejected: {
-    label: 'Rejected',
-    color: 'bg-red-500/10 text-red-400 border-red-500/20',
-    icon: XCircle,
-  },
-  expired: {
-    label: 'Expired',
-    color: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    icon: Clock,
-  },
-} as const;
-
-import { SendHorizontal } from 'lucide-react';
 
 export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
   const router = useRouter();

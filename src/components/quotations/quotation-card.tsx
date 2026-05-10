@@ -1,17 +1,6 @@
 'use client';
 
-import {
-  Calendar,
-  User,
-  MoreVertical,
-  Eye,
-  Trash2,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Send,
-  AlertTriangle,
-} from 'lucide-react';
+import { Calendar, User, MoreVertical, Eye, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { type QuotationWithCustomer } from '@/actions/quotation-actions';
@@ -27,60 +16,42 @@ import {
 import { cn } from '@/lib/utils';
 import { formatMMK } from '@/lib/pricing/engine';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { deleteQuotation } from '@/actions/quotation-actions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { STATUS_CONFIG } from '@/lib/constants';
 
 interface QuotationCardProps {
   quotation: QuotationWithCustomer;
 }
 
-const statusConfig = {
-  draft: {
-    label: 'Draft',
-    color: 'bg-slate-500/10 text-slate-500',
-    icon: Clock,
-  },
-  sent: {
-    label: 'Sent',
-    color: 'bg-indigo-500/10 text-indigo-500',
-    icon: Send,
-  },
-  accepted: {
-    label: 'Accepted',
-    color: 'bg-emerald-500/10 text-emerald-500',
-    icon: CheckCircle2,
-  },
-  rejected: {
-    label: 'Rejected',
-    color: 'bg-rose-500/10 text-rose-500',
-    icon: XCircle,
-  },
-  expired: {
-    label: 'Expired',
-    color: 'bg-amber-500/10 text-amber-500',
-    icon: AlertTriangle,
-  },
-};
-
 export function QuotationCard({ quotation }: QuotationCardProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const config = statusConfig[quotation.status as keyof typeof statusConfig];
+  const config = STATUS_CONFIG[quotation.status];
   const Icon = config.icon;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this draft?')) {
-      startTransition(async () => {
-        const result = await deleteQuotation(quotation.id);
-        if (result.success) {
-          toast.success('Draft deleted successfully');
-        } else {
-          toast.error(result.error || 'Failed to delete draft');
-        }
-      });
-    }
+    startTransition(async () => {
+      const result = await deleteQuotation(quotation.id);
+      if (result.success) {
+        toast.success('Draft deleted successfully');
+      } else {
+        toast.error(result.error || 'Failed to delete draft');
+      }
+    });
   };
 
   return (
@@ -138,14 +109,34 @@ export function QuotationCard({ quotation }: QuotationCardProps) {
                   View Details
                 </DropdownMenuItem>
                 {quotation.status === 'draft' && (
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={handleDelete}
-                    disabled={isPending}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {isPending ? 'Deleting...' : 'Delete Draft'}
-                  </DropdownMenuItem>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onSelect={(e) => e.preventDefault()}
+                        disabled={isPending}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {isPending ? 'Deleting...' : 'Delete Draft'}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Delete draft quotation?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>
+                          Delete Draft
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

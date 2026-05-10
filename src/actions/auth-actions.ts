@@ -72,7 +72,10 @@ export async function changePassword(formData: FormData) {
 
   const newHash = await hashPassword(newPassword);
 
-  await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
+  await db
+    .update(users)
+    .set({ passwordHash: newHash })
+    .where(eq(users.id, user.id));
 
   return { success: true };
 }

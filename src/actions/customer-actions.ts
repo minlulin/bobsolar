@@ -29,7 +29,7 @@ export async function getCustomers(
           ilike(customers.email, `%${search}%`),
         )
       : undefined;
-      
+
     const where = searchWhere ? and(baseWhere, searchWhere) : baseWhere;
 
     const items = await db.query.customers.findMany({
@@ -110,7 +110,8 @@ export async function updateCustomer(
       id,
     });
 
-    const { id: _id, ...updateData } = validated;
+    const { id: parsedId, ...updateData } = validated;
+    void parsedId;
 
     const [item] = await db
       .update(customers)
@@ -148,7 +149,10 @@ export async function deleteCustomer(
   try {
     await requireAdmin(); // Only admin can delete customers
 
-    await db.update(customers).set({ isArchived: true }).where(eq(customers.id, id));
+    await db
+      .update(customers)
+      .set({ isArchived: true })
+      .where(eq(customers.id, id));
 
     revalidatePath('/customers');
     return { success: true, data: undefined };
@@ -169,7 +173,7 @@ export async function searchCustomers(
         or(
           ilike(customers.name, `%${query}%`),
           ilike(customers.phone, `%${query}%`),
-        )
+        ),
       ),
       limit: 10,
     });

@@ -1,5 +1,5 @@
 import { db } from './index';
-import { users, companySettings } from './schema';
+import { users, companySettings, warrantyAlerts } from './schema';
 import { hashPassword } from '../auth/password';
 
 async function seed() {
@@ -26,6 +26,9 @@ async function seed() {
       { key: 'company_phone', value: '+95 9 123 456 789' },
     ])
     .onConflictDoNothing();
+
+  // Keep warranty alerts deterministic across repeated seeds.
+  await db.delete(warrantyAlerts);
 
   console.log('✅ Seeding completed!');
   process.exit(0);

@@ -35,7 +35,9 @@ export function calculateQuotation(
   );
 
   // 2. Apply global discount and round
-  const discountAmount = Math.round(subtotal * (globalDiscountPercentage / 100));
+  const discountAmount = Math.round(
+    subtotal * (globalDiscountPercentage / 100),
+  );
   const afterDiscount = subtotal - discountAmount;
 
   // 3. Apply tax (Commercial Tax) and round
