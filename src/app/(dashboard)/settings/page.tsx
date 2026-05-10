@@ -184,60 +184,124 @@ export default function SettingsPage() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1">
-                  <Label htmlFor="company_name" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_name"
+                    className="text-muted-foreground text-xs"
+                  >
                     Company Name
                   </Label>
-                  <Input id="company_name" {...register('company_name')} className="border-white/10 bg-white/5" />
-                  {errors.company_name ? <p className="text-destructive text-xs">{errors.company_name.message}</p> : null}
+                  <Input
+                    id="company_name"
+                    {...register('company_name')}
+                    className="border-white/10 bg-white/5"
+                  />
+                  {errors.company_name ? (
+                    <p className="text-destructive text-xs">
+                      {errors.company_name.message}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="company_address" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_address"
+                    className="text-muted-foreground text-xs"
+                  >
                     Address
                   </Label>
-                  <Textarea id="company_address" {...register('company_address')} className="border-white/10 bg-white/5" />
+                  <Textarea
+                    id="company_address"
+                    {...register('company_address')}
+                    className="border-white/10 bg-white/5"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label htmlFor="company_phone" className="text-muted-foreground text-xs">
+                    <Label
+                      htmlFor="company_phone"
+                      className="text-muted-foreground text-xs"
+                    >
                       Phone
                     </Label>
-                    <Input id="company_phone" {...register('company_phone')} className="border-white/10 bg-white/5" />
+                    <Input
+                      id="company_phone"
+                      {...register('company_phone')}
+                      className="border-white/10 bg-white/5"
+                    />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="company_email" className="text-muted-foreground text-xs">
+                    <Label
+                      htmlFor="company_email"
+                      className="text-muted-foreground text-xs"
+                    >
                       Email
                     </Label>
-                    <Input id="company_email" {...register('company_email')} className="border-white/10 bg-white/5" />
-                    {errors.company_email ? <p className="text-destructive text-xs">{errors.company_email.message}</p> : null}
+                    <Input
+                      id="company_email"
+                      {...register('company_email')}
+                      className="border-white/10 bg-white/5"
+                    />
+                    {errors.company_email ? (
+                      <p className="text-destructive text-xs">
+                        {errors.company_email.message}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="company_tax_id" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_tax_id"
+                    className="text-muted-foreground text-xs"
+                  >
                     Tax ID / TIN
                   </Label>
-                  <Input id="company_tax_id" {...register('company_tax_id')} className="border-white/10 bg-white/5" />
+                  <Input
+                    id="company_tax_id"
+                    {...register('company_tax_id')}
+                    className="border-white/10 bg-white/5"
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="company_bank_name" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_bank_name"
+                    className="text-muted-foreground text-xs"
+                  >
                     Bank Name
                   </Label>
-                  <Input id="company_bank_name" {...register('company_bank_name')} className="border-white/10 bg-white/5" />
+                  <Input
+                    id="company_bank_name"
+                    {...register('company_bank_name')}
+                    className="border-white/10 bg-white/5"
+                  />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="company_bank_account_number" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_bank_account_number"
+                    className="text-muted-foreground text-xs"
+                  >
                     Bank Account Number
                   </Label>
-                  <Input id="company_bank_account_number" {...register('company_bank_account_number')} className="border-white/10 bg-white/5" />
+                  <Input
+                    id="company_bank_account_number"
+                    {...register('company_bank_account_number')}
+                    className="border-white/10 bg-white/5"
+                  />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="company_bank_account_holder" className="text-muted-foreground text-xs">
+                  <Label
+                    htmlFor="company_bank_account_holder"
+                    className="text-muted-foreground text-xs"
+                  >
                     Bank Account Holder Name
                   </Label>
-                  <Input id="company_bank_account_holder" {...register('company_bank_account_holder')} className="border-white/10 bg-white/5" />
+                  <Input
+                    id="company_bank_account_holder"
+                    {...register('company_bank_account_holder')}
+                    className="border-white/10 bg-white/5"
+                  />
                 </div>
 
                 <Button

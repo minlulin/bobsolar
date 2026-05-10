@@ -14,6 +14,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   isOpen: false,
   setUnreadCount: (count) => set({ unreadCount: Math.max(0, count) }),
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
-  decrementUnread: () => set((s) => ({ unreadCount: Math.max(0, s.unreadCount - 1) })),
+  decrementUnread: () =>
+    set((s) => ({ unreadCount: Math.max(0, s.unreadCount - 1) })),
   setOpen: (isOpen) => set({ isOpen }),
 }));

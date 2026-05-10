@@ -29,7 +29,10 @@ export async function notifyAllUsers(
 export async function notifyAdminUsers(
   payload: BroadcastNotificationInput,
 ): Promise<void> {
-  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, 'admin'));
+  const admins = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, 'admin'));
   if (admins.length === 0) return;
 
   await db.insert(notifications).values(

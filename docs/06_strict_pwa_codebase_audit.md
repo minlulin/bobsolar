@@ -6,12 +6,12 @@ Scope: TypeScript strictness, SSoT, hardcoded values, client/server boundaries, 
 
 ## Verification Snapshot
 
-| Check | Result |
-| --- | --- |
-| `pnpm typecheck` | Pass |
-| `pnpm lint` | Pass |
-| `pnpm test` | Pass, 2 files / 16 tests |
-| `pnpm build` | Pass |
+| Check             | Result                                                         |
+| ----------------- | -------------------------------------------------------------- |
+| `pnpm typecheck`  | Pass                                                           |
+| `pnpm lint`       | Pass                                                           |
+| `pnpm test`       | Pass, 2 files / 16 tests                                       |
+| `pnpm build`      | Pass                                                           |
 | Extra strict pass | Fail: third-party lib checks plus local strict-policy findings |
 
 Extra strict command used:
@@ -422,4 +422,3 @@ Helper action: Add smoke tests for `/manifest.webmanifest`, `/api/upload` auth/t
 5. Improve performance: add indexes, paginate customers/inventory, parallelize dashboard queries, SSR initial dashboard data.
 6. Raise strictness: split service-worker tsconfig, remove unsafe casts/non-null assertions, enable missing compiler flags, add type-aware ESLint rules.
 7. Add regression tests around permissions, conversion race/idempotency, PWA manifest, upload, and PDF.
-

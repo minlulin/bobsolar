@@ -3,5 +3,7 @@
 import { Toaster } from '@/components/ui/sonner';
 
 export function NotificationToast() {
-  return <Toaster position="top-right" duration={5000} richColors closeButton />;
+  return (
+    <Toaster position="top-right" duration={5000} richColors closeButton />
+  );
 }

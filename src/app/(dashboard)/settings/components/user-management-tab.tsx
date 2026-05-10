@@ -233,14 +233,18 @@ export function UserManagementTab() {
               <Label>Name</Label>
               <Input
                 value={newUser.name}
-                onChange={(e) => setNewUser((p) => ({ ...p, name: e.target.value }))}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, name: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
               <Label>Email</Label>
               <Input
                 value={newUser.email}
-                onChange={(e) => setNewUser((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, email: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
@@ -248,7 +252,10 @@ export function UserManagementTab() {
               <Select
                 value={newUser.role}
                 onValueChange={(value) =>
-                  setNewUser((p) => ({ ...p, role: value as 'admin' | 'staff' }))
+                  setNewUser((p) => ({
+                    ...p,
+                    role: value as 'admin' | 'staff',
+                  }))
                 }
               >
                 <SelectTrigger className="w-full">

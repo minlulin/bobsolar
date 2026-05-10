@@ -40,7 +40,7 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/45 to-transparent" />
       <motion.div
         aria-hidden="true"
-        className="absolute -left-24 top-10 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl"
+        className="absolute top-10 -left-24 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl"
         animate={{ x: [0, 26, 0], opacity: [0.35, 0.62, 0.35] }}
         transition={{
           duration: 8,
@@ -118,7 +118,13 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
               <text x={x + 10} y={106} fill="#f3f4f6" fontSize="12">
                 {node.label}
               </text>
-              <text x={x + 10} y={130} fill="#fbbf24" fontSize="18" fontWeight="700">
+              <text
+                x={x + 10}
+                y={130}
+                fill="#fbbf24"
+                fontSize="18"
+                fontWeight="700"
+              >
                 {node.count}
               </text>
             </g>

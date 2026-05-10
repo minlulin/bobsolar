@@ -102,7 +102,7 @@ function DockItem({
             {isActive && (
               <motion.div
                 layoutId="dock-active"
-                className="absolute inset-x-0 bottom-1 top-1 rounded-xl bg-white/10 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.22),0_14px_36px_-18px_rgb(245_158_11_/_0.85)]"
+                className="absolute inset-x-0 top-1 bottom-1 rounded-xl bg-white/10 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.22),0_14px_36px_-18px_rgb(245_158_11_/_0.85)]"
                 transition={{ type: 'spring', bounce: 0.16, duration: 0.65 }}
               />
             )}
@@ -118,7 +118,7 @@ function DockItem({
                 'relative grid place-items-center rounded-xl border transition-colors duration-500',
                 'border-white/0 bg-white/0 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]',
                 'group-hover:border-white/15 group-hover:bg-white/10',
-                'group-focus-visible:border-solar-amber/60 group-focus-visible:ring-2 group-focus-visible:ring-solar-amber/35',
+                'group-focus-visible:border-solar-amber/60 group-focus-visible:ring-solar-amber/35 group-focus-visible:ring-2',
                 isActive && 'border-solar-amber/25 bg-solar-amber/10',
               )}
               style={{
@@ -141,13 +141,16 @@ function DockItem({
                 )}
                 style={{ height: iconSize, width: iconSize }}
               >
-                <Icon className="h-full w-full" strokeWidth={isActive ? 2.35 : 2} />
+                <Icon
+                  className="h-full w-full"
+                  strokeWidth={isActive ? 2.35 : 2}
+                />
               </motion.div>
             </motion.div>
 
             <motion.span
               className={cn(
-                'pointer-events-none absolute -bottom-3 h-1 rounded-full bg-solar opacity-0 shadow-solar',
+                'bg-solar shadow-solar pointer-events-none absolute -bottom-3 h-1 rounded-full opacity-0',
                 isActive && 'opacity-100',
               )}
               animate={{ width: isActive ? 18 : 4 }}
@@ -182,7 +185,12 @@ export function BottomDock({ userRole }: BottomDockProps): React.JSX.Element {
         className="fixed bottom-5 left-1/2 z-50 w-full max-w-xl -translate-x-1/2 px-4 sm:bottom-6"
         initial={{ opacity: 0, y: 22, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 170, damping: 22, delay: 0.08 }}
+        transition={{
+          type: 'spring',
+          stiffness: 170,
+          damping: 22,
+          delay: 0.08,
+        }}
       >
         <motion.nav
           aria-label="Primary navigation"
@@ -193,7 +201,7 @@ export function BottomDock({ userRole }: BottomDockProps): React.JSX.Element {
             mouseX.set(Number.POSITIVE_INFINITY);
           }}
           className={cn(
-            'relative mx-auto flex h-[76px] w-fit max-w-full items-end justify-center gap-1 overflow-visible rounded-3xl px-2 pb-2 pt-3',
+            'relative mx-auto flex h-[76px] w-fit max-w-full items-end justify-center gap-1 overflow-visible rounded-3xl px-2 pt-3 pb-2',
             'border border-white/15 bg-black/72 shadow-[0_24px_80px_-32px_rgb(0_0_0_/_0.85),inset_0_1px_0_rgb(255_255_255_/_0.22)] backdrop-blur-2xl',
             'before:pointer-events-none before:absolute before:inset-x-8 before:top-px before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/45 before:to-transparent',
             'after:pointer-events-none after:absolute after:inset-0 after:rounded-3xl after:bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.18),transparent_46%)]',

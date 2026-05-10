@@ -20,9 +20,12 @@ export default function FeatureError({ error, reset }: FeatureErrorProps) {
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
         <AlertCircle className="h-10 w-10 text-red-500" />
       </div>
-      <h2 className="mb-2 text-2xl font-bold text-white">Something went wrong!</h2>
+      <h2 className="mb-2 text-2xl font-bold text-white">
+        Something went wrong!
+      </h2>
       <p className="text-muted-foreground mb-8 max-w-md">
-        We hit a problem while loading this section. Try again, or return to dashboard.
+        We hit a problem while loading this section. Try again, or return to
+        dashboard.
       </p>
       <div className="flex gap-4">
         <Button
@@ -31,7 +34,11 @@ export default function FeatureError({ error, reset }: FeatureErrorProps) {
         >
           Try again
         </Button>
-        <Button asChild variant="outline" className="border-white/10 hover:bg-white/5">
+        <Button
+          asChild
+          variant="outline"
+          className="border-white/10 hover:bg-white/5"
+        >
           <Link href="/">Go to Dashboard</Link>
         </Button>
       </div>

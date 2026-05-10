@@ -58,7 +58,10 @@ import {
   handleNotFoundError,
   handleStateError,
 } from '@/lib/utils/error';
-import { notifyAdminUsers, notifyAllUsers } from '@/lib/notifications/broadcast';
+import {
+  notifyAdminUsers,
+  notifyAllUsers,
+} from '@/lib/notifications/broadcast';
 import type { InferSelectModel } from 'drizzle-orm';
 
 export type ProjectListRow = InferSelectModel<typeof projects> & {

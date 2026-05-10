@@ -67,10 +67,19 @@ export async function getUnreadCount(): Promise<ActionResponse<number>> {
     const [row] = await db
       .select({ total: count() })
       .from(notifications)
-      .where(and(eq(notifications.userId, auth.userId), eq(notifications.isRead, false)));
+      .where(
+        and(
+          eq(notifications.userId, auth.userId),
+          eq(notifications.isRead, false),
+        ),
+      );
     return { success: true, data: Number(row?.total ?? 0) };
   } catch (error) {
-    return handleActionError(error, 'getUnreadCount', 'Failed to fetch unread count');
+    return handleActionError(
+      error,
+      'getUnreadCount',
+      'Failed to fetch unread count',
+    );
   }
 }
 
@@ -105,11 +114,17 @@ export async function deleteNotification(
     const auth = await requireAuth();
     await db
       .delete(notifications)
-      .where(and(eq(notifications.id, id), eq(notifications.userId, auth.userId)));
+      .where(
+        and(eq(notifications.id, id), eq(notifications.userId, auth.userId)),
+      );
     revalidatePath('/', 'layout');
     return { success: true, data: undefined };
   } catch (error) {
-    return handleActionError(error, 'deleteNotification', 'Failed to delete notification');
+    return handleActionError(
+      error,
+      'deleteNotification',
+      'Failed to delete notification',
+    );
   }
 }
 
@@ -131,7 +146,11 @@ export async function createNotification(
     revalidatePath('/', 'layout');
     return { success: true, data: values.length };
   } catch (error) {
-    return handleActionError(error, 'createNotification', 'Failed to create notification');
+    return handleActionError(
+      error,
+      'createNotification',
+      'Failed to create notification',
+    );
   }
 }
 
@@ -148,9 +167,7 @@ export async function runScheduledNotificationChecks(): Promise<
     const in3Days = endOfDay(addDays(today, 3));
     const in7Days = endOfDay(addDays(today, 7));
 
-    const allUsers = await db
-      .select({ id: users.id })
-      .from(users);
+    const allUsers = await db.select({ id: users.id }).from(users);
     const allUserIds = allUsers.map((u) => u.id);
 
     const admins = await db
@@ -208,7 +225,12 @@ export async function runScheduledNotificationChecks(): Promise<
       })
       .from(warrantyAlerts)
       .innerJoin(projects, eq(warrantyAlerts.projectId, projects.id))
-      .where(and(eq(warrantyAlerts.isResolved, false), lt(warrantyAlerts.dueDate, today)));
+      .where(
+        and(
+          eq(warrantyAlerts.isResolved, false),
+          lt(warrantyAlerts.dueDate, today),
+        ),
+      );
 
     const dueSoonValues = dueSoon.flatMap((a) =>
       allUserIds.map((userId) => ({
@@ -219,7 +241,8 @@ export async function runScheduledNotificationChecks(): Promise<
         link: `/projects/${a.projectId}`,
       })),
     );
-    if (dueSoonValues.length > 0) await db.insert(notifications).values(dueSoonValues);
+    if (dueSoonValues.length > 0)
+      await db.insert(notifications).values(dueSoonValues);
 
     if (adminIds.length > 0) {
       const overdueValues = overdue.flatMap((a) =>
@@ -231,7 +254,8 @@ export async function runScheduledNotificationChecks(): Promise<
           link: `/projects/${a.projectId}`,
         })),
       );
-      if (overdueValues.length > 0) await db.insert(notifications).values(overdueValues);
+      if (overdueValues.length > 0)
+        await db.insert(notifications).values(overdueValues);
     }
 
     return {

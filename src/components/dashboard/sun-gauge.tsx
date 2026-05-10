@@ -27,7 +27,13 @@ export function SunGauge({
   pendingQuotes,
   overdueAlerts,
 }: SunGaugeProps): React.JSX.Element {
-  const max = Math.max(revenue, activeProjects, pendingQuotes, overdueAlerts, 1);
+  const max = Math.max(
+    revenue,
+    activeProjects,
+    pendingQuotes,
+    overdueAlerts,
+    1,
+  );
 
   return (
     <motion.div
@@ -38,7 +44,7 @@ export function SunGauge({
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-200/50 to-transparent" />
       <motion.div
         aria-hidden="true"
-        className="absolute -right-20 top-8 h-52 w-52 rounded-full bg-amber-400/10 blur-3xl"
+        className="absolute top-8 -right-20 h-52 w-52 rounded-full bg-amber-400/10 blur-3xl"
         animate={{ opacity: [0.32, 0.58, 0.32], scale: [0.94, 1.08, 0.94] }}
         transition={{
           duration: 7.5,
@@ -142,7 +148,7 @@ function OrbitDot({
       <TooltipTrigger asChild>
         <motion.button
           type="button"
-          className="absolute flex items-center justify-center rounded-full border border-white/20 text-[10px] font-bold text-white shadow-[0_12px_34px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.28)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/45"
+          className="absolute flex items-center justify-center rounded-full border border-white/20 text-[10px] font-bold text-white shadow-[0_12px_34px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.28)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-amber-300/45"
           style={{
             left: x,
             top: y,

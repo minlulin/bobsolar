@@ -47,7 +47,7 @@ export function ActivityStream({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-muted-foreground">
+      <div className="text-muted-foreground rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm">
         No recent activity.
       </div>
     );
@@ -69,7 +69,7 @@ export function ActivityStream({
           <span className="absolute top-1.5 left-0 h-3 w-3 rounded-full border border-amber-200/50 bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.5)]" />
           <Link
             href={activity.link}
-            className={`group flex items-start gap-3 rounded-2xl border border-white/10 border-l-2 bg-white/[0.025] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-white/20 hover:bg-white/[0.06] ${leftBorderClass(activity.type)}`}
+            className={`group flex items-start gap-3 rounded-2xl border border-l-2 border-white/10 bg-white/[0.025] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-white/20 hover:bg-white/[0.06] ${leftBorderClass(activity.type)}`}
           >
             <ActivityIcon type={activity.type} />
             <div>
@@ -77,7 +77,9 @@ export function ActivityStream({
                 {activity.description}
               </p>
               <p className="text-xs text-white/50">
-                {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                {formatDistanceToNow(new Date(activity.timestamp), {
+                  addSuffix: true,
+                })}
               </p>
             </div>
           </Link>
@@ -87,7 +89,9 @@ export function ActivityStream({
   );
 }
 
-function leftBorderClass(type: 'quotation' | 'project' | 'customer' | 'alert'): string {
+function leftBorderClass(
+  type: 'quotation' | 'project' | 'customer' | 'alert',
+): string {
   if (type === 'quotation') return 'border-l-indigo-400';
   if (type === 'project') return 'border-l-emerald-400';
   if (type === 'customer') return 'border-l-sky-400';

@@ -21,12 +21,7 @@ import {
   lte,
   sql,
 } from 'drizzle-orm';
-import {
-  endOfMonth,
-  startOfDay,
-  startOfMonth,
-  subMonths,
-} from 'date-fns';
+import { endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
 import type { ActionResponse } from './inventory-actions';
 import { handleActionError } from '@/lib/utils/error';
 
@@ -70,7 +65,9 @@ function toInt(value: unknown): number {
   return Number(value ?? 0);
 }
 
-export async function getDashboardStats(): Promise<ActionResponse<DashboardStats>> {
+export async function getDashboardStats(): Promise<
+  ActionResponse<DashboardStats>
+> {
   try {
     const auth = await requireAuth();
 
@@ -118,7 +115,10 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
       .select({ total: count() })
       .from(warrantyAlerts)
       .where(
-        and(eq(warrantyAlerts.isResolved, false), lt(warrantyAlerts.dueDate, startToday)),
+        and(
+          eq(warrantyAlerts.isResolved, false),
+          lt(warrantyAlerts.dueDate, startToday),
+        ),
       );
 
     const [viewer] = await db
@@ -192,7 +192,11 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
       },
     };
   } catch (error) {
-    return handleActionError(error, 'getDashboardStats', 'Failed to fetch dashboard stats');
+    return handleActionError(
+      error,
+      'getDashboardStats',
+      'Failed to fetch dashboard stats',
+    );
   }
 }
 

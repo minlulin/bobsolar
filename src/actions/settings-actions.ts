@@ -149,7 +149,9 @@ export async function getSettingsUsers(): Promise<
 > {
   try {
     const auth = await requireAuth();
-    const me = await db.query.users.findFirst({ where: eq(users.id, auth.userId) });
+    const me = await db.query.users.findFirst({
+      where: eq(users.id, auth.userId),
+    });
     if (!me) return { success: false, error: 'User not found' };
 
     if (auth.role !== 'admin') {
@@ -228,20 +230,20 @@ export async function resetSettingsUserPassword(
 ): Promise<ActionResponse<{ temporaryPassword: string }>> {
   try {
     await requireAdmin();
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
     if (!user) return { success: false, error: 'User not found' };
 
     const temporaryPassword = makeTempPassword();
     const passwordHash = await hashPassword(temporaryPassword);
-    await db
-      .update(users)
-      .set({ passwordHash })
-      .where(eq(users.id, userId));
+    await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
     return { success: true, data: { temporaryPassword } };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to reset password',
+      error:
+        error instanceof Error ? error.message : 'Failed to reset password',
     };
   }
 }

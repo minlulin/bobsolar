@@ -41,9 +41,9 @@ export function useMarkNotificationAsRead() {
     mutationFn: (id: string) => markNotificationAsRead(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['notifications'] });
-      const previous = queryClient.getQueryData<Array<{ id: string; isRead: boolean }>>([
-        'notifications',
-      ]);
+      const previous = queryClient.getQueryData<
+        Array<{ id: string; isRead: boolean }>
+      >(['notifications']);
       if (previous) {
         queryClient.setQueryData(
           ['notifications'],
@@ -55,7 +55,8 @@ export function useMarkNotificationAsRead() {
       return { previous };
     },
     onError: (_err, _id, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(['notifications'], ctx.previous);
+      if (ctx?.previous)
+        queryClient.setQueryData(['notifications'], ctx.previous);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -85,7 +86,8 @@ export function useMarkAllNotificationsAsRead() {
       return { previous };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) queryClient.setQueryData(['notifications'], ctx.previous);
+      if (ctx?.previous)
+        queryClient.setQueryData(['notifications'], ctx.previous);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });

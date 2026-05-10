@@ -70,7 +70,10 @@ export default async function DashboardLayout({
       </header>
 
       {/* Main Content */}
-      <main id="main-content" className="container mx-auto max-w-7xl px-4 py-8 pb-32">
+      <main
+        id="main-content"
+        className="container mx-auto max-w-7xl px-4 py-8 pb-32"
+      >
         <RouteTransition>{children}</RouteTransition>
       </main>
 
