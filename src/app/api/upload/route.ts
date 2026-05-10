@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
     );
 
     if (!(entry instanceof Blob)) {
-      return NextResponse.json({ error: 'Missing file field' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing file field' },
+        { status: 400 },
+      );
     }
 
     const file = entry as File;

@@ -34,15 +34,15 @@ export default function CompletedProjectsPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl space-y-3">
-          <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.4em]">
+          <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.4em] uppercase">
             Archive constellation
           </p>
           <h1 className="font-heading text-3xl font-bold tracking-tight">
             Completed projects
           </h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Post-handover dossiers highlighting spend variance versus proposal plus
-            live warranty choreography.
+            Post-handover dossiers highlighting spend variance versus proposal
+            plus live warranty choreography.
           </p>
           <p className="text-muted-foreground text-xs font-semibold uppercase">
             {total} dossier block{total === 1 ? '' : 's'}
@@ -86,7 +86,7 @@ export default function CompletedProjectsPage() {
           {error instanceof Error ? error.message : 'Historical grid offline'}
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-white/15 py-36 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground rounded-[2rem] border border-dashed border-white/15 py-36 text-center text-sm">
           No records match · tweak filters?
         </div>
       ) : (

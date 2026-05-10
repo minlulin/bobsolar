@@ -74,7 +74,7 @@ function QuotationConversionForm({
       className="grid gap-7 rounded-[2rem] border border-white/15 bg-black/45 px-10 py-12 backdrop-blur"
     >
       <div className="space-y-2">
-        <p className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.45em]">
+        <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.45em] uppercase">
           Originating blueprint ·{' '}
           <span className="text-orange-400">{quotation.quoteNumber}</span>
         </p>
@@ -119,7 +119,12 @@ function QuotationConversionForm({
       </div>
 
       <div className="flex flex-wrap gap-5">
-        <Button type="button" variant="outline" className="rounded-full" asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full"
+          asChild
+        >
           <Link href={`/quotations/${quoteId}`}>Abort</Link>
         </Button>
         <Button
@@ -152,9 +157,13 @@ function ConversionFlow() {
     return (
       <div className="border-border rounded-[2rem] border bg-black/55 p-10 text-center text-sm leading-relaxed">
         Anchor this flow from{' '}
-        <span className="text-orange-400">Convert to Project</span> on accepted quotes OR append{' '}
-        <code>?quoteId=uuid</code> when deep-linking.
-        <Button asChild variant="outline" className="mt-6 rounded-full border-white/35">
+        <span className="text-orange-400">Convert to Project</span> on accepted
+        quotes OR append <code>?quoteId=uuid</code> when deep-linking.
+        <Button
+          asChild
+          variant="outline"
+          className="mt-6 rounded-full border-white/35"
+        >
           <Link href="/quotations">Quotations constellation</Link>
         </Button>
       </div>
@@ -172,7 +181,10 @@ function ConversionFlow() {
   if (isError) {
     return (
       <div className="border-border rounded-[2rem] border bg-black/65 p-10 text-center">
-        {(error instanceof Error ? error.message : 'Unable to open quote').toString()}
+        {(error instanceof Error
+          ? error.message
+          : 'Unable to open quote'
+        ).toString()}
         <div className="mt-4">
           <Button asChild variant="ghost">
             <Link href={`/quotations/${quoteId}`}>Back to blueprint</Link>

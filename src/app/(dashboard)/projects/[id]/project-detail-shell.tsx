@@ -64,20 +64,20 @@ import {
 import { toast } from 'sonner';
 import {
   permittedNextStatuses,
+  isProjectStatus,
   type ProjectStatus,
   addProjectCostSchema,
   createWarrantyAlertSchema,
 } from '@/lib/validators/project';
 
-const COST_FILTERS = [
-  'all',
-  'material',
-  'labor',
-  'transport',
-  'misc',
-] as const;
+const COST_TYPES = ['material', 'labor', 'transport', 'misc'] as const;
+type CostType = (typeof COST_TYPES)[number];
 
-const REMARK_ICON: Record<'note' | 'issue' | 'update', string> = {
+const COST_FILTERS = ['all', ...COST_TYPES] as const;
+
+type RemarkType = 'note' | 'issue' | 'update';
+
+const REMARK_ICON: Record<RemarkType, string> = {
   note: '🗒️',
   issue: '🚩',
   update: '📣',
@@ -101,16 +101,17 @@ function statusBadgeTone(status: ProjectStatus) {
 }
 
 function aggregateCosts(project: ProjectDetail) {
-  const buckets = {
+  const buckets: Record<CostType, number> = {
     material: 0,
     labor: 0,
     transport: 0,
     misc: 0,
-  } as Record<'material' | 'labor' | 'transport' | 'misc', number>;
+  };
 
   project.costs.forEach((cost) => {
-    const slot = buckets[cost.costType];
-    buckets[cost.costType] = slot + Number(cost.amount);
+    const costType = cost.costType as CostType;
+    const slot = buckets[costType];
+    buckets[costType] = slot + Number(cost.amount);
   });
 
   const total = Object.values(buckets).reduce((a, v) => a + v, 0);
@@ -155,11 +156,15 @@ export function ProjectDetailShell({
   const alertMutation = useCreateProjectWarrantyAlert();
 
   const [costOpen, setCostOpen] = React.useState(false);
-  const [costFilter, setCostFilter] = React.useState<
-    (typeof COST_FILTERS)[number]
-  >('all');
+  const [costFilter, setCostFilter] =
+    React.useState<(typeof COST_FILTERS)[number]>('all');
 
-  const [costForm, setCostForm] = React.useState({
+  const [costForm, setCostForm] = React.useState<{
+    description: string;
+    amount: string;
+    costType: CostType;
+    incurredDate: string;
+  }>({
     description: '',
     amount: '',
     costType: 'material',
@@ -167,27 +172,53 @@ export function ProjectDetailShell({
   });
 
   const [remarkBody, setRemarkBody] = React.useState('');
-  const [remarkType, setRemarkType] =
-    React.useState<'note' | 'issue' | 'update'>('note');
+  const [remarkType, setRemarkType] = React.useState<RemarkType>('note');
 
-  const [alertForm, setAlertForm] = React.useState({
-    alertType: 'warranty_expiry' as
-      | 'warranty_expiry'
-      | 'maintenance_due'
-      | 'follow_up',
+  type AlertType = 'warranty_expiry' | 'maintenance_due' | 'follow_up';
+
+  const [alertForm, setAlertForm] = React.useState<{
+    alertType: AlertType;
+    description: string;
+    dueDate: string;
+  }>({
+    alertType: 'warranty_expiry',
     description: '',
     dueDate: format(new Date(), 'yyyy-MM-dd'),
   });
 
   const [busyAlertId, setBusyAlertId] = React.useState<string | null>(null);
 
-  const statusTransitions = React.useMemo(() => {
-    if (!proj) return [] as ProjectStatus[];
-    const current = proj.status as ProjectStatus;
+  // All useMemo hooks must be called before any early returns
+  const statusTransitions = React.useMemo((): ProjectStatus[] => {
+    if (!proj) return [];
+    if (!isProjectStatus(proj.status)) return [];
+    const current: ProjectStatus = proj.status;
     return [current, ...permittedNextStatuses(current)].filter(
       (status, idx, arr) => arr.indexOf(status) === idx,
     );
   }, [proj]);
+
+  const p = proj!;
+
+  const canEditOperational =
+    p.status !== 'completed' && p.status !== 'cancelled';
+
+  const filteredCosts = React.useMemo(() => {
+    if (costFilter === 'all') return p.costs;
+    return p.costs.filter((cost) => cost.costType === costFilter);
+  }, [p, costFilter]);
+
+  const { buckets: costBuckets, total: costSumAgg } = React.useMemo(
+    () => aggregateCosts(p),
+    [p],
+  );
+
+  const quoted = React.useMemo(() => Math.round(Number(p.quotedTotal)), [p]);
+
+  const variancePct = React.useMemo(() => {
+    if (quoted === 0) return 0;
+    return ((p.actualTotalComputed - quoted) / quoted) * 100;
+  }, [quoted, p]);
 
   if (error) {
     return (
@@ -212,21 +243,6 @@ export function ProjectDetailShell({
       </div>
     );
   }
-
-  const p = proj;
-
-  const canEditOperational =
-    p.status !== 'completed' && p.status !== 'cancelled';
-
-  const filteredCosts =
-    costFilter === 'all'
-      ? p.costs
-      : p.costs.filter((cost) => cost.costType === costFilter);
-
-  const { buckets: costBuckets, total: costSumAgg } = aggregateCosts(p);
-  const quoted = Math.round(Number(p.quotedTotal));
-  const variancePct =
-    quoted === 0 ? 0 : ((p.actualTotalComputed - quoted) / quoted) * 100;
 
   async function persistAlertToggle(alertId: string, resolved: boolean) {
     const ok = await persistWarrantyCheckbox(alertId, resolved);
@@ -325,7 +341,9 @@ export function ProjectDetailShell({
             <Badge
               className={cn(
                 'border text-[10px] uppercase',
-                statusBadgeTone(proj.status as ProjectStatus),
+                isProjectStatus(proj.status)
+                  ? statusBadgeTone(proj.status)
+                  : 'border-gray-500/35 bg-gray-500/10 text-gray-200',
               )}
             >
               {proj.status.replace('_', ' ')}
@@ -343,7 +361,7 @@ export function ProjectDetailShell({
             </Link>
           </p>
           {proj.quotation ? (
-            <p className="text-muted-foreground text-xs uppercase tracking-[0.35em]">
+            <p className="text-muted-foreground text-xs tracking-[0.35em] uppercase">
               Linked quote{' '}
               <Link
                 href={`/quotations/${proj.quotation.id}`}
@@ -444,7 +462,12 @@ export function ProjectDetailShell({
                 <p className="text-muted-foreground mb-2 text-[10px] font-bold uppercase">
                   {card.label}
                 </p>
-                <p className={cn('font-mono text-3xl tracking-tighter', card.accent)}>
+                <p
+                  className={cn(
+                    'font-mono text-3xl tracking-tighter',
+                    card.accent,
+                  )}
+                >
                   {typeof card.value === 'number'
                     ? formatMMK(card.value)
                     : card.value}
@@ -464,7 +487,9 @@ export function ProjectDetailShell({
                 <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
                   Site briefing
                 </h3>
-                <p className="text-sm leading-relaxed text-white">{proj.siteAddress}</p>
+                <p className="text-sm leading-relaxed text-white">
+                  {proj.siteAddress}
+                </p>
                 <p className="text-muted-foreground text-[11px]">
                   Started ·{' '}
                   {proj.startDate
@@ -498,8 +523,9 @@ export function ProjectDetailShell({
                     key={chip}
                     variant={costFilter === chip ? 'secondary' : 'outline'}
                     className={cn(
-                      'rounded-full text-[11px] uppercase tracking-wide',
-                      costFilter === chip && 'shadow-glow-solar border-transparent',
+                      'rounded-full text-[11px] tracking-wide uppercase',
+                      costFilter === chip &&
+                        'shadow-glow-solar border-transparent',
                     )}
                     onClick={() => setCostFilter(chip)}
                   >
@@ -527,7 +553,10 @@ export function ProjectDetailShell({
                           required
                           value={costForm.description}
                           onChange={(e) =>
-                            setCostForm((s) => ({ ...s, description: e.target.value }))
+                            setCostForm((s) => ({
+                              ...s,
+                              description: e.target.value,
+                            }))
                           }
                         />
                       </div>
@@ -540,7 +569,10 @@ export function ProjectDetailShell({
                           required
                           value={costForm.amount}
                           onChange={(e) =>
-                            setCostForm((s) => ({ ...s, amount: e.target.value }))
+                            setCostForm((s) => ({
+                              ...s,
+                              amount: e.target.value,
+                            }))
                           }
                         />
                       </div>
@@ -548,10 +580,10 @@ export function ProjectDetailShell({
                         <Label>Bucket</Label>
                         <Select
                           value={costForm.costType}
-                          onValueChange={(v: typeof costForm.costType) =>
+                          onValueChange={(v: CostType) =>
                             setCostForm((s) => ({
                               ...s,
-                              costType: v as typeof costForm.costType,
+                              costType: v,
                             }))
                           }
                         >
@@ -562,7 +594,9 @@ export function ProjectDetailShell({
                             <SelectItem value="material">Materials</SelectItem>
                             <SelectItem value="labor">Labor</SelectItem>
                             <SelectItem value="transport">Logistics</SelectItem>
-                            <SelectItem value="misc">Everything else</SelectItem>
+                            <SelectItem value="misc">
+                              Everything else
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -609,50 +643,59 @@ export function ProjectDetailShell({
               Ledger composition
             </p>
             <div className="mb-14 flex h-7 overflow-hidden rounded-full border border-white/10 shadow-inner shadow-black">
-              {(Object.entries(costBuckets) as [keyof typeof costBuckets, number][]).map(
-                ([key, value]) =>
-                  costSumAgg > 0 ? (
-                    <div
-                      key={key}
-                      style={{
-                        width: `${(value / Math.max(costSumAgg, 1)) * 100}%`,
-                      }}
-                      className={cn(
-                        'transition-[width] duration-700',
-                        key === 'material' && 'bg-amber-400/95',
-                        key === 'labor' && 'bg-emerald-400/95',
-                        key === 'transport' && 'bg-indigo-500/85',
-                        key === 'misc' && 'bg-zinc-500/95',
-                      )}
-                    />
-                  ) : null,
+              {(
+                Object.entries(costBuckets) as [
+                  keyof typeof costBuckets,
+                  number,
+                ][]
+              ).map(([key, value]) =>
+                costSumAgg > 0 ? (
+                  <div
+                    key={key}
+                    style={{
+                      width: `${(value / Math.max(costSumAgg, 1)) * 100}%`,
+                    }}
+                    className={cn(
+                      'transition-[width] duration-700',
+                      key === 'material' && 'bg-amber-400/95',
+                      key === 'labor' && 'bg-emerald-400/95',
+                      key === 'transport' && 'bg-indigo-500/85',
+                      key === 'misc' && 'bg-zinc-500/95',
+                    )}
+                  />
+                ) : null,
               )}
             </div>
 
             <div className="space-y-3">
               {filteredCosts.map((cost) => (
                 <motion.div key={cost.id} variants={staggerItem}>
-                  <div className="border-border hover:border-emerald-300/65 flex gap-5 rounded-[1.75rem] border bg-black/40 px-6 py-4 text-sm">
+                  <div className="border-border flex gap-5 rounded-[1.75rem] border bg-black/40 px-6 py-4 text-sm hover:border-emerald-300/65">
                     <div className="flex-1 space-y-1">
-                      <p className="text-base font-semibold">{cost.description}</p>
+                      <p className="text-base font-semibold">
+                        {cost.description}
+                      </p>
                       <p className="text-muted-foreground text-[11px]">
                         Recorded{' '}
-                        {format(new Date(cost.incurredDate), 'MMM dd yyyy · HH:mm')}
+                        {format(
+                          new Date(cost.incurredDate),
+                          'MMM dd yyyy · HH:mm',
+                        )}
                       </p>
                     </div>
                     <Badge className="h-fit text-[11px]" variant="outline">
                       {cost.costType}
                     </Badge>
-                    <p className="font-mono text-lg">{formatMMK(Number(cost.amount))}</p>
+                    <p className="font-mono text-lg">
+                      {formatMMK(Number(cost.amount))}
+                    </p>
                     {canEditOperational ? (
                       <Button
                         type="button"
                         variant="ghost"
                         className="text-red-400"
                         aria-label="Delete cost"
-                        onClick={() =>
-                          deleteCostMutation.mutate(cost.id)
-                        }
+                        onClick={() => deleteCostMutation.mutate(cost.id)}
                         disabled={deleteCostMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -663,14 +706,17 @@ export function ProjectDetailShell({
               ))}
               {filteredCosts.length === 0 ? (
                 <p className="text-muted-foreground text-center text-sm">
-                  Quiet ledger — tap “Add cost” for your first disbursement entry.
+                  Quiet ledger — tap “Add cost” for your first disbursement
+                  entry.
                 </p>
               ) : null}
             </div>
             <div className="text-muted-foreground mt-10 grid gap-4 text-[11px] uppercase md:grid-cols-3">
               <div>
                 Quoted{' '}
-                <div className="font-mono text-base text-emerald-200">{formatMMK(quoted)}</div>
+                <div className="font-mono text-base text-emerald-200">
+                  {formatMMK(quoted)}
+                </div>
               </div>
               <div>
                 Actual{' '}
@@ -683,7 +729,9 @@ export function ProjectDetailShell({
                 <div
                   className={cn(
                     'font-mono text-base',
-                    proj.actualTotalComputed <= quoted ? 'text-emerald-200' : 'text-rose-400',
+                    proj.actualTotalComputed <= quoted
+                      ? 'text-emerald-200'
+                      : 'text-rose-400',
                   )}
                 >
                   {formatMMK(proj.actualTotalComputed - quoted)}
@@ -700,13 +748,11 @@ export function ProjectDetailShell({
               onSubmit={handleSubmitRemark}
             >
               <div className="grid gap-3 md:grid-cols-5">
-                <div className="md:col-span-2 space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label>Signal cadence</Label>
                   <Select
                     value={remarkType}
-                    onValueChange={(v) =>
-                      setRemarkType(v as typeof remarkType)
-                    }
+                    onValueChange={(v: RemarkType) => setRemarkType(v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -755,8 +801,13 @@ export function ProjectDetailShell({
                 >
                   <div className="mb-3 flex justify-between gap-3 text-[11px] uppercase">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{REMARK_ICON[remark.remarkType]}</span>
-                      <Badge variant="secondary" className="text-[9px] uppercase">
+                      <span className="text-lg">
+                        {REMARK_ICON[remark.remarkType]}
+                      </span>
+                      <Badge
+                        variant="secondary"
+                        className="text-[9px] uppercase"
+                      >
                         {remark.remarkType}
                       </Badge>
                       <span className="text-muted-foreground font-semibold">
@@ -789,7 +840,7 @@ export function ProjectDetailShell({
         <TabsContent value="warranty" className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-white/10 bg-white/[0.03] px-8 py-6">
             <div>
-              <p className="text-lg font-semibold uppercase tracking-[0.4em] text-white">
+              <p className="text-lg font-semibold tracking-[0.4em] text-white uppercase">
                 Warranty rhythm
               </p>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -798,9 +849,7 @@ export function ProjectDetailShell({
             </div>
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="rounded-full">
-                  Compose alert
-                </Button>
+                <Button className="rounded-full">Compose alert</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -818,9 +867,15 @@ export function ProjectDetailShell({
                       <SelectValue placeholder="Cue type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="warranty_expiry">Warranty expiry</SelectItem>
-                      <SelectItem value="maintenance_due">Preventive upkeep</SelectItem>
-                      <SelectItem value="follow_up">Client follow-through</SelectItem>
+                      <SelectItem value="warranty_expiry">
+                        Warranty expiry
+                      </SelectItem>
+                      <SelectItem value="maintenance_due">
+                        Preventive upkeep
+                      </SelectItem>
+                      <SelectItem value="follow_up">
+                        Client follow-through
+                      </SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -901,7 +956,9 @@ export function ProjectDetailShell({
                   />
                 </div>
 
-                <p className="text-sm font-medium text-white">{alert.description}</p>
+                <p className="text-sm font-medium text-white">
+                  {alert.description}
+                </p>
                 <p className="text-muted-foreground mt-6 text-[12px]">
                   {!alert.isResolved ? (
                     <span className="font-semibold text-amber-200">

@@ -1,14 +1,21 @@
 import { z } from 'zod';
 
-export const projectStatusSchema = z.enum([
+export const PROJECT_STATUSES = [
   'planning',
   'in_progress',
   'on_hold',
   'completed',
   'cancelled',
-]);
+] as const;
+
+export const projectStatusSchema = z.enum(PROJECT_STATUSES);
 
 export type ProjectStatus = z.infer<typeof projectStatusSchema>;
+
+/** Type guard to safely cast string to ProjectStatus */
+export function isProjectStatus(status: string): status is ProjectStatus {
+  return PROJECT_STATUSES.includes(status as ProjectStatus);
+}
 
 export const convertToProjectSchema = z.object({
   quotationId: z.string().uuid(),
@@ -65,7 +72,9 @@ export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type AddProjectCostInput = z.infer<typeof addProjectCostSchema>;
 export type AddProjectRemarkInput = z.infer<typeof addProjectRemarkSchema>;
-export type CreateWarrantyAlertInput = z.infer<typeof createWarrantyAlertSchema>;
+export type CreateWarrantyAlertInput = z.infer<
+  typeof createWarrantyAlertSchema
+>;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;
 
 const allowedTransitions: Record<ProjectStatus, ProjectStatus[]> = {

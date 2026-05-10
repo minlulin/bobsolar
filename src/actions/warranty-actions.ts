@@ -9,10 +9,7 @@ import type { InferSelectModel } from 'drizzle-orm';
 import { notifyAllUsers } from '@/lib/notifications/broadcast';
 import { warrantyListFilterSchema } from '@/lib/validators/warranty';
 import type { ActionResponse } from './inventory-actions';
-import {
-  handleActionError,
-  handleNotFoundError,
-} from '@/lib/utils/error';
+import { handleActionError, handleNotFoundError } from '@/lib/utils/error';
 import { revalidatePath } from 'next/cache';
 
 export type WarrantyAlertRow = InferSelectModel<typeof warrantyAlerts> & {
@@ -22,7 +19,9 @@ export type WarrantyAlertRow = InferSelectModel<typeof warrantyAlerts> & {
 
 const SOON_WINDOW_DAYS = 30;
 
-function tabWhere(tab: 'overdue' | 'due_soon' | 'upcoming' | 'resolved' | 'all') {
+function tabWhere(
+  tab: 'overdue' | 'due_soon' | 'upcoming' | 'resolved' | 'all',
+) {
   const today = startOfToday();
   const soonEnd = addDays(today, SOON_WINDOW_DAYS);
   switch (tab) {
@@ -67,7 +66,10 @@ export async function getWarrantySummary(): Promise<
       .select({ overdue: sql<number>`cast(count(*) as int)` })
       .from(warrantyAlerts)
       .where(
-        and(eq(warrantyAlerts.isResolved, false), lt(warrantyAlerts.dueDate, today)),
+        and(
+          eq(warrantyAlerts.isResolved, false),
+          lt(warrantyAlerts.dueDate, today),
+        ),
       );
 
     const dueSoonRow = await db
@@ -85,7 +87,10 @@ export async function getWarrantySummary(): Promise<
       .select({ upcoming: sql<number>`cast(count(*) as int)` })
       .from(warrantyAlerts)
       .where(
-        and(eq(warrantyAlerts.isResolved, false), gt(warrantyAlerts.dueDate, soonEnd)),
+        and(
+          eq(warrantyAlerts.isResolved, false),
+          gt(warrantyAlerts.dueDate, soonEnd),
+        ),
       );
 
     const activeRow = await db

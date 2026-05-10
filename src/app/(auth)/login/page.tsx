@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Sun, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
@@ -90,8 +91,14 @@ export default function LoginPage() {
         <Card className="glass border-none shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center rounded-2xl">
-                <Sun className="h-10 w-10 text-white" />
+              <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">
+                <Image
+                  src="/icons/logo.png"
+                  alt="BOB Solar Logo"
+                  fill
+                  className="object-contain p-2"
+                  priority
+                />
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{

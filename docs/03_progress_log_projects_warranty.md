@@ -266,8 +266,8 @@
 ### 3.4.1 Vercel Blob Configuration
 
 - [x] Install `@vercel/blob` (already in dependencies)
-- [ ] Obtain `BLOB_READ_WRITE_TOKEN` from Vercel dashboard
-- [ ] Store in `.env.local`: `BLOB_READ_WRITE_TOKEN`
+- [x] Obtain `BLOB_READ_WRITE_TOKEN` from Vercel dashboard
+- [x] Store in `.env.local`: `BLOB_READ_WRITE_TOKEN`
 - [x] Note: Vercel Blob works locally via the token — no emulation needed
 
 ### 3.4.2 Blob Upload Helpers (`src/lib/storage/blob.ts`)
@@ -308,8 +308,8 @@
 - [x] On upload success: update `companySettings` table with Blob URL
 - [x] Logo appears in:
   - [x] PDF header
-  - [ ] App header (optional)
-  - [ ] Login page
+  - [x] App header
+  - [x] Login page
 
 ---
 

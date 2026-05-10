@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Outfit, Inter, JetBrains_Mono } from 'next/font/google';
 import { Providers } from '@/components/providers';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
 const fontHeading = Outfit({
@@ -45,8 +46,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
 };
-
-import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function RootLayout({
   children,

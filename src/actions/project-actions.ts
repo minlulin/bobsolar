@@ -15,7 +15,18 @@ import {
   type Customer,
   type Quotation,
 } from '@/lib/db/schema';
-import { eq, and, asc, desc, sql, ilike, or, gte, lte, inArray } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  asc,
+  desc,
+  sql,
+  ilike,
+  or,
+  gte,
+  lte,
+  inArray,
+} from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/validate';
 import {
   addMonths,
@@ -27,7 +38,10 @@ import {
   endOfDay,
 } from 'date-fns';
 import { revalidatePath } from 'next/cache';
-import { formatProjectNumber, extractProjectSequence } from '@/lib/utils/project-number';
+import {
+  formatProjectNumber,
+  extractProjectSequence,
+} from '@/lib/utils/project-number';
 import {
   convertToProjectSchema,
   updateProjectSchema,
@@ -35,7 +49,7 @@ import {
   addProjectRemarkSchema,
   canTransitionProjectStatus,
   createWarrantyAlertSchema,
-  type ProjectStatus,
+  isProjectStatus,
   type ProjectListFilter,
 } from '@/lib/validators/project';
 import type { ActionResponse } from './inventory-actions';
@@ -57,9 +71,11 @@ export type ProjectListRow = InferSelectModel<typeof projects> & {
 
 export type ProjectDetail = InferSelectModel<typeof projects> & {
   customer: Customer;
-  quotation: (Pick<Quotation, 'id' | 'quoteNumber' | 'total'> & {
-    notes: string | null;
-  }) | null;
+  quotation:
+    | (Pick<Quotation, 'id' | 'quoteNumber' | 'total'> & {
+        notes: string | null;
+      })
+    | null;
   costs: (ProjectCost & {
     inventoryItem: { id: string; name: string } | null;
     addedByUser: { id: string; name: string } | null;
@@ -441,9 +457,15 @@ export async function getProject(
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
 
-    const costs = row.costs.map((c) => ({
+    const costs: ProjectDetail['costs'] = row.costs.map((c) => ({
       ...c,
+      inventoryItem: c.inventoryItem,
       addedByUser: c.addedBy,
+    }));
+
+    const remarks: ProjectDetail['remarks'] = row.remarks.map((rem) => ({
+      ...rem,
+      author: rem.author,
     }));
 
     return {
@@ -451,11 +473,8 @@ export async function getProject(
       data: {
         ...row,
         quotation: row.quotation,
-        costs: costs as ProjectDetail['costs'],
-        remarks: row.remarks.map((rem) => ({
-          ...rem,
-          author: rem.author,
-        })) as ProjectDetail['remarks'],
+        costs,
+        remarks,
         warrantyAlerts: row.warrantyAlerts,
         actualTotalComputed,
         budgetVariance,
@@ -497,22 +516,21 @@ export async function updateProject(
       if (auth.role !== 'admin') {
         return handleStateError('Only admins can change project status here.');
       }
-      if (
-        !canTransitionProjectStatus(
-          existing.status as ProjectStatus,
-          data.status as ProjectStatus,
-        )
-      ) {
+      if (!isProjectStatus(existing.status)) {
+        return handleStateError(`Invalid current status: ${existing.status}`);
+      }
+      if (!canTransitionProjectStatus(existing.status, data.status)) {
         return handleStateError(`Invalid status transition to ${data.status}`);
       }
 
       if (data.status === 'completed') {
         await applyProjectCompletion(existing);
       } else {
-        const patch: Record<string, unknown> = { status: data.status };
+        const patch: Partial<typeof projects.$inferInsert> = {
+          status: data.status,
+        };
         if (data.siteAddress !== undefined) {
-          patch.siteAddress =
-            data.siteAddress?.trim() || existing.siteAddress;
+          patch.siteAddress = data.siteAddress?.trim() || existing.siteAddress;
         }
         if (data.systemSizeKwp !== undefined) {
           patch.systemSizeKwp = String(data.systemSizeKwp);
@@ -521,13 +539,10 @@ export async function updateProject(
           patch.targetCompletion = data.targetCompletion;
         }
         if (data.notes !== undefined) patch.notes = data.notes;
-        await db
-          .update(projects)
-          .set(patch as Partial<typeof projects.$inferInsert>)
-          .where(eq(projects.id, data.id));
+        await db.update(projects).set(patch).where(eq(projects.id, data.id));
       }
     } else {
-      const patch: Record<string, unknown> = {};
+      const patch: Partial<typeof projects.$inferInsert> = {};
       if (data.siteAddress !== undefined) {
         patch.siteAddress = data.siteAddress?.trim() || existing.siteAddress;
       }
@@ -539,10 +554,7 @@ export async function updateProject(
       }
       if (data.notes !== undefined) patch.notes = data.notes;
       if (Object.keys(patch).length > 0) {
-        await db
-          .update(projects)
-          .set(patch as Partial<typeof projects.$inferInsert>)
-          .where(eq(projects.id, data.id));
+        await db.update(projects).set(patch).where(eq(projects.id, data.id));
       }
     }
 
@@ -558,7 +570,11 @@ export async function updateProject(
 
     return { success: true, data: updated };
   } catch (error) {
-    return handleActionError(error, 'updateProject', 'Failed to update project');
+    return handleActionError(
+      error,
+      'updateProject',
+      'Failed to update project',
+    );
   }
 }
 
@@ -576,13 +592,14 @@ export async function markProjectCompleted(
       return handleStateError('Project is already completed.');
     }
 
-    if (
-      !canTransitionProjectStatus(
-        existing.status as ProjectStatus,
-        'completed',
-      )
-    ) {
-      return handleStateError('Cannot mark this project completed from its current status.');
+    if (!isProjectStatus(existing.status)) {
+      return handleStateError(`Invalid current status: ${existing.status}`);
+    }
+
+    if (!canTransitionProjectStatus(existing.status, 'completed')) {
+      return handleStateError(
+        'Cannot mark this project completed from its current status.',
+      );
     }
 
     await applyProjectCompletion(existing);
@@ -618,8 +635,13 @@ export async function addProjectCost(
       where: eq(projects.id, data.projectId),
     });
     if (!projectRow) return handleNotFoundError('Project', data.projectId);
-    if (projectRow.status === 'completed' || projectRow.status === 'cancelled') {
-      return handleStateError('Cannot add costs to a completed or cancelled project.');
+    if (
+      projectRow.status === 'completed' ||
+      projectRow.status === 'cancelled'
+    ) {
+      return handleStateError(
+        'Cannot add costs to a completed or cancelled project.',
+      );
     }
 
     const previousSpend = await sumProjectCosts(data.projectId);
@@ -673,7 +695,11 @@ export async function deleteProjectCost(
 
     return { success: true, data: { projectId: cost.projectId } };
   } catch (error) {
-    return handleActionError(error, 'deleteProjectCost', 'Failed to delete cost');
+    return handleActionError(
+      error,
+      'deleteProjectCost',
+      'Failed to delete cost',
+    );
   }
 }
 

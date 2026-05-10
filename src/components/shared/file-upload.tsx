@@ -90,7 +90,9 @@ export function FileUpload({
       >
         <Upload className="text-muted-foreground mb-3 h-8 w-8" />
         <p className="text-sm font-medium">Drop logo here or click to browse</p>
-        <p className="text-muted-foreground mt-2 text-xs">PNG/JPEG/Webp · Max 5MB</p>
+        <p className="text-muted-foreground mt-2 text-xs">
+          PNG/JPEG/Webp · Max 5MB
+        </p>
 
         <input
           ref={inputRef}
@@ -121,7 +123,7 @@ export function FileUpload({
               alt="Preview"
               className="mx-auto block h-full w-full object-contain"
             />
-            <span className="bg-background/70 text-muted-foreground absolute bottom-2 right-2 rounded-md px-2 py-0.5 text-[10px]">
+            <span className="bg-background/70 text-muted-foreground absolute right-2 bottom-2 rounded-md px-2 py-0.5 text-[10px]">
               Preview
             </span>
           </div>

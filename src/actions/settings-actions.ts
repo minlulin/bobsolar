@@ -28,8 +28,7 @@ export async function getCompanySettings(): Promise<
   } catch (error) {
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : 'Failed to load settings',
+      error: error instanceof Error ? error.message : 'Failed to load settings',
     };
   }
 }
@@ -58,7 +57,7 @@ export async function setCompanyLogoUrl(
       success: false,
       error:
         error instanceof z.ZodError
-          ? error.issues[0]?.message ?? 'Invalid URL'
+          ? (error.issues[0]?.message ?? 'Invalid URL')
           : error instanceof Error
             ? error.message
             : 'Failed to save logo',

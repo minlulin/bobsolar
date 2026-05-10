@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { motion } from 'framer-motion';
 import type { InferSelectModel } from 'drizzle-orm';
 import { projects } from '@/lib/db/schema';
@@ -23,13 +24,19 @@ function phaseReachable(status: ProjectModel['status']): number {
 }
 
 export function ProjectTimeline({ project }: ProjectTimelineProps) {
-  const activeIdx = phaseReachable(project.status);
-  const isCancelled = project.status === 'cancelled';
+  const activeIdx = React.useMemo(
+    () => phaseReachable(project.status),
+    [project.status],
+  );
+  const isCancelled = React.useMemo(
+    () => project.status === 'cancelled',
+    [project.status],
+  );
 
   return (
     <div className="border-border rounded-3xl border bg-white/[0.03] p-8">
       {isCancelled ? (
-        <p className="text-destructive text-center text-xs font-semibold uppercase tracking-[0.2em]">
+        <p className="text-destructive text-center text-xs font-semibold tracking-[0.2em] uppercase">
           Project cancelled · timeline discontinued
         </p>
       ) : null}
@@ -94,7 +101,9 @@ export function ProjectTimeline({ project }: ProjectTimelineProps) {
               >
                 {idx + 1}
               </motion.div>
-              <p className="text-foreground mb-2 text-[11px] font-bold">{label}</p>
+              <p className="text-foreground mb-2 text-[11px] font-bold">
+                {label}
+              </p>
               <p className="text-muted-foreground min-h-[2.75rem] text-[10px] leading-relaxed whitespace-pre-wrap">
                 {subtitle}
               </p>

@@ -50,10 +50,11 @@ export default function ActiveProjectsPage() {
             Active projects
           </h1>
           <p className="text-muted-foreground max-w-xl text-sm leading-relaxed">
-            Each card syncs quotations, budgeting, crews, and aftercare touchpoints —
-            orbit through status chips to tighten your focus radius.
+            Each card syncs quotations, budgeting, crews, and aftercare
+            touchpoints — orbit through status chips to tighten your focus
+            radius.
           </p>
-          <p className="text-muted-foreground mt-6 text-[12px] font-semibold uppercase tracking-[0.45em]">
+          <p className="text-muted-foreground mt-6 text-[12px] font-semibold tracking-[0.45em] uppercase">
             {total} orbital mission{total === 1 ? '' : 's'}
           </p>
         </div>
@@ -78,15 +79,15 @@ export default function ActiveProjectsPage() {
               whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => setFilter(pill.id)}
-              className={`relative whitespace-nowrap rounded-full border px-6 py-2 text-[11px] font-semibold uppercase transition ${
+              className={`relative rounded-full border px-6 py-2 text-[11px] font-semibold whitespace-nowrap uppercase transition ${
                 glow
                   ? 'border-transparent bg-gradient-to-r from-orange-600/95 to-rose-900/95 text-white shadow-[0_0_24px_-6px_rgb(251,146,60)]'
-                  : 'border-white/25 bg-transparent text-muted-foreground hover:bg-white/5 hover:text-white'
+                  : 'text-muted-foreground border-white/25 bg-transparent hover:bg-white/5 hover:text-white'
               }`}
             >
               <span>{pill.label}</span>
               {glow ? (
-                <span className="border-solar animate-pulse absolute inset-0 -z-[1] rounded-full border-[1.5px] opacity-95" />
+                <span className="border-solar absolute inset-0 -z-[1] animate-pulse rounded-full border-[1.5px] opacity-95" />
               ) : null}
             </motion.button>
           );
@@ -99,7 +100,9 @@ export default function ActiveProjectsPage() {
         </div>
       ) : error ? (
         <div className="border-destructive/40 rounded-3xl border p-14 text-center text-sm text-red-200">
-          {error instanceof Error ? error.message : 'Could not synchronize projects'}
+          {error instanceof Error
+            ? error.message
+            : 'Could not synchronize projects'}
         </div>
       ) : items.length === 0 ? (
         <div className="border-border rounded-[2rem] border-2 border-dashed bg-black/35 py-36 text-center text-sm leading-relaxed text-white shadow-inner shadow-black">
@@ -109,7 +112,8 @@ export default function ActiveProjectsPage() {
           </span>
           <Button asChild variant="secondary" className="rounded-full">
             <Link href="/quotations">
-              Dive into quotations <ExternalLink className="ml-2 inline h-4 w-4" />
+              Dive into quotations{' '}
+              <ExternalLink className="ml-2 inline h-4 w-4" />
             </Link>
           </Button>
         </div>

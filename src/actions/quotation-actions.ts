@@ -76,9 +76,7 @@ export async function getQuotations(
   }
 }
 
-export async function getQuotation(
-  id: string,
-): Promise<
+export async function getQuotation(id: string): Promise<
   ActionResponse<
     Quotation & {
       items: QuotationItem[];

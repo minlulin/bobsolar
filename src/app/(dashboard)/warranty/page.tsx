@@ -29,7 +29,11 @@ export default function WarrantyPage() {
   const [tab, setTab] = React.useState<WarrantyListFilter['tab']>('all');
 
   const { data: summary, error: summaryError } = useWarrantySummary();
-  const { data: alerts, isFetching, error: alertError } = useWarrantyAlerts({ tab });
+  const {
+    data: alerts,
+    isFetching,
+    error: alertError,
+  } = useWarrantyAlerts({ tab });
   const resolveMutation = useResolveWarrantyAlert();
   const reopenMutation = useReopenWarrantyAlert();
 
@@ -37,14 +41,15 @@ export default function WarrantyPage() {
     <div className="space-y-10 pb-32">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-muted-foreground mb-2 text-[11px] font-semibold uppercase tracking-[0.4em]">
+          <p className="text-muted-foreground mb-2 text-[11px] font-semibold tracking-[0.4em] uppercase">
             After-sales radar
           </p>
           <h1 className="font-heading text-3xl font-bold tracking-tight">
             Warranty & aftersales
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-            Stay ahead of panel, inverter and maintenance milestones so crews never scramble.
+            Stay ahead of panel, inverter and maintenance milestones so crews
+            never scramble.
           </p>
         </div>
       </div>
@@ -55,7 +60,12 @@ export default function WarrantyPage() {
           animate="animate"
           className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
-          <StatCard emoji="🔴" label="Overdue" count={summary.overdue} tint="border-red-500/40 bg-red-500/15" />
+          <StatCard
+            emoji="🔴"
+            label="Overdue"
+            count={summary.overdue}
+            tint="border-red-500/40 bg-red-500/15"
+          />
           <StatCard
             emoji="🟡"
             label="Due within 30d"
@@ -68,7 +78,12 @@ export default function WarrantyPage() {
             count={summary.upcoming}
             tint="border-emerald-500/35 bg-emerald-500/10"
           />
-          <StatCard emoji="📋" label="Active open" count={summary.active} tint="border-white/35 bg-white/10" />
+          <StatCard
+            emoji="📋"
+            label="Active open"
+            count={summary.active}
+            tint="border-white/35 bg-white/10"
+          />
         </motion.div>
       ) : null}
 
@@ -91,21 +106,28 @@ export default function WarrantyPage() {
       {alertError || summaryError ? (
         <p className="text-destructive text-center text-sm">
           {(alertError instanceof Error ? alertError.message : null) ??
-            (summaryError instanceof Error ? summaryError.message : 'Synchronization glitch')}
+            (summaryError instanceof Error
+              ? summaryError.message
+              : 'Synchronization glitch')}
         </p>
       ) : isFetching ? (
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="text-solar h-10 w-10 animate-spin" />
         </div>
       ) : !alerts?.length ? (
-        <div className="border-border rounded-3xl border border-dashed py-24 text-center text-sm text-muted-foreground">
+        <div className="border-border text-muted-foreground rounded-3xl border border-dashed py-24 text-center text-sm">
           Nothing echoes in this wavelength — widen the prism.
         </div>
       ) : (
-        <motion.div variants={staggerContainer} animate="animate" className="grid gap-5 lg:grid-cols-2">
+        <motion.div
+          variants={staggerContainer}
+          animate="animate"
+          className="grid gap-5 lg:grid-cols-2"
+        >
           {alerts?.map((a) => {
             let dueTone = 'text-emerald-200';
-            if (!a.isResolved && new Date(a.dueDate) < new Date()) dueTone = 'text-red-400';
+            if (!a.isResolved && new Date(a.dueDate) < new Date())
+              dueTone = 'text-red-400';
             else if (!a.isResolved) dueTone = 'text-amber-300';
 
             return (
@@ -149,14 +171,20 @@ export default function WarrantyPage() {
                   )}
                 </div>
 
-                <p className="text-sm leading-relaxed text-white">{a.description}</p>
+                <p className="text-sm leading-relaxed text-white">
+                  {a.description}
+                </p>
 
-                <p className={cn('text-[12px] font-semibold uppercase', dueTone)}>
+                <p
+                  className={cn('text-[12px] font-semibold uppercase', dueTone)}
+                >
                   {!a.isResolved ? (
                     <>
                       {format(new Date(a.dueDate), 'MMM d yyyy')} ·{' '}
                       <span>
-                        {formatDistanceToNowStrict(new Date(a.dueDate), { addSuffix: true })}
+                        {formatDistanceToNowStrict(new Date(a.dueDate), {
+                          addSuffix: true,
+                        })}
                       </span>
                     </>
                   ) : (
@@ -186,10 +214,10 @@ function StatCard({
   return (
     <div className={cn('rounded-[1.5rem] border px-8 py-6 text-center', tint)}>
       <p className="text-5xl">{emoji}</p>
-      <p className="text-muted-foreground mt-4 text-[11px] font-bold uppercase tracking-[0.3em]">
+      <p className="text-muted-foreground mt-4 text-[11px] font-bold tracking-[0.3em] uppercase">
         {label}
       </p>
-      <p className="font-mono mt-2 text-3xl">{count}</p>
+      <p className="mt-2 font-mono text-3xl">{count}</p>
     </div>
   );
 }

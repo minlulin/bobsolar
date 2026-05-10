@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { motion } from 'framer-motion';
 import { staggerItem } from '@/lib/motion';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,23 +39,44 @@ interface ProjectCardProps {
   hrefBase?: string;
 }
 
-export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProps) {
-  const quoted = Number(project.quotedTotal);
-  const pct = budgetPct(project.costTotal, quoted);
-  let barTone = 'from-emerald-400 to-teal-600';
-  if (pct >= 80 && pct <= 100) barTone = 'from-amber-400 to-orange-600';
-  if (pct > 100) barTone = 'from-rose-500 to-red-600';
+export function ProjectCard({
+  project,
+  hrefBase = '/projects',
+}: ProjectCardProps) {
+  const quoted = React.useMemo(
+    () => Number(project.quotedTotal),
+    [project.quotedTotal],
+  );
 
-  const showBudgetBar =
-    project.status !== 'completed' && project.status !== 'cancelled';
+  const pct = React.useMemo(
+    () => budgetPct(project.costTotal, quoted),
+    [project.costTotal, quoted],
+  );
 
-  const variancePct =
-    quoted > 0 ? (((project.costTotal - quoted) / quoted) * 100).toFixed(1) : '0';
+  const barTone = React.useMemo(() => {
+    if (pct > 100) return 'from-rose-500 to-red-600';
+    if (pct >= 80) return 'from-amber-400 to-orange-600';
+    return 'from-emerald-400 to-teal-600';
+  }, [pct]);
 
-  let warrantyLine = '🟢 All OK';
-  if (project.warrantySummary === 'due_soon') warrantyLine = '🟡 Due soon';
-  if (project.warrantySummary === 'overdue')
-    warrantyLine = '🔴 Overdue alerts';
+  const showBudgetBar = React.useMemo(
+    () => project.status !== 'completed' && project.status !== 'cancelled',
+    [project.status],
+  );
+
+  const variancePct = React.useMemo(
+    () =>
+      quoted > 0
+        ? (((project.costTotal - quoted) / quoted) * 100).toFixed(1)
+        : '0',
+    [quoted, project.costTotal],
+  );
+
+  const warrantyLine = React.useMemo(() => {
+    if (project.warrantySummary === 'overdue') return '� Overdue alerts';
+    if (project.warrantySummary === 'due_soon') return '🟡 Due soon';
+    return '� All OK';
+  }, [project.warrantySummary]);
 
   return (
     <motion.div variants={staggerItem}>
@@ -64,11 +86,13 @@ export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProp
             <div>
               <Link
                 href={`${hrefBase}/${project.id}`}
-                className="font-heading text-lg font-semibold uppercase tracking-[0.2em]"
+                className="font-heading text-lg font-semibold tracking-[0.2em] uppercase"
               >
                 {project.projectNumber}
               </Link>
-              <p className="text-muted-foreground text-sm">{project.customerName}</p>
+              <p className="text-muted-foreground text-sm">
+                {project.customerName}
+              </p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <Badge
@@ -80,7 +104,7 @@ export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProp
                 {project.status.replace('_', ' ')}
               </Badge>
               {project.status === 'in_progress' && (
-                <span className="bg-emerald-500/70 absolute top-12 right-6 h-2 w-2 animate-pulse rounded-full" />
+                <span className="absolute top-12 right-6 h-2 w-2 animate-pulse rounded-full bg-emerald-500/70" />
               )}
             </div>
           </div>
@@ -99,7 +123,7 @@ export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProp
                 Dates
               </p>
               <p className="text-xs leading-relaxed">
-                {(project.startDate || project.createdAt)
+                {project.startDate || project.createdAt
                   ? format(
                       new Date(project.startDate ?? project.createdAt),
                       'MMM d',
@@ -121,7 +145,9 @@ export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProp
                 Warranty signals
               </p>
               {project.status === 'completed' ? (
-                <p className="text-xs font-semibold text-white">{warrantyLine}</p>
+                <p className="text-xs font-semibold text-white">
+                  {warrantyLine}
+                </p>
               ) : (
                 <p className="text-muted-foreground text-[11px]">
                   Alerts unlock after completion
@@ -154,7 +180,8 @@ export function ProjectCard({ project, hrefBase = '/projects' }: ProjectCardProp
               <div>
                 {project.actualCompletion ? (
                   <span className="text-foreground font-semibold">
-                    Finished {format(new Date(project.actualCompletion), 'MMM d, yyyy')}
+                    Finished{' '}
+                    {format(new Date(project.actualCompletion), 'MMM d, yyyy')}
                   </span>
                 ) : (
                   <span>Milestone pending</span>

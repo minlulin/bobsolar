@@ -7,7 +7,9 @@ export function formatProjectNumber(sequence: number, year?: number): string {
   return `PJ-${y}-${sequence.toString().padStart(4, '0')}`;
 }
 
-export function extractProjectSequence(projectNumber: string | undefined): number {
+export function extractProjectSequence(
+  projectNumber: string | undefined,
+): number {
   if (!projectNumber) return 0;
   const parts = projectNumber.split('-');
   if (parts.length < 3) return 0;

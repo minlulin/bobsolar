@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Sun, Bell, User } from 'lucide-react';
+import Image from 'next/image';
+import { Bell, User } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/validate';
 import { BottomDock } from '@/components/layout/nav-orbit';
 import { CommandBar } from '@/components/layout/command-bar';
@@ -19,9 +20,15 @@ export default async function DashboardLayout({
       {/* Top Bar */}
       <header className="bg-background/80 sticky top-0 z-40 w-full border-b border-white/5 backdrop-blur-md">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-solar shadow-solar flex h-10 w-10 items-center justify-center rounded-xl">
-              <Sun className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="bg-solar shadow-solar relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
+              <Image
+                src="/icons/logo.png"
+                alt="BOB Solar Logo"
+                fill
+                className="object-contain p-1"
+                priority
+              />
             </div>
             <span className="font-heading hidden text-xl font-bold tracking-tight sm:block">
               BOB Solar

@@ -4,7 +4,10 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { getCompanySettings, setCompanyLogoUrl } from '@/actions/settings-actions';
+import {
+  getCompanySettings,
+  setCompanyLogoUrl,
+} from '@/actions/settings-actions';
 import { FileUpload } from '@/components/shared/file-upload';
 import { Label } from '@/components/ui/label';
 
@@ -50,15 +53,17 @@ export default function SettingsPage() {
           Studio settings
         </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
-          Upload the BOB Solar mark — it echoes through PDF quotations and onboarding moments.
-          Add{' '}
-          <span className="text-solar font-mono text-[11px]">BLOB_READ_WRITE_TOKEN</span> in Vercel
-          for Blob-backed uploads.
+          Upload the BOB Solar mark — it echoes through PDF quotations and
+          onboarding moments. Add{' '}
+          <span className="text-solar font-mono text-[11px]">
+            BLOB_READ_WRITE_TOKEN
+          </span>{' '}
+          in Vercel for Blob-backed uploads.
         </p>
       </div>
 
       <section className="border-border max-w-xl space-y-4 rounded-[2rem] border bg-black/55 p-8 backdrop-blur">
-        <Label className="text-[11px] font-bold uppercase tracking-[0.3em]">
+        <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
           Brand crest
         </Label>
         <FileUpload
@@ -67,7 +72,7 @@ export default function SettingsPage() {
           onUploaded={(next) => void persistLogo(next)}
         />
         {logoUrl ? (
-          <p className="text-muted-foreground text-[11px] uppercase tracking-wide">
+          <p className="text-muted-foreground text-[11px] tracking-wide uppercase">
             Live asset synced
           </p>
         ) : (
