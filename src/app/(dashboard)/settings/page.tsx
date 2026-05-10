@@ -2,7 +2,11 @@
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 import {
   getCompanySettings,
@@ -12,20 +16,27 @@ import {
 import { FileUpload } from '@/components/shared/file-upload';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AccountTab } from './components/account-tab';
+import { UserManagementTab } from './components/user-management-tab';
+import { PreferencesTab } from './components/preferences-tab';
 
 const LOGO_KEY = 'company_logo_url';
-const INFO_KEYS = [
-  'company_name',
-  'company_address',
-  'company_phone',
-  'company_email',
-  'company_tax_id',
-  'company_bank_details',
-];
+
+const companySchema = z.object({
+  company_name: z.string().min(1, 'Company name is required'),
+  company_address: z.string().optional(),
+  company_phone: z.string().min(1, 'Phone is required'),
+  company_email: z.string().email('Invalid email'),
+  company_tax_id: z.string().optional(),
+  company_bank_name: z.string().optional(),
+  company_bank_account_number: z.string().optional(),
+  company_bank_account_holder: z.string().optional(),
+});
+
+type CompanyForm = z.infer<typeof companySchema>;
 
 export default function SettingsPage() {
   const settingsQuery = useQuery({
@@ -38,9 +49,54 @@ export default function SettingsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const usersQuery = useQuery({
+    queryKey: ['settings', 'users-role'],
+    queryFn: async () => {
+      const mod = await import('@/actions/settings-actions');
+      const res = await mod.getSettingsUsers();
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    staleTime: 60 * 1000,
+  });
+
   const [logoSaving, setLogoSaving] = React.useState(false);
   const [infoSaving, setInfoSaving] = React.useState(false);
-  const [formEdits, setFormEdits] = React.useState<Record<string, string>>({});
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CompanyForm>({
+    resolver: zodResolver(companySchema),
+    defaultValues: {
+      company_name: '',
+      company_address: '',
+      company_phone: '',
+      company_email: '',
+      company_tax_id: '',
+      company_bank_name: '',
+      company_bank_account_number: '',
+      company_bank_account_holder: '',
+    },
+  });
+
+  React.useEffect(() => {
+    if (!settingsQuery.data) return;
+    reset({
+      company_name: settingsQuery.data['company_name'] ?? '',
+      company_address: settingsQuery.data['company_address'] ?? '',
+      company_phone: settingsQuery.data['company_phone'] ?? '',
+      company_email: settingsQuery.data['company_email'] ?? '',
+      company_tax_id: settingsQuery.data['company_tax_id'] ?? '',
+      company_bank_name: settingsQuery.data['company_bank_name'] ?? '',
+      company_bank_account_number:
+        settingsQuery.data['company_bank_account_number'] ?? '',
+      company_bank_account_holder:
+        settingsQuery.data['company_bank_account_holder'] ?? '',
+    });
+  }, [settingsQuery.data, reset]);
 
   async function persistLogo(url: string) {
     setLogoSaving(true);
@@ -57,19 +113,14 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleSaveInfo(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSubmit(values: CompanyForm) {
     setInfoSaving(true);
     try {
       const payload: Record<string, string> = {};
-      INFO_KEYS.forEach((key) => {
-        const value = formEdits[key] ?? settingsQuery.data?.[key] ?? '';
-        payload[key] = String(value);
-      });
+      for (const [k, v] of Object.entries(values)) payload[k] = v ?? '';
       const res = await updateCompanySettings(payload);
       if (res.success) {
         toast.success('Company info saved successfully');
-        setFormEdits({});
         void settingsQuery.refetch();
       } else {
         toast.error(res.error ?? 'Failed to save company info');
@@ -83,6 +134,7 @@ export default function SettingsPage() {
     typeof settingsQuery.data?.[LOGO_KEY] === 'string'
       ? settingsQuery.data[LOGO_KEY]
       : '';
+  void usersQuery.data?.isAdmin;
 
   return (
     <div className="mx-auto space-y-10 pb-36">
@@ -91,15 +143,15 @@ export default function SettingsPage() {
           Studio settings
         </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
-          Upload the BOB Solar mark — it echoes through PDF quotations and
-          onboarding moments. Configure company information that appears on
-          official documents.
+          Configure brand identity, team access, and default behavior.
         </p>
       </div>
 
       <Tabs defaultValue="company" className="w-full">
         <TabsList className="mb-8 border border-white/5 bg-black/55">
-          <TabsTrigger value="company">Company Details</TabsTrigger>
+          <TabsTrigger value="company">Company Info</TabsTrigger>
+          <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="account">Account & Security</TabsTrigger>
         </TabsList>
 
@@ -130,156 +182,62 @@ export default function SettingsPage() {
                 Company Profile
               </Label>
 
-              <form onSubmit={handleSaveInfo} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1">
-                  <Label
-                    htmlFor="company_name"
-                    className="text-muted-foreground text-xs"
-                  >
+                  <Label htmlFor="company_name" className="text-muted-foreground text-xs">
                     Company Name
                   </Label>
-                  <Input
-                    id="company_name"
-                    value={
-                      formEdits['company_name'] ??
-                      settingsQuery.data?.['company_name'] ??
-                      ''
-                    }
-                    onChange={(e) =>
-                      setFormEdits((prev) => ({
-                        ...prev,
-                        company_name: e.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-white/5"
-                    placeholder="BOB Solar"
-                  />
+                  <Input id="company_name" {...register('company_name')} className="border-white/10 bg-white/5" />
+                  {errors.company_name ? <p className="text-destructive text-xs">{errors.company_name.message}</p> : null}
                 </div>
 
                 <div className="space-y-1">
-                  <Label
-                    htmlFor="company_address"
-                    className="text-muted-foreground text-xs"
-                  >
+                  <Label htmlFor="company_address" className="text-muted-foreground text-xs">
                     Address
                   </Label>
-                  <Input
-                    id="company_address"
-                    value={
-                      formEdits['company_address'] ??
-                      settingsQuery.data?.['company_address'] ??
-                      ''
-                    }
-                    onChange={(e) =>
-                      setFormEdits((prev) => ({
-                        ...prev,
-                        company_address: e.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-white/5"
-                    placeholder="123 Solar Street, Yangon"
-                  />
+                  <Textarea id="company_address" {...register('company_address')} className="border-white/10 bg-white/5" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <Label
-                      htmlFor="company_phone"
-                      className="text-muted-foreground text-xs"
-                    >
+                    <Label htmlFor="company_phone" className="text-muted-foreground text-xs">
                       Phone
                     </Label>
-                    <Input
-                      id="company_phone"
-                      value={
-                        formEdits['company_phone'] ??
-                        settingsQuery.data?.['company_phone'] ??
-                        ''
-                      }
-                      onChange={(e) =>
-                        setFormEdits((prev) => ({
-                          ...prev,
-                          company_phone: e.target.value,
-                        }))
-                      }
-                      className="border-white/10 bg-white/5"
-                      placeholder="+95 9 123 456 789"
-                    />
+                    <Input id="company_phone" {...register('company_phone')} className="border-white/10 bg-white/5" />
                   </div>
                   <div className="space-y-1">
-                    <Label
-                      htmlFor="company_email"
-                      className="text-muted-foreground text-xs"
-                    >
+                    <Label htmlFor="company_email" className="text-muted-foreground text-xs">
                       Email
                     </Label>
-                    <Input
-                      id="company_email"
-                      value={
-                        formEdits['company_email'] ??
-                        settingsQuery.data?.['company_email'] ??
-                        ''
-                      }
-                      onChange={(e) =>
-                        setFormEdits((prev) => ({
-                          ...prev,
-                          company_email: e.target.value,
-                        }))
-                      }
-                      className="border-white/10 bg-white/5"
-                      placeholder="info@bobsolar.com"
-                    />
+                    <Input id="company_email" {...register('company_email')} className="border-white/10 bg-white/5" />
+                    {errors.company_email ? <p className="text-destructive text-xs">{errors.company_email.message}</p> : null}
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label
-                    htmlFor="company_tax_id"
-                    className="text-muted-foreground text-xs"
-                  >
+                  <Label htmlFor="company_tax_id" className="text-muted-foreground text-xs">
                     Tax ID / TIN
                   </Label>
-                  <Input
-                    id="company_tax_id"
-                    value={
-                      formEdits['company_tax_id'] ??
-                      settingsQuery.data?.['company_tax_id'] ??
-                      ''
-                    }
-                    onChange={(e) =>
-                      setFormEdits((prev) => ({
-                        ...prev,
-                        company_tax_id: e.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-white/5"
-                    placeholder="TIN-2026-XXXXX"
-                  />
+                  <Input id="company_tax_id" {...register('company_tax_id')} className="border-white/10 bg-white/5" />
                 </div>
 
                 <div className="space-y-1">
-                  <Label
-                    htmlFor="company_bank_details"
-                    className="text-muted-foreground text-xs"
-                  >
-                    Bank Details
+                  <Label htmlFor="company_bank_name" className="text-muted-foreground text-xs">
+                    Bank Name
                   </Label>
-                  <Input
-                    id="company_bank_details"
-                    value={
-                      formEdits['company_bank_details'] ??
-                      settingsQuery.data?.['company_bank_details'] ??
-                      ''
-                    }
-                    onChange={(e) =>
-                      setFormEdits((prev) => ({
-                        ...prev,
-                        company_bank_details: e.target.value,
-                      }))
-                    }
-                    className="border-white/10 bg-white/5"
-                    placeholder="KBZ Bank | A/C: 123-456-789-0"
-                  />
+                  <Input id="company_bank_name" {...register('company_bank_name')} className="border-white/10 bg-white/5" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="company_bank_account_number" className="text-muted-foreground text-xs">
+                    Bank Account Number
+                  </Label>
+                  <Input id="company_bank_account_number" {...register('company_bank_account_number')} className="border-white/10 bg-white/5" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="company_bank_account_holder" className="text-muted-foreground text-xs">
+                    Bank Account Holder Name
+                  </Label>
+                  <Input id="company_bank_account_holder" {...register('company_bank_account_holder')} className="border-white/10 bg-white/5" />
                 </div>
 
                 <Button
@@ -295,6 +253,14 @@ export default function SettingsPage() {
               </form>
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <UserManagementTab />
+        </TabsContent>
+
+        <TabsContent value="preferences">
+          <PreferencesTab />
         </TabsContent>
 
         <TabsContent value="account">

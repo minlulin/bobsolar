@@ -58,7 +58,7 @@ import {
   handleNotFoundError,
   handleStateError,
 } from '@/lib/utils/error';
-import { notifyAllUsers } from '@/lib/notifications/broadcast';
+import { notifyAdminUsers, notifyAllUsers } from '@/lib/notifications/broadcast';
 import type { InferSelectModel } from 'drizzle-orm';
 
 export type ProjectListRow = InferSelectModel<typeof projects> & {
@@ -191,7 +191,7 @@ async function maybeNotifyBudgetOverrun(
   if (actual <= threshold) return;
   if (previousSpend > threshold) return;
 
-  await notifyAllUsers({
+  await notifyAdminUsers({
     title: 'Project budget alert',
     message: `Spend on project has exceeded quoted total by more than 10% (actual ${actual.toLocaleString('en-MM')} MMK).`,
     type: 'warning',

@@ -33,6 +33,7 @@ import {
   handleNotFoundError,
   handleStateError,
 } from '@/lib/utils/error';
+import { notifyAllUsers } from '@/lib/notifications/broadcast';
 
 export type QuotationWithCustomer = Quotation & {
   customer: {
@@ -296,6 +297,15 @@ export async function updateQuotationStatus(
       .update(quotations)
       .set({ status, updatedAt: new Date() })
       .where(eq(quotations.id, id));
+
+    if (status === 'accepted') {
+      await notifyAllUsers({
+        title: 'Quotation accepted',
+        message: `${quote.quoteNumber} has been accepted.`,
+        type: 'action',
+        link: `/quotations/${id}`,
+      });
+    }
 
     revalidatePath('/quotations');
     revalidatePath(`/quotations/${id}`);

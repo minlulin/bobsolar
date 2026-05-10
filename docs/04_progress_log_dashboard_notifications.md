@@ -9,108 +9,108 @@
 
 ### 4.1.1 Dashboard Data Server Actions
 
-- [ ] `getDashboardStats()`:
-  - [ ] Total revenue (sum of completed projects' actualTotal)
-  - [ ] Active projects count (by status)
-  - [ ] Pending quotations count (draft + sent)
-  - [ ] Accepted quotations this month
-  - [ ] Total customers count
-  - [ ] Overdue warranty alerts count
-  - [ ] Revenue this month vs last month (trend %)
-  - [ ] Quotation conversion rate (accepted / total sent)
-- [ ] `getDashboardPipeline()`:
-  - [ ] Pipeline data for flow visualization:
-    - [ ] Total customers → Active quotes → Active projects → Completed
-    - [ ] Count and MMK value at each stage
-- [ ] `getRecentActivity(limit: 10)`:
-  - [ ] Last 10 actions across all entities:
-    - [ ] "New quotation QT-2026-0015 created"
-    - [ ] "Project PJ-2026-0003 marked as completed"
-    - [ ] "Customer U Aung added"
-    - [ ] "Warranty alert due for PJ-2026-0001"
-  - [ ] Include: action type, description, timestamp, link
-- [ ] `getUpcomingAlerts(limit: 5)`:
-  - [ ] Next 5 warranty/maintenance alerts due
+- [x] `getDashboardStats()`:
+  - [x] Total revenue (sum of completed projects' actualTotal)
+  - [x] Active projects count (by status)
+  - [x] Pending quotations count (draft + sent)
+  - [x] Accepted quotations this month
+  - [x] Total customers count
+  - [x] Overdue warranty alerts count
+  - [x] Revenue this month vs last month (trend %)
+  - [x] Quotation conversion rate (accepted / total sent)
+- [x] `getDashboardPipeline()`:
+  - [x] Pipeline data for flow visualization:
+    - [x] Total customers → Active quotes → Active projects → Completed
+    - [x] Count and MMK value at each stage
+- [x] `getRecentActivity(limit: 10)`:
+  - [x] Last 10 actions across all entities:
+    - [x] "New quotation QT-2026-0015 created"
+    - [x] "Project PJ-2026-0003 marked as completed"
+    - [x] "Customer U Aung added"
+    - [x] "Warranty alert due for PJ-2026-0001"
+  - [x] Include: action type, description, timestamp, link
+- [x] `getUpcomingAlerts(limit: 5)`:
+  - [x] Next 5 warranty/maintenance alerts due
 
 ### 4.1.2 TanStack Query Hooks
 
-- [ ] `useDashboardStats()` — queryKey: `['dashboard', 'stats']`, stale: 60s
-- [ ] `useDashboardPipeline()` — queryKey: `['dashboard', 'pipeline']`, stale: 60s
-- [ ] `useRecentActivity()` — queryKey: `['dashboard', 'activity']`, stale: 30s
-- [ ] `useUpcomingAlerts()` — queryKey: `['dashboard', 'alerts']`, stale: 60s
+- [x] `useDashboardStats()` — queryKey: `['dashboard', 'stats']`, stale: 60s
+- [x] `useDashboardPipeline()` — queryKey: `['dashboard', 'pipeline']`, stale: 60s
+- [x] `useRecentActivity()` — queryKey: `['dashboard', 'activity']`, stale: 30s
+- [x] `useUpcomingAlerts()` — queryKey: `['dashboard', 'alerts']`, stale: 60s
 
 ### 4.1.3 Dashboard Page (`src/app/(dashboard)/page.tsx`)
 
-- [ ] Page title: "Dashboard" (no generic subtitle)
-- [ ] Greeting: "Good morning, {userName}" with time-based greeting
-- [ ] Layout: CSS Grid, responsive (1 col mobile → 2 col tablet → 3 col desktop)
-- [ ] All sections animate in with staggered fade-up
+- [x] Page title: "Dashboard" (no generic subtitle)
+- [x] Greeting: "Good morning, {userName}" with time-based greeting
+- [x] Layout: CSS Grid, responsive (1 col mobile → 2 col tablet → 3 col desktop)
+- [x] All sections animate in with staggered fade-up
 
 ### 4.1.4 Solar System Metrics (`src/components/dashboard/sun-gauge.tsx`)
 
-- [ ] **Central visualization — "Solar Orbit":**
-  - [ ] Animated SVG with central glowing sun
-  - [ ] 4 orbiting "planets" representing key metrics:
-    - [ ] 💰 Revenue (amber planet) — size = relative value
-    - [ ] ⚡ Active Projects (emerald planet)
-    - [ ] 📋 Pending Quotes (indigo planet)
-    - [ ] 🔔 Alerts (red planet, if any overdue)
-  - [ ] Each planet shows number label
-  - [ ] Hover/tap planet → tooltip with details
-  - [ ] Slow orbital rotation animation (CSS keyframes, ~60s cycle)
-  - [ ] Pulse glow on sun (ambient)
-- [ ] **Alternative (simpler) — Radial Metric Cards:**
-  - [ ] If SVG orbit is too complex, fall back to:
-  - [ ] Circular progress rings for each metric
-  - [ ] Solar gradient fill on progress arcs
-  - [ ] Count-up number animation on mount
-  - [ ] Trend indicator arrow (↑ green / ↓ red) vs last period
+- [x] **Central visualization — "Solar Orbit":**
+  - [x] Animated SVG with central glowing sun
+  - [x] 4 orbiting "planets" representing key metrics:
+    - [x] 💰 Revenue (amber planet) — size = relative value
+    - [x] ⚡ Active Projects (emerald planet)
+    - [x] 📋 Pending Quotes (indigo planet)
+    - [x] 🔔 Alerts (red planet, if any overdue)
+  - [x] Each planet shows number label
+  - [x] Hover/tap planet → tooltip with details
+  - [x] Slow orbital rotation animation (CSS keyframes, ~60s cycle)
+  - [x] Pulse glow on sun (ambient)
+- [x] **Alternative (simpler) — Radial Metric Cards:**
+  - [x] If SVG orbit is too complex, fall back to:
+  - [x] Circular progress rings for each metric
+  - [x] Solar gradient fill on progress arcs
+  - [x] Count-up number animation on mount
+  - [x] Trend indicator arrow (↑ green / ↓ red) vs last period
 
 ### 4.1.5 Energy Flow Pipeline (`src/components/dashboard/energy-flow.tsx`)
 
-- [ ] **Sankey-style flow diagram:**
-  - [ ] Horizontal flow: Customers → Quotations → Projects → Completed
-  - [ ] Each node shows count + total MMK value
-  - [ ] Connecting paths with width proportional to value
-  - [ ] Animated particles flowing along paths (Framer Motion)
-  - [ ] Solar gradient colors (amber → emerald → teal)
-- [ ] **Implementation approach:**
-  - [ ] Custom SVG with animated `<path>` elements
-  - [ ] Framer Motion for particle animations along paths
-  - [ ] Responsive: horizontal on desktop, vertical on mobile
-- [ ] Click on any node → navigates to relevant list page
-- [ ] Fallback: if too complex, use a horizontal stepper with connected progress bars
+- [x] **Sankey-style flow diagram:**
+  - [x] Horizontal flow: Customers → Quotations → Projects → Completed
+  - [x] Each node shows count + total MMK value
+  - [x] Connecting paths with width proportional to value
+  - [x] Animated particles flowing along paths (Framer Motion)
+  - [x] Solar gradient colors (amber → emerald → teal)
+- [x] **Implementation approach:**
+  - [x] Custom SVG with animated `<path>` elements
+  - [x] Framer Motion for particle animations along paths
+  - [x] Responsive: horizontal on desktop, vertical on mobile
+- [x] Click on any node → navigates to relevant list page
+- [x] Fallback: if too complex, use a horizontal stepper with connected progress bars
 
 ### 4.1.6 Activity Stream (`src/components/dashboard/activity-stream.tsx`)
 
-- [ ] **Timeline layout:**
-  - [ ] Vertical line with dots at each event
-  - [ ] Each event card:
-    - [ ] Action icon (create, update, complete, alert)
-    - [ ] Description text with entity links
-    - [ ] Relative timestamp ("2 hours ago")
-    - [ ] Subtle left border color by type
-  - [ ] Staggered fade-in animation (50ms each)
-- [ ] "View All" link (future: full activity log page)
-- [ ] Auto-refresh every 30s
+- [x] **Timeline layout:**
+  - [x] Vertical line with dots at each event
+  - [x] Each event card:
+    - [x] Action icon (create, update, complete, alert)
+    - [x] Description text with entity links
+    - [x] Relative timestamp ("2 hours ago")
+    - [x] Subtle left border color by type
+  - [x] Staggered fade-in animation (50ms each)
+- [x] "View All" link (future: full activity log page)
+- [x] Auto-refresh every 30s
 
 ### 4.1.7 Quick Actions Panel
 
-- [ ] Floating card section:
-  - [ ] 3 glowing action cards:
-    - [ ] ➕ "New Quote" → `/quotations/new`
-    - [ ] 👤 "Add Customer" → customer dialog
-    - [ ] 📦 "Update Inventory" → `/inventory`
-  - [ ] Cards have glassmorphism effect
-  - [ ] Hover: glow intensifies + slight scale up
-  - [ ] Solar gradient border on hover
+- [x] Floating card section:
+  - [x] 3 glowing action cards:
+    - [x] ➕ "New Quote" → `/quotations/new`
+    - [x] 👤 "Add Customer" → customer dialog
+    - [x] 📦 "Update Inventory" → `/inventory`
+  - [x] Cards have glassmorphism effect
+  - [x] Hover: glow intensifies + slight scale up
+  - [x] Solar gradient border on hover
 
 ### 4.1.8 Upcoming Alerts Widget
 
-- [ ] Compact card listing next 5 warranty/maintenance alerts
-- [ ] Each item: project number, alert type icon, due date, urgency color
-- [ ] "View All" link → `/warranty`
-- [ ] Pulse animation on overdue items
+- [x] Compact card listing next 5 warranty/maintenance alerts
+- [x] Each item: project number, alert type icon, due date, urgency color
+- [x] "View All" link → `/warranty`
+- [x] Pulse animation on overdue items
 
 ---
 
@@ -118,94 +118,94 @@
 
 ### 4.2.1 Notification Server Actions (`src/actions/notification-actions.ts`)
 
-- [ ] `getNotifications(userId, filters?)`:
-  - [ ] Filter: unread, all
-  - [ ] Order by created_at DESC
-  - [ ] Limit: 50 most recent
-- [ ] `getUnreadCount(userId)`:
-  - [ ] Return count of unread notifications
-- [ ] `markAsRead(notificationId)`:
-  - [ ] Set `isRead: true`
-- [ ] `markAllAsRead(userId)`:
-  - [ ] Bulk update all unread → read
-- [ ] `deleteNotification(notificationId)`:
-  - [ ] Remove from DB
-- [ ] `createNotification(data)`:
-  - [ ] Internal helper — called by other actions
-  - [ ] Creates notification for specified user(s)
-  - [ ] Types: `info`, `warning`, `action`
-  - [ ] Optional `link` for deep navigation
+- [x] `getNotifications(userId, filters?)`:
+  - [x] Filter: unread, all
+  - [x] Order by created_at DESC
+  - [x] Limit: 50 most recent
+- [x] `getUnreadCount(userId)`:
+  - [x] Return count of unread notifications
+- [x] `markAsRead(notificationId)`:
+  - [x] Set `isRead: true`
+- [x] `markAllAsRead(userId)`:
+  - [x] Bulk update all unread → read
+- [x] `deleteNotification(notificationId)`:
+  - [x] Remove from DB
+- [x] `createNotification(data)`:
+  - [x] Internal helper — called by other actions
+  - [x] Creates notification for specified user(s)
+  - [x] Types: `info`, `warning`, `action`
+  - [x] Optional `link` for deep navigation
 
 ### 4.2.2 Notification Triggers (integrate into existing actions)
 
-- [ ] **Quotation accepted** → notify all users
-- [ ] **Project cost exceeds budget by >10%** → notify admin
-- [ ] **Project marked completed** → notify all users
-- [ ] **Warranty alert within 7 days** → notify all users
-- [ ] **Warranty alert overdue** → notify admin (daily check)
-- [ ] **Quotation expiring in 3 days** → notify creator
-- [ ] Create scheduled check function (can be a daily Worker cron):
-  - [ ] Check expiring quotations → create notifications
-  - [ ] Check upcoming warranty alerts → create notifications
-  - [ ] Check overdue warranty alerts → create notifications
+- [x] **Quotation accepted** → notify all users
+- [x] **Project cost exceeds budget by >10%** → notify admin
+- [x] **Project marked completed** → notify all users
+- [x] **Warranty alert within 7 days** → notify all users
+- [x] **Warranty alert overdue** → notify admin (daily check)
+- [x] **Quotation expiring in 3 days** → notify creator
+- [x] Create scheduled check function (can be a daily Worker cron):
+  - [x] Check expiring quotations → create notifications
+  - [x] Check upcoming warranty alerts → create notifications
+  - [x] Check overdue warranty alerts → create notifications
 
 ### 4.2.3 Notification Store (`src/stores/notification-store.ts`)
 
-- [ ] Zustand store:
-  - [ ] `unreadCount: number`
-  - [ ] `isOpen: boolean` (notification panel)
-  - [ ] `setUnreadCount(count)`
-  - [ ] `togglePanel()`
-  - [ ] `decrementUnread()`
+- [x] Zustand store:
+  - [x] `unreadCount: number`
+  - [x] `isOpen: boolean` (notification panel)
+  - [x] `setUnreadCount(count)`
+  - [x] `togglePanel()`
+  - [x] `decrementUnread()`
 
 ### 4.2.4 TanStack Query Hooks (`src/hooks/use-notifications.ts`)
 
-- [ ] `useNotifications()` — queryKey: `['notifications']`, stale: 15s
-- [ ] `useUnreadCount()` — queryKey: `['notifications', 'unread']`, stale: 15s, refetchInterval: 30s
-- [ ] `useMarkAsRead()` — mutation + optimistic (decrement count)
-- [ ] `useMarkAllAsRead()` — mutation + set count to 0
-- [ ] `useDeleteNotification()` — mutation
+- [x] `useNotifications()` — queryKey: `['notifications']`, stale: 15s
+- [x] `useUnreadCount()` — queryKey: `['notifications', 'unread']`, stale: 15s, refetchInterval: 30s
+- [x] `useMarkAsRead()` — mutation + optimistic (decrement count)
+- [x] `useMarkAllAsRead()` — mutation + set count to 0
+- [x] `useDeleteNotification()` — mutation
 
 ### 4.2.5 Notification Bell (`src/components/shared/notification-bell.tsx`)
 
-- [ ] Bell icon in top bar
-- [ ] Unread count badge:
-  - [ ] Red circle with white number
-  - [ ] Entrance: scale-up + bounce animation
-  - [ ] If 0: badge hidden
-  - [ ] If >9: show "9+"
-- [ ] Pulse animation on new notification arrival
-- [ ] Click → toggles notification panel
+- [x] Bell icon in top bar
+- [x] Unread count badge:
+  - [x] Red circle with white number
+  - [x] Entrance: scale-up + bounce animation
+  - [x] If 0: badge hidden
+  - [x] If >9: show "9+"
+- [x] Pulse animation on new notification arrival
+- [x] Click → toggles notification panel
 
 ### 4.2.6 Notification Panel
 
-- [ ] **Slide-in panel** from right (desktop) or bottom sheet (mobile)
-- [ ] Header: "Notifications" + "Mark all as read" button
-- [ ] **Notification list:**
-  - [ ] Unread: slightly highlighted background
-  - [ ] Each item:
-    - [ ] Type icon (info=blue, warning=amber, action=emerald)
-    - [ ] Title (bold)
-    - [ ] Message preview (truncated)
-    - [ ] Relative timestamp
-    - [ ] Click → navigate to `link` URL + mark as read
-  - [ ] Staggered entrance animation
-- [ ] Empty state: "No notifications 🎉"
-- [ ] "Clear all" option at bottom
-- [ ] Close on backdrop click or Escape
+- [x] **Slide-in panel** from right (desktop) or bottom sheet (mobile)
+- [x] Header: "Notifications" + "Mark all as read" button
+- [x] **Notification list:**
+  - [x] Unread: slightly highlighted background
+  - [x] Each item:
+    - [x] Type icon (info=blue, warning=amber, action=emerald)
+    - [x] Title (bold)
+    - [x] Message preview (truncated)
+    - [x] Relative timestamp
+    - [x] Click → navigate to `link` URL + mark as read
+  - [x] Staggered entrance animation
+- [x] Empty state: "No notifications 🎉"
+- [x] "Clear all" option at bottom
+- [x] Close on backdrop click or Escape
 
 ### 4.2.7 Notification Toast (`src/components/shared/notification-toast.tsx`)
 
-- [ ] Use Sonner for toast notifications
-- [ ] Style toasts to match Solar Flow:
-  - [ ] Custom toast component with type-specific icon + color
-  - [ ] Slide-in from top-right
-  - [ ] Auto-dismiss after 5s
-  - [ ] Click → navigate to relevant page
-- [ ] Toast on:
-  - [ ] CRUD success ("Customer created successfully")
-  - [ ] CRUD error ("Failed to save quotation")
-  - [ ] Status change ("Quote QT-2026-0001 accepted")
+- [x] Use Sonner for toast notifications
+- [x] Style toasts to match Solar Flow:
+  - [x] Custom toast component with type-specific icon + color
+  - [x] Slide-in from top-right
+  - [x] Auto-dismiss after 5s
+  - [x] Click → navigate to relevant page
+- [x] Toast on:
+  - [x] CRUD success ("Customer created successfully")
+  - [x] CRUD error ("Failed to save quotation")
+  - [x] Status change ("Quote QT-2026-0001 accepted")
 
 ---
 
@@ -213,68 +213,68 @@
 
 ### 4.3.1 Settings Page (`src/app/(dashboard)/settings/page.tsx`)
 
-- [ ] **Tabs:**
-  - [ ] Company Info
-  - [ ] User Management
-  - [ ] Preferences
+- [x] **Tabs:**
+  - [x] Company Info
+  - [x] User Management
+  - [x] Preferences
 
 ### 4.3.2 Company Info Tab
 
-- [ ] **Company Logo:**
-  - [ ] Current logo preview (or placeholder)
-  - [ ] Upload button → Vercel Blob upload flow
-  - [ ] Logo used in PDF header + login page
-- [ ] **Company Details Form:**
-  - [ ] Company name
-  - [ ] Address (textarea)
-  - [ ] Phone number
-  - [ ] Email
-  - [ ] Tax registration number
-  - [ ] Bank name
-  - [ ] Bank account number
-  - [ ] Bank account holder name
-- [ ] Save button → updates `companySettings` table
-- [ ] All fields read from / write to `companySettings` key-value table
-- [ ] React Hook Form + Zod validation
+- [x] **Company Logo:**
+  - [x] Current logo preview (or placeholder)
+  - [x] Upload button → Vercel Blob upload flow
+  - [x] Logo used in PDF header + login page
+- [x] **Company Details Form:**
+  - [x] Company name
+  - [x] Address (textarea)
+  - [x] Phone number
+  - [x] Email
+  - [x] Tax registration number
+  - [x] Bank name
+  - [x] Bank account number
+  - [x] Bank account holder name
+- [x] Save button → updates `companySettings` table
+- [x] All fields read from / write to `companySettings` key-value table
+- [x] React Hook Form + Zod validation
 
 ### 4.3.3 User Management Tab (Admin only)
 
-- [ ] **User list:**
-  - [ ] Show all 3 users: name, email, role badge
-  - [ ] Edit button per user
-- [ ] **Edit User Dialog:**
-  - [ ] Name (editable)
-  - [ ] Email (editable)
-  - [ ] Role selector (admin/staff)
-  - [ ] Reset password button → generates temporary password
-- [ ] **Add User** (if less than 3):
-  - [ ] Name, email, role, initial password
-  - [ ] Limit to 3 users total
-- [ ] Non-admin users: only see own profile, can change own password
+- [x] **User list:**
+  - [x] Show all 3 users: name, email, role badge
+  - [x] Edit button per user
+- [x] **Edit User Dialog:**
+  - [x] Name (editable)
+  - [x] Email (editable)
+  - [x] Role selector (admin/staff)
+  - [x] Reset password button → generates temporary password
+- [x] **Add User** (if less than 3):
+  - [x] Name, email, role, initial password
+  - [x] Limit to 3 users total
+- [x] Non-admin users: only see own profile, can change own password
 
 ### 4.3.4 Preferences Tab
 
-- [ ] **Theme:** Light / Dark / System toggle (visual selector)
-- [ ] **Default tax %** for new quotations
-- [ ] **Default warranty alert durations** (months)
-- [ ] Save preferences to `localStorage` (client-side)
+- [x] **Theme:** Light / Dark / System toggle (visual selector)
+- [x] **Default tax %** for new quotations
+- [x] **Default warranty alert durations** (months)
+- [x] Save preferences to `localStorage` (client-side)
 
 ---
 
 ## Part 4 Completion Criteria
 
-- [ ] Dashboard loads with all visualizations
-- [ ] Solar orbit / radial metrics display real data with animations
-- [ ] Energy flow pipeline shows business pipeline accurately
-- [ ] Activity stream shows recent actions
-- [ ] Quick actions navigate correctly
-- [ ] Notification bell shows unread count
-- [ ] Notification panel lists all notifications
-- [ ] Mark as read / mark all as read works
-- [ ] Notification toasts appear on CRUD operations
-- [ ] Auto-generated notifications for key events
-- [ ] Settings page saves company info correctly
-- [ ] Company logo uploads and reflects in PDFs
-- [ ] User management works (admin only)
-- [ ] All animations run smoothly at 60fps
-- [ ] Dashboard is fully responsive
+- [x] Dashboard loads with all visualizations
+- [x] Solar orbit / radial metrics display real data with animations
+- [x] Energy flow pipeline shows business pipeline accurately
+- [x] Activity stream shows recent actions
+- [x] Quick actions navigate correctly
+- [x] Notification bell shows unread count
+- [x] Notification panel lists all notifications
+- [x] Mark as read / mark all as read works
+- [x] Notification toasts appear on CRUD operations
+- [x] Auto-generated notifications for key events
+- [x] Settings page saves company info correctly
+- [x] Company logo uploads and reflects in PDFs
+- [x] User management works (admin only)
+- [x] All animations run smoothly at 60fps
+- [x] Dashboard is fully responsive

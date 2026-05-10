@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { motion } from 'framer-motion';
 import { Bell, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,22 +14,43 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useNotifications,
+  useUnreadCount,
   useMarkNotificationAsRead,
   useMarkAllNotificationsAsRead,
+  useDeleteNotification,
 } from '@/hooks/use-notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/lib/db/schema';
+import { useNotificationStore } from '@/stores/notification-store';
 
 export function NotificationBell() {
   const { data: notifications, isLoading } = useNotifications();
+  const unreadQuery = useUnreadCount();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+  const deleteOne = useDeleteNotification();
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
+  const open = useNotificationStore((s) => s.isOpen);
+  const setOpen = useNotificationStore((s) => s.setOpen);
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
 
-  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
+  React.useEffect(() => {
+    if (typeof unreadQuery.data === 'number') setUnreadCount(unreadQuery.data);
+  }, [unreadQuery.data, setUnreadCount]);
+
+  const [pulseBadge, setPulseBadge] = React.useState(false);
+  const prevUnread = React.useRef(0);
+  React.useEffect(() => {
+    if (unreadCount > prevUnread.current) {
+      setPulseBadge(true);
+      const timer = setTimeout(() => setPulseBadge(false), 900);
+      return () => clearTimeout(timer);
+    }
+    prevUnread.current = unreadCount;
+  }, [unreadCount]);
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {
@@ -50,7 +72,12 @@ export function NotificationBell() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="bg-destructive absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white">
+            <span
+              className={cn(
+                'bg-destructive absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white',
+                pulseBadge ? 'animate-bounce' : '',
+              )}
+            >
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -61,18 +88,20 @@ export function NotificationBell() {
           <div className="flex items-center justify-between">
             <SheetTitle>Notifications</SheetTitle>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => markAllAsRead.mutate()}
-                disabled={markAllAsRead.isPending}
-                className="text-muted-foreground h-8 text-xs hover:text-white"
-              >
-                {markAllAsRead.isPending && (
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                )}
-                Mark all as read
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => markAllAsRead.mutate()}
+                  disabled={markAllAsRead.isPending}
+                  className="text-muted-foreground h-8 text-xs hover:text-white"
+                >
+                  {markAllAsRead.isPending && (
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  )}
+                  Mark all as read
+                </Button>
+              </div>
             )}
           </div>
         </SheetHeader>
@@ -89,8 +118,11 @@ export function NotificationBell() {
           ) : (
             <div className="flex flex-col gap-2 py-4">
               {notifications?.map((notification) => (
-                <div
+                <motion.div
                   key={notification.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
                     'relative flex cursor-pointer gap-4 rounded-xl border p-4 transition-colors hover:bg-white/5',
@@ -133,8 +165,26 @@ export function NotificationBell() {
                   {!notification.isRead && (
                     <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-500" />
                   )}
-                </div>
+                  <button
+                    type="button"
+                    className="absolute right-3 bottom-2 text-[10px] text-white/40 hover:text-white/80"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteOne.mutate(notification.id);
+                    }}
+                  >
+                    Remove
+                  </button>
+                </motion.div>
               ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground mt-2 hover:text-white"
+                onClick={() => markAllAsRead.mutate()}
+              >
+                Clear all
+              </Button>
             </div>
           )}
         </ScrollArea>

@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
 import { LazyMotion, domAnimation } from 'framer-motion';
+import { NotificationToast } from '@/components/shared/notification-toast';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -27,7 +27,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <LazyMotion features={domAnimation}>
           {children}
-          <Toaster position="top-right" richColors closeButton />
+          <NotificationToast />
         </LazyMotion>
       </NextThemesProvider>
     </QueryClientProvider>

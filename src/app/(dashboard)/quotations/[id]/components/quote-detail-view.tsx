@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { QuotePreview } from '@/app/(dashboard)/quotations/new/components/quote-preview';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 import { STATUS_CONFIG } from '@/lib/constants';
+import { showLinkedToast } from '@/components/shared/toast-link';
 
 interface QuoteDetailViewProps {
   quotation: Quotation & {
@@ -50,7 +51,12 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
     startTransition(async () => {
       const res = await updateQuotationStatus(quotation.id, newStatus);
       if (res.success) {
-        toast.success(`Status updated to ${newStatus}`);
+        showLinkedToast({
+          title: `Status updated to ${newStatus}`,
+          description: 'Click to open quotation detail',
+          href: `/quotations/${quotation.id}`,
+          variant: 'success',
+        });
         router.refresh();
       } else {
         toast.error(res.error);

@@ -4,12 +4,14 @@ import * as React from 'react';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
 import { login } from '@/actions/auth-actions';
+import { getPublicCompanyBranding } from '@/actions/settings-actions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +25,15 @@ import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false);
+  const brandingQuery = useQuery({
+    queryKey: ['public', 'branding'],
+    queryFn: async () => {
+      const res = await getPublicCompanyBranding();
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const {
     register,
@@ -49,6 +60,9 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   }
+
+  const logoSrc = brandingQuery.data?.logoUrl || '/icons/logo.png';
+  const companyName = brandingQuery.data?.companyName || 'BOB Solar';
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
@@ -93,11 +107,11 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
               <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">
                 <Image
-                  src="/icons/logo.png"
-                  alt="BOB Solar Logo"
+                  src={logoSrc}
+                  alt={`${companyName} Logo`}
                   fill
                   className="object-contain p-2"
-                  priority
+                  unoptimized
                 />
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -111,7 +125,7 @@ export default function LoginPage() {
               </div>
             </div>
             <CardTitle className="font-heading text-3xl font-bold tracking-tight">
-              BOB Solar
+              {companyName}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Sign in to manage your solar projects
@@ -168,7 +182,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-muted-foreground mt-8 text-center text-sm">
-          © 2026 BOB Solar. All rights reserved.
+          © 2026 BOB Solar.The Art Of Clean Logic, Vibes by Minlulin .
         </p>
       </motion.div>
     </div>
