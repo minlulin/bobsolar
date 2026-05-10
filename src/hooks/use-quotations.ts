@@ -31,7 +31,7 @@ export function useQuotation(id: string) {
       return response.data;
     },
     enabled: !!id,
-    staleTime: 15 * 1000,
+    staleTime: 30 * 1000,
   });
 }
 

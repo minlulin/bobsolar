@@ -32,9 +32,17 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+public/sw.js
+
+# local logs
+dev.log
+
+# keep SQL migrations tracked
+!drizzle/migrations/*.sql
 
 # typescript
 *.tsbuildinfo

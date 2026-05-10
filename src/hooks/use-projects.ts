@@ -46,7 +46,7 @@ export function useProject(id: string) {
       return res.data;
     },
     enabled: !!id,
-    staleTime: 15 * 1000,
+    staleTime: 30 * 1000,
   });
 }
 

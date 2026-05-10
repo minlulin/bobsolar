@@ -26,6 +26,7 @@ export function useInventoryItem(id: string) {
     queryKey: ['inventory', id],
     queryFn: () => getInventoryItem(id),
     enabled: !!id,
+    staleTime: 30 * 1000,
   });
 }
 

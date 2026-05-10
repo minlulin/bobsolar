@@ -73,6 +73,7 @@ export function CustomerCard({ customer, onEdit }: CustomerCardProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label={`Open actions for ${customer.name}`}
                   className="h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   <MoreVertical className="h-4 w-4" />

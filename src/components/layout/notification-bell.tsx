@@ -68,6 +68,7 @@ export function NotificationBell() {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Open notifications"
           className="relative h-10 w-10 rounded-full"
         >
           <Bell className="h-5 w-5" />
@@ -167,6 +168,7 @@ export function NotificationBell() {
                   )}
                   <button
                     type="button"
+                    aria-label={`Remove notification: ${notification.title}`}
                     className="absolute right-3 bottom-2 text-[10px] text-white/40 hover:text-white/80"
                     onClick={(e) => {
                       e.stopPropagation();

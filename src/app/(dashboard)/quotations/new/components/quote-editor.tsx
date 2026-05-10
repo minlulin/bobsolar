@@ -109,6 +109,7 @@ export function QuoteEditor({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Go back"
             onClick={() => router.back()}
             className="rounded-full hover:bg-white/5"
           >

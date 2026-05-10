@@ -94,6 +94,8 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
 
       <div>
         <Input
+          id={`quote-item-description-${index}`}
+          aria-label={`Item ${index + 1} description`}
           value={item.description}
           onChange={(e) => updateItemDescription(index, e.target.value)}
           className="focus:bg-background/40 h-9 border-transparent bg-transparent text-sm font-medium transition-all hover:border-white/10 focus:border-white/20"
@@ -102,6 +104,8 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
 
       <div>
         <Input
+          id={`quote-item-quantity-${index}`}
+          aria-label={`Item ${index + 1} quantity`}
           type="number"
           value={item.quantity}
           min={0.01}
@@ -116,6 +120,8 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
       <div>
         <div className="relative">
           <Input
+            id={`quote-item-unit-price-${index}`}
+            aria-label={`Item ${index + 1} unit price`}
             type="number"
             value={item.unitPrice}
             onChange={(e) =>
@@ -134,6 +140,7 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
         <Button
           variant="ghost"
           size="icon"
+          aria-label={`Remove item ${index + 1}`}
           onClick={() => removeItem(index)}
           className="text-muted-foreground h-8 w-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
         >

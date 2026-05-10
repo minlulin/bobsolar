@@ -17,7 +17,7 @@ export function useCustomers(filters: CustomerFilter = {}) {
   return useQuery({
     queryKey: ['customers', filters],
     queryFn: () => getCustomers(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000,
   });
 }
 
@@ -26,6 +26,7 @@ export function useCustomer(id: string) {
     queryKey: ['customers', id],
     queryFn: () => getCustomer(id),
     enabled: !!id,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -92,5 +93,6 @@ export function useSearchCustomers(query: string) {
     queryKey: ['customers', 'search', query],
     queryFn: () => searchCustomers(query),
     enabled: query.length >= 2,
+    staleTime: 30 * 1000,
   });
 }

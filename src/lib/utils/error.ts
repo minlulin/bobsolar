@@ -3,6 +3,7 @@
  */
 
 import { z } from 'zod';
+import { errorResponse, type ActionFailure } from '@/lib/utils/action-response';
 
 export interface ActionError {
   message: string;
@@ -70,31 +71,22 @@ export function handleActionError(
   error: unknown,
   context: string,
   fallbackMessage: string,
-): { success: false; error: string } {
+): ActionFailure {
   const code = getErrorCode(error);
   const message = formatErrorMessage(error, fallbackMessage);
 
   logError(context, error, { code, userMessage: message });
 
-  return { success: false, error: message };
+  return errorResponse(message);
 }
 
 export function handleNotFoundError(
   resource: string,
   id: string,
-): { success: false; error: string } {
-  return {
-    success: false,
-    error: `${resource} with ID "${id}" not found`,
-  };
+): ActionFailure {
+  return errorResponse(`${resource} with ID "${id}" not found`);
 }
 
-export function handleStateError(message: string): {
-  success: false;
-  error: string;
-} {
-  return {
-    success: false,
-    error: message,
-  };
+export function handleStateError(message: string): ActionFailure {
+  return errorResponse(message);
 }

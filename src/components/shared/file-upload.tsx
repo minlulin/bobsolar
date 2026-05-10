@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { Upload, Loader2, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -117,11 +118,13 @@ export function FileUpload({
       {preview && !busy ? (
         <div className="border-border bg-muted/30 flex justify-center rounded-2xl border p-6">
           <div className="relative h-32 w-full max-w-[200px] overflow-hidden rounded-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={preview}
               alt="Preview"
-              className="mx-auto block h-full w-full object-contain"
+              fill
+              unoptimized
+              sizes="200px"
+              className="mx-auto block object-contain"
             />
             <span className="bg-background/70 text-muted-foreground absolute right-2 bottom-2 rounded-md px-2 py-0.5 text-[10px]">
               Preview

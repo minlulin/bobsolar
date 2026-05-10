@@ -55,6 +55,7 @@ export function CommandBar() {
     <>
       <Button
         variant="outline"
+        aria-label="Open command menu"
         className="bg-muted/50 text-muted-foreground hover:text-foreground relative h-9 w-9 rounded-xl border-none p-0 transition-all duration-200 xl:h-10 xl:w-64 xl:justify-start xl:px-3 xl:py-2"
         onClick={() => setOpen(true)}
       >

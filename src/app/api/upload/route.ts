@@ -68,13 +68,19 @@ export async function POST(request: NextRequest) {
 
     const url = await uploadFileFromBufferOrBlob(buf, file.name, folder, type);
 
-    return NextResponse.json({ url }, { status: 200 });
+    return NextResponse.json(
+      { url },
+      { status: 200, headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (e) {
     const message =
       e instanceof Error && e.message.includes('BLOB_READ_WRITE_TOKEN')
         ? 'File storage not configured.'
         : 'Upload failed.';
     console.error('[upload]', e);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 }

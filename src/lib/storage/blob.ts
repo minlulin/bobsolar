@@ -25,6 +25,7 @@ export async function uploadFileFromBufferOrBlob(
   const options: Parameters<typeof put>[2] = {
     access: 'public',
     token,
+    cacheControlMaxAge: 60 * 60 * 24 * 30,
     ...(contentType ? { contentType } : {}),
   };
 

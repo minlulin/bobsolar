@@ -54,9 +54,9 @@ export function QuotePreview() {
             </p>
           </div>
           <div className="space-y-1 text-right">
-            <h1 className="text-2xl font-black text-zinc-300 uppercase">
+            <h2 className="text-2xl font-black text-zinc-300 uppercase">
               Quotation
-            </h1>
+            </h2>
             <p className="font-bold">QT-2026-XXXX</p>
             <p className="text-muted-foreground">
               {format(new Date(), 'MMM dd, yyyy')}

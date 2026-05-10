@@ -26,9 +26,16 @@ const fontMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'BOB Solar — Solar Installation Management',
-  description: 'A premium management system for BOB Solar.',
+  title: {
+    default: 'BOB Solar - Solar Installation Management',
+    template: '%s | BOB Solar',
+  },
+  description: 'Professional solar installation management for BOB Solar',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

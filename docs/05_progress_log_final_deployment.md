@@ -9,48 +9,48 @@
 
 ### 5.1.1 Error Boundaries
 
-- [ ] Create `src/app/error.tsx` — root error boundary
-  - [ ] Solar-themed error illustration
-  - [ ] "Something went wrong" message
-  - [ ] "Try Again" button (calls `reset()`)
-  - [ ] "Go to Dashboard" link
-- [ ] Create `src/app/(dashboard)/error.tsx` — dashboard-specific
-- [ ] Create `src/app/not-found.tsx` — custom 404 page
-  - [ ] Solar-themed "Page not found" illustration
-  - [ ] "Back to Dashboard" button
-- [ ] Create per-feature error boundaries:
-  - [ ] `src/app/(dashboard)/quotations/error.tsx`
-  - [ ] `src/app/(dashboard)/projects/error.tsx`
-  - [ ] `src/app/(dashboard)/inventory/error.tsx`
-  - [ ] `src/app/(dashboard)/customers/error.tsx`
+- [x] Create `src/app/error.tsx` — root error boundary
+  - [x] Solar-themed error illustration
+  - [x] "Something went wrong" message
+  - [x] "Try Again" button (calls `reset()`)
+  - [x] "Go to Dashboard" link
+- [x] Create `src/app/(dashboard)/error.tsx` — dashboard-specific
+- [x] Create `src/app/not-found.tsx` — custom 404 page
+  - [x] Solar-themed "Page not found" illustration
+  - [x] "Back to Dashboard" button
+- [x] Create per-feature error boundaries:
+  - [x] `src/app/(dashboard)/quotations/error.tsx`
+  - [x] `src/app/(dashboard)/projects/error.tsx`
+  - [x] `src/app/(dashboard)/inventory/error.tsx`
+  - [x] `src/app/(dashboard)/customers/error.tsx`
 - [ ] Test: force an error → verify boundary catches it
 - [ ] Test: "Try Again" button recovers correctly
 
 ### 5.1.2 Loading States
 
-- [ ] Create `src/app/(dashboard)/loading.tsx` — dashboard skeleton
-- [ ] Create per-page loading states:
-  - [ ] `src/app/(dashboard)/quotations/loading.tsx` — skeleton card list
-  - [ ] `src/app/(dashboard)/projects/loading.tsx` — skeleton card list
-  - [ ] `src/app/(dashboard)/inventory/loading.tsx` — skeleton grid
-  - [ ] `src/app/(dashboard)/customers/loading.tsx` — skeleton card list
-  - [ ] `src/app/(dashboard)/warranty/loading.tsx` — skeleton list
-- [ ] Skeleton component (`src/components/shared/skeleton-card.tsx`):
-  - [ ] Matches actual card layout shape
-  - [ ] Shimmer animation (gradient sweep)
-  - [ ] Solar-themed shimmer color (subtle amber tint)
+- [x] Create `src/app/(dashboard)/loading.tsx` — dashboard skeleton
+- [x] Create per-page loading states:
+  - [x] `src/app/(dashboard)/quotations/loading.tsx` — skeleton card list
+  - [x] `src/app/(dashboard)/projects/loading.tsx` — skeleton card list
+  - [x] `src/app/(dashboard)/inventory/loading.tsx` — skeleton grid
+  - [x] `src/app/(dashboard)/customers/loading.tsx` — skeleton card list
+  - [x] `src/app/(dashboard)/warranty/loading.tsx` — skeleton list
+- [x] Skeleton component (`src/components/shared/skeleton-card.tsx`):
+  - [x] Matches actual card layout shape
+  - [x] Shimmer animation (gradient sweep)
+  - [x] Solar-themed shimmer color (subtle amber tint)
 - [ ] Verify: no layout shift between skeleton and loaded content (CLS = 0)
 
 ### 5.1.3 Global Error Handling
 
-- [ ] Create TanStack Query error handler:
-  - [ ] Default `onError`: show error toast
-  - [ ] Network error: show "Connection lost" toast with retry button
-  - [ ] 401 error: redirect to login (session expired)
-  - [ ] 500 error: show generic error toast
-- [ ] Server Action error wrapper utility:
-  - [ ] Standardized error response format: `{ success: false, error: string }`
-  - [ ] Standardized success response: `{ success: true, data: T }`
+- [x] Create TanStack Query error handler:
+  - [x] Default `onError`: show error toast
+  - [x] Network error: show "Connection lost" toast with retry button
+  - [x] 401 error: redirect to login (session expired)
+  - [x] 500 error: show generic error toast
+- [x] Server Action error wrapper utility:
+  - [x] Standardized error response format: `{ success: false, error: string }`
+  - [x] Standardized success response: `{ success: true, data: T }`
 - [ ] Test: network disconnect → error toast appears
 - [ ] Test: expired session → redirects to login
 
@@ -60,34 +60,34 @@
 
 ### 5.2.1 Root Metadata (`src/app/layout.tsx`)
 
-- [ ] Title template: `%s | BOB Solar`
-- [ ] Default title: `BOB Solar — Solar Installation Management`
-- [ ] Description: `Professional solar installation management for BOB Solar`
-- [ ] Viewport: `width=device-width, initial-scale=1`
-- [ ] Theme color: solar amber
-- [ ] Icons: reference PWA icons
+- [x] Title template: `%s | BOB Solar`
+- [x] Default title: `BOB Solar — Solar Installation Management`
+- [x] Description: `Professional solar installation management for BOB Solar`
+- [x] Viewport: `width=device-width, initial-scale=1`
+- [x] Theme color: solar amber
+- [x] Icons: reference PWA icons
 
 ### 5.2.2 Per-Page Metadata
 
-- [ ] Dashboard: `title: "Dashboard"`
-- [ ] Quotations: `title: "Quotations"`
-- [ ] Projects: `title: "Projects"`
-- [ ] Inventory: `title: "Inventory & Pricing"`
-- [ ] Customers: `title: "Customers"`
-- [ ] Warranty: `title: "Warranty & Aftersales"`
-- [ ] Settings: `title: "Settings"`
-- [ ] Login: `title: "Sign In"`
+- [x] Dashboard: `title: "Dashboard"`
+- [x] Quotations: `title: "Quotations"`
+- [x] Projects: `title: "Projects"`
+- [x] Inventory: `title: "Inventory & Pricing"`
+- [x] Customers: `title: "Customers"`
+- [x] Warranty: `title: "Warranty & Aftersales"`
+- [x] Settings: `title: "Settings"`
+- [x] Login: `title: "Sign In"`
 
 ### 5.2.3 Semantic HTML Audit
 
-- [ ] Each page has exactly one `<h1>`
-- [ ] Proper heading hierarchy (h1 → h2 → h3)
-- [ ] Interactive elements have unique `id` attributes
-- [ ] All images have `alt` text
-- [ ] All buttons/links have accessible labels
-- [ ] Form inputs have associated `<label>` elements
-- [ ] Navigation landmarks: `<nav>`, `<main>`, `<header>`
-- [ ] Skip-to-content link for keyboard users
+- [x] Each page has exactly one `<h1>`
+- [x] Proper heading hierarchy (h1 -> h2 -> h3)
+- [x] Interactive elements have unique `id` attributes
+- [x] All images have `alt` text
+- [x] All buttons/links have accessible labels
+- [x] Form inputs have associated `<label>` elements
+- [x] Navigation landmarks: `<nav>`, `<main>`, `<header>`
+- [x] Skip-to-content link for keyboard users
 
 ---
 
@@ -95,35 +95,37 @@
 
 ### 5.3.1 Bundle Analysis
 
-- [ ] Run bundle analyzer: `ANALYZE=true pnpm build`
-- [ ] Identify large dependencies:
-  - [ ] Framer Motion: verify tree-shaking, use `LazyMotion`
-  - [ ] @react-pdf/renderer: ensure only loaded on PDF routes
-  - [ ] TanStack Query: verify no unnecessary imports
-- [ ] Code splitting verification:
-  - [ ] Each route group loads independently
-  - [ ] Heavy components use `next/dynamic` with `{ ssr: false }`
-  - [ ] PDF components NOT included in main bundle
+- [x] Run bundle analyzer: `ANALYZE=true pnpm build`
+- [x] Identify large dependencies:
+  - [x] Framer Motion: verify tree-shaking, use `LazyMotion`
+  - [x] @react-pdf/renderer: ensure only loaded on PDF routes
+  - [x] TanStack Query: verify no unnecessary imports
+- [x] Code splitting verification:
+  - [x] Each route group loads independently
+  - [x] Heavy components use `next/dynamic` with `{ ssr: false }`
+  - [x] PDF components NOT included in main bundle
 
 ### 5.3.2 Image Optimization
 
-- [ ] All static images use `next/image` with proper sizing
+- [x] All static images use `next/image` with proper sizing
 - [ ] PWA icons optimized (PNG, compressed)
-- [ ] Company logo: served from Vercel Blob with appropriate caching headers
-- [ ] Lazy load images below the fold
+- [x] Company logo: served from Vercel Blob with appropriate caching headers
+- [x] Lazy load images below the fold
 
 ### 5.3.3 Caching Strategy
 
-- [ ] TanStack Query stale times reviewed:
-  - [ ] Dashboard stats: 60s
-  - [ ] Lists (quotes, projects, customers): 30s
-  - [ ] Inventory: 5min
-  - [ ] Single item details: 30s
-  - [ ] Notifications: 15s (with 30s refetch interval)
+- [x] TanStack Query stale times reviewed:
+  - [x] Dashboard stats: 60s
+  - [x] Lists (quotes, projects, customers): 30s
+  - [x] Inventory: 5min
+  - [x] Single item details: 30s
+  - [x] Notifications: 15s (with 30s refetch interval)
 - [ ] Next.js caching:
   - [ ] Static pages use ISR where applicable
-  - [ ] API routes set appropriate `Cache-Control` headers
+  - [x] API routes set appropriate `Cache-Control` headers
   - [ ] `use cache` directive for appropriate Server Components
+
+- Note: Authenticated dashboard routes are request-scoped; ISR is limited to public/static assets.
 
 ### 5.3.4 Core Web Vitals Targets
 
@@ -187,9 +189,9 @@
 ### 5.5.1 GitHub Repository Setup
 
 - [ ] Initialize git: `git init`
-- [ ] Create `.gitignore`:
-  - [ ] `node_modules/`, `.next/`, `.vercel/`, `.env.local`, `public/sw.js`
-  - [ ] `drizzle/migrations/*.sql` (track in git for reproducibility)
+- [x] Create `.gitignore`:
+  - [x] `node_modules/`, `.next/`, `.vercel/`, `.env.local`, `public/sw.js`
+  - [x] `drizzle/migrations/*.sql` (track in git for reproducibility)
 - [ ] Create GitHub repository: `bobsolar` (private)
 - [ ] Push initial commit
 - [ ] Set up branch protection on `main` (optional for 3 users)
@@ -216,7 +218,7 @@
 
 ### 5.5.4 Optional: vercel.json
 
-- [ ] Create `vercel.json` (only if custom config needed):
+- [x] Create `vercel.json` (only if custom config needed):
   ```json
   {
     "buildCommand": "pnpm typecheck && pnpm lint && pnpm build",
@@ -351,21 +353,21 @@
 
 ### 5.8.1 README.md
 
-- [ ] Project overview
-- [ ] Tech stack summary
-- [ ] Getting started (dev setup):
-  - [ ] Prerequisites (Node 22+, pnpm)
-  - [ ] Clone, install, env setup
-  - [ ] Database setup (Neon)
-  - [ ] Run dev server
-- [ ] Environment variables reference
-- [ ] Deployment instructions
-- [ ] Folder structure overview
+- [x] Project overview
+- [x] Tech stack summary
+- [x] Getting started (dev setup):
+  - [x] Prerequisites (Node 22+, pnpm)
+  - [x] Clone, install, env setup
+  - [x] Database setup (Neon)
+  - [x] Run dev server
+- [x] Environment variables reference
+- [x] Deployment instructions
+- [x] Folder structure overview
 
 ### 5.8.2 .env.example
 
-- [ ] Create with all required environment variables (values blank)
-- [ ] Comments explaining each variable
+- [x] Create with all required environment variables (values blank)
+- [x] Comments explaining each variable
 
 ---
 
@@ -374,9 +376,9 @@
 > All of the following must be true to consider the project complete:
 
 - [ ] All Phase 1-5 completion criteria from Parts 1-4 are met
-- [ ] Zero TypeScript errors (`pnpm typecheck`)
-- [ ] Zero ESLint errors (`pnpm lint`)
-- [ ] Production build succeeds (`pnpm build`)
+- [x] Zero TypeScript errors (`pnpm typecheck`)
+- [x] Zero ESLint errors (`pnpm lint`)
+- [x] Production build succeeds (`pnpm build`)
 - [ ] Deployed to Vercel and accessible
 - [ ] All functional smoke tests pass
 - [ ] Lighthouse scores meet targets
@@ -384,6 +386,16 @@
 - [ ] PDF generation produces professional documents
 - [ ] Theme switching (light/dark) works correctly
 - [ ] All pages responsive across mobile/tablet/desktop
-- [ ] README documentation complete
+- [x] README documentation complete
 - [ ] Git repository clean with meaningful commit history
 - [ ] **Zero monthly cost** infrastructure verified (Vercel Hobby + Neon free) ✅
+
+
+
+
+
+
+
+
+
+

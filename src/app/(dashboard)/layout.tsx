@@ -31,6 +31,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="bg-background relative min-h-screen">
+      <a
+        href="#main-content"
+        className="bg-solar text-background sr-only z-[60] rounded-md px-3 py-2 font-semibold focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Skip to content
+      </a>
       {/* Top Bar */}
       <header className="bg-background/80 sticky top-0 z-40 w-full border-b border-white/5 backdrop-blur-md">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
@@ -64,7 +70,7 @@ export default async function DashboardLayout({
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto max-w-7xl px-4 py-8 pb-32">
+      <main id="main-content" className="container mx-auto max-w-7xl px-4 py-8 pb-32">
         <RouteTransition>{children}</RouteTransition>
       </main>
 

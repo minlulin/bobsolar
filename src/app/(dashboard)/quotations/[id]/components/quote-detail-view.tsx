@@ -97,6 +97,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Back to quotations"
             onClick={() => router.push('/quotations')}
             className="rounded-full hover:bg-white/5"
           >

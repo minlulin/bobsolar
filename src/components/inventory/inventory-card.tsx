@@ -123,6 +123,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label={`Edit ${item.name}`}
                 className="h-8 w-8"
                 onClick={() => onEdit(item)}
               >
@@ -133,6 +134,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                   <Button
                     size="icon"
                     variant="ghost"
+                    aria-label={`Delete ${item.name}`}
                     className="text-destructive h-8 w-8"
                   >
                     <Trash2 className="h-4 w-4" />

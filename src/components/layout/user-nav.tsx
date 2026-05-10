@@ -31,6 +31,7 @@ export function UserNav({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
+          aria-label="Open user menu"
           className="bg-muted hover:bg-muted/80 relative h-10 w-10 overflow-hidden rounded-full border-2 border-white/10"
         >
           <User className="h-6 w-6" />
