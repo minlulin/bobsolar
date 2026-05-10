@@ -3,20 +3,35 @@ import { getIronSession, type SessionOptions } from 'iron-session';
 import { db } from '@/lib/db';
 import { sessions, users } from '@/lib/db/schema';
 import { eq, lt, and, ne } from 'drizzle-orm';
-import {
-  SESSION_TTL_MS,
-  SESSION_TTL_SECONDS,
-} from '@/lib/domain/policies';
+import { SESSION_TTL_MS, SESSION_TTL_SECONDS } from '@/lib/domain/policies';
 
 const SESSION_COOKIE_NAME = 'bobsolar_session';
+
+function assertSessionSecret(): void {
+  const secret = process.env['SESSION_SECRET'];
+  if (!secret || secret.trim().length < 32) {
+    throw new Error(
+      'SESSION_SECRET is not set (or too short). Set a strong secret (>= 32 chars).',
+    );
+  }
+}
+
+function getSessionSecretOrPlaceholder(): string {
+  // Avoid throwing at module evaluation time (e.g. during `next build`).
+  // All session entry points call `assertSessionSecret()` before doing real work.
+  const secret = process.env['SESSION_SECRET'];
+  return secret && secret.trim().length >= 32
+    ? secret
+    : 'insecure-placeholder-secret-insecure-placeholder-secret';
+}
 
 // Iron-session configuration for encrypted cookies
 const ironSessionConfig: SessionOptions = {
   cookieName: SESSION_COOKIE_NAME,
-  password: process.env.SESSION_SECRET ?? '',
+  password: getSessionSecretOrPlaceholder(),
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
@@ -84,6 +99,7 @@ export async function createSession(
   userId: string,
   role: string,
 ): Promise<string> {
+  assertSessionSecret();
   const sessionId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
@@ -100,7 +116,7 @@ export async function createSession(
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, sealedSession, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env['NODE_ENV'] === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
@@ -175,6 +191,7 @@ export async function getSessionFromCookie(): Promise<
   const cookieStore = await cookies();
   const sealedValue = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!sealedValue) return null;
+  assertSessionSecret();
 
   // Unseal the session ID from the encrypted cookie
   const unsealed = await unsealSession(sealedValue);
@@ -190,6 +207,7 @@ export async function getSessionAndRefresh(): Promise<{
   const cookieStore = await cookies();
   const sealedValue = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!sealedValue) return { session: null, refreshed: false };
+  assertSessionSecret();
 
   // Unseal the session ID from the encrypted cookie
   const unsealed = await unsealSession(sealedValue);
@@ -209,7 +227,7 @@ export async function getSessionAndRefresh(): Promise<{
       const newSealedSession = await sealSession(unsealed.sid);
       cookieStore.set(SESSION_COOKIE_NAME, newSealedSession, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env['NODE_ENV'] === 'production',
         sameSite: 'lax',
         path: '/',
         maxAge: SESSION_TTL_SECONDS,

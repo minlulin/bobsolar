@@ -7,6 +7,7 @@ import {
   integer,
   boolean,
   pgEnum,
+  index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import {
@@ -133,41 +134,49 @@ export const inventoryItems = pgTable('inventory_items', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const quotations = pgTable('quotations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  quoteNumber: text('quote_number').unique().notNull(), // QT-2026-0001
-  customerId: uuid('customer_id')
-    .references(() => customers.id, { onDelete: 'cascade' })
-    .notNull(),
-  createdBy: uuid('created_by')
-    .references(() => users.id)
-    .notNull(),
-  status: quotationStatusEnum('status').default('draft').notNull(),
-  subtotal: decimal('subtotal', { precision: 15, scale: 0 }).notNull(),
-  discountPercent: decimal('discount_percent', {
-    precision: 5,
-    scale: 2,
-  })
-    .default('0')
-    .notNull(),
-  discountAmount: decimal('discount_amount', {
-    precision: 15,
-    scale: 0,
-  })
-    .default('0')
-    .notNull(),
-  taxPercent: decimal('tax_percent', { precision: 5, scale: 2 })
-    .default('0')
-    .notNull(),
-  taxAmount: decimal('tax_amount', { precision: 15, scale: 0 })
-    .default('0')
-    .notNull(),
-  total: decimal('total', { precision: 15, scale: 0 }).notNull(),
-  notes: text('notes'),
-  validUntil: timestamp('valid_until'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const quotations = pgTable(
+  'quotations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    quoteNumber: text('quote_number').unique().notNull(), // QT-2026-0001
+    customerId: uuid('customer_id')
+      .references(() => customers.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdBy: uuid('created_by')
+      .references(() => users.id)
+      .notNull(),
+    status: quotationStatusEnum('status').default('draft').notNull(),
+    subtotal: decimal('subtotal', { precision: 15, scale: 0 }).notNull(),
+    discountPercent: decimal('discount_percent', {
+      precision: 5,
+      scale: 2,
+    })
+      .default('0')
+      .notNull(),
+    discountAmount: decimal('discount_amount', {
+      precision: 15,
+      scale: 0,
+    })
+      .default('0')
+      .notNull(),
+    taxPercent: decimal('tax_percent', { precision: 5, scale: 2 })
+      .default('0')
+      .notNull(),
+    taxAmount: decimal('tax_amount', { precision: 15, scale: 0 })
+      .default('0')
+      .notNull(),
+    total: decimal('total', { precision: 15, scale: 0 }).notNull(),
+    notes: text('notes'),
+    validUntil: timestamp('valid_until'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('quotations_status_created_at_idx').on(table.status, table.createdAt),
+    index('quotations_customer_id_idx').on(table.customerId),
+    index('quotations_created_by_idx').on(table.createdBy),
+  ],
+);
 
 export const quotationItems = pgTable('quotation_items', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -217,6 +226,9 @@ export const projects = pgTable(
     uniqueIndex('projects_quotation_id_unique')
       .on(table.quotationId)
       .where(sql`${table.quotationId} is not null`),
+    index('projects_status_created_at_idx').on(table.status, table.createdAt),
+    index('projects_customer_id_idx').on(table.customerId),
+    index('projects_quotation_id_idx').on(table.quotationId),
   ],
 );
 
@@ -248,30 +260,56 @@ export const projectRemarks = pgTable('project_remarks', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const warrantyAlerts = pgTable('warranty_alerts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  projectId: uuid('project_id')
-    .references(() => projects.id, { onDelete: 'cascade' })
-    .notNull(),
-  alertType: alertTypeEnum('alert_type').notNull(),
-  description: text('description').notNull(),
-  dueDate: timestamp('due_date').notNull(),
-  isResolved: boolean('is_resolved').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const warrantyAlerts = pgTable(
+  'warranty_alerts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id, { onDelete: 'cascade' })
+      .notNull(),
+    alertType: alertTypeEnum('alert_type').notNull(),
+    description: text('description').notNull(),
+    dueDate: timestamp('due_date').notNull(),
+    isResolved: boolean('is_resolved').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('warranty_alerts_resolved_due_date_idx').on(
+      table.isResolved,
+      table.dueDate,
+    ),
+    index('warranty_alerts_project_id_idx').on(table.projectId),
+  ],
+);
 
-export const notifications = pgTable('notifications', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id')
-    .references(() => users.id, { onDelete: 'cascade' })
-    .notNull(),
-  title: text('title').notNull(),
-  message: text('message').notNull(),
-  type: notificationTypeEnum('type').default('info').notNull(),
-  link: text('link'),
-  isRead: boolean('is_read').default(false).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    type: notificationTypeEnum('type').default('info').notNull(),
+    link: text('link'),
+    isRead: boolean('is_read').default(false).notNull(),
+    notificationDedupeKey: text('notification_dedupe_key'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('notifications_user_read_created_at_idx').on(
+      table.userId,
+      table.isRead,
+      table.createdAt,
+    ),
+    index('notifications_user_created_at_idx').on(
+      table.userId,
+      table.createdAt,
+    ),
+    index('notifications_dedupe_key_idx').on(table.notificationDedupeKey),
+  ],
+);
 
 export const companySettings = pgTable('company_settings', {
   key: text('key').primaryKey(),

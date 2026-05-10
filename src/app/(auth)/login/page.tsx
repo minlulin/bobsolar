@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
@@ -24,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const brandingQuery = useQuery({
     queryKey: ['public', 'branding'],
@@ -51,8 +53,10 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await login(data);
-      if (result && !result.success) {
+      if (!result.success) {
         toast.error(result.error);
+      } else {
+        router.push('/');
       }
     } catch {
       toast.error('An unexpected error occurred');

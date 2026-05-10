@@ -73,7 +73,6 @@ import {
   type RemarkType,
   type AlertType,
   COST_FILTERS,
-  COST_TYPES,
   REMARK_TYPE_ICONS,
 } from '@/lib/domain/enums';
 
@@ -167,7 +166,6 @@ export function ProjectDetailShell({
 
   const [remarkBody, setRemarkBody] = React.useState('');
   const [remarkType, setRemarkType] = React.useState<RemarkType>('note');
-
 
   const [alertForm, setAlertForm] = React.useState<{
     alertType: AlertType;

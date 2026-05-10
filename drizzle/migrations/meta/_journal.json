@@ -22,6 +22,27 @@
       "when": 1778374288769,
       "tag": "0002_quick_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778402589782,
+      "tag": "0003_clever_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778402839312,
+      "tag": "0004_flashy_gressill",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778408112614,
+      "tag": "0005_operational-indexes",
+      "breakpoints": true
     }
   ]
 }

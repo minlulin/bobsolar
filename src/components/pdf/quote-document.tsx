@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import type { Quotation, QuotationItem, Customer } from '@/lib/db/schema';
 import {
   COMPANY_SETTING_KEYS,
+  COMPANY_SETTING_DEFAULTS,
   formatBankDetails,
 } from '@/lib/domain/settings-keys';
 import path from 'path';
@@ -28,15 +29,7 @@ Font.register({
   ],
 });
 
-// Minimal fallback info - should be configured in settings
-const FALLBACK_COMPANY_INFO = {
-  name: 'BOB Solar',
-  tagline: 'Powering Tomorrow with Solar Energy',
-  address: '',
-  phone: '',
-  email: '',
-  taxId: '',
-};
+const DEFAULT_TAGLINE = 'Powering Tomorrow with Solar Energy';
 
 interface QuoteDocumentProps {
   quotation: Quotation & { items: QuotationItem[]; customer: Customer };
@@ -52,15 +45,20 @@ export function QuoteDocument({
   const { customer, items } = quotation;
 
   const companyName =
-    companySettings[COMPANY_SETTING_KEYS.NAME] || FALLBACK_COMPANY_INFO.name;
+    companySettings[COMPANY_SETTING_KEYS.NAME] ||
+    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.NAME];
   const companyAddress =
-    companySettings[COMPANY_SETTING_KEYS.ADDRESS] || FALLBACK_COMPANY_INFO.address;
+    companySettings[COMPANY_SETTING_KEYS.ADDRESS] ||
+    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.ADDRESS];
   const companyPhone =
-    companySettings[COMPANY_SETTING_KEYS.PHONE] || FALLBACK_COMPANY_INFO.phone;
+    companySettings[COMPANY_SETTING_KEYS.PHONE] ||
+    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.PHONE];
   const companyEmail =
-    companySettings[COMPANY_SETTING_KEYS.EMAIL] || FALLBACK_COMPANY_INFO.email;
+    companySettings[COMPANY_SETTING_KEYS.EMAIL] ||
+    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.EMAIL];
   const companyTaxId =
-    companySettings[COMPANY_SETTING_KEYS.TAX_ID] || FALLBACK_COMPANY_INFO.taxId;
+    companySettings[COMPANY_SETTING_KEYS.TAX_ID] ||
+    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.TAX_ID];
 
   return (
     <Document>
@@ -75,9 +73,7 @@ export function QuoteDocument({
               </>
             ) : null}
             <Text style={pdfStyles.companyName}>{companyName}</Text>
-            <Text style={pdfStyles.companyTagline}>
-              {FALLBACK_COMPANY_INFO.tagline}
-            </Text>
+            <Text style={pdfStyles.companyTagline}>{DEFAULT_TAGLINE}</Text>
             <Text style={pdfStyles.companyDetails}>
               {companyAddress}
               {'\n'}
@@ -139,7 +135,7 @@ export function QuoteDocument({
               Qty
             </Text>
             <Text style={[pdfStyles.tableHeaderCell, pdfStyles.colUnit]}>
-              Unit
+              Cur.
             </Text>
             <Text style={[pdfStyles.tableHeaderCell, pdfStyles.colPrice]}>
               Unit Price

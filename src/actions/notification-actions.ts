@@ -20,6 +20,7 @@ import {
   QUOTATION_EXPIRY_WARNING_DAYS,
   WARRANTY_NOTIFICATION_WINDOW_DAYS,
 } from '@/lib/domain/policies';
+import { uuidSchema } from '@/lib/validators/common';
 
 const notificationFilterSchema = z.object({
   unreadOnly: z.boolean().optional(),
@@ -31,6 +32,7 @@ const createNotificationSchema = z.object({
   message: z.string().min(1),
   type: z.enum(['info', 'warning', 'action']),
   link: z.string().optional().nullable(),
+  dedupeKey: z.string().optional(),
 });
 
 export async function getNotifications(): Promise<
@@ -92,12 +94,16 @@ export async function markNotificationAsRead(
 ): Promise<ActionResponse<void>> {
   try {
     const auth = await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     await db
       .update(notifications)
       .set({ isRead: true })
       .where(
-        and(eq(notifications.id, id), eq(notifications.userId, auth.userId)),
+        and(
+          eq(notifications.id, validatedId),
+          eq(notifications.userId, auth.userId),
+        ),
       );
 
     revalidatePath('/', 'layout');
@@ -116,10 +122,14 @@ export async function deleteNotification(
 ): Promise<ActionResponse<void>> {
   try {
     const auth = await requireAuth();
+    const validatedId = uuidSchema.parse(id);
     await db
       .delete(notifications)
       .where(
-        and(eq(notifications.id, id), eq(notifications.userId, auth.userId)),
+        and(
+          eq(notifications.id, validatedId),
+          eq(notifications.userId, auth.userId),
+        ),
       );
     revalidatePath('/', 'layout');
     return { success: true, data: undefined };
@@ -138,17 +148,49 @@ export async function createNotification(
   try {
     await requireAuth();
     const data = createNotificationSchema.parse(raw);
-    const values = data.userIds.map((userId) => ({
-      userId,
-      title: data.title,
-      message: data.message,
-      type: data.type,
-      link: data.link ?? null,
-      isRead: false,
-    }));
-    await db.insert(notifications).values(values);
+
+    let createdCount = 0;
+
+    if (data.dedupeKey) {
+      // Use deduplication - only create if doesn't exist for each user
+      for (const userId of data.userIds) {
+        // Check if notification with this dedupe key already exists for this user
+        const existing = await db.query.notifications.findFirst({
+          where: and(
+            eq(notifications.userId, userId),
+            eq(notifications.notificationDedupeKey, data.dedupeKey!),
+          ),
+        });
+
+        if (!existing) {
+          await db.insert(notifications).values({
+            userId,
+            title: data.title,
+            message: data.message,
+            type: data.type,
+            link: data.link ?? null,
+            isRead: false,
+            notificationDedupeKey: data.dedupeKey,
+          });
+          createdCount++;
+        }
+      }
+    } else {
+      // No deduplication - create for all users
+      const values = data.userIds.map((userId) => ({
+        userId,
+        title: data.title,
+        message: data.message,
+        type: data.type,
+        link: data.link ?? null,
+        isRead: false,
+      }));
+      await db.insert(notifications).values(values);
+      createdCount = values.length;
+    }
+
     revalidatePath('/', 'layout');
-    return { success: true, data: values.length };
+    return { success: true, data: createdCount };
   } catch (error) {
     return handleActionError(
       error,
@@ -196,13 +238,25 @@ export async function runScheduledNotificationChecks(): Promise<
       );
 
     for (const q of expiringQuotes) {
-      await db.insert(notifications).values({
-        userId: q.createdBy,
-        title: 'Quotation expiring soon',
-        message: `${q.quoteNumber} expires within ${QUOTATION_EXPIRY_WARNING_DAYS} days.`,
-        type: 'warning',
-        link: `/quotations/${q.id}`,
+      const dedupeKey = `quote-expiring-${q.id}`;
+      // Check if notification already exists
+      const existing = await db.query.notifications.findFirst({
+        where: and(
+          eq(notifications.userId, q.createdBy),
+          eq(notifications.notificationDedupeKey, dedupeKey),
+        ),
       });
+
+      if (!existing) {
+        await db.insert(notifications).values({
+          userId: q.createdBy,
+          title: 'Quotation expiring soon',
+          message: `${q.quoteNumber} expires within ${QUOTATION_EXPIRY_WARNING_DAYS} days.`,
+          type: 'warning',
+          link: `/quotations/${q.id}`,
+          notificationDedupeKey: dedupeKey,
+        });
+      }
     }
 
     const dueSoon = await db
@@ -236,30 +290,54 @@ export async function runScheduledNotificationChecks(): Promise<
         ),
       );
 
-    const dueSoonValues = dueSoon.flatMap((a) =>
-      allUserIds.map((userId) => ({
-        userId,
-        title: 'Warranty alert due soon',
-        message: `${a.projectNumber} has an alert due within ${WARRANTY_NOTIFICATION_WINDOW_DAYS} days.`,
-        type: 'action' as const,
-        link: `/projects/${a.projectId}`,
-      })),
-    );
-    if (dueSoonValues.length > 0)
-      await db.insert(notifications).values(dueSoonValues);
+    // Create due soon notifications with deduplication
+    for (const a of dueSoon) {
+      const dedupeKey = `warranty-due-soon-${a.id}`;
+      for (const userId of allUserIds) {
+        const existing = await db.query.notifications.findFirst({
+          where: and(
+            eq(notifications.userId, userId),
+            eq(notifications.notificationDedupeKey, dedupeKey),
+          ),
+        });
 
+        if (!existing) {
+          await db.insert(notifications).values({
+            userId,
+            title: 'Warranty alert due soon',
+            message: `${a.projectNumber} has an alert due within ${WARRANTY_NOTIFICATION_WINDOW_DAYS} days.`,
+            type: 'action' as const,
+            link: `/projects/${a.projectId}`,
+            notificationDedupeKey: dedupeKey,
+          });
+        }
+      }
+    }
+
+    // Create overdue notifications with deduplication
     if (adminIds.length > 0) {
-      const overdueValues = overdue.flatMap((a) =>
-        adminIds.map((userId) => ({
-          userId,
-          title: 'Warranty alert overdue',
-          message: `${a.projectNumber} has an overdue alert.`,
-          type: 'warning' as const,
-          link: `/projects/${a.projectId}`,
-        })),
-      );
-      if (overdueValues.length > 0)
-        await db.insert(notifications).values(overdueValues);
+      for (const a of overdue) {
+        const dedupeKey = `warranty-overdue-${a.id}`;
+        for (const userId of adminIds) {
+          const existing = await db.query.notifications.findFirst({
+            where: and(
+              eq(notifications.userId, userId),
+              eq(notifications.notificationDedupeKey, dedupeKey),
+            ),
+          });
+
+          if (!existing) {
+            await db.insert(notifications).values({
+              userId,
+              title: 'Warranty alert overdue',
+              message: `${a.projectNumber} has an overdue alert.`,
+              type: 'warning' as const,
+              link: `/projects/${a.projectId}`,
+              notificationDedupeKey: dedupeKey,
+            });
+          }
+        }
+      }
     }
 
     return {

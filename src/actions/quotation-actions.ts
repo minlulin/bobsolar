@@ -4,7 +4,6 @@ import { db } from '@/lib/db';
 import {
   quotations,
   quotationItems,
-  customers,
   projects,
   type Quotation,
   type QuotationItem,
@@ -17,6 +16,7 @@ import {
 } from '@/lib/validators/quotation';
 import { requireAuth } from '@/lib/auth/validate';
 import { eq, and, ilike, desc, sql, lt, count } from 'drizzle-orm';
+import { AdvisoryLock } from '@/lib/utils/advisory-lock';
 import { revalidatePath } from 'next/cache';
 import type { ActionResponse } from '@/lib/utils/action-response';
 import {
@@ -56,17 +56,6 @@ export async function getQuotations(
     const parsedFilters = quotationFilterSchema.parse(filters);
     const { status, customerId, search, page, limit } = parsedFilters;
     const offset = (page - 1) * limit;
-
-    // Auto-expire sent quotes that have passed their validUntil date
-    await db
-      .update(quotations)
-      .set({ status: 'expired' })
-      .where(
-        and(
-          eq(quotations.status, 'sent'),
-          lt(quotations.validUntil, new Date()),
-        ),
-      );
 
     const whereClause = and(
       status ? eq(quotations.status, status) : undefined,
@@ -192,83 +181,96 @@ export async function createQuotation(
       validated.taxPercent,
     );
 
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        const yearStart = new Date(new Date().getFullYear(), 0, 1);
-        const lastQuote = await db.query.quotations.findFirst({
-          where: and(sql`${quotations.createdAt} >= ${yearStart}`),
-          orderBy: [desc(quotations.createdAt)],
-        });
-
-        let nextSequence = 1;
-        if (lastQuote) {
-          nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
-        }
-        const quoteNumber = formatQuoteNumber(nextSequence);
-
-        const result = await db.transaction(async (tx) => {
-          const [quote] = await tx
-            .insert(quotations)
-            .values({
-              quoteNumber,
-              customerId: validated.customerId,
-              createdBy: auth.userId,
-              subtotal: pricing.subtotal.toString(),
-              discountPercent: validated.discountPercent.toString(),
-              discountAmount: pricing.discountAmount.toString(),
-              taxPercent: validated.taxPercent.toString(),
-              taxAmount: pricing.taxAmount.toString(),
-              total: pricing.total.toString(),
-              notes: validated.notes,
-              validUntil: validated.validUntil,
-              status: 'draft',
-            })
-            .returning();
-
-          if (!quote)
-            throw new Error('Failed to create quotation record in database');
-
-          const itemsToInsert = validated.items.map((item, index) => ({
-            quotationId: quote.id,
-            itemId: item.itemId,
-            description: item.description,
-            quantity: item.quantity.toString(),
-            unitPrice: item.unitPrice.toString(),
-            discountPercentage: item.discountPercentage.toString(),
-            totalPrice: calculateLineItem({
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              discountPercentage: item.discountPercentage,
-            }).toString(),
-            sortOrder: index,
-          }));
-
-          await tx.insert(quotationItems).values(itemsToInsert);
-
-          return quote;
-        });
-
-        revalidatePath('/quotations');
-        return { success: true, data: result };
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'code' in error &&
-          error.code === '23505' &&
-          retries > 1
-        ) {
-          retries--;
-          continue;
-        }
-        throw error;
-      }
+    const lockKey = BigInt(0x42_4f_42_53); // 'BOBS'
+    const lock = new AdvisoryLock(db, lockKey);
+    const acquired = await lock.acquire();
+    if (!acquired) {
+      return handleStateError(
+        'Too many concurrent requests – please try again',
+      );
     }
 
-    return handleStateError(
-      'Failed to generate unique quote number after retries.',
-    );
+    try {
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const yearStart = new Date(new Date().getFullYear(), 0, 1);
+          const lastQuote = await db.query.quotations.findFirst({
+            where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+            orderBy: [desc(quotations.createdAt)],
+          });
+
+          let nextSequence = 1;
+          if (lastQuote) {
+            nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+          }
+          const quoteNumber = formatQuoteNumber(nextSequence);
+
+          const result = await db.transaction(async (tx) => {
+            const [quote] = await tx
+              .insert(quotations)
+              .values({
+                quoteNumber,
+                customerId: validated.customerId,
+                createdBy: auth.userId,
+                subtotal: pricing.subtotal.toString(),
+                discountPercent: validated.discountPercent.toString(),
+                discountAmount: pricing.discountAmount.toString(),
+                taxPercent: validated.taxPercent.toString(),
+                taxAmount: pricing.taxAmount.toString(),
+                total: pricing.total.toString(),
+                notes: validated.notes,
+                validUntil: validated.validUntil,
+                status: 'draft',
+              })
+              .returning();
+
+            if (!quote)
+              throw new Error('Failed to create quotation record in database');
+
+            const itemsToInsert = validated.items.map((item, index) => ({
+              quotationId: quote.id,
+              itemId: item.itemId,
+              description: item.description,
+              quantity: item.quantity.toString(),
+              unitPrice: item.unitPrice.toString(),
+              discountPercentage: item.discountPercentage.toString(),
+              totalPrice: calculateLineItem({
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                discountPercentage: item.discountPercentage,
+              }).toString(),
+              sortOrder: index,
+            }));
+
+            await tx.insert(quotationItems).values(itemsToInsert);
+
+            return quote;
+          });
+
+          revalidatePath('/quotations');
+          return { success: true, data: result };
+        } catch (error: unknown) {
+          if (
+            error &&
+            typeof error === 'object' &&
+            'code' in error &&
+            error.code === '23505' &&
+            retries > 1
+          ) {
+            retries--;
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      return handleStateError(
+        'Failed to generate unique quote number after retries.',
+      );
+    } finally {
+      await lock.release();
+    }
   } catch (error) {
     return handleActionError(
       error,
@@ -292,16 +294,16 @@ export async function updateQuotationStatus(
 
     if (!quote) return handleNotFoundError('Quotation', validatedId);
 
-    // Block reopening (accepted -> draft) if a linked project exists
-    if (quote.status === 'accepted' && status === 'draft') {
-      const linkedProject = await db.query.projects.findFirst({
-        where: eq(projects.quotationId, validatedId),
-      });
-      if (linkedProject) {
-        return handleStateError(
-          'Cannot reopen quotation - it has already been converted to a project',
-        );
-      }
+    const linkedProject = await db.query.projects.findFirst({
+      where: eq(projects.quotationId, validatedId),
+    });
+
+    // Once a quotation is converted to a project, its status becomes immutable
+    // to prevent inconsistent states (e.g. project exists but quote is rejected).
+    if (linkedProject && status !== quote.status) {
+      return handleStateError(
+        'Cannot change quotation status - it has already been converted to a project',
+      );
     }
 
     if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
@@ -436,13 +438,13 @@ export async function updateQuotation(
     });
 
     revalidatePath('/quotations');
-    revalidatePath(`/quotations/${id}`);
+    revalidatePath(`/quotations/${validatedId}`);
 
     const updated = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+      where: eq(quotations.id, validatedId),
     });
 
-    if (!updated) return handleNotFoundError('Quotation', id);
+    if (!updated) return handleNotFoundError('Quotation', validatedId);
 
     return { success: true, data: updated };
   } catch (error) {

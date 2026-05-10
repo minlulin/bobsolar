@@ -50,17 +50,6 @@ export default function SettingsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const usersQuery = useQuery({
-    queryKey: ['settings', 'users-role'],
-    queryFn: async () => {
-      const mod = await import('@/actions/settings-actions');
-      const res = await mod.getSettingsUsers();
-      if (!res.success) throw new Error(res.error);
-      return res.data;
-    },
-    staleTime: 60 * 1000,
-  });
-
   const [logoSaving, setLogoSaving] = React.useState(false);
   const [infoSaving, setInfoSaving] = React.useState(false);
 
@@ -86,12 +75,18 @@ export default function SettingsPage() {
   React.useEffect(() => {
     if (!settingsQuery.data) return;
     reset({
-      [COMPANY_SETTING_KEYS.NAME]: settingsQuery.data[COMPANY_SETTING_KEYS.NAME] ?? '',
-      [COMPANY_SETTING_KEYS.ADDRESS]: settingsQuery.data[COMPANY_SETTING_KEYS.ADDRESS] ?? '',
-      [COMPANY_SETTING_KEYS.PHONE]: settingsQuery.data[COMPANY_SETTING_KEYS.PHONE] ?? '',
-      [COMPANY_SETTING_KEYS.EMAIL]: settingsQuery.data[COMPANY_SETTING_KEYS.EMAIL] ?? '',
-      [COMPANY_SETTING_KEYS.TAX_ID]: settingsQuery.data[COMPANY_SETTING_KEYS.TAX_ID] ?? '',
-      [COMPANY_SETTING_KEYS.BANK_NAME]: settingsQuery.data[COMPANY_SETTING_KEYS.BANK_NAME] ?? '',
+      [COMPANY_SETTING_KEYS.NAME]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.NAME] ?? '',
+      [COMPANY_SETTING_KEYS.ADDRESS]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.ADDRESS] ?? '',
+      [COMPANY_SETTING_KEYS.PHONE]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.PHONE] ?? '',
+      [COMPANY_SETTING_KEYS.EMAIL]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.EMAIL] ?? '',
+      [COMPANY_SETTING_KEYS.TAX_ID]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.TAX_ID] ?? '',
+      [COMPANY_SETTING_KEYS.BANK_NAME]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_NAME] ?? '',
       [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]:
         settingsQuery.data[COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER] ?? '',
       [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]:
@@ -135,7 +130,6 @@ export default function SettingsPage() {
     typeof settingsQuery.data?.[LOGO_KEY] === 'string'
       ? settingsQuery.data[LOGO_KEY]
       : '';
-  void usersQuery.data?.isAdmin;
 
   return (
     <div className="mx-auto space-y-10 pb-36">

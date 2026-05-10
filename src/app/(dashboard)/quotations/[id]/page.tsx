@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { notFound } from 'next/navigation';
 import { getQuotation } from '@/actions/quotation-actions';
 import { QuoteDetailView } from './components/quote-detail-view';

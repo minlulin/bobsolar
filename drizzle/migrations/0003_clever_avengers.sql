@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "projects_quotation_id_unique" ON "projects" USING btree ("quotation_id") WHERE "projects"."quotation_id" is not null;

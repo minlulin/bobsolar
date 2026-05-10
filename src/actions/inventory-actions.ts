@@ -6,10 +6,9 @@ import {
   createInventoryItemSchema,
   updateInventoryItemSchema,
   inventoryFilterSchema,
-  type InventoryFilter,
 } from '@/lib/validators/inventory';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
-import { eq, and, ilike, or, asc, sql } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth/validate';
+import { eq, and, ilike, or, asc, sql, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { ActionResponse } from '@/lib/utils/action-response';
@@ -22,7 +21,8 @@ export async function getInventoryItems(
     await requireAuth();
 
     const filters = inventoryFilterSchema.parse(rawFilters);
-    const { category, search, isActive = true } = filters;
+    const { category, search, isActive = true, page, limit } = filters;
+    const offset = (page - 1) * limit;
 
     const where = and(
       isActive !== null ? eq(inventoryItems.isActive, isActive!) : undefined,
@@ -39,9 +39,15 @@ export async function getInventoryItems(
     const items = await db.query.inventoryItems.findMany({
       where,
       orderBy: [asc(inventoryItems.name)],
+      limit,
+      offset,
     });
 
-    const total = items.length;
+    const totals = await db
+      .select({ total: count() })
+      .from(inventoryItems)
+      .where(where);
+    const total = totals[0]?.total ?? 0;
 
     return { success: true, data: { items, total } };
   } catch {
@@ -74,7 +80,7 @@ export async function createInventoryItem(
   raw: unknown,
 ): Promise<ActionResponse<InventoryItem>> {
   try {
-    await requireAdmin();
+    await requireAuth();
 
     const validated = createInventoryItemSchema.parse(raw);
 
@@ -108,10 +114,13 @@ export async function updateInventoryItem(
   raw: unknown,
 ): Promise<ActionResponse<InventoryItem>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
-    const validated = updateInventoryItemSchema.parse({ ...raw, id: validatedId });
+    const validated = updateInventoryItemSchema.parse({
+      ...(typeof raw === 'object' && raw !== null ? raw : {}),
+      id: validatedId,
+    });
 
     const { id: parsedId, ...updateData } = validated;
     void parsedId;
@@ -149,7 +158,7 @@ export async function deleteInventoryItem(
   id: string,
 ): Promise<ActionResponse<void>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
     await db
@@ -175,7 +184,7 @@ export async function bulkUpdatePrices(
   rawUpdates: unknown,
 ): Promise<ActionResponse<void>> {
   try {
-    await requireAdmin();
+    await requireAuth();
 
     const updates = bulkUpdateSchema.parse(rawUpdates);
 

@@ -18,6 +18,7 @@ export default function CustomersPage() {
 
   const { data: response, isLoading } = useCustomers({
     search,
+    limit: 50,
   });
 
   const handleEdit = (customer: Customer) => {

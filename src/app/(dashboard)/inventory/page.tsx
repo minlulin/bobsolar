@@ -28,6 +28,7 @@ export default function InventoryPage() {
   const { data: response, isLoading } = useInventoryItems({
     search,
     category: category as DBInventoryItem['category'],
+    limit: 50,
   });
 
   const handleEdit = (item: InventoryItem) => {

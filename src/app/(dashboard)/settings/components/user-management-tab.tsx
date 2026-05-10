@@ -20,21 +20,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { type UserRole } from '@/lib/domain/enums';
 import { USER_CAP } from '@/lib/domain/policies';
 
 type EditableUser = {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
 };
 
 export function UserManagementTab() {
@@ -53,7 +44,6 @@ export function UserManagementTab() {
   const [newUser, setNewUser] = React.useState({
     name: '',
     email: '',
-    role: 'staff' as UserRole,
     password: '',
   });
 
@@ -76,7 +66,7 @@ export function UserManagementTab() {
     if (res.success) {
       toast.success('User created');
       setCreating(false);
-      setNewUser({ name: '', email: '', role: 'staff', password: '' });
+      setNewUser({ name: '', email: '', password: '' });
       void usersQuery.refetch();
     } else {
       toast.error(res.error);
@@ -100,7 +90,10 @@ export function UserManagementTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-lg font-semibold">User Management</h3>
-        <Button disabled={users.length >= USER_CAP} onClick={() => setCreating(true)}>
+        <Button
+          disabled={users.length >= USER_CAP}
+          onClick={() => setCreating(true)}
+        >
           Add User
         </Button>
       </div>
@@ -117,7 +110,6 @@ export function UserManagementTab() {
             <div>
               <p className="font-medium">{user.name}</p>
               <p className="text-xs text-white/60">{user.email}</p>
-              <p className="text-xs text-amber-300 uppercase">{user.role}</p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -128,7 +120,6 @@ export function UserManagementTab() {
                     id: user.id,
                     name: user.name,
                     email: user.email,
-                    role: user.role as UserRole,
                   })
                 }
               >
@@ -176,25 +167,6 @@ export function UserManagementTab() {
                   }
                 />
               </div>
-              <div className="space-y-1">
-                <Label>Role</Label>
-                <Select
-                  value={editing.role}
-                  onValueChange={(value) =>
-                    setEditing((prev) =>
-                      prev ? { ...prev, role: value as UserRole } : prev,
-                    )
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">admin</SelectItem>
-                    <SelectItem value="staff">staff</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           ) : null}
           <DialogFooter>
@@ -230,23 +202,6 @@ export function UserManagementTab() {
                   setNewUser((p) => ({ ...p, email: e.target.value }))
                 }
               />
-            </div>
-            <div className="space-y-1">
-              <Label>Role</Label>
-              <Select
-                value={newUser.role}
-                onValueChange={(value) =>
-                  setNewUser((p) => ({ ...p, role: value as UserRole }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">admin</SelectItem>
-                  <SelectItem value="staff">staff</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-1">
               <Label>Initial Password</Label>

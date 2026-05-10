@@ -3,14 +3,13 @@
 import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
 import { companySettings, users, type User } from '@/lib/db/schema';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
+import { requireAuth } from '@/lib/auth/validate';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { ActionResponse } from '@/lib/utils/action-response';
 import { hashPassword } from '@/lib/auth/password';
 import { revokeAllUserSessions } from '@/lib/auth/session';
-import { userRoleSchema } from '@/lib/domain/enums';
 import { COMPANY_SETTING_KEYS } from '@/lib/domain/settings-keys';
 import { USER_CAP } from '@/lib/domain/policies';
 
@@ -24,13 +23,11 @@ const updateUserSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   email: z.string().email(),
-  role: userRoleSchema,
 });
 
 const createUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
-  role: userRoleSchema,
   password: z.string().min(8),
 });
 
@@ -160,10 +157,6 @@ export async function getSettingsUsers(): Promise<
     });
     if (!me) return { success: false, error: 'User not found' };
 
-    if (auth.role !== 'admin') {
-      return { success: true, data: { isAdmin: false, users: [], me } };
-    }
-
     const userRows = await db.query.users.findMany();
     return { success: true, data: { isAdmin: true, users: userRows, me } };
   } catch (error) {
@@ -178,11 +171,11 @@ export async function updateSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<void>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const parsed = updateUserSchema.parse(raw);
     await db
       .update(users)
-      .set({ name: parsed.name, email: parsed.email, role: parsed.role })
+      .set({ name: parsed.name, email: parsed.email })
       .where(eq(users.id, parsed.id));
     revalidatePath('/settings');
     return { success: true, data: undefined };
@@ -203,17 +196,19 @@ export async function createSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<void>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const parsed = createUserSchema.parse(raw);
     const existing = await db.query.users.findMany();
     if (existing.length >= USER_CAP) {
-      return { success: false, error: `User limit reached (${USER_CAP} users max)` };
+      return {
+        success: false,
+        error: `User limit reached (${USER_CAP} users max)`,
+      };
     }
     const passwordHash = await hashPassword(parsed.password);
     await db.insert(users).values({
       name: parsed.name,
       email: parsed.email,
-      role: parsed.role,
       passwordHash,
     });
     revalidatePath('/settings');
@@ -235,7 +230,7 @@ export async function resetSettingsUserPassword(
   userId: string,
 ): Promise<ActionResponse<{ temporaryPassword: string }>> {
   try {
-    await requireAdmin();
+    await requireAuth();
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });

@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
 import { GripVertical, Trash2, Hash } from 'lucide-react';
 import { Input } from '@/components/ui/input';

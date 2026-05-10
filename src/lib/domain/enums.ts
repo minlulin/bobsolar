@@ -24,7 +24,8 @@ export const userRoleSchema = z.enum(USER_ROLES);
 // =============================================================================
 
 export const INVENTORY_CATEGORIES = inventoryCategoryEnum.enumValues;
-export type InventoryCategory = (typeof inventoryCategoryEnum.enumValues)[number];
+export type InventoryCategory =
+  (typeof inventoryCategoryEnum.enumValues)[number];
 export const inventoryCategorySchema = z.enum(INVENTORY_CATEGORIES);
 
 export const INVENTORY_UNITS = inventoryUnitEnum.enumValues;
@@ -97,7 +98,10 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
 };
 
 /** Allowed status transitions for projects */
-export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
+export const PROJECT_STATUS_TRANSITIONS: Record<
+  ProjectStatus,
+  ProjectStatus[]
+> = {
   planning: ['in_progress', 'on_hold', 'cancelled', 'completed'],
   in_progress: ['on_hold', 'completed', 'cancelled'],
   on_hold: ['in_progress', 'cancelled', 'completed'],

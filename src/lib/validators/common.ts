@@ -17,7 +17,9 @@ export const phoneSchema = z
   .max(20, 'Phone number is too long');
 
 /** MongoDB/NoSQL safe string (alphanumeric, hyphens, underscores only) */
-export const safeIdSchema = z.string().regex(/^[a-zA-Z0-9_-]+$/, 'Invalid ID format');
+export const safeIdSchema = z
+  .string()
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid ID format');
 
 /** Positive integer schema */
 export const positiveIntSchema = z.number().int().positive();

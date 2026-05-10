@@ -17,6 +17,7 @@ import {
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour cleanup window
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // opportunistic cleanup (serverless-friendly)
 
 interface RateLimitEntry {
   attempts: number;
@@ -26,6 +27,22 @@ interface RateLimitEntry {
 
 // In-memory rate limiter (sufficient for 3-person team)
 const rateLimitMap = new Map<string, RateLimitEntry>();
+let lastCleanupAt = 0;
+
+function maybeCleanupRateLimiter(now: number): void {
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+  lastCleanupAt = now;
+
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (!entry.lockedUntil && now - entry.lastAttempt > RATE_LIMIT_WINDOW_MS) {
+      rateLimitMap.delete(key);
+      continue;
+    }
+    if (entry.lockedUntil && now > entry.lockedUntil) {
+      rateLimitMap.delete(key);
+    }
+  }
+}
 
 function getRateLimitKey(email: string): string {
   return email.toLowerCase().trim();
@@ -43,6 +60,7 @@ function isRateLimited(email: string): {
   }
 
   const now = Date.now();
+  maybeCleanupRateLimiter(now);
 
   // Check if still locked out
   if (entry.lockedUntil && now < entry.lockedUntil) {
@@ -64,6 +82,7 @@ function isRateLimited(email: string): {
 function recordFailedAttempt(email: string): void {
   const key = getRateLimitKey(email);
   const now = Date.now();
+  maybeCleanupRateLimiter(now);
   const entry = rateLimitMap.get(key);
 
   if (!entry) {
@@ -87,27 +106,6 @@ function clearFailedAttempts(email: string): void {
   const key = getRateLimitKey(email);
   rateLimitMap.delete(key);
 }
-
-// Cleanup old entries periodically (simple TTL-based cleanup)
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [key, entry] of rateLimitMap.entries()) {
-      // Remove entries older than the window and not currently locked
-      if (
-        !entry.lockedUntil &&
-        now - entry.lastAttempt > RATE_LIMIT_WINDOW_MS
-      ) {
-        rateLimitMap.delete(key);
-      }
-      // Remove expired lockouts
-      if (entry.lockedUntil && now > entry.lockedUntil) {
-        rateLimitMap.delete(key);
-      }
-    }
-  },
-  10 * 60 * 1000,
-); // Run every 10 minutes
 
 export async function login(data: LoginInput) {
   const result = loginSchema.safeParse(data);
@@ -147,7 +145,7 @@ export async function login(data: LoginInput) {
   clearFailedAttempts(email);
   await createSession(user.id, user.role);
 
-  redirect('/');
+  return { success: true };
 }
 
 export async function logout() {

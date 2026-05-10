@@ -59,13 +59,8 @@ export function useUpdateQuotationStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      status,
-    }: {
-      id: string;
-      status: QuotationStatus;
-    }) => updateQuotationStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: QuotationStatus }) =>
+      updateQuotationStatus(id, status),
     onSuccess: (response) => {
       if (response.success) {
         queryClient.invalidateQueries({ queryKey: ['quotations'] });

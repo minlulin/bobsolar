@@ -23,8 +23,13 @@ export const updateCustomerSchema = createCustomerSchema.partial().extend({
 
 export const customerFilterSchema = z.object({
   search: z.string().optional().nullable(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 export type CreateCustomer = z.infer<typeof createCustomerSchema>;
 export type UpdateCustomer = z.infer<typeof updateCustomerSchema>;
-export type CustomerFilter = z.infer<typeof customerFilterSchema>;
+// Input type for callers (defaults are optional at the boundary).
+export type CustomerFilter = z.input<typeof customerFilterSchema>;
+// Parsed type after Zod defaults are applied.
+export type CustomerFilterParsed = z.infer<typeof customerFilterSchema>;

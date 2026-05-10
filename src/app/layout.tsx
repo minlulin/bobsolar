@@ -1,28 +1,47 @@
 import type { Metadata, Viewport } from 'next';
-import { Outfit, Inter, JetBrains_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Providers } from '@/components/providers';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 
-const fontHeading = Outfit({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  display: 'swap',
-  preload: true,
-});
-
-const fontBody = Inter({
-  subsets: ['latin'],
+const inter = localFont({
   variable: '--font-body',
   display: 'swap',
-  preload: true,
+  src: [
+    {
+      path: '../../public/fonts/inter-regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/inter-semibold.woff2',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/inter-bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
 });
 
-const fontMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
+// Use Inter for headings as well (single local font family).
+const interHeading = localFont({
+  variable: '--font-heading',
   display: 'swap',
-  preload: true,
+  src: [
+    {
+      path: '../../public/fonts/inter-semibold.woff2',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/inter-bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -61,7 +80,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fontHeading.variable} ${fontBody.variable} ${fontMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${interHeading.variable} h-full antialiased`}
     >
       <body className="font-body flex min-h-full flex-col">
         <Providers>

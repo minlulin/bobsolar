@@ -26,8 +26,13 @@ export const inventoryFilterSchema = z.object({
   category: z.enum(inventoryCategoryEnum.enumValues).optional().nullable(),
   search: z.string().optional().nullable(),
   isActive: z.boolean().optional().nullable(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
 export type CreateInventoryItem = z.infer<typeof createInventoryItemSchema>;
 export type UpdateInventoryItem = z.infer<typeof updateInventoryItemSchema>;
-export type InventoryFilter = z.infer<typeof inventoryFilterSchema>;
+// Input type for callers (defaults are optional at the boundary).
+export type InventoryFilter = z.input<typeof inventoryFilterSchema>;
+// Parsed type after Zod defaults are applied.
+export type InventoryFilterParsed = z.infer<typeof inventoryFilterSchema>;

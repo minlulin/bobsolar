@@ -4,11 +4,19 @@ import { hashPassword } from '../auth/password';
 import { COMPANY_SETTING_KEYS } from '../domain/settings-keys';
 
 // Read admin credentials from environment variables
-const SEED_ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL;
-const SEED_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
+const SEED_ADMIN_EMAIL = process.env['SEED_ADMIN_EMAIL'];
+const SEED_ADMIN_PASSWORD = process.env['SEED_ADMIN_PASSWORD'];
+const ALLOW_PROD_SEED = process.env['ALLOW_PROD_SEED'] === '1';
+const SEED_RESET_ALERTS = process.env['SEED_RESET_ALERTS'] === '1';
 
 // List of weak/default passwords to reject
 const WEAK_PASSWORDS = ['admin123', 'password', '123456', 'admin', 'qwerty'];
+
+if (process.env['NODE_ENV'] === 'production' && !ALLOW_PROD_SEED) {
+  throw new Error(
+    'Refusing to run seed in production. Set ALLOW_PROD_SEED=1 to override.',
+  );
+}
 
 async function seed() {
   console.log('🌱 Seeding database...');
@@ -52,13 +60,18 @@ async function seed() {
     .insert(companySettings)
     .values([
       { key: COMPANY_SETTING_KEYS.NAME, value: 'BOB Solar' },
-      { key: COMPANY_SETTING_KEYS.ADDRESS, value: 'No. 123, Solar Street, Yangon' },
+      {
+        key: COMPANY_SETTING_KEYS.ADDRESS,
+        value: 'No. 123, Solar Street, Yangon',
+      },
       { key: COMPANY_SETTING_KEYS.PHONE, value: '+95 9 123 456 789' },
     ])
     .onConflictDoNothing();
 
-  // Keep warranty alerts deterministic across repeated seeds.
-  await db.delete(warrantyAlerts);
+  if (SEED_RESET_ALERTS) {
+    // Keep warranty alerts deterministic across repeated seeds.
+    await db.delete(warrantyAlerts);
+  }
 
   console.log('✅ Seeding completed!');
   process.exit(0);

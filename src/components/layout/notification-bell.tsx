@@ -50,7 +50,8 @@ export function NotificationBell() {
       return () => clearTimeout(timer);
     }
     prevUnread.current = unreadCount;
-  }, [unreadCount]);
+    return;
+  }, [unreadCount, prevUnread]);
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.isRead) {

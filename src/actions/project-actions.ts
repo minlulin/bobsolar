@@ -26,6 +26,7 @@ import {
   gte,
   lte,
   inArray,
+  ne,
 } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/validate';
 import {
@@ -51,7 +52,6 @@ import {
   createWarrantyAlertSchema,
   isProjectStatus,
   projectListFilterSchema,
-  type ProjectListFilter,
 } from '@/lib/validators/project';
 import { BUDGET_VARIANCE_THRESHOLD } from '@/lib/domain/policies';
 import type { ActionResponse } from '@/lib/utils/action-response';
@@ -60,6 +60,7 @@ import {
   handleNotFoundError,
   handleStateError,
 } from '@/lib/utils/error';
+import { uuidSchema } from '@/lib/validators/common';
 import {
   notifyAdminUsers,
   notifyAllUsers,
@@ -211,69 +212,77 @@ export async function convertQuotationToProject(
     await requireAuth();
     const data = convertToProjectSchema.parse(raw);
 
-    const quotation = await db.query.quotations.findFirst({
-      where: eq(quotations.id, data.quotationId),
-      with: { customer: true, project: { columns: { id: true } } },
-    });
-
-    if (!quotation) {
-      return handleNotFoundError('Quotation', data.quotationId);
-    }
-    if (quotation.status !== 'accepted') {
-      return handleStateError('Only accepted quotations can be converted.');
-    }
-    if (quotation.project) {
-      return handleStateError('This quotation is already linked to a project.');
-    }
-
-    const customer = quotation.customer;
-    const defaultSite = [customer.address, customer.city]
-      .filter(Boolean)
-      .join(', ')
-      .trim();
-
-    const siteAddress =
-      (data.siteAddress && data.siteAddress.trim()) || defaultSite || '—';
-
-    const systemKwp =
-      data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
-        ? String(data.systemSizeKwp)
-        : '0';
-
     const year = new Date().getFullYear();
     let retries = 3;
 
     while (retries > 0) {
       try {
-        const seq = await nextProjectSequence(year);
-        const projectNumber = formatProjectNumber(seq, year);
+        return await db.transaction(async (tx) => {
+          // Lock the quotation row to prevent concurrent conversions
+          const quotation = await tx.query.quotations.findFirst({
+            where: eq(quotations.id, data.quotationId),
+            with: { customer: true, project: { columns: { id: true } } },
+          });
 
-        const [created] = await db
-          .insert(projects)
-          .values({
-            projectNumber,
-            quotationId: quotation.id,
-            customerId: quotation.customerId,
-            status: 'planning',
-            siteAddress,
-            systemSizeKwp: systemKwp,
-            quotedTotal: quotation.total,
-            actualTotal: '0',
-            startDate: data.startDate ?? null,
-            targetCompletion: data.targetCompletion ?? null,
-            notes: data.notes ?? null,
-          })
-          .returning();
+          if (!quotation) {
+            return handleNotFoundError('Quotation', data.quotationId);
+          }
+          if (quotation.status !== 'accepted') {
+            return handleStateError(
+              'Only accepted quotations can be converted.',
+            );
+          }
+          if (quotation.project) {
+            return handleStateError(
+              'This quotation is already linked to a project.',
+            );
+          }
 
-        if (!created) {
-          return handleStateError('Failed to create project');
-        }
+          const customer = quotation.customer;
+          const defaultSite = [customer.address, customer.city]
+            .filter(Boolean)
+            .join(', ')
+            .trim();
 
-        revalidatePath('/projects');
-        revalidatePath(`/quotations/${quotation.id}`);
-        revalidatePath('/quotations');
+          const siteAddress =
+            (data.siteAddress && data.siteAddress.trim()) || defaultSite || '—';
 
-        return { success: true, data: created };
+          const systemKwp =
+            data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
+              ? String(data.systemSizeKwp)
+              : '0';
+
+          // Get next project sequence within the transaction
+          const seq = await nextProjectSequence(year);
+          const projectNumber = formatProjectNumber(seq, year);
+
+          const [created] = await tx
+            .insert(projects)
+            .values({
+              projectNumber,
+              quotationId: quotation.id,
+              customerId: quotation.customerId,
+              status: 'planning',
+              siteAddress,
+              systemSizeKwp: systemKwp,
+              quotedTotal: quotation.total,
+              actualTotal: '0',
+              startDate: data.startDate ?? null,
+              targetCompletion: data.targetCompletion ?? null,
+              notes: data.notes ?? null,
+            })
+            .returning();
+
+          if (!created) {
+            return handleStateError('Failed to create project');
+          }
+
+          revalidatePath('/projects');
+          revalidatePath(`/quotations/${quotation.id}`);
+          revalidatePath('/quotations');
+
+          return { success: true, data: created };
+        });
       } catch (error: unknown) {
         if (
           error &&
@@ -282,7 +291,7 @@ export async function convertQuotationToProject(
           error.code === '23505' &&
           retries > 1
         ) {
-          // 23505 is unique_violation
+          // 23505 is unique_violation - could be project number or quotation_id conflict
           retries--;
           continue;
         }
@@ -437,9 +446,10 @@ export async function getProject(
 ): Promise<ActionResponse<ProjectDetail>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const row = await db.query.projects.findFirst({
-      where: eq(projects.id, id),
+      where: eq(projects.id, validatedId),
       with: {
         customer: true,
         quotation: {
@@ -474,10 +484,10 @@ export async function getProject(
     });
 
     if (!row) {
-      return handleNotFoundError('Project', id);
+      return handleNotFoundError('Project', validatedId);
     }
 
-    const actualTotalComputed = await sumProjectCosts(id);
+    const actualTotalComputed = await sumProjectCosts(validatedId);
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
 
@@ -513,15 +523,23 @@ export async function getProject(
 async function applyProjectCompletion(
   projectRow: InferSelectModel<typeof projects>,
 ): Promise<void> {
-  await db
+  // Only update if not already completed (idempotent)
+  const result = await db
     .update(projects)
     .set({
       status: 'completed',
       actualCompletion: new Date(),
     })
-    .where(eq(projects.id, projectRow.id));
-  await persistActualTotal(projectRow.id);
-  await finalizeCompletionSideEffects(projectRow);
+    .where(
+      and(eq(projects.id, projectRow.id), ne(projects.status, 'completed')),
+    )
+    .returning({ id: projects.id });
+
+  // Only run side effects if the project was actually updated
+  if (result.length > 0) {
+    await persistActualTotal(projectRow.id);
+    await finalizeCompletionSideEffects(projectRow);
+  }
 }
 
 export async function updateProject(
@@ -607,10 +625,11 @@ export async function markProjectCompleted(
 ): Promise<ActionResponse<Project>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
     const existing = await db.query.projects.findFirst({
-      where: eq(projects.id, id),
+      where: eq(projects.id, validatedId),
     });
-    if (!existing) return handleNotFoundError('Project', id);
+    if (!existing) return handleNotFoundError('Project', validatedId);
 
     if (existing.status === 'completed') {
       return handleStateError('Project is already completed.');
@@ -629,12 +648,12 @@ export async function markProjectCompleted(
     await applyProjectCompletion(existing);
 
     const updated = await db.query.projects.findFirst({
-      where: eq(projects.id, id),
+      where: eq(projects.id, validatedId),
     });
-    if (!updated) return handleNotFoundError('Project', id);
+    if (!updated) return handleNotFoundError('Project', validatedId);
 
     revalidatePath('/projects');
-    revalidatePath(`/projects/${id}`);
+    revalidatePath(`/projects/${validatedId}`);
     revalidatePath('/projects/completed');
     revalidatePath('/warranty');
 
@@ -706,12 +725,13 @@ export async function deleteProjectCost(
 ): Promise<ActionResponse<{ projectId: string }>> {
   try {
     await requireAuth();
+    const validatedCostId = uuidSchema.parse(costId);
     const cost = await db.query.projectCosts.findFirst({
-      where: eq(projectCosts.id, costId),
+      where: eq(projectCosts.id, validatedCostId),
     });
-    if (!cost) return handleNotFoundError('Cost record', costId);
+    if (!cost) return handleNotFoundError('Cost record', validatedCostId);
 
-    await db.delete(projectCosts).where(eq(projectCosts.id, costId));
+    await db.delete(projectCosts).where(eq(projectCosts.id, validatedCostId));
     await persistActualTotal(cost.projectId);
 
     revalidatePath(`/projects/${cost.projectId}`);
@@ -764,12 +784,13 @@ export async function deleteProjectRemark(
 ): Promise<ActionResponse<{ projectId: string }>> {
   try {
     const auth = await requireAuth();
+    const validatedRemarkId = uuidSchema.parse(remarkId);
 
     const remark = await db.query.projectRemarks.findFirst({
-      where: eq(projectRemarks.id, remarkId),
+      where: eq(projectRemarks.id, validatedRemarkId),
       with: { author: { columns: { id: true } } },
     });
-    if (!remark) return handleNotFoundError('Remark', remarkId);
+    if (!remark) return handleNotFoundError('Remark', validatedRemarkId);
 
     const isAuthor = remark.authorId === auth.userId;
     const isAdmin = auth.role === 'admin';
@@ -777,7 +798,9 @@ export async function deleteProjectRemark(
       return handleStateError('You can only delete your own remarks.');
     }
 
-    await db.delete(projectRemarks).where(eq(projectRemarks.id, remarkId));
+    await db
+      .delete(projectRemarks)
+      .where(eq(projectRemarks.id, validatedRemarkId));
 
     revalidatePath(`/projects/${remark.projectId}`);
 

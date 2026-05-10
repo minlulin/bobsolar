@@ -44,6 +44,9 @@
 }
 
 :root {
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
   --background: oklch(0.985 0.005 80);
   --foreground: oklch(0.2 0 0);
   --card: oklch(1 0 0);

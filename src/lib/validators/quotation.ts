@@ -6,7 +6,11 @@ import {
   canTransitionQuotationStatus,
 } from '@/lib/domain/enums';
 
-export { QuotationStatus, QUOTATION_STATUS_TRANSITIONS, canTransitionQuotationStatus };
+export {
+  QuotationStatus,
+  QUOTATION_STATUS_TRANSITIONS,
+  canTransitionQuotationStatus,
+};
 
 export const quotationItemSchema = z.object({
   itemId: z.string().uuid().optional().nullable(),

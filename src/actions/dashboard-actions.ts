@@ -22,7 +22,8 @@ import {
   sql,
 } from 'drizzle-orm';
 import { endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
-import type { ActionResponse } from './inventory-actions';
+import type { ActionResponse } from '@/lib/utils/action-response';
+
 import { handleActionError } from '@/lib/utils/error';
 
 export type DashboardStats = {
@@ -78,90 +79,106 @@ export async function getDashboardStats(): Promise<
     const prevMonthEnd = endOfMonth(subMonths(today, 1));
     const startToday = startOfDay(today);
 
-    const [totalRevenueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
-      })
-      .from(projects)
-      .where(eq(projects.status, 'completed'));
-
-    const [activeProjectsRow] = await db
-      .select({ total: count() })
-      .from(projects)
-      .where(inArray(projects.status, ['planning', 'in_progress', 'on_hold']));
-
-    const [pendingQuotesRow] = await db
-      .select({ total: count() })
-      .from(quotations)
-      .where(inArray(quotations.status, ['draft', 'sent']));
-
-    const [acceptedThisMonthRow] = await db
-      .select({ total: count() })
-      .from(quotations)
-      .where(
-        and(
-          eq(quotations.status, 'accepted'),
-          gte(quotations.updatedAt, thisMonthStart),
-          lte(quotations.updatedAt, thisMonthEnd),
+    const [
+      [totalRevenueRow],
+      [activeProjectsRow],
+      [pendingQuotesRow],
+      [acceptedThisMonthRow],
+      [customersRow],
+      [overdueAlertsRow],
+      [viewer],
+      [thisMonthRevenueRow],
+      [prevMonthRevenueRow],
+      [acceptedTotalRow],
+      [sentTotalRow],
+      [rejectedTotalRow],
+      [expiredTotalRow],
+    ] = await Promise.all([
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
         ),
-      );
-
-    const [customersRow] = await db
-      .select({ total: count() })
-      .from(customers)
-      .where(eq(customers.isArchived, false));
-
-    const [overdueAlertsRow] = await db
-      .select({ total: count() })
-      .from(warrantyAlerts)
-      .where(
-        and(
-          eq(warrantyAlerts.isResolved, false),
-          lt(warrantyAlerts.dueDate, startToday),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(
+          and(
+            eq(quotations.status, 'accepted'),
+            gte(quotations.updatedAt, thisMonthStart),
+            lte(quotations.updatedAt, thisMonthEnd),
+          ),
         ),
-      );
-
-    const [viewer] = await db
-      .select({ name: users.name })
-      .from(users)
-      .where(eq(users.id, auth.userId))
-      .limit(1);
-
-    const [thisMonthRevenueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
-      })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.status, 'completed'),
-          gte(projects.actualCompletion, thisMonthStart),
-          lte(projects.actualCompletion, thisMonthEnd),
+      db
+        .select({ total: count() })
+        .from(customers)
+        .where(eq(customers.isArchived, false)),
+      db
+        .select({ total: count() })
+        .from(warrantyAlerts)
+        .where(
+          and(
+            eq(warrantyAlerts.isResolved, false),
+            lt(warrantyAlerts.dueDate, startToday),
+          ),
         ),
-      );
-
-    const [prevMonthRevenueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
-      })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.status, 'completed'),
-          gte(projects.actualCompletion, prevMonthStart),
-          lte(projects.actualCompletion, prevMonthEnd),
+      db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, auth.userId))
+        .limit(1),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.status, 'completed'),
+            gte(projects.actualCompletion, thisMonthStart),
+            lte(projects.actualCompletion, thisMonthEnd),
+          ),
         ),
-      );
-
-    const [acceptedTotalRow] = await db
-      .select({ total: count() })
-      .from(quotations)
-      .where(eq(quotations.status, 'accepted'));
-
-    const [sentTotalRow] = await db
-      .select({ total: count() })
-      .from(quotations)
-      .where(eq(quotations.status, 'sent'));
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.status, 'completed'),
+            gte(projects.actualCompletion, prevMonthStart),
+            lte(projects.actualCompletion, prevMonthEnd),
+          ),
+        ),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'accepted')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'sent')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'rejected')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'expired')),
+    ]);
 
     const thisMonthRevenue = Number(thisMonthRevenueRow?.total ?? 0);
     const prevMonthRevenue = Number(prevMonthRevenueRow?.total ?? 0);
@@ -173,9 +190,13 @@ export async function getDashboardStats(): Promise<
         : ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
 
     const acceptedTotal = toInt(acceptedTotalRow?.total);
+    const rejectedTotal = toInt(rejectedTotalRow?.total);
+    const expiredTotal = toInt(expiredTotalRow?.total);
     const sentTotal = toInt(sentTotalRow?.total);
+    const closedTotal =
+      acceptedTotal + rejectedTotal + expiredTotal + sentTotal;
     const quotationConversionRate =
-      sentTotal <= 0 ? 0 : (acceptedTotal / sentTotal) * 100;
+      closedTotal <= 0 ? 0 : (acceptedTotal / closedTotal) * 100;
 
     return {
       success: true,
@@ -206,46 +227,54 @@ export async function getDashboardPipeline(): Promise<
   try {
     await requireAuth();
 
-    const [customersCountRow] = await db
-      .select({ total: count() })
-      .from(customers)
-      .where(eq(customers.isArchived, false));
-
-    const [activeQuoteCountRow] = await db
-      .select({ total: count() })
-      .from(quotations)
-      .where(inArray(quotations.status, ['draft', 'sent']));
-
-    const [activeQuoteValueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${quotations.total}::numeric), 0)`,
-      })
-      .from(quotations)
-      .where(inArray(quotations.status, ['draft', 'sent']));
-
-    const [activeProjectCountRow] = await db
-      .select({ total: count() })
-      .from(projects)
-      .where(inArray(projects.status, ['planning', 'in_progress', 'on_hold']));
-
-    const [activeProjectValueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric), 0)`,
-      })
-      .from(projects)
-      .where(inArray(projects.status, ['planning', 'in_progress', 'on_hold']));
-
-    const [completedCountRow] = await db
-      .select({ total: count() })
-      .from(projects)
-      .where(eq(projects.status, 'completed'));
-
-    const [completedValueRow] = await db
-      .select({
-        total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
-      })
-      .from(projects)
-      .where(eq(projects.status, 'completed'));
+    const [
+      [customersCountRow],
+      [activeQuoteCountRow],
+      [activeQuoteValueRow],
+      [activeProjectCountRow],
+      [activeProjectValueRow],
+      [completedCountRow],
+      [completedValueRow],
+    ] = await Promise.all([
+      db
+        .select({ total: count() })
+        .from(customers)
+        .where(eq(customers.isArchived, false)),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${quotations.total}::numeric), 0)`,
+        })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
+        ),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
+        ),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+    ]);
 
     const stages: DashboardPipelineNode[] = [
       {
@@ -296,50 +325,50 @@ export async function getRecentActivity(
 
     const safeLimit = Math.max(1, Math.min(limit, 30));
 
-    const quotationRows = await db
-      .select({
-        id: quotations.id,
-        quoteNumber: quotations.quoteNumber,
-        createdAt: quotations.createdAt,
-      })
-      .from(quotations)
-      .orderBy(desc(quotations.createdAt))
-      .limit(safeLimit);
-
-    const projectRows = await db
-      .select({
-        id: projects.id,
-        projectNumber: projects.projectNumber,
-        status: projects.status,
-        createdAt: projects.createdAt,
-      })
-      .from(projects)
-      .orderBy(desc(projects.createdAt))
-      .limit(safeLimit);
-
-    const customerRows = await db
-      .select({
-        id: customers.id,
-        name: customers.name,
-        createdAt: customers.createdAt,
-      })
-      .from(customers)
-      .where(eq(customers.isArchived, false))
-      .orderBy(desc(customers.createdAt))
-      .limit(safeLimit);
-
-    const alertRows = await db
-      .select({
-        id: warrantyAlerts.id,
-        projectId: warrantyAlerts.projectId,
-        description: warrantyAlerts.description,
-        dueDate: warrantyAlerts.dueDate,
-        createdAt: warrantyAlerts.createdAt,
-      })
-      .from(warrantyAlerts)
-      .where(eq(warrantyAlerts.isResolved, false))
-      .orderBy(desc(warrantyAlerts.createdAt))
-      .limit(safeLimit);
+    const [quotationRows, projectRows, customerRows, alertRows] =
+      await Promise.all([
+        db
+          .select({
+            id: quotations.id,
+            quoteNumber: quotations.quoteNumber,
+            createdAt: quotations.createdAt,
+          })
+          .from(quotations)
+          .orderBy(desc(quotations.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: projects.id,
+            projectNumber: projects.projectNumber,
+            status: projects.status,
+            createdAt: projects.createdAt,
+          })
+          .from(projects)
+          .orderBy(desc(projects.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            createdAt: customers.createdAt,
+          })
+          .from(customers)
+          .where(eq(customers.isArchived, false))
+          .orderBy(desc(customers.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: warrantyAlerts.id,
+            projectId: warrantyAlerts.projectId,
+            description: warrantyAlerts.description,
+            dueDate: warrantyAlerts.dueDate,
+            createdAt: warrantyAlerts.createdAt,
+          })
+          .from(warrantyAlerts)
+          .where(eq(warrantyAlerts.isResolved, false))
+          .orderBy(desc(warrantyAlerts.createdAt))
+          .limit(safeLimit),
+      ]);
 
     const activities: ActivityItem[] = [
       ...quotationRows.map((row) => ({

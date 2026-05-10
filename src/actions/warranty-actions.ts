@@ -12,6 +12,7 @@ import type { ActionResponse } from '@/lib/utils/action-response';
 import { handleActionError, handleNotFoundError } from '@/lib/utils/error';
 import { revalidatePath } from 'next/cache';
 import { WARRANTY_SOON_WINDOW_DAYS } from '@/lib/domain/policies';
+import { uuidSchema } from '@/lib/validators/common';
 
 export type WarrantyAlertRow = InferSelectModel<typeof warrantyAlerts> & {
   projectNumber: string;
@@ -152,8 +153,9 @@ export async function resolveWarrantyAlert(
 ): Promise<ActionResponse<boolean>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
     const alertRow = await db.query.warrantyAlerts.findFirst({
-      where: eq(warrantyAlerts.id, id),
+      where: eq(warrantyAlerts.id, validatedId),
       with: {
         project: {
           columns: { projectNumber: true },
@@ -161,12 +163,12 @@ export async function resolveWarrantyAlert(
       },
     });
 
-    if (!alertRow) return handleNotFoundError('Alert', id);
+    if (!alertRow) return handleNotFoundError('Alert', validatedId);
 
     await db
       .update(warrantyAlerts)
       .set({ isResolved: true })
-      .where(eq(warrantyAlerts.id, id));
+      .where(eq(warrantyAlerts.id, validatedId));
 
     await notifyAllUsers({
       title: 'Alert resolved',
@@ -189,15 +191,16 @@ export async function reopenWarrantyAlert(
 ): Promise<ActionResponse<boolean>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
     const row = await db.query.warrantyAlerts.findFirst({
-      where: eq(warrantyAlerts.id, id),
+      where: eq(warrantyAlerts.id, validatedId),
     });
-    if (!row) return handleNotFoundError('Alert', id);
+    if (!row) return handleNotFoundError('Alert', validatedId);
 
     await db
       .update(warrantyAlerts)
       .set({ isResolved: false })
-      .where(eq(warrantyAlerts.id, id));
+      .where(eq(warrantyAlerts.id, validatedId));
 
     revalidatePath('/warranty');
     revalidatePath(`/projects/${row.projectId}`);

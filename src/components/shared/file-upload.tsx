@@ -4,7 +4,10 @@ import * as React from 'react';
 import Image from 'next/image';
 import { Upload, Loader2, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { UPLOAD_MAX_SIZE_BYTES, UPLOAD_MAX_SIZE_MB } from '@/lib/domain/policies';
+import {
+  UPLOAD_MAX_SIZE_BYTES,
+  UPLOAD_MAX_SIZE_MB,
+} from '@/lib/domain/policies';
 
 export interface FileUploadProps {
   folder: string;

@@ -6,10 +6,9 @@ import {
   createCustomerSchema,
   updateCustomerSchema,
   customerFilterSchema,
-  type CustomerFilter,
 } from '@/lib/validators/customer';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
-import { eq, ilike, or, desc, and } from 'drizzle-orm';
+import { requireAuth } from '@/lib/auth/validate';
+import { eq, ilike, or, desc, and, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { ActionResponse } from '@/lib/utils/action-response';
@@ -22,7 +21,8 @@ export async function getCustomers(
     await requireAuth();
 
     const filters = customerFilterSchema.parse(rawFilters);
-    const { search } = filters;
+    const { search, page, limit } = filters;
+    const offset = (page - 1) * limit;
 
     const baseWhere = eq(customers.isArchived, false);
     const searchWhere = search
@@ -38,9 +38,15 @@ export async function getCustomers(
     const items = await db.query.customers.findMany({
       where,
       orderBy: [desc(customers.createdAt)],
+      limit,
+      offset,
     });
 
-    const total = items.length;
+    const totals = await db
+      .select({ total: count() })
+      .from(customers)
+      .where(where);
+    const total = totals[0]?.total ?? 0;
 
     return { success: true, data: { items, total } };
   } catch {
@@ -110,7 +116,10 @@ export async function updateCustomer(
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
-    const validated = updateCustomerSchema.parse({ ...raw, id: validatedId });
+    const validated = updateCustomerSchema.parse({
+      ...(typeof raw === 'object' && raw !== null ? raw : {}),
+      id: validatedId,
+    });
 
     const { id: parsedId, ...updateData } = validated;
     void parsedId;
@@ -149,7 +158,7 @@ export async function deleteCustomer(
   id: string,
 ): Promise<ActionResponse<void>> {
   try {
-    await requireAdmin(); // Only admin can delete customers
+    await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
     await db.delete(customers).where(eq(customers.id, validatedId));
