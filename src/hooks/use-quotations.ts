@@ -12,6 +12,7 @@ import {
   type QuotationFilterInput,
   type UpdateQuotation,
 } from '@/lib/validators/quotation';
+import { type QuotationStatus } from '@/lib/domain/enums';
 import { toast } from 'sonner';
 
 export function useQuotations(filters: QuotationFilterInput = {}) {
@@ -63,7 +64,7 @@ export function useUpdateQuotationStatus() {
       status,
     }: {
       id: string;
-      status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+      status: QuotationStatus;
     }) => updateQuotationStatus(id, status),
     onSuccess: (response) => {
       if (response.success) {

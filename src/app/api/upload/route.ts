@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { uploadFileFromBufferOrBlob } from '@/lib/storage/blob';
+import { UPLOAD_MAX_SIZE_BYTES } from '@/lib/domain/policies';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (typeof file.size === 'number' && file.size > MAX_BYTES) {
+    if (typeof file.size === 'number' && file.size > UPLOAD_MAX_SIZE_BYTES) {
       return NextResponse.json(
         { error: 'File must be under 5MB.' },
         { status: 413 },

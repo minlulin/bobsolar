@@ -50,9 +50,11 @@ import {
   canTransitionProjectStatus,
   createWarrantyAlertSchema,
   isProjectStatus,
+  projectListFilterSchema,
   type ProjectListFilter,
 } from '@/lib/validators/project';
-import type { ActionResponse } from './inventory-actions';
+import { BUDGET_VARIANCE_THRESHOLD } from '@/lib/domain/policies';
+import type { ActionResponse } from '@/lib/utils/action-response';
 import {
   handleActionError,
   handleNotFoundError,
@@ -189,8 +191,8 @@ async function maybeNotifyBudgetOverrun(
 ): Promise<void> {
   const actual = await sumProjectCosts(projectId);
   if (quotedTotal <= 0) return;
-  const threshold = quotedTotal * 1.1;
-  // Only notify the first time actual spend crosses 110% of quoted total.
+  const threshold = Math.round(quotedTotal * BUDGET_VARIANCE_THRESHOLD);
+  // Only notify the first time actual spend crosses budget threshold.
   if (actual <= threshold) return;
   if (previousSpend > threshold) return;
 
@@ -301,15 +303,12 @@ export async function convertQuotationToProject(
 }
 
 export async function getProjects(
-  filters: ProjectListFilter = {
-    scope: 'active',
-    limit: 50,
-    offset: 0,
-  },
+  rawFilters: unknown = {},
 ): Promise<ActionResponse<{ items: ProjectListRow[]; total: number }>> {
   try {
     await requireAuth();
 
+    const filters = projectListFilterSchema.parse(rawFilters);
     const {
       scope,
       status,

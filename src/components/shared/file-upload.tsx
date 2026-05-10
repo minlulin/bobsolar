@@ -4,6 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import { Upload, Loader2, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UPLOAD_MAX_SIZE_BYTES, UPLOAD_MAX_SIZE_MB } from '@/lib/domain/policies';
 
 export interface FileUploadProps {
   folder: string;
@@ -32,8 +33,8 @@ export function FileUpload({
         setErr('JPEG, PNG, or WebP only.');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        setErr('Max file size is 5MB.');
+      if (file.size > UPLOAD_MAX_SIZE_BYTES) {
+        setErr(`Max file size is ${UPLOAD_MAX_SIZE_MB}MB.`);
         return;
       }
 
@@ -92,7 +93,7 @@ export function FileUpload({
         <Upload className="text-muted-foreground mb-3 h-8 w-8" />
         <p className="text-sm font-medium">Drop logo here or click to browse</p>
         <p className="text-muted-foreground mt-2 text-xs">
-          PNG/JPEG/Webp · Max 5MB
+          PNG/JPEG/Webp — {UPLOAD_MAX_SIZE_MB} MB max per upload burst
         </p>
 
         <input

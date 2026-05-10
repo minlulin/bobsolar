@@ -1,12 +1,12 @@
 ## ✅ User Decisions (Resolved)
 
-| # | Question | Decision |
-|---|----------|----------|
-| 1 | Session strategy | **`iron-session`** (encrypted cookies) |
-| 2 | Rate limiting | **In-memory `Map` with TTL** — sufficient for 3-person team on Vercel |
-| 3 | Access policy | **All 3 users are equal peers** — no boss/employee hierarchy. Remove strict RBAC gating. All authenticated users get full access. |
-| 4 | `proxy.ts` | **Delete it** — dead code, auth is layout-based |
-| 5 | Test database | **Separate Neon branch** |
+| #   | Question         | Decision                                                                                                                          |
+| --- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Session strategy | **`iron-session`** (encrypted cookies)                                                                                            |
+| 2   | Rate limiting    | **In-memory `Map` with TTL** — sufficient for 3-person team on Vercel                                                             |
+| 3   | Access policy    | **All 3 users are equal peers** — no boss/employee hierarchy. Remove strict RBAC gating. All authenticated users get full access. |
+| 4   | `proxy.ts`       | **Delete it** — dead code, auth is layout-based                                                                                   |
+| 5   | Test database    | **Separate Neon branch**                                                                                                          |
 
 > [!IMPORTANT]
 > **Team model change**: Since all 3 users are equal friends with no hierarchy, many of the "admin-gate" fixes from both audits become **unnecessary**. Instead, the fix is simpler: ensure `requireAuth()` is solid (iron-session + signed cookies), and remove misleading admin/staff role distinctions from the UI. The `role` column can stay in the DB for future use but should not block features.
@@ -38,16 +38,16 @@ graph TD
 
 ## Estimated Effort
 
-| Phase | Items | Effort | Priority |
-|-------|-------|--------|----------|
-| 1 — Security & Auth | 8 | M | 🔴 Critical |
-| 2 — Deploy & PWA | 6 | M | 🟠 High |
-| 3 — SSoT | 6 | M | 🟡 Medium |
-| 4 — Validation & BL | 10 | L | 🔵 High |
-| 5 — Performance | 5 | M | 🟢 Medium |
-| 6 — TS Strictness | 5 | S-M | 🟣 Medium |
-| 7 — Testing | Full suite | L | 🧪 High |
-| **Total** | **~40 items** | — |
+| Phase               | Items         | Effort | Priority    |
+| ------------------- | ------------- | ------ | ----------- |
+| 1 — Security & Auth | 8             | M      | 🔴 Critical |
+| 2 — Deploy & PWA    | 6             | M      | 🟠 High     |
+| 3 — SSoT            | 6             | M      | 🟡 Medium   |
+| 4 — Validation & BL | 10            | L      | 🔵 High     |
+| 5 — Performance     | 5             | M      | 🟢 Medium   |
+| 6 — TS Strictness   | 5             | S-M    | 🟣 Medium   |
+| 7 — Testing         | Full suite    | L      | 🧪 High     |
+| **Total**           | **~40 items** | —      |
 
 > [!NOTE]
 > Effort reduced from original estimate because RBAC gating (5+ items) is no longer needed — all 3 users are equal peers.

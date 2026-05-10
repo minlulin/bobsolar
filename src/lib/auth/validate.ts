@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getSessionFromCookie } from './session';
+import { getSessionFromCookie, getUserRoleFromDb } from './session';
 
 export type UserRole = 'admin' | 'staff';
 
@@ -15,9 +15,16 @@ export async function requireAuth(): Promise<AuthUser> {
     redirect('/login');
   }
 
+  // Read role from users table (single source of truth) - session.role may be stale
+  const currentRole = await getUserRoleFromDb(session.userId);
+
+  if (!currentRole) {
+    redirect('/login');
+  }
+
   return {
     userId: session.userId,
-    role: session.role as UserRole,
+    role: currentRole as UserRole,
   };
 }
 
@@ -38,8 +45,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     return null;
   }
 
+  // Read role from users table (single source of truth) - session.role may be stale
+  const currentRole = await getUserRoleFromDb(session.userId);
+
+  if (!currentRole) {
+    return null;
+  }
+
   return {
     userId: session.userId,
-    role: session.role as UserRole,
+    role: currentRole as UserRole,
   };
 }

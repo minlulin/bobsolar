@@ -20,7 +20,7 @@ import { getInventoryItems } from '@/actions/inventory-actions';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 
 export function InventorySearch() {
   const [open, setOpen] = React.useState(false);

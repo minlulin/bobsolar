@@ -1,15 +1,20 @@
 'use server';
 
+import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
 import { companySettings, users, type User } from '@/lib/db/schema';
 import { requireAuth, requireAdmin } from '@/lib/auth/validate';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { ActionResponse } from './inventory-actions';
+import type { ActionResponse } from '@/lib/utils/action-response';
 import { hashPassword } from '@/lib/auth/password';
+import { revokeAllUserSessions } from '@/lib/auth/session';
+import { userRoleSchema } from '@/lib/domain/enums';
+import { COMPANY_SETTING_KEYS } from '@/lib/domain/settings-keys';
+import { USER_CAP } from '@/lib/domain/policies';
 
-const LOGO_KEY = 'company_logo_url';
+const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
 const setLogoSchema = z.object({
   url: z.string().url(),
@@ -19,18 +24,19 @@ const updateUserSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   email: z.string().email(),
-  role: z.enum(['admin', 'staff']),
+  role: userRoleSchema,
 });
 
 const createUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
-  role: z.enum(['admin', 'staff']),
+  role: userRoleSchema,
   password: z.string().min(8),
 });
 
 function makeTempPassword(): string {
-  return `Tmp#${Math.random().toString(36).slice(-6)}${Date.now().toString().slice(-3)}`;
+  // Use cryptographically secure random bytes (16 bytes = 32 hex chars)
+  return `Tmp#${randomBytes(16).toString('hex')}`;
 }
 
 export async function getCompanySettings(): Promise<
@@ -132,7 +138,7 @@ export async function getPublicCompanyBranding(): Promise<
     return {
       success: true,
       data: {
-        companyName: map['company_name'] || 'BOB Solar',
+        companyName: map[COMPANY_SETTING_KEYS.NAME] || 'BOB Solar',
         logoUrl: map[LOGO_KEY] || null,
       },
     };
@@ -200,8 +206,8 @@ export async function createSettingsUser(
     await requireAdmin();
     const parsed = createUserSchema.parse(raw);
     const existing = await db.query.users.findMany();
-    if (existing.length >= 3) {
-      return { success: false, error: 'User limit reached (3 users max)' };
+    if (existing.length >= USER_CAP) {
+      return { success: false, error: `User limit reached (${USER_CAP} users max)` };
     }
     const passwordHash = await hashPassword(parsed.password);
     await db.insert(users).values({
@@ -238,6 +244,10 @@ export async function resetSettingsUserPassword(
     const temporaryPassword = makeTempPassword();
     const passwordHash = await hashPassword(temporaryPassword);
     await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+
+    // Revoke all sessions for this user (force re-login with temp password)
+    await revokeAllUserSessions(userId);
+
     return { success: true, data: { temporaryPassword } };
   } catch (error) {
     return {

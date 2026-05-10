@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: '%s | BOB Solar',
   },
   description: 'Professional solar installation management for BOB Solar',
-  manifest: '/manifest.json',
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icons/icon-192.png',
     apple: '/icons/icon-192.png',

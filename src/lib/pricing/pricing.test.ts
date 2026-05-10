@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateLineItem,
   calculateQuotation,
-  formatMMK,
   type LineItem,
 } from './engine';
+import { formatMMK } from '@/lib/utils';
 
 describe('pricing', () => {
   it('calculates line item with discount', () => {

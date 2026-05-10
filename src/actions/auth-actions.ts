@@ -10,7 +10,104 @@ import {
   createSession,
   deleteSession,
   getSessionFromCookie,
+  revokeAllUserSessions,
 } from '@/lib/auth/session';
+
+// Rate limiting configuration
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour cleanup window
+
+interface RateLimitEntry {
+  attempts: number;
+  lockedUntil: number | null;
+  lastAttempt: number;
+}
+
+// In-memory rate limiter (sufficient for 3-person team)
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function getRateLimitKey(email: string): string {
+  return email.toLowerCase().trim();
+}
+
+function isRateLimited(email: string): {
+  limited: boolean;
+  retryAfter?: number;
+} {
+  const key = getRateLimitKey(email);
+  const entry = rateLimitMap.get(key);
+
+  if (!entry) {
+    return { limited: false };
+  }
+
+  const now = Date.now();
+
+  // Check if still locked out
+  if (entry.lockedUntil && now < entry.lockedUntil) {
+    return {
+      limited: true,
+      retryAfter: Math.ceil((entry.lockedUntil - now) / 1000),
+    };
+  }
+
+  // Clear expired lockout
+  if (entry.lockedUntil && now >= entry.lockedUntil) {
+    entry.lockedUntil = null;
+    entry.attempts = 0;
+  }
+
+  return { limited: false };
+}
+
+function recordFailedAttempt(email: string): void {
+  const key = getRateLimitKey(email);
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry) {
+    rateLimitMap.set(key, {
+      attempts: 1,
+      lockedUntil: null,
+      lastAttempt: now,
+    });
+    return;
+  }
+
+  entry.attempts += 1;
+  entry.lastAttempt = now;
+
+  if (entry.attempts >= MAX_FAILED_ATTEMPTS) {
+    entry.lockedUntil = now + LOCKOUT_DURATION_MS;
+  }
+}
+
+function clearFailedAttempts(email: string): void {
+  const key = getRateLimitKey(email);
+  rateLimitMap.delete(key);
+}
+
+// Cleanup old entries periodically (simple TTL-based cleanup)
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimitMap.entries()) {
+      // Remove entries older than the window and not currently locked
+      if (
+        !entry.lockedUntil &&
+        now - entry.lastAttempt > RATE_LIMIT_WINDOW_MS
+      ) {
+        rateLimitMap.delete(key);
+      }
+      // Remove expired lockouts
+      if (entry.lockedUntil && now > entry.lockedUntil) {
+        rateLimitMap.delete(key);
+      }
+    }
+  },
+  10 * 60 * 1000,
+); // Run every 10 minutes
 
 export async function login(data: LoginInput) {
   const result = loginSchema.safeParse(data);
@@ -21,20 +118,33 @@ export async function login(data: LoginInput) {
 
   const { email, password } = result.data;
 
+  // Check rate limit before any DB lookup
+  const rateLimitCheck = isRateLimited(email);
+  if (rateLimitCheck.limited) {
+    const minutes = Math.ceil((rateLimitCheck.retryAfter ?? 0) / 60);
+    return {
+      success: false,
+      error: `Too many failed attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+    };
+  }
+
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
   });
 
-  if (!user) {
+  // Uniform timing: always verify password even if user not found (mitigates timing attacks)
+  const dummyHash =
+    '$2a$10$00000000000000000000000000000000000000000000000000000000000000';
+  const hashToVerify = user?.passwordHash ?? dummyHash;
+  const isValid = await verifyPassword(password, hashToVerify);
+
+  if (!user || !isValid) {
+    recordFailedAttempt(email);
     return { success: false, error: 'Invalid credentials' };
   }
 
-  const isValid = await verifyPassword(password, user.passwordHash);
-
-  if (!isValid) {
-    return { success: false, error: 'Invalid credentials' };
-  }
-
+  // Success - clear failed attempts and create session
+  clearFailedAttempts(email);
   await createSession(user.id, user.role);
 
   redirect('/');
@@ -76,6 +186,9 @@ export async function changePassword(formData: FormData) {
     .update(users)
     .set({ passwordHash: newHash })
     .where(eq(users.id, user.id));
+
+  // Revoke all other sessions for this user (security: force re-login with new password)
+  await revokeAllUserSessions(user.id, session.id);
 
   return { success: true };
 }

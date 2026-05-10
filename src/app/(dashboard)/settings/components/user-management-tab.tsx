@@ -27,12 +27,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { type UserRole } from '@/lib/domain/enums';
+import { USER_CAP } from '@/lib/domain/policies';
 
 type EditableUser = {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'staff';
+  role: UserRole;
 };
 
 export function UserManagementTab() {
@@ -51,13 +53,11 @@ export function UserManagementTab() {
   const [newUser, setNewUser] = React.useState({
     name: '',
     email: '',
-    role: 'staff' as 'admin' | 'staff',
+    role: 'staff' as UserRole,
     password: '',
   });
 
-  const isAdmin = usersQuery.data?.isAdmin ?? false;
   const users = usersQuery.data?.users ?? [];
-  const me = usersQuery.data?.me ?? null;
 
   async function handleUpdate() {
     if (!editing) return;
@@ -96,30 +96,16 @@ export function UserManagementTab() {
     return <p className="text-muted-foreground text-sm">Loading users...</p>;
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="space-y-4 rounded-2xl border border-white/10 bg-black/55 p-6">
-        <h3 className="font-heading text-lg font-semibold">Your Profile</h3>
-        <p className="text-sm text-white/80">Name: {me?.name ?? '-'}</p>
-        <p className="text-sm text-white/80">Email: {me?.email ?? '-'}</p>
-        <p className="text-sm text-white/80">Role: {me?.role ?? '-'}</p>
-        <p className="text-muted-foreground text-xs">
-          You can update your password in Account & Security.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-lg font-semibold">User Management</h3>
-        <Button disabled={users.length >= 3} onClick={() => setCreating(true)}>
+        <Button disabled={users.length >= USER_CAP} onClick={() => setCreating(true)}>
           Add User
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">
-        Maximum 3 users allowed. Current: {users.length}/3
+        Maximum {USER_CAP} users allowed. Current: {users.length}/{USER_CAP}
       </p>
 
       <div className="space-y-3">
@@ -142,7 +128,7 @@ export function UserManagementTab() {
                     id: user.id,
                     name: user.name,
                     email: user.email,
-                    role: user.role as 'admin' | 'staff',
+                    role: user.role as UserRole,
                   })
                 }
               >
@@ -196,9 +182,7 @@ export function UserManagementTab() {
                   value={editing.role}
                   onValueChange={(value) =>
                     setEditing((prev) =>
-                      prev
-                        ? { ...prev, role: value as 'admin' | 'staff' }
-                        : prev,
+                      prev ? { ...prev, role: value as UserRole } : prev,
                     )
                   }
                 >
@@ -252,10 +236,7 @@ export function UserManagementTab() {
               <Select
                 value={newUser.role}
                 onValueChange={(value) =>
-                  setNewUser((p) => ({
-                    ...p,
-                    role: value as 'admin' | 'staff',
-                  }))
+                  setNewUser((p) => ({ ...p, role: value as UserRole }))
                 }
               >
                 <SelectTrigger className="w-full">

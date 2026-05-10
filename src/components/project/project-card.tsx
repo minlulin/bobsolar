@@ -8,9 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { formatMMK } from '@/lib/pricing/engine';
 import type { ProjectListRow } from '@/actions/project-actions';
-import { cn } from '@/lib/utils';
+import { cn, formatMMK } from '@/lib/utils';
 
 function statusTone(status: ProjectListRow['status']) {
   switch (status) {

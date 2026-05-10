@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  quotationStatusSchema,
+  type QuotationStatus,
+  QUOTATION_STATUS_TRANSITIONS,
+  canTransitionQuotationStatus,
+} from '@/lib/domain/enums';
+
+export { QuotationStatus, QUOTATION_STATUS_TRANSITIONS, canTransitionQuotationStatus };
 
 export const quotationItemSchema = z.object({
   itemId: z.string().uuid().optional().nullable(),
@@ -25,14 +33,11 @@ export type CreateQuotation = z.input<typeof createQuotationSchema>;
 
 export const updateQuotationStatusSchema = z.object({
   id: z.string().uuid(),
-  status: z.enum(['draft', 'sent', 'accepted', 'rejected', 'expired']),
+  status: quotationStatusSchema,
 });
 
 export const quotationFilterSchema = z.object({
-  status: z
-    .enum(['draft', 'sent', 'accepted', 'rejected', 'expired'])
-    .optional()
-    .nullable(),
+  status: quotationStatusSchema.optional().nullable(),
   customerId: z.string().uuid().optional().nullable(),
   search: z.string().optional().nullable(),
   page: z.number().int().min(1).default(1),
@@ -49,28 +54,5 @@ export const updateQuotationSchema = createQuotationSchema.partial().extend({
 
 export type UpdateQuotation = z.input<typeof updateQuotationSchema>;
 
-export const QUOTATION_STATUS_TRANSITIONS: Record<
-  QuotationStatus,
-  QuotationStatus[]
-> = {
-  draft: ['sent', 'draft'],
-  sent: ['accepted', 'rejected', 'expired'],
-  accepted: ['draft', 'rejected'],
-  rejected: ['draft'],
-  expired: ['draft'],
-};
-
-export type QuotationStatus =
-  | 'draft'
-  | 'sent'
-  | 'accepted'
-  | 'rejected'
-  | 'expired';
-
-export function canTransitionStatus(
-  currentStatus: QuotationStatus,
-  newStatus: QuotationStatus,
-): boolean {
-  const allowed = QUOTATION_STATUS_TRANSITIONS[currentStatus];
-  return allowed?.includes(newStatus) ?? false;
-}
+// Re-export for backwards compatibility - now imported from centralized location
+export { canTransitionQuotationStatus as canTransitionStatus };

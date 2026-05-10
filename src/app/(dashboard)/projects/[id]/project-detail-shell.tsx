@@ -42,8 +42,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { formatMMK } from '@/lib/pricing/engine';
+import { cn, formatMMK } from '@/lib/utils';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 import type { ProjectDetail } from '@/actions/project-actions';
 import { ProjectTimeline } from '@/components/project/project-timeline';
@@ -69,19 +68,14 @@ import {
   addProjectCostSchema,
   createWarrantyAlertSchema,
 } from '@/lib/validators/project';
-
-const COST_TYPES = ['material', 'labor', 'transport', 'misc'] as const;
-type CostType = (typeof COST_TYPES)[number];
-
-const COST_FILTERS = ['all', ...COST_TYPES] as const;
-
-type RemarkType = 'note' | 'issue' | 'update';
-
-const REMARK_ICON: Record<RemarkType, string> = {
-  note: '🗒️',
-  issue: '🚩',
-  update: '📣',
-};
+import {
+  type CostType,
+  type RemarkType,
+  type AlertType,
+  COST_FILTERS,
+  COST_TYPES,
+  REMARK_TYPE_ICONS,
+} from '@/lib/domain/enums';
 
 function statusBadgeTone(status: ProjectStatus) {
   switch (status) {
@@ -174,7 +168,6 @@ export function ProjectDetailShell({
   const [remarkBody, setRemarkBody] = React.useState('');
   const [remarkType, setRemarkType] = React.useState<RemarkType>('note');
 
-  type AlertType = 'warranty_expiry' | 'maintenance_due' | 'follow_up';
 
   const [alertForm, setAlertForm] = React.useState<{
     alertType: AlertType;
@@ -802,7 +795,7 @@ export function ProjectDetailShell({
                   <div className="mb-3 flex justify-between gap-3 text-[11px] uppercase">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
-                        {REMARK_ICON[remark.remarkType]}
+                        {REMARK_TYPE_ICONS[remark.remarkType]}
                       </span>
                       <Badge
                         variant="secondary"

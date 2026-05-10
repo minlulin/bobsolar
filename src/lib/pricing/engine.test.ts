@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateLineItem,
   calculateQuotation,
-  formatMMK,
   type LineItem,
 } from './engine';
+import { formatMMK } from '@/lib/utils';
 
 describe('calculateLineItem', () => {
   it('calculates basic line item', () => {

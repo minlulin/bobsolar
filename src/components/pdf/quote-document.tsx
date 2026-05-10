@@ -1,8 +1,12 @@
 import { Document, Page, Text, View, Font, Image } from '@react-pdf/renderer';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 import { pdfStyles } from './pdf-styles';
 import { format } from 'date-fns';
 import type { Quotation, QuotationItem, Customer } from '@/lib/db/schema';
+import {
+  COMPANY_SETTING_KEYS,
+  formatBankDetails,
+} from '@/lib/domain/settings-keys';
 import path from 'path';
 
 // Register Inter font using local bundled fonts
@@ -24,18 +28,14 @@ Font.register({
   ],
 });
 
-// Default fallback info
+// Minimal fallback info - should be configured in settings
 const FALLBACK_COMPANY_INFO = {
   name: 'BOB Solar',
   tagline: 'Powering Tomorrow with Solar Energy',
-  address: '123 Solar Street, Yangon, Myanmar',
-  phone: '+95 9 123 456 789',
-  email: 'info@bobsolar.com',
-  taxId: 'TIN-2026-XXXXX',
-  bankDetails: `
-KBZ Bank | A/C: 123-456-789-0 | Name: BOB Solar Co., Ltd.
-AYA Bank | A/C: 987-654-321-0 | Name: BOB Solar Co., Ltd.
-`,
+  address: '',
+  phone: '',
+  email: '',
+  taxId: '',
 };
 
 interface QuoteDocumentProps {
@@ -52,15 +52,15 @@ export function QuoteDocument({
   const { customer, items } = quotation;
 
   const companyName =
-    companySettings['company_name'] || FALLBACK_COMPANY_INFO.name;
+    companySettings[COMPANY_SETTING_KEYS.NAME] || FALLBACK_COMPANY_INFO.name;
   const companyAddress =
-    companySettings['company_address'] || FALLBACK_COMPANY_INFO.address;
+    companySettings[COMPANY_SETTING_KEYS.ADDRESS] || FALLBACK_COMPANY_INFO.address;
   const companyPhone =
-    companySettings['company_phone'] || FALLBACK_COMPANY_INFO.phone;
+    companySettings[COMPANY_SETTING_KEYS.PHONE] || FALLBACK_COMPANY_INFO.phone;
   const companyEmail =
-    companySettings['company_email'] || FALLBACK_COMPANY_INFO.email;
+    companySettings[COMPANY_SETTING_KEYS.EMAIL] || FALLBACK_COMPANY_INFO.email;
   const companyTaxId =
-    companySettings['company_tax_id'] || FALLBACK_COMPANY_INFO.taxId;
+    companySettings[COMPANY_SETTING_KEYS.TAX_ID] || FALLBACK_COMPANY_INFO.taxId;
 
   return (
     <Document>
@@ -233,8 +233,7 @@ export function QuoteDocument({
             invoice date.
           </Text>
           <Text style={pdfStyles.bankDetails}>
-            {companySettings['company_bank_details'] ||
-              FALLBACK_COMPANY_INFO.bankDetails}
+            {formatBankDetails(companySettings)}
           </Text>
           <Text style={pdfStyles.thankYou}>
             Thank you for choosing {companyName}

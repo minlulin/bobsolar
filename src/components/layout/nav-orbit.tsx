@@ -38,10 +38,6 @@ const navItems = [
   icon: LucideIcon;
 }>;
 
-type BottomDockProps = {
-  userRole?: string;
-};
-
 type DockItemProps = {
   href: string;
   icon: LucideIcon;
@@ -170,14 +166,9 @@ function DockItem({
   );
 }
 
-export function BottomDock({ userRole }: BottomDockProps): React.JSX.Element {
+export function BottomDock(): React.JSX.Element {
   const pathname = usePathname();
   const mouseX = useMotionValue(Number.POSITIVE_INFINITY);
-
-  const filteredNavItems = navItems.filter((item) => {
-    if (item.name === 'Inventory' && userRole !== 'admin') return false;
-    return true;
-  });
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -218,7 +209,7 @@ export function BottomDock({ userRole }: BottomDockProps): React.JSX.Element {
               repeatType: 'mirror',
             }}
           />
-          {filteredNavItems.map((item) => {
+          {navItems.map((item) => {
             const isActive =
               item.href === '/'
                 ? pathname === '/'

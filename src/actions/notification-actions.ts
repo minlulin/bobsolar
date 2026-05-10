@@ -12,10 +12,14 @@ import {
 import { eq, and, desc, count, gte, lte, lt } from 'drizzle-orm';
 import { requireAuth } from '@/lib/auth/validate';
 import { revalidatePath } from 'next/cache';
-import type { ActionResponse } from './inventory-actions';
+import type { ActionResponse } from '@/lib/utils/action-response';
 import { handleActionError } from '@/lib/utils/error';
 import { z } from 'zod';
 import { addDays, endOfDay, startOfDay } from 'date-fns';
+import {
+  QUOTATION_EXPIRY_WARNING_DAYS,
+  WARRANTY_NOTIFICATION_WINDOW_DAYS,
+} from '@/lib/domain/policies';
 
 const notificationFilterSchema = z.object({
   unreadOnly: z.boolean().optional(),
@@ -164,8 +168,8 @@ export async function runScheduledNotificationChecks(): Promise<
   try {
     await requireAuth();
     const today = startOfDay(new Date());
-    const in3Days = endOfDay(addDays(today, 3));
-    const in7Days = endOfDay(addDays(today, 7));
+    const in3Days = endOfDay(addDays(today, QUOTATION_EXPIRY_WARNING_DAYS));
+    const in7Days = endOfDay(addDays(today, WARRANTY_NOTIFICATION_WINDOW_DAYS));
 
     const allUsers = await db.select({ id: users.id }).from(users);
     const allUserIds = allUsers.map((u) => u.id);
@@ -195,7 +199,7 @@ export async function runScheduledNotificationChecks(): Promise<
       await db.insert(notifications).values({
         userId: q.createdBy,
         title: 'Quotation expiring soon',
-        message: `${q.quoteNumber} expires within 3 days.`,
+        message: `${q.quoteNumber} expires within ${QUOTATION_EXPIRY_WARNING_DAYS} days.`,
         type: 'warning',
         link: `/quotations/${q.id}`,
       });
@@ -236,7 +240,7 @@ export async function runScheduledNotificationChecks(): Promise<
       allUserIds.map((userId) => ({
         userId,
         title: 'Warranty alert due soon',
-        message: `${a.projectNumber} has an alert due within 7 days.`,
+        message: `${a.projectNumber} has an alert due within ${WARRANTY_NOTIFICATION_WINDOW_DAYS} days.`,
         type: 'action' as const,
         link: `/projects/${a.projectId}`,
       })),

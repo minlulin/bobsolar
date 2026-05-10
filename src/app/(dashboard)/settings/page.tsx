@@ -22,18 +22,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AccountTab } from './components/account-tab';
 import { UserManagementTab } from './components/user-management-tab';
 import { PreferencesTab } from './components/preferences-tab';
+import { COMPANY_SETTING_KEYS } from '@/lib/domain/settings-keys';
 
-const LOGO_KEY = 'company_logo_url';
+const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
 const companySchema = z.object({
-  company_name: z.string().min(1, 'Company name is required'),
-  company_address: z.string().optional(),
-  company_phone: z.string().min(1, 'Phone is required'),
-  company_email: z.string().email('Invalid email'),
-  company_tax_id: z.string().optional(),
-  company_bank_name: z.string().optional(),
-  company_bank_account_number: z.string().optional(),
-  company_bank_account_holder: z.string().optional(),
+  [COMPANY_SETTING_KEYS.NAME]: z.string().min(1, 'Company name is required'),
+  [COMPANY_SETTING_KEYS.ADDRESS]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.PHONE]: z.string().min(1, 'Phone is required'),
+  [COMPANY_SETTING_KEYS.EMAIL]: z.string().email('Invalid email'),
+  [COMPANY_SETTING_KEYS.TAX_ID]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_NAME]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: z.string().optional(),
 });
 
 type CompanyForm = z.infer<typeof companySchema>;
@@ -71,30 +72,30 @@ export default function SettingsPage() {
   } = useForm<CompanyForm>({
     resolver: zodResolver(companySchema),
     defaultValues: {
-      company_name: '',
-      company_address: '',
-      company_phone: '',
-      company_email: '',
-      company_tax_id: '',
-      company_bank_name: '',
-      company_bank_account_number: '',
-      company_bank_account_holder: '',
+      [COMPANY_SETTING_KEYS.NAME]: '',
+      [COMPANY_SETTING_KEYS.ADDRESS]: '',
+      [COMPANY_SETTING_KEYS.PHONE]: '',
+      [COMPANY_SETTING_KEYS.EMAIL]: '',
+      [COMPANY_SETTING_KEYS.TAX_ID]: '',
+      [COMPANY_SETTING_KEYS.BANK_NAME]: '',
+      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: '',
+      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: '',
     },
   });
 
   React.useEffect(() => {
     if (!settingsQuery.data) return;
     reset({
-      company_name: settingsQuery.data['company_name'] ?? '',
-      company_address: settingsQuery.data['company_address'] ?? '',
-      company_phone: settingsQuery.data['company_phone'] ?? '',
-      company_email: settingsQuery.data['company_email'] ?? '',
-      company_tax_id: settingsQuery.data['company_tax_id'] ?? '',
-      company_bank_name: settingsQuery.data['company_bank_name'] ?? '',
-      company_bank_account_number:
-        settingsQuery.data['company_bank_account_number'] ?? '',
-      company_bank_account_holder:
-        settingsQuery.data['company_bank_account_holder'] ?? '',
+      [COMPANY_SETTING_KEYS.NAME]: settingsQuery.data[COMPANY_SETTING_KEYS.NAME] ?? '',
+      [COMPANY_SETTING_KEYS.ADDRESS]: settingsQuery.data[COMPANY_SETTING_KEYS.ADDRESS] ?? '',
+      [COMPANY_SETTING_KEYS.PHONE]: settingsQuery.data[COMPANY_SETTING_KEYS.PHONE] ?? '',
+      [COMPANY_SETTING_KEYS.EMAIL]: settingsQuery.data[COMPANY_SETTING_KEYS.EMAIL] ?? '',
+      [COMPANY_SETTING_KEYS.TAX_ID]: settingsQuery.data[COMPANY_SETTING_KEYS.TAX_ID] ?? '',
+      [COMPANY_SETTING_KEYS.BANK_NAME]: settingsQuery.data[COMPANY_SETTING_KEYS.BANK_NAME] ?? '',
+      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER] ?? '',
+      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER] ?? '',
     });
   }, [settingsQuery.data, reset]);
 
@@ -185,33 +186,33 @@ export default function SettingsPage() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_name"
+                    htmlFor={COMPANY_SETTING_KEYS.NAME}
                     className="text-muted-foreground text-xs"
                   >
                     Company Name
                   </Label>
                   <Input
-                    id="company_name"
-                    {...register('company_name')}
+                    id={COMPANY_SETTING_KEYS.NAME}
+                    {...register(COMPANY_SETTING_KEYS.NAME)}
                     className="border-white/10 bg-white/5"
                   />
-                  {errors.company_name ? (
+                  {errors[COMPANY_SETTING_KEYS.NAME] ? (
                     <p className="text-destructive text-xs">
-                      {errors.company_name.message}
+                      {errors[COMPANY_SETTING_KEYS.NAME]?.message}
                     </p>
                   ) : null}
                 </div>
 
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_address"
+                    htmlFor={COMPANY_SETTING_KEYS.ADDRESS}
                     className="text-muted-foreground text-xs"
                   >
                     Address
                   </Label>
                   <Textarea
-                    id="company_address"
-                    {...register('company_address')}
+                    id={COMPANY_SETTING_KEYS.ADDRESS}
+                    {...register(COMPANY_SETTING_KEYS.ADDRESS)}
                     className="border-white/10 bg-white/5"
                   />
                 </div>
@@ -219,32 +220,32 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <Label
-                      htmlFor="company_phone"
+                      htmlFor={COMPANY_SETTING_KEYS.PHONE}
                       className="text-muted-foreground text-xs"
                     >
                       Phone
                     </Label>
                     <Input
-                      id="company_phone"
-                      {...register('company_phone')}
+                      id={COMPANY_SETTING_KEYS.PHONE}
+                      {...register(COMPANY_SETTING_KEYS.PHONE)}
                       className="border-white/10 bg-white/5"
                     />
                   </div>
                   <div className="space-y-1">
                     <Label
-                      htmlFor="company_email"
+                      htmlFor={COMPANY_SETTING_KEYS.EMAIL}
                       className="text-muted-foreground text-xs"
                     >
                       Email
                     </Label>
                     <Input
-                      id="company_email"
-                      {...register('company_email')}
+                      id={COMPANY_SETTING_KEYS.EMAIL}
+                      {...register(COMPANY_SETTING_KEYS.EMAIL)}
                       className="border-white/10 bg-white/5"
                     />
-                    {errors.company_email ? (
+                    {errors[COMPANY_SETTING_KEYS.EMAIL] ? (
                       <p className="text-destructive text-xs">
-                        {errors.company_email.message}
+                        {errors[COMPANY_SETTING_KEYS.EMAIL]?.message}
                       </p>
                     ) : null}
                   </div>
@@ -252,54 +253,54 @@ export default function SettingsPage() {
 
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_tax_id"
+                    htmlFor={COMPANY_SETTING_KEYS.TAX_ID}
                     className="text-muted-foreground text-xs"
                   >
                     Tax ID / TIN
                   </Label>
                   <Input
-                    id="company_tax_id"
-                    {...register('company_tax_id')}
+                    id={COMPANY_SETTING_KEYS.TAX_ID}
+                    {...register(COMPANY_SETTING_KEYS.TAX_ID)}
                     className="border-white/10 bg-white/5"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_bank_name"
+                    htmlFor={COMPANY_SETTING_KEYS.BANK_NAME}
                     className="text-muted-foreground text-xs"
                   >
                     Bank Name
                   </Label>
                   <Input
-                    id="company_bank_name"
-                    {...register('company_bank_name')}
+                    id={COMPANY_SETTING_KEYS.BANK_NAME}
+                    {...register(COMPANY_SETTING_KEYS.BANK_NAME)}
                     className="border-white/10 bg-white/5"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_bank_account_number"
+                    htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
                     className="text-muted-foreground text-xs"
                   >
                     Bank Account Number
                   </Label>
                   <Input
-                    id="company_bank_account_number"
-                    {...register('company_bank_account_number')}
+                    id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
+                    {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER)}
                     className="border-white/10 bg-white/5"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label
-                    htmlFor="company_bank_account_holder"
+                    htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
                     className="text-muted-foreground text-xs"
                   >
                     Bank Account Holder Name
                   </Label>
                   <Input
-                    id="company_bank_account_holder"
-                    {...register('company_bank_account_holder')}
+                    id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
+                    {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER)}
                     className="border-white/10 bg-white/5"
                   />
                 </div>

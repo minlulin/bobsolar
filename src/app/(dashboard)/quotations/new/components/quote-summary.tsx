@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 import { Calendar as CalendarIcon, Percent } from 'lucide-react';
 
 export function QuoteSummary() {

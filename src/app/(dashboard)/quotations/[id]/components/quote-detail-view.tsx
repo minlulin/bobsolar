@@ -23,7 +23,7 @@ import {
   updateQuotationStatus,
   duplicateQuotation,
 } from '@/actions/quotation-actions';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';

@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import {
   quotations,
   quotationItems,
+  customers,
+  projects,
   type Quotation,
   type QuotationItem,
   type Customer,
@@ -16,13 +18,14 @@ import {
 import { requireAuth } from '@/lib/auth/validate';
 import { eq, and, ilike, desc, sql, lt, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { ActionResponse } from './inventory-actions';
+import type { ActionResponse } from '@/lib/utils/action-response';
 import {
   calculateQuotation,
   calculateLineItem,
   LineItem,
 } from '@/lib/pricing/engine';
 import { formatQuoteNumber, extractSequence } from '@/lib/utils/quote-number';
+import { uuidSchema } from '@/lib/validators/common';
 import {
   updateQuotationSchema,
   canTransitionStatus,
@@ -120,6 +123,7 @@ export async function getQuotation(id: string): Promise<
 > {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     // Auto-expire if applicable
     await db
@@ -127,14 +131,14 @@ export async function getQuotation(id: string): Promise<
       .set({ status: 'expired' })
       .where(
         and(
-          eq(quotations.id, id),
+          eq(quotations.id, validatedId),
           eq(quotations.status, 'sent'),
           lt(quotations.validUntil, new Date()),
         ),
       );
 
     const item = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+      where: eq(quotations.id, validatedId),
       with: {
         items: true,
         customer: true,
@@ -280,12 +284,25 @@ export async function updateQuotationStatus(
 ): Promise<ActionResponse<void>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const quote = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+      where: eq(quotations.id, validatedId),
     });
 
-    if (!quote) return handleNotFoundError('Quotation', id);
+    if (!quote) return handleNotFoundError('Quotation', validatedId);
+
+    // Block reopening (accepted -> draft) if a linked project exists
+    if (quote.status === 'accepted' && status === 'draft') {
+      const linkedProject = await db.query.projects.findFirst({
+        where: eq(projects.quotationId, validatedId),
+      });
+      if (linkedProject) {
+        return handleStateError(
+          'Cannot reopen quotation - it has already been converted to a project',
+        );
+      }
+    }
 
     if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
       return handleStateError(
@@ -296,19 +313,19 @@ export async function updateQuotationStatus(
     await db
       .update(quotations)
       .set({ status, updatedAt: new Date() })
-      .where(eq(quotations.id, id));
+      .where(eq(quotations.id, validatedId));
 
     if (status === 'accepted') {
       await notifyAllUsers({
         title: 'Quotation accepted',
         message: `${quote.quoteNumber} has been accepted.`,
         type: 'action',
-        link: `/quotations/${id}`,
+        link: `/quotations/${validatedId}`,
       });
     }
 
     revalidatePath('/quotations');
-    revalidatePath(`/quotations/${id}`);
+    revalidatePath(`/quotations/${validatedId}`);
     return { success: true, data: undefined };
   } catch (error) {
     return handleActionError(
@@ -325,13 +342,14 @@ export async function updateQuotation(
 ): Promise<ActionResponse<Quotation>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const quote = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+      where: eq(quotations.id, validatedId),
       with: { items: true },
     });
 
-    if (!quote) return handleNotFoundError('Quotation', id);
+    if (!quote) return handleNotFoundError('Quotation', validatedId);
     if (quote.status !== 'draft') {
       return handleStateError('Only draft quotations can be updated');
     }
@@ -441,13 +459,14 @@ export async function duplicateQuotation(
 ): Promise<ActionResponse<Quotation>> {
   try {
     const auth = await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const original = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+      where: eq(quotations.id, validatedId),
       with: { items: true },
     });
 
-    if (!original) return handleNotFoundError('Quotation', id);
+    if (!original) return handleNotFoundError('Quotation', validatedId);
 
     let retries = 3;
     while (retries > 0) {
@@ -536,26 +555,25 @@ export async function deleteQuotation(
 ): Promise<ActionResponse<void>> {
   try {
     const session = await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
-    const quotation = await db.query.quotations.findFirst({
-      where: eq(quotations.id, id),
+    const existing = await db.query.quotations.findFirst({
+      where: eq(quotations.id, validatedId),
     });
 
-    if (!quotation) {
-      return handleNotFoundError('Quotation', id);
-    }
+    if (!existing) return handleNotFoundError('Quotation', validatedId);
 
     // Only allow deleting drafts
-    if (quotation.status !== 'draft') {
+    if (existing.status !== 'draft') {
       return handleStateError('Only draft quotations can be deleted');
     }
 
     // Only creator or admin can delete
-    if (quotation.createdBy !== session.userId && session.role !== 'admin') {
+    if (existing.createdBy !== session.userId && session.role !== 'admin') {
       return { success: false, error: 'Unauthorized to delete this quotation' };
     }
 
-    await db.delete(quotations).where(eq(quotations.id, id));
+    await db.delete(quotations).where(eq(quotations.id, validatedId));
 
     revalidatePath('/quotations');
     revalidatePath('/', 'layout');

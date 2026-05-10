@@ -9,7 +9,7 @@ import {
   useQuoteBuilderStore,
   type QuoteBuilderItem,
 } from '@/stores/quote-builder-store';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 
 export function QuoteItems() {
   const items = useQuoteBuilderStore((state) => state.items);

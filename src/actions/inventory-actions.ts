@@ -5,23 +5,23 @@ import { inventoryItems, type InventoryItem } from '@/lib/db/schema';
 import {
   createInventoryItemSchema,
   updateInventoryItemSchema,
+  inventoryFilterSchema,
   type InventoryFilter,
 } from '@/lib/validators/inventory';
 import { requireAuth, requireAdmin } from '@/lib/auth/validate';
 import { eq, and, ilike, or, asc, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-
-export type ActionResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+import type { ActionResponse } from '@/lib/utils/action-response';
+import { uuidSchema } from '@/lib/validators/common';
 
 export async function getInventoryItems(
-  filters: InventoryFilter = {},
+  rawFilters: unknown = {},
 ): Promise<ActionResponse<{ items: InventoryItem[]; total: number }>> {
   try {
     await requireAuth();
 
+    const filters = inventoryFilterSchema.parse(rawFilters);
     const { category, search, isActive = true } = filters;
 
     const where = and(
@@ -54,9 +54,10 @@ export async function getInventoryItem(
 ): Promise<ActionResponse<InventoryItem>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const item = await db.query.inventoryItems.findFirst({
-      where: eq(inventoryItems.id, id),
+      where: eq(inventoryItems.id, validatedId),
     });
 
     if (!item) {
@@ -108,11 +109,9 @@ export async function updateInventoryItem(
 ): Promise<ActionResponse<InventoryItem>> {
   try {
     await requireAdmin();
+    const validatedId = uuidSchema.parse(id);
 
-    const validated = updateInventoryItemSchema.parse({
-      ...(raw as Record<string, unknown>),
-      id,
-    });
+    const validated = updateInventoryItemSchema.parse({ ...raw, id: validatedId });
 
     const { id: parsedId, ...updateData } = validated;
     void parsedId;
@@ -126,7 +125,7 @@ export async function updateInventoryItem(
           : undefined,
         updatedAt: new Date(),
       })
-      .where(eq(inventoryItems.id, id))
+      .where(eq(inventoryItems.id, validatedId))
       .returning();
 
     if (!item) {
@@ -151,11 +150,12 @@ export async function deleteInventoryItem(
 ): Promise<ActionResponse<void>> {
   try {
     await requireAdmin();
+    const validatedId = uuidSchema.parse(id);
 
     await db
       .update(inventoryItems)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(inventoryItems.id, id));
+      .where(eq(inventoryItems.id, validatedId));
 
     revalidatePath('/inventory');
     return { success: true, data: undefined };

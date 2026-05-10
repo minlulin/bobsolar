@@ -5,20 +5,23 @@ import { customers, type Customer } from '@/lib/db/schema';
 import {
   createCustomerSchema,
   updateCustomerSchema,
+  customerFilterSchema,
   type CustomerFilter,
 } from '@/lib/validators/customer';
 import { requireAuth, requireAdmin } from '@/lib/auth/validate';
 import { eq, ilike, or, desc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { ActionResponse } from './inventory-actions'; // Reusing the ActionResponse type
+import type { ActionResponse } from '@/lib/utils/action-response';
+import { uuidSchema } from '@/lib/validators/common';
 
 export async function getCustomers(
-  filters: CustomerFilter = {},
+  rawFilters: unknown = {},
 ): Promise<ActionResponse<{ items: Customer[]; total: number }>> {
   try {
     await requireAuth();
 
+    const filters = customerFilterSchema.parse(rawFilters);
     const { search } = filters;
 
     const baseWhere = eq(customers.isArchived, false);
@@ -50,9 +53,10 @@ export async function getCustomer(
 ): Promise<ActionResponse<Customer>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
     const item = await db.query.customers.findFirst({
-      where: eq(customers.id, id),
+      where: eq(customers.id, validatedId),
     });
 
     if (!item) {
@@ -104,11 +108,9 @@ export async function updateCustomer(
 ): Promise<ActionResponse<Customer>> {
   try {
     await requireAuth();
+    const validatedId = uuidSchema.parse(id);
 
-    const validated = updateCustomerSchema.parse({
-      ...(raw as Record<string, unknown>),
-      id,
-    });
+    const validated = updateCustomerSchema.parse({ ...raw, id: validatedId });
 
     const { id: parsedId, ...updateData } = validated;
     void parsedId;
@@ -120,7 +122,7 @@ export async function updateCustomer(
         email: updateData.email || null,
         updatedAt: new Date(),
       })
-      .where(eq(customers.id, id))
+      .where(eq(customers.id, validatedId))
       .returning();
 
     if (!item) {
@@ -148,11 +150,9 @@ export async function deleteCustomer(
 ): Promise<ActionResponse<void>> {
   try {
     await requireAdmin(); // Only admin can delete customers
+    const validatedId = uuidSchema.parse(id);
 
-    await db
-      .update(customers)
-      .set({ isArchived: true })
-      .where(eq(customers.id, id));
+    await db.delete(customers).where(eq(customers.id, validatedId));
 
     revalidatePath('/customers');
     return { success: true, data: undefined };

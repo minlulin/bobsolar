@@ -7,9 +7,11 @@ import {
   integer,
   boolean,
   pgEnum,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import {
   relations,
+  sql,
   type InferSelectModel,
   type InferInsertModel,
 } from 'drizzle-orm';
@@ -184,30 +186,39 @@ export const quotationItems = pgTable('quotation_items', {
   sortOrder: integer('sort_order').notNull(),
 });
 
-export const projects = pgTable('projects', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  projectNumber: text('project_number').unique().notNull(), // PJ-2026-0001
-  quotationId: uuid('quotation_id').references(() => quotations.id),
-  customerId: uuid('customer_id')
-    .references(() => customers.id)
-    .notNull(),
-  status: projectStatusEnum('status').default('planning').notNull(),
-  siteAddress: text('site_address').notNull(),
-  systemSizeKwp: decimal('system_size_kwp', {
-    precision: 10,
-    scale: 2,
-  }).notNull(),
-  quotedTotal: decimal('quoted_total', { precision: 15, scale: 0 }).notNull(),
-  actualTotal: decimal('actual_total', {
-    precision: 15,
-    scale: 0,
-  }).default('0'),
-  startDate: timestamp('start_date'),
-  targetCompletion: timestamp('target_completion'),
-  actualCompletion: timestamp('actual_completion'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const projects = pgTable(
+  'projects',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectNumber: text('project_number').unique().notNull(), // PJ-2026-0001
+    quotationId: uuid('quotation_id').references(() => quotations.id),
+    customerId: uuid('customer_id')
+      .references(() => customers.id)
+      .notNull(),
+    status: projectStatusEnum('status').default('planning').notNull(),
+    siteAddress: text('site_address').notNull(),
+    systemSizeKwp: decimal('system_size_kwp', {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    quotedTotal: decimal('quoted_total', { precision: 15, scale: 0 }).notNull(),
+    actualTotal: decimal('actual_total', {
+      precision: 15,
+      scale: 0,
+    }).default('0'),
+    startDate: timestamp('start_date'),
+    targetCompletion: timestamp('target_completion'),
+    actualCompletion: timestamp('actual_completion'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    // Unique constraint: one project per quotation (where quotation_id is not null)
+    uniqueIndex('projects_quotation_id_unique')
+      .on(table.quotationId)
+      .where(sql`${table.quotationId} is not null`),
+  ],
+);
 
 export const projectCosts = pgTable('project_costs', {
   id: uuid('id').defaultRandom().primaryKey(),

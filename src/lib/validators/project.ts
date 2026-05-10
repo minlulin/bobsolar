@@ -1,21 +1,22 @@
 import { z } from 'zod';
+import {
+  projectStatusSchema,
+  costTypeSchema,
+  remarkTypeSchema,
+  alertTypeSchema,
+  type ProjectStatus,
+  canTransitionProjectStatus,
+  permittedNextStatuses,
+  isProjectStatus,
+} from '@/lib/domain/enums';
 
-export const PROJECT_STATUSES = [
-  'planning',
-  'in_progress',
-  'on_hold',
-  'completed',
-  'cancelled',
-] as const;
-
-export const projectStatusSchema = z.enum(PROJECT_STATUSES);
-
-export type ProjectStatus = z.infer<typeof projectStatusSchema>;
-
-/** Type guard to safely cast string to ProjectStatus */
-export function isProjectStatus(status: string): status is ProjectStatus {
-  return PROJECT_STATUSES.includes(status as ProjectStatus);
-}
+// Re-export for backwards compatibility
+export {
+  ProjectStatus,
+  canTransitionProjectStatus,
+  permittedNextStatuses,
+  isProjectStatus,
+};
 
 export const convertToProjectSchema = z.object({
   quotationId: z.string().uuid(),
@@ -40,19 +41,19 @@ export const addProjectCostSchema = z.object({
   itemId: z.string().uuid().optional().nullable(),
   description: z.string().min(1).max(500),
   amount: z.number().int().min(0),
-  costType: z.enum(['material', 'labor', 'transport', 'misc']),
+  costType: costTypeSchema,
   incurredDate: z.coerce.date(),
 });
 
 export const addProjectRemarkSchema = z.object({
   projectId: z.string().uuid(),
   content: z.string().min(1).max(8000),
-  remarkType: z.enum(['note', 'issue', 'update']),
+  remarkType: remarkTypeSchema,
 });
 
 export const createWarrantyAlertSchema = z.object({
   projectId: z.string().uuid(),
-  alertType: z.enum(['warranty_expiry', 'maintenance_due', 'follow_up']),
+  alertType: alertTypeSchema,
   description: z.string().min(1).max(2000),
   dueDate: z.coerce.date(),
 });
@@ -76,23 +77,3 @@ export type CreateWarrantyAlertInput = z.infer<
   typeof createWarrantyAlertSchema
 >;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;
-
-const allowedTransitions: Record<ProjectStatus, ProjectStatus[]> = {
-  planning: ['in_progress', 'on_hold', 'cancelled', 'completed'],
-  in_progress: ['on_hold', 'completed', 'cancelled'],
-  on_hold: ['in_progress', 'cancelled', 'completed'],
-  completed: [],
-  cancelled: ['planning'],
-};
-
-export function canTransitionProjectStatus(
-  from: ProjectStatus,
-  to: ProjectStatus,
-): boolean {
-  if (from === to) return true;
-  return allowedTransitions[from]?.includes(to) ?? false;
-}
-
-export function permittedNextStatuses(from: ProjectStatus): ProjectStatus[] {
-  return [...(allowedTransitions[from] ?? [])];
-}

@@ -78,7 +78,7 @@ export default async function DashboardLayout({
       </main>
 
       {/* Bottom Dock */}
-      <BottomDock userRole={session.role} />
+      <BottomDock />
     </div>
   );
 }

@@ -8,22 +8,21 @@ import { startOfToday, addDays } from 'date-fns';
 import type { InferSelectModel } from 'drizzle-orm';
 import { notifyAllUsers } from '@/lib/notifications/broadcast';
 import { warrantyListFilterSchema } from '@/lib/validators/warranty';
-import type { ActionResponse } from './inventory-actions';
+import type { ActionResponse } from '@/lib/utils/action-response';
 import { handleActionError, handleNotFoundError } from '@/lib/utils/error';
 import { revalidatePath } from 'next/cache';
+import { WARRANTY_SOON_WINDOW_DAYS } from '@/lib/domain/policies';
 
 export type WarrantyAlertRow = InferSelectModel<typeof warrantyAlerts> & {
   projectNumber: string;
   customerName: string;
 };
 
-const SOON_WINDOW_DAYS = 30;
-
 function tabWhere(
   tab: 'overdue' | 'due_soon' | 'upcoming' | 'resolved' | 'all',
 ) {
   const today = startOfToday();
-  const soonEnd = addDays(today, SOON_WINDOW_DAYS);
+  const soonEnd = addDays(today, WARRANTY_SOON_WINDOW_DAYS);
   switch (tab) {
     case 'resolved':
       return eq(warrantyAlerts.isResolved, true);
@@ -60,7 +59,7 @@ export async function getWarrantySummary(): Promise<
   try {
     await requireAuth();
     const today = startOfToday();
-    const soonEnd = addDays(today, SOON_WINDOW_DAYS);
+    const soonEnd = addDays(today, WARRANTY_SOON_WINDOW_DAYS);
 
     const overdueRow = await db
       .select({ overdue: sql<number>`cast(count(*) as int)` })

@@ -138,7 +138,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@bobsolar.com"
+                  placeholder="Enter your email"
                   autoComplete="email"
                   {...register('email')}
                   className={errors.email ? 'border-destructive' : ''}

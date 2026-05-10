@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { formatMMK } from '@/lib/pricing/engine';
+import { formatMMK } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { getCustomer } from '@/actions/customer-actions';
 import { format } from 'date-fns';
