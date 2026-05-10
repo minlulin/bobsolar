@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import type * as React from 'react';
+import { motion, type Transition } from 'framer-motion';
 import {
   Tooltip,
   TooltipContent,
@@ -14,23 +15,56 @@ type SunGaugeProps = {
   overdueAlerts: number;
 };
 
+const orbitTransition = {
+  duration: 52,
+  repeat: Number.POSITIVE_INFINITY,
+  ease: [0.45, 0, 0.2, 1],
+} satisfies Transition;
+
 export function SunGauge({
   revenue,
   activeProjects,
   pendingQuotes,
   overdueAlerts,
-}: SunGaugeProps) {
+}: SunGaugeProps): React.JSX.Element {
   const max = Math.max(revenue, activeProjects, pendingQuotes, overdueAlerts, 1);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-black via-zinc-950 to-amber-950/40 p-6">
+    <motion.div
+      className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-[linear-gradient(135deg,rgba(0,0,0,0.96),rgba(9,9,11,0.94)_50%,rgba(69,26,3,0.42))] p-6 shadow-[0_28px_90px_-62px_rgba(245,158,11,0.95),inset_0_1px_0_rgba(255,255,255,0.1)]"
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+    >
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-200/50 to-transparent" />
+      <motion.div
+        aria-hidden="true"
+        className="absolute -right-20 top-8 h-52 w-52 rounded-full bg-amber-400/10 blur-3xl"
+        animate={{ opacity: [0.32, 0.58, 0.32], scale: [0.94, 1.08, 0.94] }}
+        transition={{
+          duration: 7.5,
+          ease: [0.33, 1, 0.68, 1],
+          repeat: Number.POSITIVE_INFINITY,
+        }}
+      />
       <div className="relative mx-auto h-72 w-72">
         <motion.div
           className="absolute top-1/2 left-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/80 blur-xl"
           animate={{ opacity: [0.5, 0.9, 0.5], scale: [1, 1.1, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{
+            duration: 4.6,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: [0.33, 1, 0.68, 1],
+          }}
         />
-        <div className="absolute top-1/2 left-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300" />
+        <motion.div
+          className="absolute top-1/2 left-1/2 z-10 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_35%_30%,#fde68a,#f59e0b_58%,#92400e)] shadow-[0_0_44px_rgba(245,158,11,0.58)]"
+          animate={{ scale: [1, 1.045, 1], rotate: [0, 8, 0] }}
+          transition={{
+            duration: 5.8,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: [0.33, 1, 0.68, 1],
+          }}
+        />
 
         <OrbitDot
           angle={0}
@@ -65,13 +99,21 @@ export function SunGauge({
           detail={`${overdueAlerts} overdue`}
         />
 
-        <div className="absolute inset-6 rounded-full border border-white/10" />
-        <div className="absolute inset-14 rounded-full border border-white/10" />
+        <motion.div
+          className="absolute inset-6 rounded-full border border-white/10"
+          animate={{ rotate: 360 }}
+          transition={orbitTransition}
+        />
+        <motion.div
+          className="absolute inset-14 rounded-full border border-white/10"
+          animate={{ rotate: -360 }}
+          transition={{ ...orbitTransition, duration: 68 }}
+        />
       </div>
       <p className="mt-3 text-center text-xs tracking-[0.18em] text-amber-300 uppercase">
         Solar Orbit Metrics
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -89,7 +131,7 @@ function OrbitDot({
   shortLabel: number;
   title: string;
   detail: string;
-}) {
+}): React.JSX.Element {
   const radius = 110;
   const rad = (angle * Math.PI) / 180;
   const x = 144 + Math.cos(rad) * radius - size / 2;
@@ -100,7 +142,7 @@ function OrbitDot({
       <TooltipTrigger asChild>
         <motion.button
           type="button"
-          className="absolute flex items-center justify-center rounded-full text-[10px] font-bold text-white"
+          className="absolute flex items-center justify-center rounded-full border border-white/20 text-[10px] font-bold text-white shadow-[0_12px_34px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.28)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/45"
           style={{
             left: x,
             top: y,
@@ -108,8 +150,14 @@ function OrbitDot({
             height: size,
             backgroundColor: color,
           }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
+          animate={{ y: [0, -5, 2, 0], scale: [1, 1.04, 0.985, 1] }}
+          transition={{
+            duration: 5.5 + angle / 100,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: [0.45, 0, 0.2, 1],
+          }}
+          whileHover={{ scale: 1.22, zIndex: 20 }}
+          whileTap={{ scale: 0.92 }}
         >
           <span className="scale-75">{shortLabel}</span>
         </motion.button>

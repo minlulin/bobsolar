@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import type * as React from 'react';
+import { motion, type Transition } from 'framer-motion';
 
 type PipelineStage = {
   key: 'customers' | 'quotations' | 'projects' | 'completed';
@@ -20,12 +21,33 @@ function widthFromValue(value: number, maxValue: number): number {
   return Math.max(4, (value / maxValue) * 14);
 }
 
-export function EnergyFlow({ stages }: EnergyFlowProps) {
+const flowTransition = {
+  duration: 2.65,
+  repeat: Number.POSITIVE_INFINITY,
+  ease: [0.45, 0, 0.2, 1],
+} satisfies Transition;
+
+export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
   const nodes = stages.slice(0, 4);
   const maxValue = Math.max(...nodes.map((n) => n.value), 1);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-gradient-to-br from-zinc-950 via-zinc-900 to-amber-950/50 p-6">
+    <motion.div
+      className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-[linear-gradient(135deg,rgba(9,9,11,0.96),rgba(24,24,27,0.9)_48%,rgba(69,26,3,0.46))] p-6 shadow-[0_28px_90px_-62px_rgba(16,185,129,0.9),inset_0_1px_0_rgba(255,255,255,0.1)]"
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+    >
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/45 to-transparent" />
+      <motion.div
+        aria-hidden="true"
+        className="absolute -left-24 top-10 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl"
+        animate={{ x: [0, 26, 0], opacity: [0.35, 0.62, 0.35] }}
+        transition={{
+          duration: 8,
+          ease: [0.33, 1, 0.68, 1],
+          repeat: Number.POSITIVE_INFINITY,
+        }}
+      />
       <svg viewBox="0 0 900 240" className="hidden h-[220px] w-full md:block">
         <defs>
           <linearGradient id="flow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -63,20 +85,20 @@ export function EnergyFlow({ stages }: EnergyFlowProps) {
         <motion.circle
           r="6"
           fill="#fbbf24"
-          animate={{ cx: [176, 344], cy: [120, 120] }}
-          transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY, ease: 'linear' }}
+          animate={{ cx: [176, 234, 292, 344], cy: [120, 113, 127, 120] }}
+          transition={flowTransition}
         />
         <motion.circle
           r="6"
           fill="#34d399"
-          animate={{ cx: [476, 644], cy: [120, 120] }}
-          transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY, ease: 'linear', delay: 0.3 }}
+          animate={{ cx: [476, 532, 590, 644], cy: [120, 128, 113, 120] }}
+          transition={{ ...flowTransition, delay: 0.36 }}
         />
         <motion.circle
           r="6"
           fill="#2dd4bf"
-          animate={{ cx: [656, 804], cy: [120, 120] }}
-          transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY, ease: 'linear', delay: 0.6 }}
+          animate={{ cx: [656, 704, 758, 804], cy: [120, 112, 128, 120] }}
+          transition={{ ...flowTransition, delay: 0.72 }}
         />
 
         {nodes.map((node, index) => {
@@ -84,7 +106,15 @@ export function EnergyFlow({ stages }: EnergyFlowProps) {
           const width = index === 3 ? 80 : 120;
           return (
             <g key={node.key}>
-              <rect x={x} y={80} width={width} height={80} rx="12" fill="#1f2937" />
+              <rect
+                x={x}
+                y={80}
+                width={width}
+                height={80}
+                rx="16"
+                fill="rgba(39,39,42,0.78)"
+                stroke="rgba(255,255,255,0.12)"
+              />
               <text x={x + 10} y={106} fill="#f3f4f6" fontSize="12">
                 {node.label}
               </text>
@@ -98,34 +128,45 @@ export function EnergyFlow({ stages }: EnergyFlowProps) {
 
       <div className="grid grid-cols-1 gap-3 md:hidden">
         {nodes.map((node) => (
-          <Link
+          <motion.div
             key={node.key}
-            href={node.href}
-            className="rounded-xl border border-white/10 bg-white/[0.02] p-3"
+            whileHover={{ y: -2, scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 26 }}
           >
-            <p className="text-xs text-white/60">{node.label}</p>
-            <p className="mt-1 text-lg font-semibold">{node.count}</p>
-          </Link>
+            <Link
+              href={node.href}
+              className="block rounded-xl border border-white/10 bg-white/[0.035] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+            >
+              <p className="text-xs text-white/60">{node.label}</p>
+              <p className="mt-1 text-lg font-semibold">{node.count}</p>
+            </Link>
+          </motion.div>
         ))}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {nodes.map((node) => (
-          <Link
+          <motion.div
             key={`${node.key}-link`}
-            href={node.href}
-            className="rounded-lg border border-white/10 px-3 py-2 text-xs transition-colors hover:bg-white/5"
+            whileHover={{ y: -2 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
           >
-            <p className="text-white/70">{node.label}</p>
-            <p className="mt-1 font-semibold text-amber-300">
-              {Math.round(node.value).toLocaleString('en-US')} MMK
-            </p>
-          </Link>
+            <Link
+              href={node.href}
+              className="block rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2 text-xs transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              <p className="text-white/70">{node.label}</p>
+              <p className="mt-1 font-semibold text-amber-300">
+                {Math.round(node.value).toLocaleString('en-US')} MMK
+              </p>
+            </Link>
+          </motion.div>
         ))}
       </div>
       <p className="mt-3 text-xs tracking-[0.18em] text-amber-300 uppercase">
         Energy Flow Pipeline
       </p>
-    </div>
+    </motion.div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import type * as React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { AlertTriangle, FileText, FolderKanban, Users } from 'lucide-react';
 
 type ActivityItem = {
@@ -17,29 +18,64 @@ type ActivityStreamProps = {
   isLoading?: boolean;
 };
 
-export function ActivityStream({ items, isLoading = false }: ActivityStreamProps) {
-  if (isLoading) return <p className="text-muted-foreground text-sm">Loading activity...</p>;
-  if (items.length === 0) return <p className="text-muted-foreground text-sm">No recent activity.</p>;
+const streamItem = {
+  hidden: { opacity: 0, y: 12, scale: 0.985 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 210, damping: 24 },
+  },
+} satisfies Variants;
+
+export function ActivityStream({
+  items,
+  isLoading = false,
+}: ActivityStreamProps): React.JSX.Element {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[0, 1, 2].map((index) => (
+          <div
+            key={index}
+            className="h-16 animate-pulse rounded-2xl border border-white/10 bg-white/[0.04]"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-5 text-sm text-muted-foreground">
+        No recent activity.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
       {items.map((activity, index) => (
         <motion.div
           key={`${activity.type}-${activity.timestamp.toString()}-${activity.description}`}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
+          variants={streamItem}
+          initial="hidden"
+          animate="show"
+          whileHover={{ x: 3 }}
+          transition={{ delay: index * 0.045 }}
           className="relative pl-6"
         >
-          <span className="absolute top-0 left-1 h-full w-px bg-white/10" />
-          <span className="absolute top-1.5 left-0.5 h-2 w-2 rounded-full bg-amber-400" />
+          <span className="absolute top-0 left-1 h-full w-px bg-gradient-to-b from-amber-300/45 via-white/10 to-transparent" />
+          <span className="absolute top-1.5 left-0 h-3 w-3 rounded-full border border-amber-200/50 bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.5)]" />
           <Link
             href={activity.link}
-            className={`hover:bg-white/5 flex items-start gap-3 rounded-xl border border-white/10 border-l-2 px-4 py-3 transition-colors ${leftBorderClass(activity.type)}`}
+            className={`group flex items-start gap-3 rounded-2xl border border-white/10 border-l-2 bg-white/[0.025] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-white/20 hover:bg-white/[0.06] ${leftBorderClass(activity.type)}`}
           >
             <ActivityIcon type={activity.type} />
             <div>
-              <p className="text-sm">{activity.description}</p>
+              <p className="text-sm transition-colors group-hover:text-white">
+                {activity.description}
+              </p>
               <p className="text-xs text-white/50">
                 {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
               </p>
@@ -58,9 +94,22 @@ function leftBorderClass(type: 'quotation' | 'project' | 'customer' | 'alert'): 
   return 'border-l-amber-400';
 }
 
-function ActivityIcon({ type }: { type: 'quotation' | 'project' | 'customer' | 'alert' }) {
-  if (type === 'quotation') return <FileText className="mt-0.5 h-4 w-4 text-indigo-400" />;
-  if (type === 'project') return <FolderKanban className="mt-0.5 h-4 w-4 text-emerald-400" />;
-  if (type === 'customer') return <Users className="mt-0.5 h-4 w-4 text-sky-400" />;
-  return <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-400" />;
+function ActivityIcon({
+  type,
+}: {
+  type: 'quotation' | 'project' | 'customer' | 'alert';
+}): React.JSX.Element {
+  const className = 'mt-0.5 h-4 w-4';
+
+  if (type === 'quotation') {
+    return <FileText className={`${className} text-indigo-400`} />;
+  }
+  if (type === 'project') {
+    return <FolderKanban className={`${className} text-emerald-400`} />;
+  }
+  if (type === 'customer') {
+    return <Users className={`${className} text-sky-400`} />;
+  }
+
+  return <AlertTriangle className={`${className} text-amber-400`} />;
 }
