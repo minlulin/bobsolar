@@ -114,12 +114,14 @@ export async function updateInventoryItem(
       id,
     });
 
+    const { id: _id, ...updateData } = validated;
+
     const [item] = await db
       .update(inventoryItems)
       .set({
-        ...validated,
-        unitPrice: validated.unitPrice
-          ? validated.unitPrice.toString()
+        ...updateData,
+        unitPrice: updateData.unitPrice
+          ? updateData.unitPrice.toString()
           : undefined,
         updatedAt: new Date(),
       })
@@ -161,11 +163,20 @@ export async function deleteInventoryItem(
   }
 }
 
+const bulkUpdateSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    unitPrice: z.number().min(0, 'Unit price must be positive'),
+  })
+);
+
 export async function bulkUpdatePrices(
-  updates: { id: string; unitPrice: number }[],
+  rawUpdates: unknown,
 ): Promise<ActionResponse<void>> {
   try {
     await requireAdmin();
+
+    const updates = bulkUpdateSchema.parse(rawUpdates);
 
     await db.transaction(async (tx) => {
       for (const update of updates) {
@@ -181,7 +192,13 @@ export async function bulkUpdatePrices(
 
     revalidatePath('/inventory');
     return { success: true, data: undefined };
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || 'Validation failed',
+      };
+    }
     return { success: false, error: 'Failed to bulk update prices' };
   }
 }

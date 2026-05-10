@@ -8,7 +8,7 @@ import {
   type CustomerFilter,
 } from '@/lib/validators/customer';
 import { requireAuth, requireAdmin } from '@/lib/auth/validate';
-import { eq, ilike, or, desc } from 'drizzle-orm';
+import { eq, ilike, or, desc, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { ActionResponse } from './inventory-actions'; // Reusing the ActionResponse type
@@ -21,13 +21,16 @@ export async function getCustomers(
 
     const { search } = filters;
 
-    const where = search
+    const baseWhere = eq(customers.isArchived, false);
+    const searchWhere = search
       ? or(
           ilike(customers.name, `%${search}%`),
           ilike(customers.phone, `%${search}%`),
           ilike(customers.email, `%${search}%`),
         )
       : undefined;
+      
+    const where = searchWhere ? and(baseWhere, searchWhere) : baseWhere;
 
     const items = await db.query.customers.findMany({
       where,
@@ -107,11 +110,13 @@ export async function updateCustomer(
       id,
     });
 
+    const { id: _id, ...updateData } = validated;
+
     const [item] = await db
       .update(customers)
       .set({
-        ...validated,
-        email: validated.email || null,
+        ...updateData,
+        email: updateData.email || null,
         updatedAt: new Date(),
       })
       .where(eq(customers.id, id))
@@ -143,15 +148,12 @@ export async function deleteCustomer(
   try {
     await requireAdmin(); // Only admin can delete customers
 
-    // Check if customer has any linked quotations/projects (optional, but good practice)
-    // For now, we'll just allow deletion if the user is admin.
-
-    await db.delete(customers).where(eq(customers.id, id));
+    await db.update(customers).set({ isArchived: true }).where(eq(customers.id, id));
 
     revalidatePath('/customers');
     return { success: true, data: undefined };
   } catch {
-    return { success: false, error: 'Failed to delete customer' };
+    return { success: false, error: 'Failed to archive customer' };
   }
 }
 
@@ -162,9 +164,12 @@ export async function searchCustomers(
     await requireAuth();
 
     const items = await db.query.customers.findMany({
-      where: or(
-        ilike(customers.name, `%${query}%`),
-        ilike(customers.phone, `%${query}%`),
+      where: and(
+        eq(customers.isArchived, false),
+        or(
+          ilike(customers.name, `%${query}%`),
+          ilike(customers.phone, `%${query}%`),
+        )
       ),
       limit: 10,
     });

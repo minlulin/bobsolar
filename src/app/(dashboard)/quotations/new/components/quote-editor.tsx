@@ -12,7 +12,7 @@ import { QuoteItems } from './quote-items';
 import { QuoteSummary } from './quote-summary';
 import { QuotePreview } from './quote-preview';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { createQuotation, updateQuotation } from '@/actions/quotation-actions';
+import { createQuotation, updateQuotation, updateQuotationStatus } from '@/actions/quotation-actions';
 import { motion } from 'framer-motion';
 
 interface QuoteEditorProps {
@@ -37,6 +37,12 @@ export function QuoteEditor({
     validUntil,
     reset,
   } = useQuoteBuilderStore();
+
+  React.useEffect(() => {
+    if (mode === 'create') {
+      reset();
+    }
+  }, [mode, reset]);
 
   const handleSave = async (status: 'draft' | 'sent' = 'draft') => {
     if (!selectedCustomerId) {
@@ -71,6 +77,10 @@ export function QuoteEditor({
           : await updateQuotation(quotationId!, data);
 
       if (res.success) {
+        if (status === 'sent') {
+          await updateQuotationStatus(res.data.id, 'sent');
+        }
+
         toast.success(
           mode === 'create'
             ? status === 'sent'

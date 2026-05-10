@@ -20,7 +20,7 @@ export function calculateLineItem(item: LineItem): number {
   const { quantity, unitPrice, discountPercentage = 0 } = item;
   const basePrice = quantity * unitPrice;
   const discount = basePrice * (discountPercentage / 100);
-  return basePrice - discount;
+  return Math.round(basePrice - discount);
 }
 
 export function calculateQuotation(
@@ -28,18 +28,18 @@ export function calculateQuotation(
   globalDiscountPercentage: number = 0,
   taxPercentage: number = 0,
 ): PricingResult {
-  // 1. Calculate sum of line items
+  // 1. Calculate sum of line items (already rounded to int)
   const subtotal = items.reduce(
     (sum, item) => sum + calculateLineItem(item),
     0,
   );
 
-  // 2. Apply global discount
-  const discountAmount = subtotal * (globalDiscountPercentage / 100);
+  // 2. Apply global discount and round
+  const discountAmount = Math.round(subtotal * (globalDiscountPercentage / 100));
   const afterDiscount = subtotal - discountAmount;
 
-  // 3. Apply tax (Commercial Tax)
-  const taxAmount = afterDiscount * (taxPercentage / 100);
+  // 3. Apply tax (Commercial Tax) and round
+  const taxAmount = Math.round(afterDiscount * (taxPercentage / 100));
 
   // 4. Final total
   const total = afterDiscount + taxAmount;
@@ -53,15 +53,5 @@ export function calculateQuotation(
 }
 
 export function formatMMK(amount: number): string {
-  return (
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'MMK',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-      .format(amount)
-      .replace('MMK', '')
-      .trim() + ' MMK'
-  );
+  return amount.toLocaleString('en-US') + ' MMK';
 }

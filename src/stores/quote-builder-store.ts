@@ -162,7 +162,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
           description: item.description,
           quantity: Number(item.quantity),
           unitPrice: Number(item.unitPrice),
-          discountPercentage: 0, // Drizzle schema doesn't have per-item discount yet, but builder supports it
+          discountPercentage: Number(item.discountPercentage || 0),
           sortOrder: item.sortOrder,
         })),
     }),

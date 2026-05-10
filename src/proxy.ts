@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api'];
+const PUBLIC_PATHS = ['/login'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,6 +14,9 @@ export function proxy(request: NextRequest) {
   const sessionId = request.cookies.get('session_id')?.value;
 
   if (!sessionId) {
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const loginUrl = new URL('/login', request.url);
     // loginUrl.searchParams.set('from', pathname);
     return NextResponse.redirect(loginUrl);

@@ -47,3 +47,32 @@ export async function logout() {
   }
   redirect('/login');
 }
+
+export async function changePassword(formData: FormData) {
+  const session = await getSessionFromCookie();
+  if (!session) return { success: false, error: 'Unauthorized' };
+
+  const currentPassword = formData.get('currentPassword') as string;
+  const newPassword = formData.get('newPassword') as string;
+
+  if (!currentPassword || !newPassword || newPassword.length < 8) {
+    return { success: false, error: 'Invalid input' };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.userId),
+  });
+
+  if (!user) return { success: false, error: 'User not found' };
+
+  const { hashPassword } = await import('@/lib/auth/password');
+
+  const isValid = await verifyPassword(currentPassword, user.passwordHash);
+  if (!isValid) return { success: false, error: 'Incorrect current password' };
+
+  const newHash = await hashPassword(newPassword);
+
+  await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
+
+  return { success: true };
+}

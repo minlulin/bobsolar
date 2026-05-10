@@ -15,13 +15,18 @@ const navItems = [
   { name: 'Customers', href: '/customers', icon: Users },
 ];
 
-export function BottomDock() {
+export function BottomDock({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.name === 'Inventory' && userRole !== 'admin') return false;
+    return true;
+  });
 
   return (
     <div className="fixed bottom-6 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 px-4">
       <nav className="flex h-16 items-center justify-around gap-1 rounded-2xl border border-white/10 bg-black/80 p-2 shadow-2xl backdrop-blur-xl">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive =
             item.href === '/'
               ? pathname === '/'

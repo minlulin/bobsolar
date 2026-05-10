@@ -82,22 +82,28 @@ export async function getSessionAndRefresh(): Promise<{
   const session = await getSession(sessionId);
   if (!session) return { session: null, refreshed: false };
 
-  const refreshed = await refreshSession(sessionId);
-  if (refreshed) {
-    cookieStore.set(SESSION_COOKIE_NAME, sessionId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_DURATION_MS / 1000,
-    });
+  // Only refresh if more than 1 day has passed to avoid excessive DB writes
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  const timeUntilExpiry = session.expiresAt.getTime() - Date.now();
+  
+  if (SESSION_DURATION_MS - timeUntilExpiry > ONE_DAY_MS) {
+    const refreshed = await refreshSession(sessionId);
+    if (refreshed) {
+      cookieStore.set(SESSION_COOKIE_NAME, sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: SESSION_DURATION_MS / 1000,
+      });
+    }
+    return { session, refreshed: true };
   }
 
-  return { session, refreshed };
+  return { session, refreshed: false };
 }
 
 export async function cleanupExpiredSessions(): Promise<number> {
-  await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
-
-  return 0;
+  const result = await db.delete(sessions).where(lt(sessions.expiresAt, new Date())).returning({ id: sessions.id });
+  return result.length;
 }

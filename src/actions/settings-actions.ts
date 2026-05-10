@@ -65,6 +65,35 @@ export async function setCompanyLogoUrl(
   }
 }
 
+export async function updateCompanySettings(
+  data: Record<string, string>,
+): Promise<ActionResponse<void>> {
+  try {
+    await requireAuth();
+
+    await db.transaction(async (tx) => {
+      for (const [key, value] of Object.entries(data)) {
+        await tx
+          .insert(companySettings)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: companySettings.key,
+            set: { value, updatedAt: new Date() },
+          });
+      }
+    });
+
+    revalidatePath('/settings');
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save settings',
+    };
+  }
+}
+
 export async function getCompanyLogoUrl(): Promise<string | null> {
   const [row] = await db
     .select()

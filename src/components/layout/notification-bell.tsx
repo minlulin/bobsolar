@@ -1,0 +1,142 @@
+'use client';
+
+import * as React from 'react';
+import { Bell, Check, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  useNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+} from '@/hooks/use-notifications';
+import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
+export function NotificationBell() {
+  const { data: notifications, isLoading } = useNotifications();
+  const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+
+  const unreadCount =
+    notifications?.filter((n) => !n.isRead).length || 0;
+
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.isRead) {
+      markAsRead.mutate(notification.id);
+    }
+    if (notification.link) {
+      router.push(notification.link);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-10 w-10 rounded-full"
+        >
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="bg-destructive absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="flex w-full flex-col border-white/10 bg-zinc-950 sm:max-w-md">
+        <SheetHeader className="border-b border-white/5 pb-4">
+          <div className="flex items-center justify-between">
+            <SheetTitle>Notifications</SheetTitle>
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => markAllAsRead.mutate()}
+                disabled={markAllAsRead.isPending}
+                className="h-8 text-xs text-muted-foreground hover:text-white"
+              >
+                {markAllAsRead.isPending && (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                )}
+                Mark all as read
+              </Button>
+            )}
+          </div>
+        </SheetHeader>
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications?.length === 0 ? (
+            <div className="flex h-32 flex-col items-center justify-center text-center">
+              <Bell className="mb-2 h-8 w-8 text-white/10" />
+              <p className="text-sm text-muted-foreground">No notifications</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 py-4">
+              {notifications?.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={cn(
+                    'relative flex cursor-pointer gap-4 rounded-xl border p-4 transition-colors hover:bg-white/5',
+                    notification.isRead
+                      ? 'border-transparent bg-transparent'
+                      : 'border-white/10 bg-white/[0.02]',
+                  )}
+                >
+                  <div className="mt-1">
+                    {notification.type === 'info' && (
+                      <Info className="h-5 w-5 text-blue-500" />
+                    )}
+                    {notification.type === 'warning' && (
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    )}
+                    {notification.type === 'action' && (
+                      <PlayCircle className="h-5 w-5 text-emerald-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p
+                      className={cn(
+                        'text-sm font-medium',
+                        notification.isRead ? 'text-muted-foreground' : 'text-white',
+                      )}
+                    >
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-white/40">
+                      {formatDistanceToNow(new Date(notification.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                  {!notification.isRead && (
+                    <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-500" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}

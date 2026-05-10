@@ -4,16 +4,32 @@ import { Bell, User } from 'lucide-react';
 import { requireAuth } from '@/lib/auth/validate';
 import { BottomDock } from '@/components/layout/nav-orbit';
 import { CommandBar } from '@/components/layout/command-bar';
+import { NotificationBell } from '@/components/layout/notification-bell';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { RouteTransition } from '@/components/shared/route-transition';
+import { UserNav } from '@/components/layout/user-nav';
+import { db } from '@/lib/db';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireAuth();
+  const session = await requireAuth();
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.userId),
+    columns: {
+      name: true,
+      role: true,
+    },
+  });
+
+  const userName = user?.name || 'User';
+  const userRole = user?.role || 'user';
 
   return (
     <div className="bg-background relative min-h-screen">
@@ -40,20 +56,11 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative h-10 w-10 rounded-full"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="bg-solar absolute top-2.5 right-2.5 h-2 w-2 rounded-full" />
-            </Button>
+            <NotificationBell />
 
             <ThemeToggle />
 
-            <div className="bg-muted flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-white/10">
-              <User className="h-6 w-6" />
-            </div>
+            <UserNav userName={userName} userRole={userRole} />
           </div>
         </div>
       </header>
@@ -64,7 +71,7 @@ export default async function DashboardLayout({
       </main>
 
       {/* Bottom Dock */}
-      <BottomDock />
+      <BottomDock userRole={session.role} />
     </div>
   );
 }

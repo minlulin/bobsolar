@@ -52,9 +52,9 @@ export const QUOTATION_STATUS_TRANSITIONS: Record<
 > = {
   draft: ['sent', 'draft'],
   sent: ['accepted', 'rejected', 'expired'],
-  accepted: [],
+  accepted: ['draft', 'rejected'],
   rejected: ['draft'],
-  expired: [],
+  expired: ['draft'],
 };
 
 export type QuotationStatus =

@@ -27,6 +27,9 @@ import {
 import { cn } from '@/lib/utils';
 import { formatMMK } from '@/lib/pricing/engine';
 import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
+import { toast } from 'sonner';
+import { deleteQuotation } from '@/actions/quotation-actions';
 
 interface QuotationCardProps {
   quotation: QuotationWithCustomer;
@@ -62,8 +65,23 @@ const statusConfig = {
 
 export function QuotationCard({ quotation }: QuotationCardProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const config = statusConfig[quotation.status as keyof typeof statusConfig];
   const Icon = config.icon;
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this draft?')) {
+      startTransition(async () => {
+        const result = await deleteQuotation(quotation.id);
+        if (result.success) {
+          toast.success('Draft deleted successfully');
+        } else {
+          toast.error(result.error || 'Failed to delete draft');
+        }
+      });
+    }
+  };
 
   return (
     <motion.div
@@ -111,15 +129,24 @@ export function QuotationCard({ quotation }: QuotationCardProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
-                  onClick={() => router.push(`/quotations/${quotation.id}`)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/quotations/${quotation.id}`);
+                  }}
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Draft
-                </DropdownMenuItem>
+                {quotation.status === 'draft' && (
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={handleDelete}
+                    disabled={isPending}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isPending ? 'Deleting...' : 'Delete Draft'}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -141,7 +168,7 @@ export function QuotationCard({ quotation }: QuotationCardProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <User className="h-3 w-3" />
-                Sales Team
+                {quotation.createdBy?.name || 'Sales Team'}
               </div>
             </div>
           </div>

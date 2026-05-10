@@ -26,6 +26,7 @@ import {
   useDeleteInventoryItem,
 } from '@/hooks/use-inventory';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface InventoryCardProps {
   item: InventoryItem;
@@ -61,15 +62,29 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
   };
 
   const handlePriceSave = () => {
-    if (price !== item.unitPrice.toString()) {
-      updateItem({ id: item.id, data: { unitPrice: parseFloat(price) } });
+    const val = parseFloat(price);
+    if (isNaN(val) || val < 0) {
+      toast.error('Invalid unit price');
+      setPrice(item.unitPrice.toString());
+      setIsEditingPrice(false);
+      return;
+    }
+    if (val !== Number(item.unitPrice)) {
+      updateItem({ id: item.id, data: { unitPrice: val } });
     }
     setIsEditingPrice(false);
   };
 
   const handleStockSave = () => {
-    if (stock !== item.stockQty.toString()) {
-      updateItem({ id: item.id, data: { stockQty: parseInt(stock) } });
+    const val = parseInt(stock);
+    if (isNaN(val) || val < 0) {
+      toast.error('Invalid stock quantity');
+      setStock(item.stockQty.toString());
+      setIsEditingStock(false);
+      return;
+    }
+    if (val !== item.stockQty) {
+      updateItem({ id: item.id, data: { stockQty: val } });
     }
     setIsEditingStock(false);
   };

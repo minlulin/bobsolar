@@ -7,6 +7,19 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host) {
+      try {
+        const originHost = new URL(origin).host;
+        if (originHost !== host) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+      } catch {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const sessionToken = request.cookies.get('session_id')?.value;
     if (!sessionToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,10 +32,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const entry = formData.get('file');
-    const folder = String(formData.get('folder') || 'uploads').replace(
-      /^\/+/,
-      '',
-    );
+    const folderRaw = String(formData.get('folder') || 'uploads');
+    const folder = folderRaw.replace(/[^a-zA-Z0-9_/-]/g, '').replace(/^\/+|\/+$/g, '') || 'uploads';
 
     if (!(entry instanceof Blob)) {
       return NextResponse.json(

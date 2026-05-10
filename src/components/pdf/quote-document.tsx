@@ -1,56 +1,61 @@
-'use client';
-
 import { Document, Page, Text, View, Font, Image } from '@react-pdf/renderer';
 import { formatMMK } from '@/lib/pricing/engine';
 import { pdfStyles } from './pdf-styles';
 import { format } from 'date-fns';
 import type { Quotation, QuotationItem, Customer } from '@/lib/db/schema';
+import path from 'path';
 
-// Register Inter font (using default system fonts as fallback)
-// Note: For production, you'd register actual font files
+// Register Inter font using local bundled fonts
 Font.register({
   family: 'Inter',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2',
+      src: path.join(process.cwd(), 'public/fonts/inter-regular.woff2'),
       fontWeight: 400,
     },
     {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYAZ9hiJ-Ek-_EeA.woff2',
+      src: path.join(process.cwd(), 'public/fonts/inter-semibold.woff2'),
       fontWeight: 600,
     },
     {
-      src: 'https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiJ-Ek-_EeA.woff2',
+      src: path.join(process.cwd(), 'public/fonts/inter-bold.woff2'),
       fontWeight: 700,
     },
   ],
 });
 
-// Company info (could be fetched from settings in production)
-const COMPANY_INFO = {
+// Default fallback info
+const FALLBACK_COMPANY_INFO = {
   name: 'BOB Solar',
   tagline: 'Powering Tomorrow with Solar Energy',
   address: '123 Solar Street, Yangon, Myanmar',
   phone: '+95 9 123 456 789',
   email: 'info@bobsolar.com',
   taxId: 'TIN-2026-XXXXX',
-};
-
-const BANK_DETAILS = `
+  bankDetails: `
 KBZ Bank | A/C: 123-456-789-0 | Name: BOB Solar Co., Ltd.
 AYA Bank | A/C: 987-654-321-0 | Name: BOB Solar Co., Ltd.
-`;
+`,
+};
 
 interface QuoteDocumentProps {
   quotation: Quotation & { items: QuotationItem[]; customer: Customer };
   companyLogoUrl?: string | null;
+  companySettings?: Record<string, string>;
 }
 
 export function QuoteDocument({
   quotation,
   companyLogoUrl,
+  companySettings = {},
 }: QuoteDocumentProps) {
   const { customer, items } = quotation;
+
+  const companyName = companySettings['company_name'] || FALLBACK_COMPANY_INFO.name;
+  const companyAddress = companySettings['company_address'] || FALLBACK_COMPANY_INFO.address;
+  const companyPhone = companySettings['company_phone'] || FALLBACK_COMPANY_INFO.phone;
+  const companyEmail = companySettings['company_email'] || FALLBACK_COMPANY_INFO.email;
+  const companyTaxId = companySettings['company_tax_id'] || FALLBACK_COMPANY_INFO.taxId;
 
   return (
     <Document>
@@ -64,14 +69,14 @@ export function QuoteDocument({
                 <Image src={companyLogoUrl} style={pdfStyles.companyLogo} />
               </>
             ) : null}
-            <Text style={pdfStyles.companyName}>{COMPANY_INFO.name}</Text>
-            <Text style={pdfStyles.companyTagline}>{COMPANY_INFO.tagline}</Text>
+            <Text style={pdfStyles.companyName}>{companyName}</Text>
+            <Text style={pdfStyles.companyTagline}>{FALLBACK_COMPANY_INFO.tagline}</Text>
             <Text style={pdfStyles.companyDetails}>
-              {COMPANY_INFO.address}
+              {companyAddress}
               {'\n'}
-              Phone: {COMPANY_INFO.phone} | Email: {COMPANY_INFO.email}
+              Phone: {companyPhone} | Email: {companyEmail}
               {'\n'}
-              Tax ID: {COMPANY_INFO.taxId}
+              Tax ID: {companyTaxId}
             </Text>
           </View>
 
@@ -220,9 +225,11 @@ export function QuoteDocument({
             All prices are in Myanmar Kyat (MMK). Payment due within 30 days of
             invoice date.
           </Text>
-          <Text style={pdfStyles.bankDetails}>{BANK_DETAILS}</Text>
+          <Text style={pdfStyles.bankDetails}>
+            {companySettings['company_bank_details'] || FALLBACK_COMPANY_INFO.bankDetails}
+          </Text>
           <Text style={pdfStyles.thankYou}>
-            Thank you for choosing BOB Solar
+            Thank you for choosing {companyName}
           </Text>
         </View>
       </Page>

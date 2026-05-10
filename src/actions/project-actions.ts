@@ -94,7 +94,7 @@ async function nextProjectSequence(year: number): Promise<number> {
     .select({ projectNumber: projects.projectNumber })
     .from(projects)
     .where(ilike(projects.projectNumber, `${prefix}%`))
-    .orderBy(desc(projects.projectNumber))
+    .orderBy(desc(projects.createdAt))
     .limit(1);
 
   return extractProjectSequence(existing[0]?.projectNumber) + 1;
@@ -236,35 +236,49 @@ export async function convertQuotationToProject(
         : '0';
 
     const year = new Date().getFullYear();
-    const seq = await nextProjectSequence(year);
-    const projectNumber = formatProjectNumber(seq, year);
+    let retries = 3;
+    
+    while (retries > 0) {
+      try {
+        const seq = await nextProjectSequence(year);
+        const projectNumber = formatProjectNumber(seq, year);
 
-    const [created] = await db
-      .insert(projects)
-      .values({
-        projectNumber,
-        quotationId: quotation.id,
-        customerId: quotation.customerId,
-        status: 'planning',
-        siteAddress,
-        systemSizeKwp: systemKwp,
-        quotedTotal: quotation.total,
-        actualTotal: '0',
-        startDate: data.startDate ?? null,
-        targetCompletion: data.targetCompletion ?? null,
-        notes: data.notes ?? null,
-      })
-      .returning();
+        const [created] = await db
+          .insert(projects)
+          .values({
+            projectNumber,
+            quotationId: quotation.id,
+            customerId: quotation.customerId,
+            status: 'planning',
+            siteAddress,
+            systemSizeKwp: systemKwp,
+            quotedTotal: quotation.total,
+            actualTotal: '0',
+            startDate: data.startDate ?? null,
+            targetCompletion: data.targetCompletion ?? null,
+            notes: data.notes ?? null,
+          })
+          .returning();
 
-    if (!created) {
-      return handleStateError('Failed to create project');
+        if (!created) {
+          return handleStateError('Failed to create project');
+        }
+
+        revalidatePath('/projects');
+        revalidatePath(`/quotations/${quotation.id}`);
+        revalidatePath('/quotations');
+
+        return { success: true, data: created };
+      } catch (error: any) {
+        if (error.code === '23505' && retries > 1) { // 23505 is unique_violation
+          retries--;
+          continue;
+        }
+        throw error;
+      }
     }
-
-    revalidatePath('/projects');
-    revalidatePath(`/quotations/${quotation.id}`);
-    revalidatePath('/quotations');
-
-    return { success: true, data: created };
+    
+    return handleStateError('Failed to generate unique project number after retries.');
   } catch (error) {
     return handleActionError(
       error,
