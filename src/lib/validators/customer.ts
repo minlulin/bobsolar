@@ -3,7 +3,6 @@ import { z } from 'zod';
 export const createCustomerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200, 'Name is too long'),
   email: z
-    .string()
     .email('Invalid email address')
     .optional()
     .nullable()
@@ -18,7 +17,7 @@ export const createCustomerSchema = z.object({
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export const customerFilterSchema = z.object({

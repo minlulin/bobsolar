@@ -247,7 +247,7 @@ export default function DashboardPage() {
                 No upcoming alerts.
               </p>
             )}
-            {alerts.map((alert) => (
+{alerts.map((alert: { id: string; projectNumber: string; description: string; dueDate: string | Date; isOverdue: boolean }) => (
               <motion.div
                 key={alert.id}
                 whileHover={{ y: -2, scale: 1.01 }}

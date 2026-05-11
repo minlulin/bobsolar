@@ -5,10 +5,10 @@ import { z } from 'zod';
  */
 
 /** UUID string schema */
-export const uuidSchema = z.string().uuid('Invalid ID format');
+export const uuidSchema = z.uuid('Invalid ID format');
 
 /** Email string schema */
-export const emailSchema = z.string().email('Invalid email address');
+export const emailSchema = z.email('Invalid email address');
 
 /** Phone string schema */
 export const phoneSchema = z

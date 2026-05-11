@@ -1,24 +1,55 @@
 {
   "compilerOptions": {
+    // ── Language & Environment ──────────────────────────────────────────
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // ── Emit ────────────────────────────────────────────────────────────
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "removeComments": false,
+    "importHelpers": true,
+
+    // ── Interop Constraints ─────────────────────────────────────────────
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+
+    // ── Strict Flags — ALL ENABLED ──────────────────────────────────────
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+
+    // ── Additional Safety Checks ────────────────────────────────────────
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
+
+    // ── Completeness ────────────────────────────────────────────────────
+    // PRAGMATIC STRICTNESS: third-party libs have unfixable errors
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+
+    // ── JSX & Framework ─────────────────────────────────────────────────
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

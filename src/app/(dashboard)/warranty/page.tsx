@@ -96,7 +96,7 @@ export default function WarrantyPage() {
             className={`rounded-full text-[11px] font-bold uppercase ${
               tab === t.id ? 'shadow-glow-solar border-transparent' : ''
             }`}
-            onClick={() => setTab(t.id)}
+            onClick={() => { setTab(t.id); }}
           >
             {t.label}
           </Button>
@@ -154,7 +154,7 @@ export default function WarrantyPage() {
                       variant="outline"
                       className="rounded-full text-[11px]"
                       disabled={resolveMutation.isPending}
-                      onClick={() => resolveMutation.mutate(a.id)}
+                      onClick={() => { resolveMutation.mutate(a.id); }}
                     >
                       Resolve
                     </Button>
@@ -164,7 +164,7 @@ export default function WarrantyPage() {
                       variant="outline"
                       className="rounded-full text-[11px]"
                       disabled={reopenMutation.isPending}
-                      onClick={() => reopenMutation.mutate(a.id)}
+                      onClick={() => { reopenMutation.mutate(a.id); }}
                     >
                       Reopen
                     </Button>

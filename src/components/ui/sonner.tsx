@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAppTheme } from '@/components/providers';
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ ...props }: ToasterProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   return (

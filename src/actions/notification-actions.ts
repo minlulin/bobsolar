@@ -27,7 +27,7 @@ const notificationFilterSchema = z.object({
 });
 
 const createNotificationSchema = z.object({
-  userIds: z.array(z.string().uuid()).min(1),
+  userIds: z.array(z.uuid()).min(1),
   title: z.string().min(1),
   message: z.string().min(1),
   type: z.enum(['info', 'warning', 'action']),
@@ -158,7 +158,7 @@ export async function createNotification(
         const existing = await db.query.notifications.findFirst({
           where: and(
             eq(notifications.userId, userId),
-            eq(notifications.notificationDedupeKey, data.dedupeKey!),
+            eq(notifications.notificationDedupeKey, data.dedupeKey),
           ),
         });
 

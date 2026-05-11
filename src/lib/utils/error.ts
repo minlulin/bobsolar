@@ -76,7 +76,7 @@ export function logError(
   context: string,
   error: unknown,
   extra?: Record<string, unknown>,
-) {
+): void {
   const timestamp = new Date().toISOString();
   const errorInfo = {
     timestamp,

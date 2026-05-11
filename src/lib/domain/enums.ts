@@ -72,7 +72,7 @@ export function canTransitionQuotationStatus(
   newStatus: QuotationStatus,
 ): boolean {
   const allowed = QUOTATION_STATUS_TRANSITIONS[currentStatus];
-  return allowed?.includes(newStatus) ?? false;
+  return allowed.includes(newStatus);
 }
 
 // =============================================================================
@@ -115,12 +115,12 @@ export function canTransitionProjectStatus(
   to: ProjectStatus,
 ): boolean {
   if (from === to) return true;
-  return PROJECT_STATUS_TRANSITIONS[from]?.includes(to) ?? false;
+  return PROJECT_STATUS_TRANSITIONS[from].includes(to);
 }
 
 /** Get list of permitted next statuses from current status */
 export function permittedNextStatuses(from: ProjectStatus): ProjectStatus[] {
-  return [...(PROJECT_STATUS_TRANSITIONS[from] ?? [])];
+  return [...PROJECT_STATUS_TRANSITIONS[from]];
 }
 
 // =============================================================================

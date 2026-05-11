@@ -3,7 +3,7 @@
  * Example: PJ-2026-0001
  */
 export function formatProjectNumber(sequence: number, year?: number): string {
-  const y = year ?? new Date().getFullYear();
+  const y = String(year ?? new Date().getFullYear());
   return `PJ-${y}-${sequence.toString().padStart(4, '0')}`;
 }
 

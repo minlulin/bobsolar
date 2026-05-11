@@ -65,5 +65,5 @@ export const COMPANY_SETTING_DEFAULTS: Record<CompanySettingKey, string> = {
 
 /** Get default value for a company setting key */
 export function getCompanySettingDefault(key: CompanySettingKey): string {
-  return COMPANY_SETTING_DEFAULTS[key] ?? '';
+  return COMPANY_SETTING_DEFAULTS[key];
 }

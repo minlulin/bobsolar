@@ -8,7 +8,7 @@ neonConfig.webSocketConstructor = ws;
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
-export function getDb() {
+export function getDb(): ReturnType<typeof drizzle<typeof schema>> {
   if (!_db) {
     if (!process.env['DATABASE_URL']) {
       throw new Error('DATABASE_URL is not set');
@@ -21,7 +21,7 @@ export function getDb() {
 
 // Backward compatibility: db proxy delegates to getDb()
 export const db = new Proxy({} as ReturnType<typeof getDb>, {
-  get(_target, prop) {
+  get(_target, prop: string | symbol): unknown {
     return getDb()[prop as keyof ReturnType<typeof getDb>];
   },
 });

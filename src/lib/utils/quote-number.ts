@@ -4,7 +4,7 @@
  * Example: QT-2026-0001
  */
 export function formatQuoteNumber(sequence: number, year?: number): string {
-  const currentYear = year || new Date().getFullYear();
+  const currentYear = String(year || new Date().getFullYear());
   const formattedSequence = sequence.toString().padStart(4, '0');
   return `QT-${currentYear}-${formattedSequence}`;
 }

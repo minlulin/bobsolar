@@ -53,10 +53,10 @@ export function PreferencesTab() {
         <Select
           value={prefs.theme}
           onValueChange={(value) =>
-            setPrefs((p) => ({
+            { setPrefs((p) => ({
               ...p,
               theme: value as 'light' | 'dark' | 'system',
-            }))
+            })); }
           }
         >
           <SelectTrigger className="w-full">
@@ -74,7 +74,7 @@ export function PreferencesTab() {
         <Input
           value={prefs.defaultTaxPercent}
           onChange={(e) =>
-            setPrefs((p) => ({ ...p, defaultTaxPercent: e.target.value }))
+            { setPrefs((p) => ({ ...p, defaultTaxPercent: e.target.value })); }
           }
         />
       </div>
@@ -83,7 +83,7 @@ export function PreferencesTab() {
         <Input
           value={prefs.defaultWarrantyMonths}
           onChange={(e) =>
-            setPrefs((p) => ({ ...p, defaultWarrantyMonths: e.target.value }))
+            { setPrefs((p) => ({ ...p, defaultWarrantyMonths: e.target.value })); }
           }
         />
       </div>

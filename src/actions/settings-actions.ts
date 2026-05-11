@@ -16,18 +16,18 @@ import { USER_CAP } from '@/lib/domain/policies';
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
 const setLogoSchema = z.object({
-  url: z.string().url(),
+  url: z.url(),
 });
 
 const updateUserSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 const createUserSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(8),
 });
 

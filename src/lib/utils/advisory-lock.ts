@@ -31,7 +31,7 @@ export class AdvisoryLock {
     const result = await this.db.execute(
       sql`SELECT pg_try_advisory_lock(${this.key}::int8) AS "locked"`,
     );
-    const row = result.rows?.[0] as { locked?: unknown } | undefined;
+    const row = result.rows[0] as { locked?: unknown } | undefined;
     this.acquired = row?.locked === true;
     return this.acquired;
   }

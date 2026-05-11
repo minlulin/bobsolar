@@ -47,20 +47,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const companyLogoUrl = await getCompanyLogoUrl();
     const settingsRows = await db.query.companySettings.findMany();
-    const companySettings = settingsRows.reduce(
+    const companySettings = settingsRows.reduce<Record<string, string>>(
       (acc, row) => {
         acc[row.key] = row.value;
         return acc;
       },
-      {} as Record<string, string>,
+      {},
     );
 
     // Render PDF
     const pdfStream = await renderToStream(
       QuoteDocument({
-        quotation: quotation as Parameters<
-          typeof QuoteDocument
-        >[0]['quotation'],
+        quotation: quotation,
         companyLogoUrl,
         companySettings,
       }),

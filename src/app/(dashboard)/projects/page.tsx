@@ -78,7 +78,7 @@ export default function ActiveProjectsPage() {
               layout
               whileTap={{ scale: 0.98 }}
               type="button"
-              onClick={() => setFilter(pill.id)}
+              onClick={() => { setFilter(pill.id); }}
               className={`relative rounded-full border px-6 py-2 text-[11px] font-semibold whitespace-nowrap uppercase transition ${
                 glow
                   ? 'border-transparent bg-gradient-to-r from-orange-600/95 to-rose-900/95 text-white shadow-[0_0_24px_-6px_rgb(251,146,60)]'

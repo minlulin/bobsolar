@@ -30,7 +30,7 @@ export default function RootError({
       </p>
       <div className="flex gap-3">
         <Button
-          onClick={() => reset()}
+          onClick={() => { reset(); }}
           className="bg-white font-medium text-black hover:bg-white/90"
         >
           Try Again

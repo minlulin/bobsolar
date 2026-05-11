@@ -20,7 +20,7 @@ if (process.env['NODE_ENV'] === 'production' && !ALLOW_PROD_SEED) {
   );
 }
 
-async function seed() {
+async function seed(): Promise<void> {
   console.log('🌱 Seeding database...');
 
   if (!process.env['DATABASE_URL']?.trim()) {
@@ -89,7 +89,7 @@ async function seed() {
   process.exit(0);
 }
 
-seed().catch((err) => {
+seed().catch((err: unknown) => {
   console.error('❌ Seeding failed:', err);
   process.exit(1);
 });

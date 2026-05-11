@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const file = entry as File;
+    const file = entry;
     const type = file.type;
 
     if (!ALLOWED_TYPES.includes(type)) {

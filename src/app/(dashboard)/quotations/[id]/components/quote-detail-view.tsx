@@ -80,7 +80,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
     handleStatusChange('draft');
   };
 
-  const status = quotation.status as keyof typeof STATUS_CONFIG;
+  const status = quotation.status;
   const config = STATUS_CONFIG[status];
   const StatusIcon = config.icon;
 
@@ -98,7 +98,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
             variant="ghost"
             size="icon"
             aria-label="Back to quotations"
-            onClick={() => router.push('/quotations')}
+            onClick={() => { router.push('/quotations'); }}
             className="rounded-full hover:bg-white/5"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -173,7 +173,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
               <Button
                 className="bg-gradient-to-r from-amber-500 to-orange-600 font-bold text-white"
                 onClick={() =>
-                  router.push(`/projects/new?quoteId=${quotation.id}`)
+                  { router.push(`/projects/new?quoteId=${quotation.id}`); }
                 }
               >
                 <ExternalLink className="mr-2 h-4 w-4" />

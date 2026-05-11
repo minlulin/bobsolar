@@ -12,9 +12,16 @@ type NotificationStore = {
 export const useNotificationStore = create<NotificationStore>((set) => ({
   unreadCount: 0,
   isOpen: false,
-  setUnreadCount: (count) => set({ unreadCount: Math.max(0, count) }),
-  togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
-  decrementUnread: () =>
-    set((s) => ({ unreadCount: Math.max(0, s.unreadCount - 1) })),
-  setOpen: (isOpen) => set({ isOpen }),
+  setUnreadCount: (count: number): void => {
+    set({ unreadCount: Math.max(0, count) });
+  },
+  togglePanel: (): void => {
+    set((s) => ({ isOpen: !s.isOpen }));
+  },
+  decrementUnread: (): void => {
+    set((s) => ({ unreadCount: Math.max(0, s.unreadCount - 1) }));
+  },
+  setOpen: (isOpen: boolean): void => {
+    set({ isOpen });
+  },
 }));

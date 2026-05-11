@@ -55,7 +55,7 @@ export function CustomerSelector() {
         </label>
         <button
           type="button"
-          onClick={() => setDialogOpen(true)}
+          onClick={() => { setDialogOpen(true); }}
           className="text-xs font-medium text-amber-300 hover:text-amber-200"
         >
           + Add new customer

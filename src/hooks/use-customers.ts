@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import {
   getCustomers,
   getCustomer,
@@ -13,7 +13,7 @@ import {
 } from '@/lib/validators/customer';
 import { toast } from 'sonner';
 
-export function useCustomers(filters: CustomerFilter = {}) {
+export function useCustomers(filters: CustomerFilter = {}): UseQueryResult<Awaited<ReturnType<typeof getCustomers>>> {
   return useQuery({
     queryKey: ['customers', filters],
     queryFn: () => getCustomers(filters),
@@ -21,7 +21,7 @@ export function useCustomers(filters: CustomerFilter = {}) {
   });
 }
 
-export function useCustomer(id: string) {
+export function useCustomer(id: string): UseQueryResult<Awaited<ReturnType<typeof getCustomer>>> {
   return useQuery({
     queryKey: ['customers', id],
     queryFn: () => getCustomer(id),
@@ -30,14 +30,16 @@ export function useCustomer(id: string) {
   });
 }
 
-export function useCreateCustomer() {
+export function useCreateCustomer(): UseMutationResult<
+  Awaited<ReturnType<typeof createCustomer>>
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createCustomer,
     onSuccess: (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        void queryClient.invalidateQueries({ queryKey: ['customers'] });
         toast.success('Customer added successfully');
       } else {
         toast.error(response.error);
@@ -49,7 +51,11 @@ export function useCreateCustomer() {
   });
 }
 
-export function useUpdateCustomer() {
+export function useUpdateCustomer(): UseMutationResult<
+  Awaited<ReturnType<typeof updateCustomer>>,
+  Error,
+  { id: string; data: Partial<CreateCustomer> }
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -57,7 +63,7 @@ export function useUpdateCustomer() {
       updateCustomer(id, data),
     onSuccess: (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        void queryClient.invalidateQueries({ queryKey: ['customers'] });
         toast.success('Customer updated successfully');
       } else {
         toast.error(response.error);
@@ -69,14 +75,18 @@ export function useUpdateCustomer() {
   });
 }
 
-export function useDeleteCustomer() {
+export function useDeleteCustomer(): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCustomer>>,
+  Error,
+  Parameters<typeof deleteCustomer>[0]
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteCustomer,
     onSuccess: (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        void queryClient.invalidateQueries({ queryKey: ['customers'] });
         toast.success('Customer deleted successfully');
       } else {
         toast.error(response.error);
@@ -88,7 +98,7 @@ export function useDeleteCustomer() {
   });
 }
 
-export function useSearchCustomers(query: string) {
+export function useSearchCustomers(query: string): UseQueryResult<Awaited<ReturnType<typeof searchCustomers>>> {
   return useQuery({
     queryKey: ['customers', 'search', query],
     queryFn: () => searchCustomers(query),

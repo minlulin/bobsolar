@@ -19,7 +19,7 @@ export const createInventoryItemSchema = z.object({
 export const updateInventoryItemSchema = createInventoryItemSchema
   .partial()
   .extend({
-    id: z.string().uuid(),
+    id: z.uuid(),
   });
 
 export const inventoryFilterSchema = z.object({

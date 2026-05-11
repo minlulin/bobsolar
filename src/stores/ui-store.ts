@@ -14,12 +14,17 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       theme: 'dark',
-      toggleTheme: () =>
-        set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+      toggleTheme: (): void => {
+        set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' }));
+      },
       sidebarOpen: false,
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setSidebarOpen: (open: boolean): void => {
+        set({ sidebarOpen: open });
+      },
       commandBarOpen: false,
-      setCommandBarOpen: (open) => set({ commandBarOpen: open }),
+      setCommandBarOpen: (open: boolean): void => {
+        set({ commandBarOpen: open });
+      },
     }),
     {
       name: 'bob-solar-ui',

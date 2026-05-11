@@ -90,7 +90,7 @@ export async function getQuotations(
 
     return {
       success: true,
-      data: { items: items as QuotationWithCustomer[], total },
+      data: { items: items, total },
     };
   } catch (error) {
     return handleActionError(
@@ -146,11 +146,7 @@ export async function getQuotation(id: string): Promise<
 
     return {
       success: true,
-      data: item as Quotation & {
-        items: QuotationItem[];
-        customer: Customer;
-        project: { id: string; projectNumber: string } | null;
-      },
+      data: item,
     };
   } catch (error) {
     return handleActionError(
@@ -306,7 +302,7 @@ export async function updateQuotationStatus(
       );
     }
 
-    if (!canTransitionStatus(quote.status as QuotationStatus, status)) {
+    if (!canTransitionStatus(quote.status, status)) {
       return handleStateError(
         `Cannot change status from "${quote.status}" to "${status}"`,
       );

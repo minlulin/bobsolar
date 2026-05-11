@@ -26,6 +26,7 @@ export default function InventoryPage() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   const { data: response, isLoading } = useInventoryItems({
+
     search,
     category: category as DBInventoryItem['category'],
     limit: 50,
@@ -70,7 +71,7 @@ export default function InventoryPage() {
             placeholder="Search items, brands, models..."
             className="glass pl-10"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); }}
           />
         </div>
 
@@ -78,7 +79,7 @@ export default function InventoryPage() {
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setCategory(cat === 'all' ? null : cat)}
+              onClick={() => { setCategory(cat === 'all' ? null : cat); }}
               className={cn(
                 'rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all',
                 category === cat || (cat === 'all' && category === null)
@@ -99,14 +100,15 @@ export default function InventoryPage() {
             Scanning inventory...
           </p>
         </div>
-      ) : response?.success && response.data.items.length > 0 ? (
+      ) : (response?.items?.length ?? 0) > 0 ? (
+
         <motion.div
           variants={staggerContainer}
           initial="initial"
           animate="animate"
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
-          {response.data.items.map((item) => (
+{((response?.items ?? []) as unknown as DBInventoryItem[]).map((item) => (
             <InventoryCard
               key={item.id}
               item={item}

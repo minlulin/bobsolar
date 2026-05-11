@@ -80,7 +80,7 @@ export function CustomerCard({ customer, onEdit }: CustomerCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onEdit(customer)}>
+                <DropdownMenuItem onClick={() => { onEdit(customer); }}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Details
                 </DropdownMenuItem>

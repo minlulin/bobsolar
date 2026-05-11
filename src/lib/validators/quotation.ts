@@ -13,7 +13,7 @@ export {
 };
 
 export const quotationItemSchema = z.object({
-  itemId: z.string().uuid().optional().nullable(),
+  itemId: z.uuid().optional().nullable(),
   description: z.string().min(1, 'Description is required'),
   quantity: z
     .number()
@@ -25,7 +25,7 @@ export const quotationItemSchema = z.object({
 });
 
 export const createQuotationSchema = z.object({
-  customerId: z.string().uuid('Customer is required'),
+  customerId: z.uuid('Customer is required'),
   items: z.array(quotationItemSchema).min(1, 'At least one item is required'),
   discountPercent: z.number().min(0).max(100).default(0),
   taxPercent: z.number().min(0).max(100).default(5),
@@ -39,13 +39,13 @@ export const createQuotationSchema = z.object({
 export type CreateQuotation = z.input<typeof createQuotationSchema>;
 
 export const updateQuotationStatusSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: quotationStatusSchema,
 });
 
 export const quotationFilterSchema = z.object({
   status: quotationStatusSchema.optional().nullable(),
-  customerId: z.string().uuid().optional().nullable(),
+  customerId: z.uuid().optional().nullable(),
   search: z.string().optional().nullable(),
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(100).default(20),
@@ -56,7 +56,7 @@ export type QuotationFilterInput = z.input<typeof quotationFilterSchema>;
 export type QuotationItemInput = z.infer<typeof quotationItemSchema>;
 
 export const updateQuotationSchema = createQuotationSchema.partial().extend({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export type UpdateQuotation = z.input<typeof updateQuotationSchema>;

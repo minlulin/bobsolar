@@ -105,7 +105,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
     setIsEditingStock(false);
   };
 
-  const handleDelete = () => deleteItem(item.id);
+  const handleDelete = () => { deleteItem(item.id); };
 
   return (
     <motion.div
@@ -125,7 +125,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                 variant="ghost"
                 aria-label={`Edit ${item.name}`}
                 className="h-8 w-8"
-                onClick={() => onEdit(item)}
+                onClick={() => { onEdit(item); }}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -185,7 +185,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                       autoFocus
                       className="h-8 w-32 text-right font-mono"
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      onChange={(e) => { setPrice(e.target.value); }}
                       onBlur={handlePriceSave}
                       onKeyDown={(e) => e.key === 'Enter' && handlePriceSave()}
                     />
@@ -217,7 +217,7 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                       type="number"
                       className="h-8 w-20 text-right font-mono"
                       value={stock}
-                      onChange={(e) => setStock(e.target.value)}
+                      onChange={(e) => { setStock(e.target.value); }}
                       onBlur={handleStockSave}
                       onKeyDown={(e) => e.key === 'Enter' && handleStockSave()}
                     />

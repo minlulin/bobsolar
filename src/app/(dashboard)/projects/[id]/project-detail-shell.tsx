@@ -102,7 +102,7 @@ function aggregateCosts(project: ProjectDetail) {
   };
 
   project.costs.forEach((cost) => {
-    const costType = cost.costType as CostType;
+    const costType = cost.costType;
     const slot = buckets[costType];
     buckets[costType] = slot + Number(cost.amount);
   });
@@ -319,7 +319,7 @@ export function ProjectDetailShell({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push('/projects')}
+            onClick={() => { router.push('/projects'); }}
             className="rounded-full"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
@@ -403,7 +403,7 @@ export function ProjectDetailShell({
               proj.status === 'cancelled' ||
               markCompleteMutation.isPending
             }
-            onClick={() => markCompleteMutation.mutate(id)}
+            onClick={() => { markCompleteMutation.mutate(id); }}
           >
             {markCompleteMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -499,7 +499,7 @@ export function ProjectDetailShell({
               disabled={!canEditOperational}
               initialNotes={p.notes}
               onPersist={(draft) =>
-                updateProjectMutation.mutate({ id: p.id, notes: draft })
+                { updateProjectMutation.mutate({ id: p.id, notes: draft }); }
               }
             />
           </div>
@@ -518,7 +518,7 @@ export function ProjectDetailShell({
                       costFilter === chip &&
                         'shadow-glow-solar border-transparent',
                     )}
-                    onClick={() => setCostFilter(chip)}
+                    onClick={() => { setCostFilter(chip); }}
                   >
                     {chip}
                   </Button>
@@ -526,7 +526,7 @@ export function ProjectDetailShell({
               </div>
               <Button
                 className="rounded-full"
-                onClick={() => setCostOpen(true)}
+                onClick={() => { setCostOpen(true); }}
               >
                 <Plus className="mr-2 h-4 w-4" /> Add cost
               </Button>
@@ -544,10 +544,10 @@ export function ProjectDetailShell({
                           required
                           value={costForm.description}
                           onChange={(e) =>
-                            setCostForm((s) => ({
+                            { setCostForm((s) => ({
                               ...s,
                               description: e.target.value,
-                            }))
+                            })); }
                           }
                         />
                       </div>
@@ -560,10 +560,10 @@ export function ProjectDetailShell({
                           required
                           value={costForm.amount}
                           onChange={(e) =>
-                            setCostForm((s) => ({
+                            { setCostForm((s) => ({
                               ...s,
                               amount: e.target.value,
-                            }))
+                            })); }
                           }
                         />
                       </div>
@@ -572,10 +572,10 @@ export function ProjectDetailShell({
                         <Select
                           value={costForm.costType}
                           onValueChange={(v: CostType) =>
-                            setCostForm((s) => ({
+                            { setCostForm((s) => ({
                               ...s,
                               costType: v,
-                            }))
+                            })); }
                           }
                         >
                           <SelectTrigger>
@@ -598,10 +598,10 @@ export function ProjectDetailShell({
                           required
                           value={costForm.incurredDate}
                           onChange={(e) =>
-                            setCostForm((s) => ({
+                            { setCostForm((s) => ({
                               ...s,
                               incurredDate: e.target.value,
-                            }))
+                            })); }
                           }
                         />
                       </div>
@@ -686,7 +686,7 @@ export function ProjectDetailShell({
                         variant="ghost"
                         className="text-red-400"
                         aria-label="Delete cost"
-                        onClick={() => deleteCostMutation.mutate(cost.id)}
+                        onClick={() => { deleteCostMutation.mutate(cost.id); }}
                         disabled={deleteCostMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -743,7 +743,7 @@ export function ProjectDetailShell({
                   <Label>Signal cadence</Label>
                   <Select
                     value={remarkType}
-                    onValueChange={(v: RemarkType) => setRemarkType(v)}
+                    onValueChange={(v: RemarkType) => { setRemarkType(v); }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -760,7 +760,7 @@ export function ProjectDetailShell({
                 placeholder="Brief the crew — timelines, snag lists, escalation windows…"
                 className="min-h-[170px]"
                 value={remarkBody}
-                onChange={(e) => setRemarkBody(e.target.value)}
+                onChange={(e) => { setRemarkBody(e.target.value); }}
               />
               <Button
                 disabled={remarkBody.trim().length === 0}
@@ -817,7 +817,7 @@ export function ProjectDetailShell({
                       variant="ghost"
                       size="sm"
                       className="mt-4 text-[11px] text-red-400"
-                      onClick={() => deleteRemarkMutation.mutate(remark.id)}
+                      onClick={() => { deleteRemarkMutation.mutate(remark.id); }}
                     >
                       Remove
                     </Button>
@@ -851,7 +851,7 @@ export function ProjectDetailShell({
                   <Select
                     value={alertForm.alertType}
                     onValueChange={(v: typeof alertForm.alertType) =>
-                      setAlertForm((prev) => ({ ...prev, alertType: v }))
+                      { setAlertForm((prev) => ({ ...prev, alertType: v })); }
                     }
                   >
                     <SelectTrigger>
@@ -874,10 +874,10 @@ export function ProjectDetailShell({
                   <Textarea
                     value={alertForm.description}
                     onChange={(e) =>
-                      setAlertForm((prev) => ({
+                      { setAlertForm((prev) => ({
                         ...prev,
                         description: e.target.value,
-                      }))
+                      })); }
                     }
                   />
 
@@ -886,17 +886,17 @@ export function ProjectDetailShell({
                     type="date"
                     value={alertForm.dueDate}
                     onChange={(e) =>
-                      setAlertForm((prev) => ({
+                      { setAlertForm((prev) => ({
                         ...prev,
                         dueDate: e.target.value,
-                      }))
+                      })); }
                     }
                   />
                 </div>
 
                 <DialogFooter>
                   <Button
-                    onClick={() => submitAlert()}
+                    onClick={() => { submitAlert(); }}
                     disabled={alertMutation.isPending}
                     className="rounded-full uppercase"
                   >
@@ -939,7 +939,7 @@ export function ProjectDetailShell({
                       if (val === 'indeterminate') return;
                       setBusyAlertId(alert.id);
                       try {
-                        await persistAlertToggle(alert.id, val === true);
+                        await persistAlertToggle(alert.id, val);
                       } finally {
                         setBusyAlertId(null);
                       }
@@ -996,14 +996,14 @@ function ProjectOperationalNotes({
       <Textarea
         disabled={disabled}
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => { setDraft(e.target.value); }}
         className="min-h-[170px]"
       />
       <Button
         disabled={disabled}
         variant="outline"
         className="rounded-full"
-        onClick={() => onPersist(draft)}
+        onClick={() => { onPersist(draft); }}
         type="button"
       >
         Save briefing

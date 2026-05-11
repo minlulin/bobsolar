@@ -19,7 +19,7 @@ export {
 };
 
 export const convertToProjectSchema = z.object({
-  quotationId: z.string().uuid(),
+  quotationId: z.uuid(),
   siteAddress: z.string().max(500).optional().nullable(),
   systemSizeKwp: z.number().min(0).max(99999).optional().nullable(),
   startDate: z.coerce.date().optional().nullable(),
@@ -28,7 +28,7 @@ export const convertToProjectSchema = z.object({
 });
 
 export const updateProjectSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   status: projectStatusSchema.optional(),
   siteAddress: z.string().max(500).optional().nullable(),
   systemSizeKwp: z.number().min(0).max(99999).optional().nullable(),
@@ -37,8 +37,8 @@ export const updateProjectSchema = z.object({
 });
 
 export const addProjectCostSchema = z.object({
-  projectId: z.string().uuid(),
-  itemId: z.string().uuid().optional().nullable(),
+  projectId: z.uuid(),
+  itemId: z.uuid().optional().nullable(),
   description: z.string().min(1).max(500),
   amount: z.number().int().min(0),
   costType: costTypeSchema,
@@ -46,13 +46,13 @@ export const addProjectCostSchema = z.object({
 });
 
 export const addProjectRemarkSchema = z.object({
-  projectId: z.string().uuid(),
+  projectId: z.uuid(),
   content: z.string().min(1).max(8000),
   remarkType: remarkTypeSchema,
 });
 
 export const createWarrantyAlertSchema = z.object({
-  projectId: z.string().uuid(),
+  projectId: z.uuid(),
   alertType: alertTypeSchema,
   description: z.string().min(1).max(2000),
   dueDate: z.coerce.date(),

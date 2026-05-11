@@ -25,7 +25,7 @@ export async function getInventoryItems(
     const offset = (page - 1) * limit;
 
     const where = and(
-      isActive !== null ? eq(inventoryItems.isActive, isActive!) : undefined,
+      isActive !== null ? eq(inventoryItems.isActive, isActive) : undefined,
       category ? eq(inventoryItems.category, category) : undefined,
       search
         ? or(
@@ -175,7 +175,7 @@ export async function deleteInventoryItem(
 
 const bulkUpdateSchema = z.array(
   z.object({
-    id: z.string().uuid(),
+    id: z.uuid(),
     unitPrice: z.number().min(0, 'Unit price must be positive'),
   }),
 );
