@@ -58,8 +58,13 @@ export default function LoginPage() {
       } else {
         router.push('/');
       }
-    } catch {
-      toast.error('An unexpected error occurred');
+    } catch (err) {
+      console.error('[login]', err);
+      const message =
+        process.env.NODE_ENV === 'development' && err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

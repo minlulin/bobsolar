@@ -4,8 +4,19 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, Save, Send, Loader2 } from 'lucide-react';
+import { ChevronLeft, Save, Send, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { CustomerSelector } from './customer-selector';
 import { InventorySearch } from './inventory-search';
 import { QuoteItems } from './quote-items';
@@ -14,6 +25,7 @@ import { QuotePreview } from './quote-preview';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 import {
   createQuotation,
+  deleteQuotation,
   updateQuotation,
   updateQuotationStatus,
 } from '@/actions/quotation-actions';
@@ -101,6 +113,21 @@ export function QuoteEditor({
     });
   };
 
+  const handleDeleteDraft = () => {
+    if (mode !== 'edit' || !quotationId) return;
+    startTransition(async () => {
+      const res = await deleteQuotation(quotationId);
+      if (res.success) {
+        toast.success('Draft deleted successfully');
+        reset();
+        router.replace('/quotations');
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Failed to delete draft');
+      }
+    });
+  };
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 pb-32">
       {/* Header */}
@@ -129,6 +156,34 @@ export function QuoteEditor({
         </div>
 
         <div className="flex items-center gap-3">
+          {mode === 'edit' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  disabled={isPending}
+                  className="border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Draft
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete draft quotation?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteDraft}>
+                    Delete Draft
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           <Button
             variant="outline"
             onClick={() => handleSave('draft')}

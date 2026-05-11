@@ -16,6 +16,10 @@ type EnergyFlowProps = {
   stages: PipelineStage[];
 };
 
+function getStageDetail(node: PipelineStage): string {
+  return node.count.toLocaleString('en-US');
+}
+
 function widthFromValue(value: number, maxValue: number): number {
   if (maxValue <= 0) return 4;
   return Math.max(4, (value / maxValue) * 14);
@@ -120,12 +124,15 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
               </text>
               <text
                 x={x + 10}
-                y={130}
+                y={134}
                 fill="#fbbf24"
-                fontSize="18"
+                fontSize="22"
                 fontWeight="700"
               >
                 {node.count}
+              </text>
+              <text x={x + 10} y={152} fill="#cbd5e1" fontSize="11">
+                {getStageDetail(node)}
               </text>
             </g>
           );
@@ -145,7 +152,10 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
               className="block rounded-xl border border-white/10 bg-white/[0.035] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
             >
               <p className="text-xs text-white/60">{node.label}</p>
-              <p className="mt-1 text-lg font-semibold">{node.count}</p>
+              <p className="mt-1 text-xl font-semibold">{node.count}</p>
+              <p className="mt-1 text-sm text-amber-300">
+                {getStageDetail(node)}
+              </p>
             </Link>
           </motion.div>
         ))}
@@ -160,11 +170,11 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
           >
             <Link
               href={node.href}
-              className="block rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2 text-xs transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+              className="block rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2 text-sm transition-colors hover:border-white/20 hover:bg-white/[0.06]"
             >
               <p className="text-white/70">{node.label}</p>
               <p className="mt-1 font-semibold text-amber-300">
-                {Math.round(node.value).toLocaleString('en-US')} MMK
+                {getStageDetail(node)}
               </p>
             </Link>
           </motion.div>

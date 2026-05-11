@@ -11,13 +11,24 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { calculateLineItem, calculateQuotation, type LineItem } from '@/lib/pricing/engine';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import {
+  calculateLineItem,
+  calculateQuotation,
+  type LineItem,
+} from '@/lib/pricing/engine';
 import { formatMMK } from '@/lib/utils';
-import { canTransitionQuotationStatus, canTransitionProjectStatus, ALERT_TYPES } from '@/lib/domain/enums';
+import {
+  canTransitionQuotationStatus,
+  canTransitionProjectStatus,
+  ALERT_TYPES,
+} from '@/lib/domain/enums';
 import { loginSchema } from '@/lib/validators/auth';
-import { createCustomerSchema, customerFilterSchema } from '@/lib/validators/customer';
+import {
+  createCustomerSchema,
+  customerFilterSchema,
+} from '@/lib/validators/customer';
 import { createQuotationSchema } from '@/lib/validators/quotation';
 import { uuidSchema } from '@/lib/validators/common';
 
@@ -27,13 +38,26 @@ import { uuidSchema } from '@/lib/validators/common';
 
 describe('Phase 1: Authentication Logic', () => {
   it('loginSchema rejects invalid email formats', () => {
-    expect(loginSchema.safeParse({ email: '', password: 'password123' }).success).toBe(false);
-    expect(loginSchema.safeParse({ email: 'not-email', password: 'password123' }).success).toBe(false);
-    expect(loginSchema.safeParse({ email: 'test@example.com', password: '' }).success).toBe(false);
+    expect(
+      loginSchema.safeParse({ email: '', password: 'password123' }).success,
+    ).toBe(false);
+    expect(
+      loginSchema.safeParse({ email: 'not-email', password: 'password123' })
+        .success,
+    ).toBe(false);
+    expect(
+      loginSchema.safeParse({ email: 'test@example.com', password: '' })
+        .success,
+    ).toBe(false);
   });
 
   it('loginSchema accepts valid credentials', () => {
-    expect(loginSchema.safeParse({ email: 'test@example.com', password: 'password123' }).success).toBe(true);
+    expect(
+      loginSchema.safeParse({
+        email: 'test@example.com',
+        password: 'password123',
+      }).success,
+    ).toBe(true);
   });
 });
 
@@ -51,7 +75,11 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
   });
 
   it('calculates line item with discount', () => {
-    const item: LineItem = { quantity: 10, unitPrice: 350000, discountPercentage: 10 };
+    const item: LineItem = {
+      quantity: 10,
+      unitPrice: 350000,
+      discountPercentage: 10,
+    };
     expect(calculateLineItem(item)).toBe(3_150_000);
   });
 
@@ -73,14 +101,15 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
     ];
     const result = calculateQuotation(items, 10, 5);
 
-    const expectedSubtotal = (100 * 15_000_000) + (25 * 8_500_000) + (200 * 4_500_000);
+    const expectedSubtotal =
+      100 * 15_000_000 + 25 * 8_500_000 + 200 * 4_500_000;
     expect(result.subtotal).toBe(expectedSubtotal);
 
-    const expectedDiscount = Math.round(expectedSubtotal * 10 / 100);
+    const expectedDiscount = Math.round((expectedSubtotal * 10) / 100);
     expect(result.discountAmount).toBe(expectedDiscount);
 
     const expectedAfterDiscount = expectedSubtotal - expectedDiscount;
-    const expectedTax = Math.round(expectedAfterDiscount * 5 / 100);
+    const expectedTax = Math.round((expectedAfterDiscount * 5) / 100);
     expect(result.taxAmount).toBe(expectedTax);
 
     expect(result.total).toBe(expectedAfterDiscount + expectedTax);
@@ -99,9 +128,18 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
 
 describe('Phase 4: Customer Validation', () => {
   it('validates required fields', () => {
-    expect(createCustomerSchema.safeParse({ name: 'Customer A', phone: '09-123456789' }).success).toBe(true);
-    expect(createCustomerSchema.safeParse({ phone: '09-123456789' }).success).toBe(false);
-    expect(createCustomerSchema.safeParse({ name: 'Customer A' }).success).toBe(false);
+    expect(
+      createCustomerSchema.safeParse({
+        name: 'Customer A',
+        phone: '09-123456789',
+      }).success,
+    ).toBe(true);
+    expect(
+      createCustomerSchema.safeParse({ phone: '09-123456789' }).success,
+    ).toBe(false);
+    expect(createCustomerSchema.safeParse({ name: 'Customer A' }).success).toBe(
+      false,
+    );
   });
 
   it('validates customer filter defaults', () => {
@@ -119,7 +157,9 @@ describe('Phase 5: Quotation Lifecycle', () => {
   it('validates quotation creation input', () => {
     const valid = createQuotationSchema.safeParse({
       customerId: '550e8400-e29b-41d4-a716-446655440000',
-      items: [{ description: 'Solar Panel 400W', quantity: 2, unitPrice: 350000 }],
+      items: [
+        { description: 'Solar Panel 400W', quantity: 2, unitPrice: 350000 },
+      ],
       discountPercent: 5,
       taxPercent: 10,
     });
@@ -188,7 +228,10 @@ describe('Phase 8: Warranty & Business Policies', () => {
 
   it('validates integer math in pricing engine', () => {
     const result = calculateQuotation(
-      [{ quantity: 3, unitPrice: 100000 }, { quantity: 7, unitPrice: 50000 }],
+      [
+        { quantity: 3, unitPrice: 100000 },
+        { quantity: 7, unitPrice: 50000 },
+      ],
       7.5,
       5.5,
     );
@@ -199,7 +242,9 @@ describe('Phase 8: Warranty & Business Policies', () => {
     expect(Number.isInteger(result.total)).toBe(true);
 
     // Total = subtotal - discount + tax
-    expect(result.total).toBe(result.subtotal - result.discountAmount + result.taxAmount);
+    expect(result.total).toBe(
+      result.subtotal - result.discountAmount + result.taxAmount,
+    );
   });
 });
 
@@ -209,7 +254,12 @@ describe('Phase 8: Warranty & Business Policies', () => {
 
 describe('Phase 9: Dashboard Metrics', () => {
   it('calculates conversion rate correctly', () => {
-    const calc = (accepted: number, rejected: number, expired: number, sent: number) => {
+    const calc = (
+      accepted: number,
+      rejected: number,
+      expired: number,
+      sent: number,
+    ) => {
       const denominator = accepted + rejected + expired + sent;
       return denominator === 0 ? 0 : Math.round((accepted / denominator) * 100);
     };
@@ -227,7 +277,9 @@ describe('Phase 9: Dashboard Metrics', () => {
 
 describe('Phase 10: Security', () => {
   it('validates UUID inputs', () => {
-    expect(uuidSchema.safeParse('550e8400-e29b-41d4-a716-446655440000').success).toBe(true);
+    expect(
+      uuidSchema.safeParse('550e8400-e29b-41d4-a716-446655440000').success,
+    ).toBe(true);
     expect(uuidSchema.safeParse('not-a-uuid').success).toBe(false);
     expect(uuidSchema.safeParse('').success).toBe(false);
     expect(uuidSchema.safeParse(null).success).toBe(false);
@@ -240,8 +292,8 @@ describe('Phase 10: Security', () => {
 
 describe('Phase 11: Build & Deployment Checks', () => {
   it('no floating point in pricing engine calculations', () => {
-    const engineSrc = require('fs').readFileSync(
-      require('path').resolve(__dirname, '../lib/pricing/engine.ts'),
+    const engineSrc = readFileSync(
+      resolve(process.cwd(), 'src/lib/pricing/engine.ts'),
       'utf-8',
     );
     const roundMatches = (engineSrc.match(/Math\.round/g) || []).length;

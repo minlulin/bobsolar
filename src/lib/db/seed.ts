@@ -1,11 +1,13 @@
+import './load-env-local';
 import { db } from './index';
 import { users, companySettings, warrantyAlerts } from './schema';
 import { hashPassword } from '../auth/password';
 import { COMPANY_SETTING_KEYS } from '../domain/settings-keys';
 
-// Read admin credentials from environment variables
-const SEED_ADMIN_EMAIL = process.env['SEED_ADMIN_EMAIL'];
-const SEED_ADMIN_PASSWORD = process.env['SEED_ADMIN_PASSWORD'];
+// Admin and seed data: read only from .env.local (loaded by ./load-env-local)
+const SEED_ADMIN_EMAIL = process.env['SEED_ADMIN_EMAIL']?.trim();
+const SEED_ADMIN_PASSWORD = process.env['SEED_ADMIN_PASSWORD']?.trim();
+const SEED_COMPANY_EMAIL = process.env['SEED_COMPANY_EMAIL']?.trim();
 const ALLOW_PROD_SEED = process.env['ALLOW_PROD_SEED'] === '1';
 const SEED_RESET_ALERTS = process.env['SEED_RESET_ALERTS'] === '1';
 
@@ -20,6 +22,13 @@ if (process.env['NODE_ENV'] === 'production' && !ALLOW_PROD_SEED) {
 
 async function seed() {
   console.log('🌱 Seeding database...');
+
+  if (!process.env['DATABASE_URL']?.trim()) {
+    console.error(
+      '❌ DATABASE_URL is not set. Add your connection string to .env.local.',
+    );
+    process.exit(1);
+  }
 
   // Validate environment variables
   if (!SEED_ADMIN_EMAIL || !SEED_ADMIN_PASSWORD) {
@@ -55,7 +64,9 @@ async function seed() {
 
   console.log(`✅ Admin user created: ${SEED_ADMIN_EMAIL}`);
 
-  // 2. Seed Company Settings
+  const companyContactEmail = SEED_COMPANY_EMAIL || SEED_ADMIN_EMAIL;
+
+  // 2. Seed Company Settings (identity fields from env where sensitive / site-specific)
   await db
     .insert(companySettings)
     .values([
@@ -65,6 +76,7 @@ async function seed() {
         value: 'No. 123, Solar Street, Yangon',
       },
       { key: COMPANY_SETTING_KEYS.PHONE, value: '+95 9 123 456 789' },
+      { key: COMPANY_SETTING_KEYS.EMAIL, value: companyContactEmail },
     ])
     .onConflictDoNothing();
 

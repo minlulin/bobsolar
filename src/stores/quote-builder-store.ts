@@ -64,6 +64,22 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
 
   addItem: (inventoryItem) =>
     set((state) => {
+      const existingIndex = state.items.findIndex(
+        (item) => item.itemId === inventoryItem.id,
+      );
+
+      if (existingIndex >= 0) {
+        const nextItems = [...state.items];
+        const existingItem = nextItems[existingIndex];
+        if (existingItem) {
+          nextItems[existingIndex] = {
+            ...existingItem,
+            quantity: existingItem.quantity + 1,
+          };
+        }
+        return { items: nextItems };
+      }
+
       const newItem: QuoteBuilderItem = {
         itemId: inventoryItem.id,
         description: inventoryItem.name,
@@ -90,7 +106,8 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
     set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
-        newItems[index] = { ...newItems[index], quantity };
+        const sanitizedQuantity = Math.max(1, Math.round(quantity));
+        newItems[index] = { ...newItems[index], quantity: sanitizedQuantity };
       }
       return { items: newItems };
     }),

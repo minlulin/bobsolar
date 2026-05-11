@@ -43,8 +43,18 @@ type IronSessionData = {
   sid?: string; // sealed session ID
 };
 
+/** Fetch `Set-Cookie`: `Headers.get('set-cookie')` is often null per spec; Node exposes `getSetCookie`. */
+function firstSetCookieLine(res: Response): string | null {
+  const headers = res.headers;
+  if (typeof headers.getSetCookie === 'function') {
+    const lines = headers.getSetCookie();
+    return lines[0] ?? null;
+  }
+  return headers.get('set-cookie');
+}
+
 async function sealSession(sessionId: string): Promise<string> {
-  // Create a temporary seal using iron-session
+  // Create a temporary seal using iron-session (must call save() to append Set-Cookie).
   const mockRequest = new Request('http://localhost', {
     headers: { cookie: '' },
   });
@@ -60,16 +70,21 @@ async function sealSession(sessionId: string): Promise<string> {
   );
 
   session.sid = sessionId;
+  await session.save();
 
-  // Extract the sealed cookie value
-  const setCookieHeader = mockResponse.headers.get('set-cookie');
+  const setCookieHeader = firstSetCookieLine(mockResponse);
   if (!setCookieHeader) {
-    throw new Error('Failed to seal session');
+    throw new Error('Failed to seal session (no Set-Cookie after save)');
   }
 
-  // Parse the cookie value from the Set-Cookie header
-  const match = setCookieHeader.match(/bobsolar_session=([^;]+)/);
-  return match?.[1] ?? '';
+  const match = setCookieHeader.match(
+    new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`),
+  );
+  const value = match?.[1];
+  if (!value) {
+    throw new Error('Failed to parse sealed session cookie');
+  }
+  return value;
 }
 
 async function unsealSession(

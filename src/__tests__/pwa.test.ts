@@ -15,7 +15,11 @@ describe('PWA Manifest', () => {
       { src: '/icons/icon-512.png', sizes: '512x512' },
     ];
     for (const icon of expectedIcons) {
-      const iconPath = path.resolve(__dirname, '../../public', icon.src.replace(/^\//, ''));
+      const iconPath = path.resolve(
+        __dirname,
+        '../../public',
+        icon.src.replace(/^\//, ''),
+      );
       expect(fs.existsSync(iconPath), `Icon not found: ${icon.src}`).toBe(true);
     }
   });

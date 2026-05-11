@@ -21,10 +21,13 @@ import { searchCustomers } from '@/actions/customer-actions';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
+import { CustomerDialog } from '@/components/customers/customer-dialog';
+import { type Customer } from '@/lib/db/schema';
 
 export function CustomerSelector() {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   const debouncedSearch = useDebounce(search, 300);
 
   const selectedCustomerId = useQuoteBuilderStore(
@@ -46,9 +49,18 @@ export function CustomerSelector() {
 
   return (
     <div className="space-y-2">
-      <label className="text-muted-foreground ml-1 text-sm font-medium">
-        Customer
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="text-muted-foreground ml-1 text-sm font-medium">
+          Customer
+        </label>
+        <button
+          type="button"
+          onClick={() => setDialogOpen(true)}
+          className="text-xs font-medium text-amber-300 hover:text-amber-200"
+        >
+          + Add new customer
+        </button>
+      </div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -80,7 +92,9 @@ export function CustomerSelector() {
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading ? 'Searching...' : 'No customer found.'}
+                {isLoading
+                  ? 'Searching...'
+                  : 'No customer found. Add one, then come back and select.'}
               </CommandEmpty>
               <CommandGroup>
                 {customers.map((customer) => (
@@ -114,6 +128,15 @@ export function CustomerSelector() {
           </Command>
         </PopoverContent>
       </Popover>
+      <CustomerDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSaved={(customer: Customer) => {
+          setCustomer(customer.id);
+          setOpen(false);
+          setSearch(customer.name);
+        }}
+      />
     </div>
   );
 }

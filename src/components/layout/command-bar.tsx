@@ -15,9 +15,9 @@ import {
   ShieldCheck,
   Settings,
 } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -28,17 +28,18 @@ import {
   CommandShortcut,
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
+import { useAppTheme } from '@/components/providers';
 
 export function CommandBar() {
   const [open, setOpen] = React.useState(false);
-  const { setTheme } = useTheme();
+  const { setTheme } = useAppTheme();
   const router = useRouter();
 
   React.useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
+    const down = (event: KeyboardEvent) => {
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setOpen((prev) => !prev);
       }
     };
 
@@ -46,9 +47,9 @@ export function CommandBar() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  const runCommand = React.useCallback((command: () => void) => {
+  const runCommand = React.useCallback((action: () => void) => {
     setOpen(false);
-    command();
+    action();
   }, []);
 
   return (
@@ -67,90 +68,110 @@ export function CommandBar() {
           <span className="text-xs">⌘</span>K
         </kbd>
       </Button>
+
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Quick Actions">
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/quotations/new'))}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span>New Quotation</span>
-              <CommandShortcut>⌘Q</CommandShortcut>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/customers/new'))}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span>New Customer</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/projects/new'))}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              <span>New Project</span>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Navigation">
-            <CommandItem onSelect={() => runCommand(() => router.push('/'))}>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/quotations'))}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              <span>Quotations</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/projects'))}
-            >
-              <Zap className="mr-2 h-4 w-4" />
-              <span>Projects</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/inventory'))}
-            >
-              <Package className="mr-2 h-4 w-4" />
-              <span>Inventory</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/customers'))}
-            >
-              <Users className="mr-2 h-4 w-4" />
-              <span>Customers</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/warranty'))}
-            >
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              <span>Warranty</span>
-            </CommandItem>
-            <CommandItem
-              onSelect={() => runCommand(() => router.push('/settings'))}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </CommandItem>
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Settings">
-            <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
-              <Sun className="mr-2 h-4 w-4" />
-              <span>Light Mode</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
-              <Moon className="mr-2 h-4 w-4" />
-              <span>Dark Mode</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => setTheme('system'))}>
-              <Laptop className="mr-2 h-4 w-4" />
-              <span>System Theme</span>
-            </CommandItem>
-          </CommandGroup>
-        </CommandList>
+        <Command>
+          <CommandInput placeholder="Type a command or search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+
+            <CommandGroup heading="Quick Actions">
+              <CommandItem
+                onSelect={() =>
+                  runCommand(() => router.push('/quotations/new'))
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>New Quotation</span>
+                <CommandShortcut>⌘Q</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/customers/new'))}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>New Customer</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/projects/new'))}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>New Project</span>
+              </CommandItem>
+            </CommandGroup>
+
+            <CommandSeparator />
+
+            <CommandGroup heading="Navigation">
+              <CommandItem onSelect={() => runCommand(() => router.push('/'))}>
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/quotations'))}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                <span>Quotations</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/projects'))}
+              >
+                <Zap className="mr-2 h-4 w-4" />
+                <span>Projects</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/inventory'))}
+              >
+                <Package className="mr-2 h-4 w-4" />
+                <span>Inventory</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/customers'))}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                <span>Customers</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/warranty'))}
+              >
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>Warranty</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => runCommand(() => router.push('/settings'))}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </CommandItem>
+            </CommandGroup>
+
+            <CommandSeparator />
+
+            <CommandGroup heading="Settings">
+              <CommandItem onSelect={() => runCommand(() => setTheme('light'))}>
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light Mode</span>
+              </CommandItem>
+              <CommandItem onSelect={() => runCommand(() => setTheme('dark'))}>
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark Mode</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() =>
+                  runCommand(() =>
+                    setTheme(
+                      window.matchMedia('(prefers-color-scheme: dark)').matches
+                        ? 'dark'
+                        : 'light',
+                    ),
+                  )
+                }
+              >
+                <Laptop className="mr-2 h-4 w-4" />
+                <span>System Theme</span>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </CommandDialog>
     </>
   );

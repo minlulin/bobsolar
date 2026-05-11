@@ -1,23 +1,24 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAppTheme } from '@/components/providers';
 
 import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, mounted } = useAppTheme();
+  const isDark = theme === 'dark';
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className="relative h-10 w-10 rounded-full"
     >
       <AnimatePresence mode="wait" initial={false}>
-        {theme === 'dark' ? (
+        {mounted && isDark ? (
           <motion.div
             key="moon"
             initial={{ y: -20, opacity: 0, rotate: 90 }}

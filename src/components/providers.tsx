@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import {
   MutationCache,
   QueryCache,
@@ -17,6 +16,67 @@ import {
   isServerError,
   isUnauthorizedError,
 } from '@/lib/utils/query-error';
+
+type AppTheme = 'light' | 'dark';
+
+type ThemeContextValue = {
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
+  mounted: boolean;
+};
+
+const ThemeContext = React.createContext<ThemeContextValue | null>(null);
+
+function applyThemeClass(theme: AppTheme) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.classList.remove('light', 'dark');
+  root.classList.add(theme);
+}
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = React.useState<AppTheme>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const savedTheme = window.localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  });
+
+  React.useEffect(() => {
+    applyThemeClass(theme);
+  }, [theme]);
+
+  const mounted = React.useSyncExternalStore(
+    React.useCallback(() => () => undefined, []),
+    () => true,
+    () => false,
+  );
+
+  const setTheme = React.useCallback((nextTheme: AppTheme) => {
+    setThemeState(nextTheme);
+    window.localStorage.setItem('theme', nextTheme);
+    applyThemeClass(nextTheme);
+  }, []);
+
+  const value = React.useMemo(
+    () => ({ theme, setTheme, mounted }),
+    [theme, setTheme, mounted],
+  );
+
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
+}
+
+export function useAppTheme() {
+  const context = React.useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useAppTheme must be used within Providers');
+  }
+  return context;
+}
 
 function handleQueryError(error: unknown) {
   if (isUnauthorizedError(error)) {
@@ -67,16 +127,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NextThemesProvider
-        attribute="class"
-        enableSystem
-        disableTransitionOnChange
-      >
+      <ThemeProvider>
         <LazyMotion features={domAnimation}>
           {children}
           <NotificationToast />
         </LazyMotion>
-      </NextThemesProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

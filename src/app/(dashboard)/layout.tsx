@@ -48,6 +48,7 @@ export default async function DashboardLayout({
                 src="/icons/logo.png"
                 alt="BOB Solar Logo"
                 fill
+                sizes="40px"
                 className="object-contain p-1"
                 priority
               />

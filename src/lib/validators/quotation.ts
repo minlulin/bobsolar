@@ -15,7 +15,10 @@ export {
 export const quotationItemSchema = z.object({
   itemId: z.string().uuid().optional().nullable(),
   description: z.string().min(1, 'Description is required'),
-  quantity: z.number().positive('Quantity must be positive'),
+  quantity: z
+    .number()
+    .int('Quantity must be a whole number')
+    .positive('Quantity must be positive'),
   unitPrice: z.number().nonnegative('Price cannot be negative'),
   // .optional() を完全に削除し、default(0) のみにすることで number 型を確定させる
   discountPercentage: z.number().min(0).max(100).default(0),

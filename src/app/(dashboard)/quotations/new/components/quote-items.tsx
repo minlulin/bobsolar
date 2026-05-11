@@ -49,7 +49,11 @@ export function QuoteItems() {
         className="space-y-2"
       >
         {items.map((item, index) => (
-          <ItemRow key={item.itemId || index} item={item} index={index} />
+          <ItemRow
+            key={item.id ?? `${item.itemId ?? 'item'}-${index}`}
+            item={item}
+            index={index}
+          />
         ))}
       </Reorder.Group>
     </div>
@@ -107,11 +111,14 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
           aria-label={`Item ${index + 1} quantity`}
           type="number"
           value={item.quantity}
-          min={0.01}
-          step={0.01}
-          onChange={(e) =>
-            updateItemQuantity(index, parseFloat(e.target.value) || 0)
-          }
+          min={1}
+          step={1}
+          onChange={(e) => {
+            const parsed = Number.parseInt(e.target.value, 10);
+            if (Number.isFinite(parsed)) {
+              updateItemQuantity(index, parsed);
+            }
+          }}
           className="focus:bg-background/40 h-9 border-transparent bg-transparent text-right font-mono text-sm font-bold transition-all hover:border-white/10 focus:border-white/20"
         />
       </div>

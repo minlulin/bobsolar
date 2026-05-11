@@ -94,7 +94,7 @@ export function QuotePreview() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-auto pr-1">
           <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-200">
@@ -114,7 +114,7 @@ export function QuotePreview() {
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {items.map((item, i) => (
-                <tr key={i}>
+                <tr key={item.id ?? item.itemId ?? `${item.description}-${i}`}>
                   <td className="py-2.5 font-medium">{item.description}</td>
                   <td className="py-2.5 text-center">{item.quantity}</td>
                   <td className="py-2.5 text-right">

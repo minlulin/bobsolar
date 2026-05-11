@@ -39,6 +39,29 @@ export function getErrorCode(error: unknown): ErrorCode {
   return 'UNKNOWN';
 }
 
+/** Walk `Error.cause` (Drizzle/Neon often nest the Postgres message). */
+function formatErrorChain(error: unknown, fallback: string): string {
+  if (error instanceof z.ZodError) {
+    return error.issues[0]?.message || 'Validation failed';
+  }
+  const parts: string[] = [];
+  let current: unknown = error;
+  let depth = 0;
+  while (current && depth < 6) {
+    if (current instanceof Error) {
+      parts.push(current.message);
+      current = current.cause;
+      depth += 1;
+    } else {
+      break;
+    }
+  }
+  if (parts.length > 0) {
+    return [...new Set(parts)].join(' → ');
+  }
+  return fallback;
+}
+
 export function formatErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof z.ZodError) {
     return error.issues[0]?.message || 'Validation failed';
@@ -73,7 +96,10 @@ export function handleActionError(
   fallbackMessage: string,
 ): ActionFailure {
   const code = getErrorCode(error);
-  const message = formatErrorMessage(error, fallbackMessage);
+  const message =
+    process.env['NODE_ENV'] === 'development'
+      ? formatErrorChain(error, fallbackMessage)
+      : formatErrorMessage(error, fallbackMessage);
 
   logError(context, error, { code, userMessage: message });
 

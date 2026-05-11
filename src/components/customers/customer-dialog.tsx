@@ -33,12 +33,14 @@ interface CustomerDialogProps {
   customer?: Customer | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSaved?: (customer: Customer) => void;
 }
 
 export function CustomerDialog({
   customer,
   open,
   onOpenChange,
+  onSaved,
 }: CustomerDialogProps) {
   const isEdit = !!customer;
   const { mutate: createCustomer, isPending: isCreating } = useCreateCustomer();
@@ -84,14 +86,20 @@ export function CustomerDialog({
         { id: customer.id, data },
         {
           onSuccess: (res) => {
-            if (res.success) onOpenChange(false);
+            if (res.success) {
+              onSaved?.(res.data);
+              onOpenChange(false);
+            }
           },
         },
       );
     } else {
       createCustomer(data, {
         onSuccess: (res) => {
-          if (res.success) onOpenChange(false);
+          if (res.success) {
+            onSaved?.(res.data);
+            onOpenChange(false);
+          }
         },
       });
     }
