@@ -15,6 +15,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     env: {
       DATABASE_URL:
         process.env['TEST_DATABASE_URL'] ?? process.env['DATABASE_URL'] ?? '',
