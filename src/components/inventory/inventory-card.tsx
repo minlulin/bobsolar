@@ -1,13 +1,12 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
-import { type InventoryItem } from '@/lib/db/schema';
+import { type InventoryCategory, type InventoryItem } from '@/lib/db/schema';
 import { formatMMK, cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Package,
   Edit,
   Trash2,
   Box,
@@ -46,7 +45,7 @@ interface InventoryCardProps {
   onEdit: (item: InventoryItem) => void;
 }
 
-const categoryIcons: Record<string, LucideIcon> = {
+const categoryIcons: Record<InventoryCategory, LucideIcon> = {
   panel: Zap,
   inverter: Cpu,
   battery: Battery,
@@ -56,12 +55,101 @@ const categoryIcons: Record<string, LucideIcon> = {
   labor: User,
 };
 
+const categoryLabels: Record<InventoryCategory, string> = {
+  panel: 'Panel',
+  inverter: 'Inverter',
+  battery: 'Battery',
+  mounting: 'Mounting',
+  cable: 'Cable',
+  accessory: 'Accessory',
+  labor: 'Labor',
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const stringifySpec = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+
+const numberSpec = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+function getSpecBrandModel(item: InventoryItem): string | null {
+  if (!isRecord(item.specifications)) return null;
+  return stringifySpec(item.specifications['brandModel']);
+}
+
+function getItemLabel(item: InventoryItem): string | null {
+  const brand = stringifySpec(item.brand);
+  const modelNumber = stringifySpec(item.modelNumber);
+  if (brand || modelNumber) {
+    return `${brand ?? ''}${brand && modelNumber ? ' - ' : ''}${modelNumber ?? ''}`.trim();
+  }
+  return getSpecBrandModel(item);
+}
+
+function getSpecSummary(item: InventoryItem): string | null {
+  if (!isRecord(item.specifications)) return null;
+  const specs = item.specifications;
+
+  switch (item.category) {
+    case 'panel': {
+      const wattage = numberSpec(specs['wattageW']);
+      const cellType = stringifySpec(specs['cellType']);
+      const brandModel = stringifySpec(specs['brandModel']);
+      if (wattage === null || cellType === null || brandModel === null) {
+        return null;
+      }
+      return `${wattage}W - ${cellType.replace('_', '-')} - ${brandModel}`;
+    }
+    case 'battery': {
+      const voltageV = numberSpec(specs['voltageV']);
+      const capacityAh = numberSpec(specs['capacityAh']);
+      const chemistryType = stringifySpec(specs['chemistryType']);
+      if (voltageV === null || capacityAh === null || chemistryType === null) {
+        return null;
+      }
+      return `${voltageV}V - ${capacityAh}Ah - ${chemistryType.toUpperCase()}`;
+    }
+    case 'accessory': {
+      const type = stringifySpec(specs['type']);
+      const ratingAmpere = numberSpec(specs['ratingAmpere']);
+      const voltageRating = stringifySpec(specs['voltageRating']);
+      if (type === null || ratingAmpere === null || voltageRating === null) {
+        return null;
+      }
+      return `${type} - ${ratingAmpere}A - ${voltageRating}`;
+    }
+    case 'inverter': {
+      const systemType = stringifySpec(specs['systemType']);
+      const ratedPower = stringifySpec(specs['ratedPower']);
+      const phase = stringifySpec(specs['phase']);
+      if (systemType === null || ratedPower === null || phase === null) {
+        return null;
+      }
+      return `${ratedPower} - ${systemType.replace('_', '-')} - ${phase.replace('_', '-')}`;
+    }
+    case 'mounting':
+      return stringifySpec(specs['type']);
+    case 'cable': {
+      const cableType = stringifySpec(specs['cableType']);
+      const sizeCrossSection = stringifySpec(specs['sizeCrossSection']);
+      if (cableType === null || sizeCrossSection === null) return null;
+      return `${cableType.replace('_', ' ')} - ${sizeCrossSection}`;
+    }
+    case 'labor':
+      return null;
+    default:
+      return null;
+  }
+}
+
 export function InventoryCard({
   item,
   canEdit,
   onEdit,
 }: InventoryCardProps): React.JSX.Element {
-  const Icon = categoryIcons[item.category] || Package;
+  const Icon = categoryIcons[item.category];
   const { mutate: updateItem, isPending: isUpdating } =
     useUpdateInventoryItem();
   const { mutate: deleteItem } = useDeleteInventoryItem();
@@ -70,6 +158,7 @@ export function InventoryCard({
   const [isEditingStock, setIsEditingStock] = useState(false);
   const [price, setPrice] = useState(item.unitPrice);
   const [stock, setStock] = useState(String(item.stockQty));
+  const specSummary = getSpecSummary(item);
 
   const getStockColor = (qty: number): string => {
     const threshold = STOCK_WARNING_THRESHOLDS[item.category];
@@ -94,7 +183,7 @@ export function InventoryCard({
   };
 
   const handleStockSave = (): void => {
-    const val = parseInt(stock);
+    const val = parseInt(stock, 10);
     if (isNaN(val) || val < 0) {
       toast.error('Invalid stock quantity');
       setStock(String(item.stockQty));
@@ -105,10 +194,6 @@ export function InventoryCard({
       updateItem({ id: item.id, data: { stockQty: val } });
     }
     setIsEditingStock(false);
-  };
-
-  const handleDelete = (): void => {
-    deleteItem(item.id);
   };
 
   return (
@@ -156,7 +241,11 @@ export function InventoryCard({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
+                    <AlertDialogAction
+                      onClick={() => {
+                        deleteItem(item.id);
+                      }}
+                    >
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -176,8 +265,13 @@ export function InventoryCard({
                 {item.name}
               </h3>
               <p className="text-muted-foreground truncate text-sm">
-                {item.brand} {item.modelNumber && `• ${item.modelNumber}`}
+                {getItemLabel(item) ?? ''}
               </p>
+              {specSummary && (
+                <p className="text-muted-foreground mt-1 truncate text-xs">
+                  {specSummary}
+                </p>
+              )}
             </div>
           </div>
 
@@ -257,6 +351,11 @@ export function InventoryCard({
                   </Badge>
                 )}
               </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">Category</span>
+              <Badge variant="secondary">{categoryLabels[item.category]}</Badge>
             </div>
           </div>
         </CardContent>

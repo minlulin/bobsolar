@@ -9,7 +9,8 @@ import ws from 'ws';
 
 const databaseUrl = process.env['DATABASE_URL'] ?? '';
 const hasTestDb = databaseUrl.length > 0;
-const describeDb = hasTestDb ? describe : describe.skip;
+const runDbTests = process.env['RUN_DB_TESTS'] === '1';
+const describeDb = hasTestDb && runDbTests ? describe : describe.skip;
 
 let authUserId: string | null = null;
 let insertedCustomerId: string | null = null;

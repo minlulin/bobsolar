@@ -34,6 +34,10 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 - `pnpm db:migrate`  
   Runs migrations using default DB config (`DATABASE_URL`).
 
+- `pnpm db:baseline`  
+  Backfills `drizzle.__drizzle_migrations` from local migration files when the
+  history table is empty but schema already exists (recovery command for Neon branch/state drift).
+
 - `pnpm db:migrate:test`  
   Runs schema push against test DB config (`TEST_DATABASE_URL`) via `drizzle.test.config.ts`.
   Use this for cloned/resettable test branches where migration history may not match.

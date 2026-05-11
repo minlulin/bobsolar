@@ -43,6 +43,13 @@
       "when": 1778408112614,
       "tag": "0005_operational-indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778533716216,
+      "tag": "0006_inventory-specifications",
+      "breakpoints": true
     }
   ]
 }

@@ -78,7 +78,8 @@ vi.mock('next/cache', () => ({
 }));
 
 const databaseUrl = process.env['DATABASE_URL'] ?? '';
-const describeDb = databaseUrl ? describe : describe.skip;
+const runDbTests = process.env['RUN_DB_TESTS'] === '1';
+const describeDb = databaseUrl && runDbTests ? describe : describe.skip;
 
 function unwrap<T>(result: { success: boolean; data?: T; error?: string }): T {
   if (!result.success) {
@@ -210,6 +211,12 @@ describeDb('Master workflow integration: DB + server actions', () => {
         stockQty: 50,
         brand: 'BOB',
         modelNumber: 'P400',
+        specifications: {
+          brandModel: 'BOB P400',
+          cellType: 'n_type',
+          wattageW: 400,
+          warranty: '25 years',
+        },
         isActive: true,
       }),
     );

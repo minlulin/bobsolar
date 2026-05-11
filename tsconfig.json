@@ -2,11 +2,7 @@
   "compilerOptions": {
     // ── Language & Environment ──────────────────────────────────────────
     "target": "ES2022",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     // ── Emit ────────────────────────────────────────────────────────────
@@ -56,9 +52,7 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "allowJs": true
   },
@@ -70,9 +64,5 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "src/sw.ts"
-  ]
+  "exclude": ["node_modules", ".next", "src/sw.ts"]
 }

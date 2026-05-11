@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { inventoryItems, type InventoryItem } from '@/lib/db/schema';
 import {
   createInventoryItemSchema,
-  updateInventoryItemSchema,
+  updateInventoryItemPayloadSchema,
   inventoryFilterSchema,
 } from '@/lib/validators/inventory';
 import { requireAuth } from '@/lib/auth/validate';
@@ -117,7 +117,7 @@ export async function updateInventoryItem(
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
-    const validated = updateInventoryItemSchema.parse({
+    const validated = updateInventoryItemPayloadSchema.parse({
       ...(typeof raw === 'object' && raw !== null ? raw : {}),
       id: validatedId,
     });

@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:migrate": "drizzle-kit migrate",
+    "db:baseline": "tsx src/lib/db/baseline-migrations.ts",
     "db:migrate:test": "pnpm exec drizzle-kit push --config drizzle.test.config.ts",
     "db:seed": "tsx src/lib/db/seed.ts",
     "test": "vitest run",

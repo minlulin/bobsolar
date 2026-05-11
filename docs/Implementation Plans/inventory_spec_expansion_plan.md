@@ -64,33 +64,33 @@ Uses existing category: `accessory`.
 
 ### Phase A - Data Model
 
-- [ ] Add `specifications` field to `inventory_items`.
-- [ ] Store category-specific specs as JSON/JSONB.
-- [ ] Keep existing rows valid when `specifications` is missing or null.
-- [ ] Add migration for main/test databases.
+- [x] Add `specifications` field to `inventory_items`.
+- [x] Store category-specific specs as JSON/JSONB.
+- [x] Keep existing rows valid when `specifications` is missing or null.
+- [x] Add migration for main/test databases.
 
 ### Phase B - Validation
 
-- [ ] Add category-discriminated Zod schemas for inventory specifications.
-- [ ] Validate create inventory input using selected category.
-- [ ] Validate update inventory input using selected category.
-- [ ] Reject stale or incompatible spec fields after category changes.
-- [ ] Avoid `any`; use `unknown`, typed schemas, and inferred types.
+- [x] Add category-discriminated Zod schemas for inventory specifications.
+- [x] Validate create inventory input using selected category.
+- [x] Validate update inventory input using selected category.
+- [x] Reject stale or incompatible spec fields after category changes.
+- [x] Avoid `any`; use `unknown`, typed schemas, and inferred types.
 
 ### Phase C - Server Actions
 
-- [ ] Update inventory create action to persist specifications.
-- [ ] Update inventory edit action to persist specifications.
-- [ ] Keep read paths compatible with legacy items.
-- [ ] Return specifications in inventory list/detail responses.
+- [x] Update inventory create action to persist specifications.
+- [x] Update inventory edit action to persist specifications.
+- [x] Keep read paths compatible with legacy items.
+- [x] Return specifications in inventory list/detail responses.
 
 ### Phase D - Inventory UI
 
-- [ ] Add dynamic spec fields in Inventory Add/Edit dialog.
-- [ ] Show spec fields only after category selection.
-- [ ] Reset incompatible spec fields when category changes.
-- [ ] Show inline validation for required spec fields.
-- [ ] Add compact spec summary to inventory cards/list rows.
+- [x] Add dynamic spec fields in Inventory Add/Edit dialog.
+- [x] Show spec fields only after category selection.
+- [x] Reset incompatible spec fields when category changes.
+- [x] Show inline validation for required spec fields.
+- [x] Add compact spec summary to inventory cards/list rows.
 
 Example summaries:
 
@@ -108,15 +108,15 @@ These should be handled as separate follow-up plans after Inventory specs are st
 
 ## Test Plan
 
-- [ ] Add validation tests for each category specification shape.
-- [ ] Add create inventory tests with valid specs.
-- [ ] Add create inventory tests with invalid/missing specs.
-- [ ] Add update inventory tests for category changes.
-- [ ] Add regression test for legacy inventory rows without specs.
+- [x] Add validation tests for each category specification shape.
+- [x] Add create inventory tests with valid specs.
+- [x] Add create inventory tests with invalid/missing specs.
+- [x] Add update inventory tests for category changes.
+- [x] Add regression test for legacy inventory rows without specs.
 - [ ] Manual smoke test Inventory Add/Edit on desktop and mobile.
-- [ ] Run `pnpm green:code`.
-- [ ] Run `pnpm test:db`.
-- [ ] Run `pnpm green`.
+- [x] Run `pnpm green:code`.
+- [x] Run `pnpm test:db`.
+- [x] Run `pnpm green`.
 
 ## Acceptance Criteria
 

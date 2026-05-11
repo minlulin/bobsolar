@@ -6,6 +6,7 @@ import {
   decimal,
   integer,
   boolean,
+  jsonb,
   pgEnum,
   index,
   uniqueIndex,
@@ -130,6 +131,7 @@ export const inventoryItems = pgTable('inventory_items', {
   stockQty: integer('stock_qty').default(0).notNull(),
   brand: text('brand'),
   modelNumber: text('model_number'),
+  specifications: jsonb('specifications'),
   isActive: boolean('is_active').default(true).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
