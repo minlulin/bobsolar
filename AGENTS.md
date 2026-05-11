@@ -8,6 +8,7 @@ or configuration work, the agent MUST follow:
 .agents/skills/typescript-pwa-vercel-deploy/SKILL.md
 
 This skill is mandatory for:
+
 - tsconfig changes
 - ESLint changes
 - package scripts
@@ -17,6 +18,7 @@ This skill is mandatory for:
 - TypeScript refactors
 
 The agent must enforce:
+
 - no `any`
 - strict TypeScript
 - explicit meaningful types

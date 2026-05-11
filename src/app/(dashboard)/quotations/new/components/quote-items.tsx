@@ -96,7 +96,9 @@ function ItemRow({
     >
       <div
         className="text-muted-foreground flex cursor-grab justify-center transition-colors group-hover:text-amber-500 active:cursor-grabbing"
-        onPointerDown={(e) => { controls.start(e); }}
+        onPointerDown={(e) => {
+          controls.start(e);
+        }}
       >
         <GripVertical className="h-4 w-4" />
       </div>
@@ -106,7 +108,9 @@ function ItemRow({
           id={`quote-item-description-${index}`}
           aria-label={`Item ${index + 1} description`}
           value={item.description}
-          onChange={(e) => { updateItemDescription(index, e.target.value); }}
+          onChange={(e) => {
+            updateItemDescription(index, e.target.value);
+          }}
           className="focus:bg-background/40 h-9 border-transparent bg-transparent text-sm font-medium transition-all hover:border-white/10 focus:border-white/20"
         />
       </div>
@@ -136,9 +140,9 @@ function ItemRow({
             aria-label={`Item ${index + 1} unit price`}
             type="number"
             value={item.unitPrice}
-            onChange={(e) =>
-              { updateItemPrice(index, parseInt(e.target.value) || 0); }
-            }
+            onChange={(e) => {
+              updateItemPrice(index, parseInt(e.target.value) || 0);
+            }}
             className="focus:bg-background/40 h-9 border-transparent bg-transparent pr-2 text-right font-mono text-sm font-bold text-amber-500 transition-all hover:border-white/10 focus:border-white/20"
           />
         </div>
@@ -153,7 +157,9 @@ function ItemRow({
           variant="ghost"
           size="icon"
           aria-label={`Remove item ${index + 1}`}
-          onClick={() => { removeItem(index); }}
+          onClick={() => {
+            removeItem(index);
+          }}
           className="text-muted-foreground h-8 w-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-500"
         >
           <Trash2 className="h-4 w-4" />

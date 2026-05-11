@@ -222,9 +222,9 @@ export function InventoryDialog({
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) =>
-                          { field.onChange(parseFloat(e.target.value)); }
-                        }
+                        onChange={(e) => {
+                          field.onChange(parseFloat(e.target.value));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -242,9 +242,9 @@ export function InventoryDialog({
                       <Input
                         type="number"
                         {...field}
-                        onChange={(e) =>
-                          { field.onChange(parseInt(e.target.value)); }
-                        }
+                        onChange={(e) => {
+                          field.onChange(parseInt(e.target.value));
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -295,7 +295,9 @@ export function InventoryDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { onOpenChange(false); }}
+                onClick={() => {
+                  onOpenChange(false);
+                }}
               >
                 Cancel
               </Button>

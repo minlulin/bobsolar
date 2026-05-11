@@ -18,7 +18,9 @@ type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useProjects(
   filters: Partial<ProjectListFilter> = {},
-): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>> {
+): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>
+> {
   const full: ProjectListFilter = {
     scope: filters.scope ?? 'active',
     status: filters.status,
@@ -43,7 +45,9 @@ export function useProjects(
 
 export function useProject(
   id: string,
-): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProject>>>>> {
+): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getProject>>>>
+> {
   return useQuery({
     queryKey: ['projects', id],
     queryFn: async () => {
@@ -56,11 +60,13 @@ export function useProject(
   });
 }
 
-export function useConvertToProject(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof convertQuotationToProject>>,
-  Error,
-  Parameters<typeof convertQuotationToProject>[0]
->> {
+export function useConvertToProject(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof convertQuotationToProject>>,
+    Error,
+    Parameters<typeof convertQuotationToProject>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -79,11 +85,13 @@ export function useConvertToProject(): ReturnType<typeof useMutation<
   });
 }
 
-export function useUpdateProject(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof updateProject>>,
-  Error,
-  Parameters<typeof updateProject>[0]
->> {
+export function useUpdateProject(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof updateProject>>,
+    Error,
+    Parameters<typeof updateProject>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -102,11 +110,13 @@ export function useUpdateProject(): ReturnType<typeof useMutation<
   });
 }
 
-export function useAddProjectCost(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof addProjectCost>>,
-  Error,
-  Parameters<typeof addProjectCost>[0]
->> {
+export function useAddProjectCost(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof addProjectCost>>,
+    Error,
+    Parameters<typeof addProjectCost>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -125,11 +135,13 @@ export function useAddProjectCost(): ReturnType<typeof useMutation<
   });
 }
 
-export function useDeleteProjectCost(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof deleteProjectCost>>,
-  Error,
-  Parameters<typeof deleteProjectCost>[0]
->> {
+export function useDeleteProjectCost(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof deleteProjectCost>>,
+    Error,
+    Parameters<typeof deleteProjectCost>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -148,11 +160,13 @@ export function useDeleteProjectCost(): ReturnType<typeof useMutation<
   });
 }
 
-export function useDeleteProjectRemark(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof deleteProjectRemark>>,
-  Error,
-  Parameters<typeof deleteProjectRemark>[0]
->> {
+export function useDeleteProjectRemark(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof deleteProjectRemark>>,
+    Error,
+    Parameters<typeof deleteProjectRemark>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -171,11 +185,13 @@ export function useDeleteProjectRemark(): ReturnType<typeof useMutation<
   });
 }
 
-export function useAddProjectRemark(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof addProjectRemark>>,
-  Error,
-  Parameters<typeof addProjectRemark>[0]
->> {
+export function useAddProjectRemark(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof addProjectRemark>>,
+    Error,
+    Parameters<typeof addProjectRemark>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -194,11 +210,13 @@ export function useAddProjectRemark(): ReturnType<typeof useMutation<
   });
 }
 
-export function useMarkProjectCompleted(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof markProjectCompleted>>,
-  Error,
-  Parameters<typeof markProjectCompleted>[0]
->> {
+export function useMarkProjectCompleted(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof markProjectCompleted>>,
+    Error,
+    Parameters<typeof markProjectCompleted>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -218,11 +236,13 @@ export function useMarkProjectCompleted(): ReturnType<typeof useMutation<
   });
 }
 
-export function useCreateProjectWarrantyAlert(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof createWarrantyAlertForProject>>,
-  Error,
-  Parameters<typeof createWarrantyAlertForProject>[0]
->> {
+export function useCreateProjectWarrantyAlert(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof createWarrantyAlertForProject>>,
+    Error,
+    Parameters<typeof createWarrantyAlertForProject>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({

@@ -247,44 +247,52 @@ export default function DashboardPage(): React.JSX.Element {
                 No upcoming alerts.
               </p>
             )}
-{alerts.map((alert: { id: string; projectNumber: string; description: string; dueDate: string | Date; isOverdue: boolean }) => (
-              <motion.div
-                key={alert.id}
-                whileHover={{ y: -2, scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                transition={{ type: 'spring', stiffness: 360, damping: 28 }}
-              >
-                <Link
-                  href="/warranty"
-                  className="group flex items-start justify-between rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+            {alerts.map(
+              (alert: {
+                id: string;
+                projectNumber: string;
+                description: string;
+                dueDate: string | Date;
+                isOverdue: boolean;
+              }) => (
+                <motion.div
+                  key={alert.id}
+                  whileHover={{ y: -2, scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  transition={{ type: 'spring', stiffness: 360, damping: 28 }}
                 >
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle
-                      className={cn(
-                        'mt-0.5 h-4 w-4',
-                        alert.isOverdue ? 'text-red-400' : 'text-amber-400',
-                      )}
-                    />
-                    {alert.isOverdue ? (
-                      <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-400" />
-                    ) : null}
-                    <div>
-                      <p className="text-sm font-medium">
-                        {alert.projectNumber}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {alert.description}
-                      </p>
+                  <Link
+                    href="/warranty"
+                    className="group flex items-start justify-between rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle
+                        className={cn(
+                          'mt-0.5 h-4 w-4',
+                          alert.isOverdue ? 'text-red-400' : 'text-amber-400',
+                        )}
+                      />
+                      {alert.isOverdue ? (
+                        <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                      ) : null}
+                      <div>
+                        <p className="text-sm font-medium">
+                          {alert.projectNumber}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {alert.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-white/60">
-                    {formatDistanceToNow(new Date(alert.dueDate), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </Link>
-              </motion.div>
-            ))}
+                    <p className="text-xs text-white/60">
+                      {formatDistanceToNow(new Date(alert.dueDate), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </Link>
+                </motion.div>
+              ),
+            )}
             <Link
               href="/warranty"
               className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200"

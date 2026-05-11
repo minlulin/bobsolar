@@ -14,7 +14,9 @@ export function ThemeToggle(): React.JSX.Element {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => { setTheme(isDark ? 'light' : 'dark'); }}
+      onClick={() => {
+        setTheme(isDark ? 'light' : 'dark');
+      }}
       className="relative h-10 w-10 rounded-full"
     >
       <AnimatePresence mode="wait" initial={false}>

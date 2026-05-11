@@ -19,7 +19,9 @@ type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useQuotations(
   filters: QuotationFilterInput = {},
-): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotations>>>>> {
+): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotations>>>>
+> {
   return useQuery({
     queryKey: ['quotations', filters],
     queryFn: async () => {
@@ -33,7 +35,9 @@ export function useQuotations(
 
 export function useQuotation(
   id: string,
-): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotation>>>>> {
+): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotation>>>>
+> {
   return useQuery({
     queryKey: ['quotations', id],
     queryFn: async () => {
@@ -46,11 +50,13 @@ export function useQuotation(
   });
 }
 
-export function useCreateQuotation(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof createQuotation>>>,
-  Error,
-  Parameters<typeof createQuotation>[0]
->> {
+export function useCreateQuotation(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof createQuotation>>,
+    Error,
+    Parameters<typeof createQuotation>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -69,11 +75,13 @@ export function useCreateQuotation(): ReturnType<typeof useMutation<
   });
 }
 
-export function useUpdateQuotationStatus(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof updateQuotationStatus>>>,
-  Error,
-  { id: string; status: QuotationStatus }
->> {
+export function useUpdateQuotationStatus(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof updateQuotationStatus>>,
+    Error,
+    { id: string; status: QuotationStatus }
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -93,11 +101,9 @@ export function useUpdateQuotationStatus(): ReturnType<typeof useMutation<
   });
 }
 
-export function useDeleteQuotation(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof deleteQuotation>>>,
-  Error,
-  string
->> {
+export function useDeleteQuotation(): ReturnType<
+  typeof useMutation<Awaited<ReturnType<typeof deleteQuotation>>, Error, string>
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -116,11 +122,13 @@ export function useDeleteQuotation(): ReturnType<typeof useMutation<
   });
 }
 
-export function useUpdateQuotation(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof updateQuotation>>>,
-  Error,
-  { id: string; data: UpdateQuotation }
->> {
+export function useUpdateQuotation(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof updateQuotation>>,
+    Error,
+    { id: string; data: UpdateQuotation }
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -140,11 +148,13 @@ export function useUpdateQuotation(): ReturnType<typeof useMutation<
   });
 }
 
-export function useDuplicateQuotation(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof duplicateQuotation>>>,
-  Error,
-  string
->> {
+export function useDuplicateQuotation(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof duplicateQuotation>>,
+    Error,
+    string
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({

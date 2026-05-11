@@ -16,13 +16,22 @@ let insertedCustomerId: string | null = null;
 let createdUserId: string | null = null;
 
 vi.mock('@/lib/auth/validate', () => ({
-  requireAuth: async (): Promise<{ userId: string; role: 'admin' | 'staff' }> => {
+  requireAuth: async (): Promise<{
+    userId: string;
+    role: 'admin' | 'staff';
+  }> => {
     if (!authUserId) throw new Error('Auth user not initialized');
-    return await Promise.resolve({ userId: authUserId, role: 'admin' as const });
+    return await Promise.resolve({
+      userId: authUserId,
+      role: 'admin' as const,
+    });
   },
   requireAdmin: async (): Promise<{ userId: string; role: 'admin' }> => {
     if (!authUserId) throw new Error('Auth user not initialized');
-    return await Promise.resolve({ userId: authUserId, role: 'admin' as const });
+    return await Promise.resolve({
+      userId: authUserId,
+      role: 'admin' as const,
+    });
   },
 }));
 
@@ -30,7 +39,7 @@ neonConfig.webSocketConstructor = ws;
 
 async function getQuotationCount(): Promise<number> {
   const rows = await db.select({ total: count() }).from(quotations);
-  return (rows[0]?.total ?? 0);
+  return rows[0]?.total ?? 0;
 }
 
 describeDb('DB ugly paths: constraint failures', () => {

@@ -46,8 +46,12 @@ export function NotificationBell(): React.JSX.Element {
   React.useEffect(() => {
     if (unreadCount > prevUnread.current) {
       setPulseBadge(true);
-      const timer = setTimeout(() => { setPulseBadge(false); }, 900);
-      return (): void => { clearTimeout(timer); };
+      const timer = setTimeout(() => {
+        setPulseBadge(false);
+      }, 900);
+      return (): void => {
+        clearTimeout(timer);
+      };
     }
     prevUnread.current = unreadCount;
     return;
@@ -94,7 +98,9 @@ export function NotificationBell(): React.JSX.Element {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => { markAllAsRead.mutate(); }}
+                  onClick={() => {
+                    markAllAsRead.mutate();
+                  }}
                   disabled={markAllAsRead.isPending}
                   className="text-muted-foreground h-8 text-xs hover:text-white"
                 >
@@ -125,7 +131,9 @@ export function NotificationBell(): React.JSX.Element {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  onClick={() => { handleNotificationClick(notification); }}
+                  onClick={() => {
+                    handleNotificationClick(notification);
+                  }}
                   className={cn(
                     'relative flex cursor-pointer gap-4 rounded-xl border p-4 transition-colors hover:bg-white/5',
                     notification.isRead
@@ -184,7 +192,9 @@ export function NotificationBell(): React.JSX.Element {
                 variant="ghost"
                 size="sm"
                 className="text-muted-foreground mt-2 hover:text-white"
-                onClick={() => { markAllAsRead.mutate(); }}
+                onClick={() => {
+                  markAllAsRead.mutate();
+                }}
               >
                 Clear all
               </Button>

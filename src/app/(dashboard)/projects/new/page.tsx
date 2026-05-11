@@ -92,7 +92,9 @@ function QuotationConversionForm({
         <Textarea
           rows={5}
           value={siteAddress}
-          onChange={(e) => { setSiteAddress(e.target.value); }}
+          onChange={(e) => {
+            setSiteAddress(e.target.value);
+          }}
           required
         />
       </div>
@@ -105,7 +107,9 @@ function QuotationConversionForm({
             type="number"
             step={0.1}
             value={systemSize}
-            onChange={(e) => { setSystemSize(e.target.value); }}
+            onChange={(e) => {
+              setSystemSize(e.target.value);
+            }}
           />
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -113,7 +117,9 @@ function QuotationConversionForm({
           <Textarea
             rows={4}
             value={notes}
-            onChange={(e) => { setNotes(e.target.value); }}
+            onChange={(e) => {
+              setNotes(e.target.value);
+            }}
           />
         </div>
       </div>

@@ -92,7 +92,9 @@ export function UserManagementTab(): React.JSX.Element {
         <h3 className="font-heading text-lg font-semibold">User Management</h3>
         <Button
           disabled={users.length >= USER_CAP}
-          onClick={() => { setCreating(true); }}
+          onClick={() => {
+            setCreating(true);
+          }}
         >
           Add User
         </Button>
@@ -115,13 +117,13 @@ export function UserManagementTab(): React.JSX.Element {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  { setEditing({
+                onClick={() => {
+                  setEditing({
                     id: user.id,
                     name: user.name,
                     email: user.email,
-                  }); }
-                }
+                  });
+                }}
               >
                 Edit
               </Button>
@@ -154,28 +156,33 @@ export function UserManagementTab(): React.JSX.Element {
                 <Label>Name</Label>
                 <Input
                   value={editing.name}
-                  onChange={(e) =>
-                    { setEditing((prev) =>
+                  onChange={(e) => {
+                    setEditing((prev) =>
                       prev ? { ...prev, name: e.target.value } : prev,
-                    ); }
-                  }
+                    );
+                  }}
                 />
               </div>
               <div className="space-y-1">
                 <Label>Email</Label>
                 <Input
                   value={editing.email}
-                  onChange={(e) =>
-                    { setEditing((prev) =>
+                  onChange={(e) => {
+                    setEditing((prev) =>
                       prev ? { ...prev, email: e.target.value } : prev,
-                    ); }
-                  }
+                    );
+                  }}
                 />
               </div>
             </div>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setEditing(null); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditing(null);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={() => void handleUpdate()}>Save</Button>
@@ -194,18 +201,18 @@ export function UserManagementTab(): React.JSX.Element {
               <Label>Name</Label>
               <Input
                 value={newUser.name}
-                onChange={(e) =>
-                  { setNewUser((p) => ({ ...p, name: e.target.value })); }
-                }
+                onChange={(e) => {
+                  setNewUser((p) => ({ ...p, name: e.target.value }));
+                }}
               />
             </div>
             <div className="space-y-1">
               <Label>Email</Label>
               <Input
                 value={newUser.email}
-                onChange={(e) =>
-                  { setNewUser((p) => ({ ...p, email: e.target.value })); }
-                }
+                onChange={(e) => {
+                  setNewUser((p) => ({ ...p, email: e.target.value }));
+                }}
               />
             </div>
             <div className="space-y-1">
@@ -213,14 +220,19 @@ export function UserManagementTab(): React.JSX.Element {
               <Input
                 type="password"
                 value={newUser.password}
-                onChange={(e) =>
-                  { setNewUser((p) => ({ ...p, password: e.target.value })); }
-                }
+                onChange={(e) => {
+                  setNewUser((p) => ({ ...p, password: e.target.value }));
+                }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setCreating(false); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreating(false);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={() => void handleCreate()}>Create</Button>

@@ -145,7 +145,9 @@ export function QuoteEditor({
             variant="ghost"
             size="icon"
             aria-label="Go back"
-            onClick={() => { router.back(); }}
+            onClick={() => {
+              router.back();
+            }}
             className="rounded-full hover:bg-white/5"
           >
             <ChevronLeft className="h-5 w-5" />

@@ -100,7 +100,9 @@ export function QuoteDetailView({
             variant="ghost"
             size="icon"
             aria-label="Back to quotations"
-            onClick={() => { router.push('/quotations'); }}
+            onClick={() => {
+              router.push('/quotations');
+            }}
             className="rounded-full hover:bg-white/5"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -132,14 +134,18 @@ export function QuoteDetailView({
             <>
               <Button
                 variant="outline"
-                onClick={() => { handleStatusChange('rejected'); }}
+                onClick={() => {
+                  handleStatusChange('rejected');
+                }}
                 disabled={isPending}
                 className="border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
               >
                 Mark Rejected
               </Button>
               <Button
-                onClick={() => { handleStatusChange('accepted'); }}
+                onClick={() => {
+                  handleStatusChange('accepted');
+                }}
                 disabled={isPending}
                 className="bg-emerald-600 font-bold text-white hover:bg-emerald-700"
               >
@@ -151,7 +157,9 @@ export function QuoteDetailView({
           {status === 'rejected' && (
             <Button
               variant="outline"
-              onClick={() => { handleReopen(); }}
+              onClick={() => {
+                handleReopen();
+              }}
               disabled={isPending}
               className="border-white/10 bg-white/5 hover:bg-white/10"
             >
@@ -174,9 +182,9 @@ export function QuoteDetailView({
             ) : (
               <Button
                 className="bg-gradient-to-r from-amber-500 to-orange-600 font-bold text-white"
-                onClick={() =>
-                  { router.push(`/projects/new?quoteId=${quotation.id}`); }
-                }
+                onClick={() => {
+                  router.push(`/projects/new?quoteId=${quotation.id}`);
+                }}
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 Convert to Project
@@ -185,7 +193,9 @@ export function QuoteDetailView({
 
           <Button
             variant="outline"
-            onClick={() => { handleDuplicate(); }}
+            onClick={() => {
+              handleDuplicate();
+            }}
             disabled={isPending}
             className="border-white/10 bg-white/5 hover:bg-white/10"
           >

@@ -234,7 +234,9 @@ export async function convertQuotationToProject(
               );
             }
 
-            if ((quotation as unknown as { project?: unknown }).project != null) {
+            if (
+              (quotation as unknown as { project?: unknown }).project != null
+            ) {
               return handleStateError(
                 'This quotation is already linked to a project.',
               );
@@ -381,7 +383,7 @@ export async function getProjects(
         customerName: customers.name,
         quoteNumber: quotations.quoteNumber,
         costTotal:
-          sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
+          sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
             'cost_total',
           ),
       })
@@ -564,7 +566,9 @@ export async function updateProject(
         return handleStateError('Only admins can change project status here.');
       }
       if (!isProjectStatus(existing.status)) {
-        return handleStateError(`Invalid current status: ${existing.status as string}`);
+        return handleStateError(
+          `Invalid current status: ${existing.status as string}`,
+        );
       }
       if (!canTransitionProjectStatus(existing.status, data.status)) {
         return handleStateError(`Invalid status transition to ${data.status}`);
@@ -641,7 +645,9 @@ export async function markProjectCompleted(
     }
 
     if (!isProjectStatus(existing.status)) {
-      return handleStateError(`Invalid current status: ${existing.status as string}`);
+      return handleStateError(
+        `Invalid current status: ${existing.status as string}`,
+      );
     }
 
     if (!canTransitionProjectStatus(existing.status, 'completed')) {

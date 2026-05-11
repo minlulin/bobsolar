@@ -3,7 +3,9 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
 type DashboardStats = ActionData<Awaited<ReturnType<typeof getDashboardStats>>>;
-type DashboardPipeline = ActionData<Awaited<ReturnType<typeof getDashboardPipeline>>>;
+type DashboardPipeline = ActionData<
+  Awaited<ReturnType<typeof getDashboardPipeline>>
+>;
 type RecentActivity = ActionData<Awaited<ReturnType<typeof getRecentActivity>>>;
 type UpcomingAlerts = ActionData<Awaited<ReturnType<typeof getUpcomingAlerts>>>;
 
@@ -14,9 +16,9 @@ import {
   getUpcomingAlerts,
 } from '@/actions/dashboard-actions';
 
-export function useDashboardStats(): UseQueryResult<NonNullable<DashboardStats>> {
-
-
+export function useDashboardStats(): UseQueryResult<
+  NonNullable<DashboardStats>
+> {
   return useQuery({
     queryKey: ['dashboard', 'stats'],
     queryFn: async () => {
@@ -28,9 +30,9 @@ export function useDashboardStats(): UseQueryResult<NonNullable<DashboardStats>>
   });
 }
 
-export function useDashboardPipeline(): UseQueryResult<NonNullable<DashboardPipeline>> {
-
-
+export function useDashboardPipeline(): UseQueryResult<
+  NonNullable<DashboardPipeline>
+> {
   return useQuery({
     queryKey: ['dashboard', 'pipeline'],
     queryFn: async () => {
@@ -42,9 +44,9 @@ export function useDashboardPipeline(): UseQueryResult<NonNullable<DashboardPipe
   });
 }
 
-export function useRecentActivity(limit = 10): UseQueryResult<NonNullable<RecentActivity>> {
-
-
+export function useRecentActivity(
+  limit = 10,
+): UseQueryResult<NonNullable<RecentActivity>> {
   return useQuery({
     queryKey: ['dashboard', 'activity', limit],
     queryFn: async () => {
@@ -57,9 +59,9 @@ export function useRecentActivity(limit = 10): UseQueryResult<NonNullable<Recent
   });
 }
 
-export function useUpcomingAlerts(limit = 5): UseQueryResult<NonNullable<UpcomingAlerts>> {
-
-
+export function useUpcomingAlerts(
+  limit = 5,
+): UseQueryResult<NonNullable<UpcomingAlerts>> {
   return useQuery({
     queryKey: ['dashboard', 'alerts', limit],
     queryFn: async () => {

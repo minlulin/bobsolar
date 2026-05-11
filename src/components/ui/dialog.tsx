@@ -143,7 +143,9 @@ function DialogTitle({
 function DialogDescription({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>): React.JSX.Element {
+}: React.ComponentProps<
+  typeof DialogPrimitive.Description
+>): React.JSX.Element {
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"

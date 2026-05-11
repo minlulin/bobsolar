@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
-export function useWarrantySummary(): ReturnType<typeof useQuery<
-  ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>
->> {
+export function useWarrantySummary(): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>>
+> {
   return useQuery({
     queryKey: ['warranty', 'summary'],
     queryFn: async () => {
@@ -26,7 +26,9 @@ export function useWarrantySummary(): ReturnType<typeof useQuery<
 
 export function useWarrantyAlerts(
   filter: Partial<WarrantyListFilter> = {},
-): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantyAlerts>>>>> {
+): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantyAlerts>>>>
+> {
   const tab = filter.tab ?? 'all';
 
   return useQuery({
@@ -40,11 +42,13 @@ export function useWarrantyAlerts(
   });
 }
 
-export function useResolveWarrantyAlert(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof resolveWarrantyAlert>>,
-  Error,
-  Parameters<typeof resolveWarrantyAlert>[0]
->> {
+export function useResolveWarrantyAlert(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof resolveWarrantyAlert>>,
+    Error,
+    Parameters<typeof resolveWarrantyAlert>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -63,11 +67,13 @@ export function useResolveWarrantyAlert(): ReturnType<typeof useMutation<
   });
 }
 
-export function useReopenWarrantyAlert(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof reopenWarrantyAlert>>,
-  Error,
-  Parameters<typeof reopenWarrantyAlert>[0]
->> {
+export function useReopenWarrantyAlert(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof reopenWarrantyAlert>>,
+    Error,
+    Parameters<typeof reopenWarrantyAlert>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({

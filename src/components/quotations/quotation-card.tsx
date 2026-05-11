@@ -67,7 +67,9 @@ export function QuotationCard({
     >
       <Card
         className="group cursor-pointer border-white/5 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
-        onClick={() => { router.push(`/quotations/${quotation.id}`); }}
+        onClick={() => {
+          router.push(`/quotations/${quotation.id}`);
+        }}
       >
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
@@ -92,7 +94,12 @@ export function QuotationCard({
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => { e.stopPropagation(); }}>
+              <DropdownMenuTrigger
+                asChild
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <Button
                   variant="ghost"
                   size="icon"
@@ -117,7 +124,9 @@ export function QuotationCard({
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
                         className="text-destructive"
-                        onSelect={(e) => { e.preventDefault(); }}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                        }}
                         disabled={isPending}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />

@@ -32,7 +32,9 @@ export default function FeatureError({
       </p>
       <div className="flex gap-4">
         <Button
-          onClick={() => { reset(); }}
+          onClick={() => {
+            reset();
+          }}
           className="bg-white font-medium text-black hover:bg-white/90"
         >
           Try again

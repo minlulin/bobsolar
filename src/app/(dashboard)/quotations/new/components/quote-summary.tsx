@@ -31,7 +31,9 @@ export function QuoteSummary(): React.JSX.Element {
           </label>
           <Textarea
             value={notes}
-            onChange={(e) => { setNotes(e.target.value); }}
+            onChange={(e) => {
+              setNotes(e.target.value);
+            }}
             placeholder="Terms, bank details, or special instructions..."
             className="min-h-[120px] resize-none border-white/10 bg-white/[0.02] transition-all focus:border-amber-500/50"
           />
@@ -46,9 +48,9 @@ export function QuoteSummary(): React.JSX.Element {
             <Input
               type="date"
               value={validUntil ? validUntil.toISOString().split('T')[0] : ''}
-              onChange={(e) =>
-                { setValidUntil(e.target.value ? new Date(e.target.value) : null); }
-              }
+              onChange={(e) => {
+                setValidUntil(e.target.value ? new Date(e.target.value) : null);
+              }}
               className="border-white/10 bg-white/[0.02] pl-10 transition-all focus:border-amber-500/50"
             />
           </div>
@@ -73,7 +75,9 @@ export function QuoteSummary(): React.JSX.Element {
                 <Input
                   type="number"
                   value={discountPercent}
-                  onChange={(e) => { setDiscount(parseFloat(e.target.value) || 0); }}
+                  onChange={(e) => {
+                    setDiscount(parseFloat(e.target.value) || 0);
+                  }}
                   className="h-7 border-white/10 bg-white/5 px-2 pr-6 text-right text-xs"
                 />
               </div>
@@ -93,7 +97,9 @@ export function QuoteSummary(): React.JSX.Element {
                 <Input
                   type="number"
                   value={taxPercent}
-                  onChange={(e) => { setTax(parseFloat(e.target.value) || 0); }}
+                  onChange={(e) => {
+                    setTax(parseFloat(e.target.value) || 0);
+                  }}
                   className="h-7 border-white/10 bg-white/5 px-2 pr-6 text-right text-xs"
                 />
               </div>

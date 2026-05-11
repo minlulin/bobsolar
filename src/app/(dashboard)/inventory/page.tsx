@@ -26,7 +26,6 @@ export default function InventoryPage(): React.JSX.Element {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   const { data: response, isLoading } = useInventoryItems({
-
     search,
     category: category as DBInventoryItem['category'],
     limit: 50,
@@ -71,7 +70,9 @@ export default function InventoryPage(): React.JSX.Element {
             placeholder="Search items, brands, models..."
             className="glass pl-10"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
           />
         </div>
 
@@ -79,7 +80,9 @@ export default function InventoryPage(): React.JSX.Element {
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => { setCategory(cat === 'all' ? null : cat); }}
+              onClick={() => {
+                setCategory(cat === 'all' ? null : cat);
+              }}
               className={cn(
                 'rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all',
                 category === cat || (cat === 'all' && category === null)
@@ -101,7 +104,6 @@ export default function InventoryPage(): React.JSX.Element {
           </p>
         </div>
       ) : response?.items && response.items.length > 0 ? (
-
         <motion.div
           variants={staggerContainer}
           initial="initial"

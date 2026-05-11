@@ -2,10 +2,13 @@
   "compilerOptions": {
     // ── Language & Environment ──────────────────────────────────────────
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "moduleResolution": "bundler",
-
     // ── Emit ────────────────────────────────────────────────────────────
     "declaration": true,
     "declarationMap": true,
@@ -13,14 +16,12 @@
     "noEmit": true,
     "removeComments": false,
     "importHelpers": true,
-
     // ── Interop Constraints ─────────────────────────────────────────────
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-
     // ── Strict Flags — ALL ENABLED ──────────────────────────────────────
     "strict": true,
     "noImplicitAny": true,
@@ -31,7 +32,6 @@
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-
     // ── Additional Safety Checks ────────────────────────────────────────
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -43,12 +43,10 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
-
     // ── Completeness ────────────────────────────────────────────────────
     // PRAGMATIC STRICTNESS: third-party libs have unfixable errors
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-
     // ── JSX & Framework ─────────────────────────────────────────────────
     "jsx": "react-jsx",
     "incremental": true,
@@ -58,8 +56,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",
@@ -69,5 +70,9 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "src/sw.ts"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "src/sw.ts"
+  ]
 }

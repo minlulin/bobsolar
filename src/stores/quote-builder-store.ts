@@ -60,10 +60,12 @@ const initialState = {
 export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
   ...initialState,
 
-  setCustomer: (customerId): void => { set({ selectedCustomerId: customerId }); },
+  setCustomer: (customerId): void => {
+    set({ selectedCustomerId: customerId });
+  },
 
-  addItem: (inventoryItem): void =>
-    { set((state) => {
+  addItem: (inventoryItem): void => {
+    set((state) => {
       const existingIndex = state.items.findIndex(
         (item) => item.itemId === inventoryItem.id,
       );
@@ -89,10 +91,11 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
         sortOrder: state.items.length,
       };
       return { items: [...state.items, newItem] };
-    }); },
+    });
+  },
 
-  removeItem: (index): void =>
-    { set((state) => {
+  removeItem: (index): void => {
+    set((state) => {
       const newItems = state.items.filter((_, i) => i !== index);
       // Re-calculate sort order
       const itemsWithNewOrder = newItems.map((item, i) => ({
@@ -100,49 +103,56 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
         sortOrder: i,
       }));
       return { items: itemsWithNewOrder };
-    }); },
+    });
+  },
 
-  updateItemQuantity: (index, quantity): void =>
-    { set((state) => {
+  updateItemQuantity: (index, quantity): void => {
+    set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
         const sanitizedQuantity = Math.max(1, Math.round(quantity));
         newItems[index] = { ...newItems[index], quantity: sanitizedQuantity };
       }
       return { items: newItems };
-    }); },
+    });
+  },
 
-  updateItemPrice: (index, unitPrice): void =>
-    { set((state) => {
+  updateItemPrice: (index, unitPrice): void => {
+    set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
         newItems[index] = { ...newItems[index], unitPrice };
       }
       return { items: newItems };
-    }); },
+    });
+  },
 
-  updateItemDiscount: (index, discountPercentage): void =>
-    { set((state) => {
+  updateItemDiscount: (index, discountPercentage): void => {
+    set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
         newItems[index] = { ...newItems[index], discountPercentage };
       }
       return { items: newItems };
-    }); },
+    });
+  },
 
-  updateItemDescription: (index, description): void =>
-    { set((state) => {
+  updateItemDescription: (index, description): void => {
+    set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
         newItems[index] = { ...newItems[index], description };
       }
       return { items: newItems };
-    }); },
+    });
+  },
 
-  setItems: (items): void => { set({ items }); },
+  setItems: (items): void => {
+    set({ items });
+  },
 
-  reorderItems: (fromIndex, toIndex): void =>
-    { set((state) => {
+  reorderItems: (fromIndex, toIndex): void => {
+    set((state) => {
       const newItems = [...state.items];
       const [movedItem] = newItems.splice(fromIndex, 1);
 
@@ -152,20 +162,31 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
       return {
         items: newItems.map((item, i) => ({ ...item, sortOrder: i })),
       };
-    }); },
+    });
+  },
 
-  setDiscount: (percent): void => { set({ discountPercent: percent }); },
+  setDiscount: (percent): void => {
+    set({ discountPercent: percent });
+  },
 
-  setTax: (percent): void => { set({ taxPercent: percent }); },
+  setTax: (percent): void => {
+    set({ taxPercent: percent });
+  },
 
-  setNotes: (notes): void => { set({ notes }); },
+  setNotes: (notes): void => {
+    set({ notes });
+  },
 
-  setValidUntil: (date): void => { set({ validUntil: date }); },
+  setValidUntil: (date): void => {
+    set({ validUntil: date });
+  },
 
-  reset: (): void => { set(initialState); },
+  reset: (): void => {
+    set(initialState);
+  },
 
-  loadFromQuotation: (quotation): void =>
-    { set({
+  loadFromQuotation: (quotation): void => {
+    set({
       selectedCustomerId: quotation.customerId,
       discountPercent: Number(quotation.discountPercent),
       taxPercent: Number(quotation.taxPercent),
@@ -182,7 +203,8 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
           discountPercentage: Number(item.discountPercentage || 0),
           sortOrder: item.sortOrder,
         })),
-    }); },
+    });
+  },
 
   getTotals: (): PricingResult => {
     const state = get();

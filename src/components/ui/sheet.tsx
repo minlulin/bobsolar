@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>): React.ReactElement {
+function Sheet({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Root>): React.ReactElement {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
@@ -85,7 +87,10 @@ function SheetContent({
   );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<'div'>): React.ReactElement {
+function SheetHeader({
+  className,
+  ...props
+}: React.ComponentProps<'div'>): React.ReactElement {
   return (
     <div
       data-slot="sheet-header"
@@ -95,7 +100,10 @@ function SheetHeader({ className, ...props }: React.ComponentProps<'div'>): Reac
   );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<'div'>): React.ReactElement {
+function SheetFooter({
+  className,
+  ...props
+}: React.ComponentProps<'div'>): React.ReactElement {
   return (
     <div
       data-slot="sheet-footer"
@@ -124,7 +132,9 @@ function SheetTitle({
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>): React.ReactElement {
+}: React.ComponentProps<
+  typeof SheetPrimitive.Description
+>): React.ReactElement {
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"

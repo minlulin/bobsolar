@@ -52,12 +52,12 @@ export function PreferencesTab(): React.JSX.Element {
         <Label>Theme</Label>
         <Select
           value={prefs.theme}
-          onValueChange={(value) =>
-            { setPrefs((p) => ({
+          onValueChange={(value) => {
+            setPrefs((p) => ({
               ...p,
               theme: value as 'light' | 'dark' | 'system',
-            })); }
-          }
+            }));
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue />
@@ -73,18 +73,18 @@ export function PreferencesTab(): React.JSX.Element {
         <Label>Default Tax %</Label>
         <Input
           value={prefs.defaultTaxPercent}
-          onChange={(e) =>
-            { setPrefs((p) => ({ ...p, defaultTaxPercent: e.target.value })); }
-          }
+          onChange={(e) => {
+            setPrefs((p) => ({ ...p, defaultTaxPercent: e.target.value }));
+          }}
         />
       </div>
       <div className="space-y-2">
         <Label>Default Warranty Alert Duration (months)</Label>
         <Input
           value={prefs.defaultWarrantyMonths}
-          onChange={(e) =>
-            { setPrefs((p) => ({ ...p, defaultWarrantyMonths: e.target.value })); }
-          }
+          onChange={(e) => {
+            setPrefs((p) => ({ ...p, defaultWarrantyMonths: e.target.value }));
+          }}
         />
       </div>
       <Button onClick={savePreferences}>Save Preferences</Button>

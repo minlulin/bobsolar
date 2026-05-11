@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-query';
 
 import {
-
   getInventoryItems,
   getInventoryItem,
   createInventoryItem,
@@ -22,15 +21,22 @@ import { toast } from 'sonner';
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
-type InventoryItemsData = ActionData<Awaited<ReturnType<typeof import('@/actions/inventory-actions').getInventoryItems>>>;
+type InventoryItemsData = ActionData<
+  Awaited<
+    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItems>
+  >
+>;
 
-type InventoryItemData = ActionData<Awaited<ReturnType<typeof import('@/actions/inventory-actions').getInventoryItem>>>;
+type InventoryItemData = ActionData<
+  Awaited<
+    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItem>
+  >
+>;
 
 export function useInventoryItems(
   filters: InventoryFilter = {},
 ): UseQueryResult<InventoryItemsData> {
   return useQuery({
-
     queryKey: ['inventory', filters],
     queryFn: async () => {
       const res = await getInventoryItems(filters);
@@ -41,9 +47,10 @@ export function useInventoryItems(
   });
 }
 
-export function useInventoryItem(id: string): UseQueryResult<InventoryItemData> {
+export function useInventoryItem(
+  id: string,
+): UseQueryResult<InventoryItemData> {
   return useQuery({
-
     queryKey: ['inventory', id],
     queryFn: async () => {
       const res = await getInventoryItem(id);
@@ -55,12 +62,13 @@ export function useInventoryItem(id: string): UseQueryResult<InventoryItemData> 
   });
 }
 
-
-export function useCreateInventoryItem(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof createInventoryItem>>,
-  Error,
-  Parameters<typeof createInventoryItem>[0]
->> {
+export function useCreateInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof createInventoryItem>>,
+    Error,
+    Parameters<typeof createInventoryItem>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -79,11 +87,13 @@ export function useCreateInventoryItem(): ReturnType<typeof useMutation<
   });
 }
 
-export function useUpdateInventoryItem(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof updateInventoryItem>>,
-  Error,
-  { id: string; data: Partial<CreateInventoryItem> }
->> {
+export function useUpdateInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof updateInventoryItem>>,
+    Error,
+    { id: string; data: Partial<CreateInventoryItem> }
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -108,11 +118,13 @@ export function useUpdateInventoryItem(): ReturnType<typeof useMutation<
   });
 }
 
-export function useDeleteInventoryItem(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof deleteInventoryItem>>,
-  Error,
-  string
->> {
+export function useDeleteInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof deleteInventoryItem>>,
+    Error,
+    string
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -131,11 +143,13 @@ export function useDeleteInventoryItem(): ReturnType<typeof useMutation<
   });
 }
 
-export function useBulkUpdatePrices(): ReturnType<typeof useMutation<
-  Awaited<ReturnType<typeof bulkUpdatePrices>>,
-  Error,
-  Parameters<typeof bulkUpdatePrices>[0]
->> {
+export function useBulkUpdatePrices(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof bulkUpdatePrices>>,
+    Error,
+    Parameters<typeof bulkUpdatePrices>[0]
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({

@@ -44,7 +44,9 @@ export default function CustomerDetailPage(): React.JSX.Element {
         <h2 className="text-2xl font-bold">Customer not found</h2>
         <Button
           variant="link"
-          onClick={() => { router.push('/customers'); }}
+          onClick={() => {
+            router.push('/customers');
+          }}
           className="mt-4"
         >
           Back to list
@@ -68,7 +70,9 @@ export default function CustomerDetailPage(): React.JSX.Element {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => { router.push('/customers'); }}
+        onClick={() => {
+          router.push('/customers');
+        }}
         className="group text-muted-foreground hover:text-foreground -ml-2"
       >
         <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1" />
@@ -110,7 +114,9 @@ export default function CustomerDetailPage(): React.JSX.Element {
         </div>
 
         <Button
-          onClick={() => { setEditDialogOpen(true); }}
+          onClick={() => {
+            setEditDialogOpen(true);
+          }}
           variant="outline"
           className="gap-2 border-white/10 bg-white/5 hover:bg-white/10"
         >

@@ -60,7 +60,9 @@ export default function QuotationsPage(): React.JSX.Element {
           </p>
         </div>
         <Button
-          onClick={() => { router.push('/quotations/new'); }}
+          onClick={() => {
+            router.push('/quotations/new');
+          }}
           className="bg-solar shadow-solar hover:bg-solar/90 text-white"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -90,7 +92,9 @@ export default function QuotationsPage(): React.JSX.Element {
             placeholder="Search by quote number..."
             className="pl-10"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
           />
         </div>
       </div>
@@ -128,7 +132,9 @@ export default function QuotationsPage(): React.JSX.Element {
             <Button
               variant="link"
               className="text-solar hover:text-solar/80 mt-4"
-              onClick={() => { router.push('/quotations/new'); }}
+              onClick={() => {
+                router.push('/quotations/new');
+              }}
             >
               Create your first quote
             </Button>
@@ -144,14 +150,18 @@ export default function QuotationsPage(): React.JSX.Element {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => { navigatePage(currentPage - 1); }}
+              onClick={() => {
+                navigatePage(currentPage - 1);
+              }}
               disabled={!hasPrevious}
             >
               Previous
             </Button>
             <Button
               variant="outline"
-              onClick={() => { navigatePage(currentPage + 1); }}
+              onClick={() => {
+                navigatePage(currentPage + 1);
+              }}
               disabled={!hasNext}
             >
               Next

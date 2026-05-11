@@ -230,7 +230,9 @@ export function CustomerDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { onOpenChange(false); }}
+                onClick={() => {
+                  onOpenChange(false);
+                }}
               >
                 Cancel
               </Button>

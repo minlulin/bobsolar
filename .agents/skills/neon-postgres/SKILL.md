@@ -34,15 +34,15 @@ Common doc URLs are organized in the topic links below. If you need a page not l
 
 Use this quick guide to choose the right section:
 
-| Need | Best section |
-|------|--------------|
-| Neon concepts and architecture | What Is Neon |
-| First-time setup or initial schema work | Getting Started |
+| Need                                         | Best section                 |
+| -------------------------------------------- | ---------------------------- |
+| Neon concepts and architecture               | What Is Neon                 |
+| First-time setup or initial schema work      | Getting Started              |
 | Connection selection and runtime constraints | Connection Methods & Drivers |
-| Combined auth and data API workflows | Neon JS SDK |
-| Standalone authentication or login flows | Neon Auth |
-| Local development tools and CLI automation | Developer Tools / Neon CLI |
-| Resource management or API automation | Neon Admin API |
+| Combined auth and data API workflows         | Neon JS SDK                  |
+| Standalone authentication or login flows     | Neon Auth                    |
+| Local development tools and CLI automation   | Developer Tools / Neon CLI   |
+| Resource management or API automation        | Neon Admin API               |
 
 ## What Is Neon
 

@@ -10,9 +10,11 @@ import { useNotificationStore } from '@/stores/notification-store';
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
-export function useNotifications(): ReturnType<typeof useQuery<
-  ActionData<Awaited<ReturnType<typeof getNotificationsWithFilter>>>
->> {
+export function useNotifications(): ReturnType<
+  typeof useQuery<
+    ActionData<Awaited<ReturnType<typeof getNotificationsWithFilter>>>
+  >
+> {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
@@ -24,9 +26,9 @@ export function useNotifications(): ReturnType<typeof useQuery<
   });
 }
 
-export function useUnreadCount(): ReturnType<typeof useQuery<
-  ActionData<Awaited<ReturnType<typeof getUnreadCount>>>
->> {
+export function useUnreadCount(): ReturnType<
+  typeof useQuery<ActionData<Awaited<ReturnType<typeof getUnreadCount>>>>
+> {
   return useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: async () => {
@@ -39,12 +41,14 @@ export function useUnreadCount(): ReturnType<typeof useQuery<
   });
 }
 
-export function useMarkNotificationAsRead(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof markNotificationAsRead>>>,
-  Error,
-  string,
-  { previous: Array<{ id: string; isRead: boolean }> | undefined }
->> {
+export function useMarkNotificationAsRead(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof markNotificationAsRead>>,
+    Error,
+    string,
+    { previous: Array<{ id: string; isRead: boolean }> | undefined }
+  >
+> {
   const queryClient = useQueryClient();
   const decrementUnread = useNotificationStore((s) => s.decrementUnread);
 
@@ -71,17 +75,21 @@ export function useMarkNotificationAsRead(): ReturnType<typeof useMutation<
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications', 'unread'],
+      });
     },
   });
 }
 
-export function useMarkAllNotificationsAsRead(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof markAllNotificationsAsRead>>>,
-  Error,
-  void,
-  { previous: Array<{ isRead: boolean }> | undefined }
->> {
+export function useMarkAllNotificationsAsRead(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof markAllNotificationsAsRead>>,
+    Error,
+    void,
+    { previous: Array<{ isRead: boolean }> | undefined }
+  >
+> {
   const queryClient = useQueryClient();
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
 
@@ -107,23 +115,29 @@ export function useMarkAllNotificationsAsRead(): ReturnType<typeof useMutation<
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications', 'unread'],
+      });
     },
   });
 }
 
-export function useDeleteNotification(): ReturnType<typeof useMutation<
-  ActionData<Awaited<ReturnType<typeof deleteNotification>>>,
-  Error,
-  string
->> {
+export function useDeleteNotification(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof deleteNotification>>,
+    Error,
+    string
+  >
+> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => deleteNotification(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['notifications', 'unread'],
+      });
     },
   });
 }

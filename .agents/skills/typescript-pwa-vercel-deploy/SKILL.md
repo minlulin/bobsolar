@@ -132,10 +132,10 @@ export enum FrameworkAdapter {
 
     // ── Completeness ────────────────────────────────────────────────────
     "skipLibCheck": false,
-    "skipDefaultLibCheck": false
+    "skipDefaultLibCheck": false,
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"],
 }
 ```
 
@@ -151,14 +151,14 @@ export enum FrameworkAdapter {
     "incremental": true,
     "noEmit": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
   },
   "include": [
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts"
-  ]
+    ".next/types/**/*.ts",
+  ],
 }
 ```
 
@@ -170,9 +170,9 @@ export enum FrameworkAdapter {
   "compilerOptions": {
     "jsx": "react-jsx",
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
   },
-  "include": ["src/**/*", "vite-env.d.ts"]
+  "include": ["src/**/*", "vite-env.d.ts"],
 }
 ```
 
@@ -183,8 +183,8 @@ export enum FrameworkAdapter {
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+  },
 }
 ```
 
@@ -199,10 +199,10 @@ export enum FrameworkAdapter {
     "jsx": "react-jsx",
     "incremental": true,
     "noEmit": true,
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"] },
   },
   "include": ["src/sw.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }
 ```
 
@@ -215,7 +215,9 @@ export enum FrameworkAdapter {
 ```typescript
 // ─── BAD ──────────────────────────────────────────────────────────────────────
 type Route = string; // any string; fragile
-function navigate(path: Route): void { /* … */ }
+function navigate(path: Route): void {
+  /* … */
+}
 
 // ─── GOOD ─────────────────────────────────────────────────────────────────────
 enum AppRoute {
@@ -228,10 +230,18 @@ enum AppRoute {
 
 function navigate(route: AppRoute): void {
   switch (route) {
-    case AppRoute.HOME:       window.location.href = AppRoute.HOME;       break;
-    case AppRoute.DASHBOARD:  window.location.href = AppRoute.DASHBOARD;  break;
-    case AppRoute.SETTINGS:   window.location.href = AppRoute.SETTINGS;   break;
-    case AppRoute.NOT_FOUND:  window.location.href = AppRoute.NOT_FOUND;  break;
+    case AppRoute.HOME:
+      window.location.href = AppRoute.HOME;
+      break;
+    case AppRoute.DASHBOARD:
+      window.location.href = AppRoute.DASHBOARD;
+      break;
+    case AppRoute.SETTINGS:
+      window.location.href = AppRoute.SETTINGS;
+      break;
+    case AppRoute.NOT_FOUND:
+      window.location.href = AppRoute.NOT_FOUND;
+      break;
     default:
       // Exhaustiveness check — compile error if a new member is added
       // without a corresponding case branch.
@@ -346,18 +356,18 @@ Place at `public/manifest.webmanifest`:
       "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable",
     },
     {
       "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
+      "purpose": "any maskable",
+    },
   ],
   "categories": ["productivity", "utilities"],
   "lang": "en-US",
-  "orientation": "any"
+  "orientation": "any",
 }
 ```
 
@@ -459,11 +469,11 @@ public/icons/
   "installCommand": "pnpm install --frozen-lockfile",
 
   // ── Output ────────────────────────────────────────────────────────────
-  "outputDirectory": ".next",        // Next.js; use "dist" for Vite
+  "outputDirectory": ".next", // Next.js; use "dist" for Vite
   "devCommand": "pnpm dev",
 
   // ── Framework ─────────────────────────────────────────────────────────
-  "framework": "nextjs",             // or "vite", null for static
+  "framework": "nextjs", // or "vite", null for static
 
   // ── Routing & Headers ─────────────────────────────────────────────────
   "headers": [
@@ -471,26 +481,38 @@ public/icons/
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options",        "value": "DENY" },
-        { "key": "X-XSS-Protection",       "value": "1; mode=block" },
-        { "key": "Referrer-Policy",        "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy",     "value": "camera=(), microphone=(), geolocation=()" }
-      ]
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin",
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()",
+        },
+      ],
     },
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
-      ]
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate",
+        },
+        { "key": "Service-Worker-Allowed", "value": "/" },
+      ],
     },
     {
       "source": "/manifest.webmanifest",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
-        { "key": "Content-Type",  "value": "application/manifest+json" }
-      ]
-    }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate",
+        },
+        { "key": "Content-Type", "value": "application/manifest+json" },
+      ],
+    },
   ],
 
   // ── Redirects & Rewrites ──────────────────────────────────────────────
@@ -498,14 +520,14 @@ public/icons/
     {
       "source": "/old-path",
       "destination": "/new-path",
-      "permanent": true
-    }
+      "permanent": true,
+    },
   ],
 
   // ── Environment Variable Governance ───────────────────────────────────
   "env": {
     "NEXT_PUBLIC_APP_URL": "@app_url",
-    "SENTRY_DSN": "@sentry_dsn"
+    "SENTRY_DSN": "@sentry_dsn",
   },
 
   // ── Regions ───────────────────────────────────────────────────────────
@@ -513,18 +535,18 @@ public/icons/
 
   // ── Functions (Serverless) ────────────────────────────────────────────
   "functions": {
-    "api/**/*.ts": { "memory": 1024, "maxDuration": 30 }
-  }
+    "api/**/*.ts": { "memory": 1024, "maxDuration": 30 },
+  },
 }
 ```
 
 ### 4.2 Environment Variables (No Plain Secrets in Code)
 
-| Variable                    | Scope            | Description                          |
-|-----------------------------|------------------|--------------------------------------|
-| `NEXT_PUBLIC_APP_URL`       | Public / Next.js | Canonical URL of the deployed app.   |
-| `SENTRY_DSN`                | Private          | Sentry error tracking DSN.           |
-| `DATABASE_URL`              | Private          | Connection string for the database.  |
+| Variable              | Scope            | Description                         |
+| --------------------- | ---------------- | ----------------------------------- |
+| `NEXT_PUBLIC_APP_URL` | Public / Next.js | Canonical URL of the deployed app.  |
+| `SENTRY_DSN`          | Private          | Sentry error tracking DSN.          |
+| `DATABASE_URL`        | Private          | Connection string for the database. |
 
 All secrets **must** be stored in Vercel Project Environment Variables, not
 in `.env` files committed to the repository.
@@ -552,8 +574,8 @@ in `.env` files committed to the repository.
 
     // ── Green Pipeline ──────────────────────────────────────────────────
     "green:code": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "green": "pnpm green:code && pnpm build"
-  }
+    "green": "pnpm green:code && pnpm build",
+  },
 }
 ```
 
@@ -596,9 +618,9 @@ a unique URL. Use `vercel.json` redirects to point changelog routes:
     {
       "source": "/changelog",
       "destination": "https://github.com/owner/repo/releases",
-      "permanent": false
-    }
-  ]
+      "permanent": false,
+    },
+  ],
 }
 ```
 
@@ -674,11 +696,11 @@ if ('serviceWorker' in navigator) {
 
 ## 7. Related Skills
 
-| Skill                         | Purpose                                   |
-|-------------------------------|-------------------------------------------|
-| `neon-postgres`               | Neon Serverless Postgres database setup.  |
-| `coding-standards`            | Baseline naming, readability, immutability. |
-| `typescript-pwa-vercel-deploy`| (this skill)                              |
+| Skill                          | Purpose                                     |
+| ------------------------------ | ------------------------------------------- |
+| `neon-postgres`                | Neon Serverless Postgres database setup.    |
+| `coding-standards`             | Baseline naming, readability, immutability. |
+| `typescript-pwa-vercel-deploy` | (this skill)                                |
 
 ---
 
@@ -707,3 +729,4 @@ User Request
     │
     ▼
 [Done] Strict TypeScript PWA on Vercel
+```

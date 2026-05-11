@@ -129,7 +129,9 @@ export function InventoryCard({
                 variant="ghost"
                 aria-label={`Edit ${item.name}`}
                 className="h-8 w-8"
-                onClick={() => { onEdit(item); }}
+                onClick={() => {
+                  onEdit(item);
+                }}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -189,7 +191,9 @@ export function InventoryCard({
                       autoFocus
                       className="h-8 w-32 text-right font-mono"
                       value={price}
-                      onChange={(e) => { setPrice(e.target.value); }}
+                      onChange={(e) => {
+                        setPrice(e.target.value);
+                      }}
                       onBlur={handlePriceSave}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handlePriceSave();
@@ -225,7 +229,9 @@ export function InventoryCard({
                       type="number"
                       className="h-8 w-20 text-right font-mono"
                       value={stock}
-                      onChange={(e) => { setStock(e.target.value); }}
+                      onChange={(e) => {
+                        setStock(e.target.value);
+                      }}
                       onBlur={handleStockSave}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleStockSave();

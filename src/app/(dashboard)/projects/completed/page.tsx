@@ -60,7 +60,9 @@ export default function CompletedProjectsPage(): React.JSX.Element {
             className="pl-11"
             placeholder="Search PJ number · customer surname"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
           />
         </div>
         <div className="flex items-center gap-3">
@@ -72,7 +74,9 @@ export default function CompletedProjectsPage(): React.JSX.Element {
             type="number"
             placeholder="YYYY"
             value={year}
-            onChange={(e) => { setYear(e.target.value); }}
+            onChange={(e) => {
+              setYear(e.target.value);
+            }}
           />
         </div>
       </div>

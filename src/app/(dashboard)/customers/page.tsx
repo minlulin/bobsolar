@@ -62,7 +62,9 @@ export default function CustomersPage(): React.JSX.Element {
             placeholder="Search customers by name, phone or email..."
             className="pl-10"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
           />
         </div>
       </div>

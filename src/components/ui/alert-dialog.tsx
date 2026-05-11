@@ -30,7 +30,9 @@ function AlertDialogPortal(
 function AlertDialogOverlay({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>): React.ReactElement {
+}: React.ComponentProps<
+  typeof AlertDialogPrimitive.Overlay
+>): React.ReactElement {
   return (
     <AlertDialogPrimitive.Overlay
       data-slot="alert-dialog-overlay"
@@ -43,7 +45,9 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>): React.ReactElement {
+}: React.ComponentProps<
+  typeof AlertDialogPrimitive.Content
+>): React.ReactElement {
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -59,13 +63,17 @@ function AlertDialogContent({
   );
 }
 
-function AlertDialogHeader(props: React.ComponentProps<'div'>): React.ReactElement {
+function AlertDialogHeader(
+  props: React.ComponentProps<'div'>,
+): React.ReactElement {
   return (
     <div data-slot="alert-dialog-header" className="space-y-2" {...props} />
   );
 }
 
-function AlertDialogFooter(props: React.ComponentProps<'div'>): React.ReactElement {
+function AlertDialogFooter(
+  props: React.ComponentProps<'div'>,
+): React.ReactElement {
   return (
     <div
       data-slot="alert-dialog-footer"
