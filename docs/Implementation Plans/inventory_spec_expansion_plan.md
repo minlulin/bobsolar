@@ -1,112 +1,127 @@
-# Inventory Spec Expansion + Data Loading Reliability Plan
+# Inventory Add Item Spec Expansion Plan
 
 ## Objective
 
-- Expand Inventory item technical details for stronger quotation accuracy.
-- Fix cross-page/tab data visibility issue (data appears only after `F5`).
+Improve Inventory Add/Edit item details so quotation item selection and preview can later distinguish same-name items with different technical specs.
 
----
+This plan focuses only on Inventory item specification capture. Quotation preview behavior and cross-page data loading reliability will be handled separately.
 
-## Progress Checklist
+## Decisions
 
-## Phase A — Requirements Freeze
+- Use a JSON/JSONB `specifications` field for category-specific inventory details.
+- Keep existing inventory categories.
+- Map Protection Accessories to the existing `accessory` category.
+- Use structured fields by default:
+  - numbers for clear numeric values
+  - enums for known option sets
+  - text for free-form technical labels
 
-- [x] Capture category-specific inventory detail requirements.
-- [x] Define non-functional requirements (strict validation, backward compatibility).
-- [ ] Confirm final field formats with owner (text vs numeric+unit split).
-- [ ] Confirm category mapping for “Protection Accessories” (`accessory` vs new enum).
-
-## Phase B — Data Model Decision
-
-- [x] Evaluate fixed columns vs JSON `specifications`.
-- [x] Recommend JSON/JSONB `specifications` approach.
-- [ ] Final approval on schema strategy.
-- [ ] Confirm migration strategy for main/test DB branches.
-
-## Phase C — Inventory Spec Implementation
-
-- [ ] Add `specifications` field to `inventory_items` schema + migration.
-- [ ] Add category-discriminated Zod schemas for create/update.
-- [ ] Update Inventory actions to validate and persist specs.
-- [ ] Keep read-path compatibility for legacy items without specs.
-
-## Phase D — Inventory UI/UX
-
-- [ ] Add category-driven dynamic spec fields in Inventory add/edit dialog.
-- [ ] Add required field states + validation messages for each category.
-- [ ] Add compact spec summary in inventory list/card.
-- [ ] Add spec summary in quotation inventory search rows.
-
-## Phase E — Quotation Behavior
-
-- [ ] Keep duplicate-combine rule strictly by `itemId` (not by name).
-- [ ] Ensure live preview always renders all selected items.
-- [ ] Validate same-name/different-category items remain separate lines.
-
-## Phase F — Data Loading Reliability (New Issue)
-
-- [ ] Reproduce issue: data missing after tab/page switch, appears only after reload.
-- [ ] Audit TanStack Query cache keys and `enabled` conditions on affected pages.
-- [ ] Audit route transitions and client components for stale store/query hydration.
-- [ ] Verify server actions and `revalidatePath` usage where mutations occur.
-- [ ] Implement fix (likely query invalidation/refetch policy update).
-- [ ] Add regression checks for navigation (no `F5` required).
-
-## Phase G — Verification and Gate
-
-- [ ] Run `pnpm green:code`.
-- [ ] Run `pnpm test:db`.
-- [ ] Run `pnpm green`.
-- [ ] Manual UX smoke test on desktop + mobile viewport.
-
----
-
-## Approved Requirement Details (Captured)
+## Category Specifications
 
 ### Panel
 
-- `brandModel` (text)
-- `cellType` (`n_type` / `p_type`)
-- `wattageW` (number)
-- `warranty` (text)
+- `brandModel` text
+- `cellType` enum: `n_type`, `p_type`
+- `wattageW` number
+- `warranty` text
 
 ### Inverter
 
-- `brandModel` (text)
-- `systemType` (`hybrid` / `off_grid` / `on_grid`)
-- `ratedPower` (text or structured number+unit)
-- `phase` (`single_phase` / `three_phase`)
-- `maxPvInput` (text)
-- `warranty` (text)
+- `brandModel` text
+- `systemType` enum: `hybrid`, `off_grid`, `on_grid`
+- `ratedPower` text
+- `phase` enum: `single_phase`, `three_phase`
+- `maxPvInput` text
+- `warranty` text
 
 ### Battery
 
-- `brandModel` (text)
-- `chemistryType` (`lifepo4` / `gel` / `lead_acid`)
-- `voltageV` (number)
-- `capacityAh` (number)
-- `warranty` (text)
+- `brandModel` text
+- `chemistryType` enum: `lifepo4`, `gel`, `lead_acid`
+- `voltageV` number
+- `capacityAh` number
+- `warranty` text
 
 ### Mounting Structure
 
-- `type` (text)
+- `type` text
 
 ### Cable
 
-- `cableType` (`dc_cable` / `ac_cable` / `earth_wire`)
-- `sizeCrossSection` (text)
-- `unitOfMeasurement` (text)
+- `cableType` enum: `dc_cable`, `ac_cable`, `earth_wire`
+- `sizeCrossSection` text
+- `unitOfMeasurement` text
 
 ### Protection Accessories
 
-- `type` (text)
-- `ratingAmpere` (number or text)
-- `voltageRating` (text)
+Uses existing category: `accessory`.
 
----
+- `type` text
+- `ratingAmpere` number
+- `voltageRating` text
 
-## Design Recommendation (Pending Approval)
+## Implementation Checklist
 
-- Use JSON/JSONB `specifications` field for category-specific data.
-- Keep existing category enums for now (map “Protection Accessories” to current `accessory` unless explicitly expanded).
-- Validate aggressively in app layer with category-discriminated Zod schemas.
+### Phase A - Data Model
+
+- [ ] Add `specifications` field to `inventory_items`.
+- [ ] Store category-specific specs as JSON/JSONB.
+- [ ] Keep existing rows valid when `specifications` is missing or null.
+- [ ] Add migration for main/test databases.
+
+### Phase B - Validation
+
+- [ ] Add category-discriminated Zod schemas for inventory specifications.
+- [ ] Validate create inventory input using selected category.
+- [ ] Validate update inventory input using selected category.
+- [ ] Reject stale or incompatible spec fields after category changes.
+- [ ] Avoid `any`; use `unknown`, typed schemas, and inferred types.
+
+### Phase C - Server Actions
+
+- [ ] Update inventory create action to persist specifications.
+- [ ] Update inventory edit action to persist specifications.
+- [ ] Keep read paths compatible with legacy items.
+- [ ] Return specifications in inventory list/detail responses.
+
+### Phase D - Inventory UI
+
+- [ ] Add dynamic spec fields in Inventory Add/Edit dialog.
+- [ ] Show spec fields only after category selection.
+- [ ] Reset incompatible spec fields when category changes.
+- [ ] Show inline validation for required spec fields.
+- [ ] Add compact spec summary to inventory cards/list rows.
+
+Example summaries:
+
+- Panel: `450W - N-Type - Brand Model`
+- Battery: `51.2V - 100Ah - LiFePO4`
+- Accessory: `Breaker - 63A - 500V`
+
+## Out Of Scope
+
+- Quotation live-preview duplicate rendering fix.
+- Same-name/different-category quotation line behavior.
+- Cross-page or tab data visibility issue where data appears only after `F5`.
+
+These should be handled as separate follow-up plans after Inventory specs are stable.
+
+## Test Plan
+
+- [ ] Add validation tests for each category specification shape.
+- [ ] Add create inventory tests with valid specs.
+- [ ] Add create inventory tests with invalid/missing specs.
+- [ ] Add update inventory tests for category changes.
+- [ ] Add regression test for legacy inventory rows without specs.
+- [ ] Manual smoke test Inventory Add/Edit on desktop and mobile.
+- [ ] Run `pnpm green:code`.
+- [ ] Run `pnpm test:db`.
+- [ ] Run `pnpm green`.
+
+## Acceptance Criteria
+
+- Inventory Add Item captures meaningful technical details per category.
+- Inventory Edit Item can view and update those details.
+- Existing inventory data continues to work.
+- Inventory list/card displays enough detail to distinguish similar items.
+- The implementation remains strict TypeScript compliant with no `any`.

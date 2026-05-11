@@ -50,9 +50,6 @@ next-env.d.ts
 
 # Agents
 
-AGENT.md
+
 AGENT_RESULTS.md
 RULES.md
-SKILLS.md
-
-.agents/*
