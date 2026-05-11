@@ -7,11 +7,10 @@ import { eq } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { getCompanyLogoUrl } from '@/actions/settings-actions';
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<Response> {
   try {
     // Authenticate request
     const sessionToken = request.cookies.get('session_id')?.value;

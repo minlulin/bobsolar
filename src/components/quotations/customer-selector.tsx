@@ -30,7 +30,7 @@ export function CustomerSelector({
   value,
   onValueChange,
   onCustomerSelect,
-}: CustomerSelectorProps) {
+}: CustomerSelectorProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);

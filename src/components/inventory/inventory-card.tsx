@@ -56,7 +56,11 @@ const categoryIcons: Record<string, LucideIcon> = {
   labor: User,
 };
 
-export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
+export function InventoryCard({
+  item,
+  canEdit,
+  onEdit,
+}: InventoryCardProps): React.JSX.Element {
   const Icon = categoryIcons[item.category] || Package;
   const { mutate: updateItem, isPending: isUpdating } =
     useUpdateInventoryItem();
@@ -64,24 +68,22 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
 
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [isEditingStock, setIsEditingStock] = useState(false);
-  const [price, setPrice] = useState(item.unitPrice.toString());
-  const [stock, setStock] = useState(item.stockQty.toString());
+  const [price, setPrice] = useState(item.unitPrice);
+  const [stock, setStock] = useState(String(item.stockQty));
 
-  const getStockColor = (qty: number) => {
-    const threshold =
-      STOCK_WARNING_THRESHOLDS[item.category] ??
-      STOCK_WARNING_THRESHOLDS.default;
+  const getStockColor = (qty: number): string => {
+    const threshold = STOCK_WARNING_THRESHOLDS[item.category];
     if (qty === 0) return 'bg-red-500/10 text-red-500 border-red-500/20';
     if (qty <= threshold)
       return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
     return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
   };
 
-  const handlePriceSave = () => {
+  const handlePriceSave = (): void => {
     const val = parseFloat(price);
     if (isNaN(val) || val < 0) {
       toast.error('Invalid unit price');
-      setPrice(item.unitPrice.toString());
+      setPrice(item.unitPrice);
       setIsEditingPrice(false);
       return;
     }
@@ -91,11 +93,11 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
     setIsEditingPrice(false);
   };
 
-  const handleStockSave = () => {
+  const handleStockSave = (): void => {
     const val = parseInt(stock);
     if (isNaN(val) || val < 0) {
       toast.error('Invalid stock quantity');
-      setStock(item.stockQty.toString());
+      setStock(String(item.stockQty));
       setIsEditingStock(false);
       return;
     }
@@ -105,7 +107,9 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
     setIsEditingStock(false);
   };
 
-  const handleDelete = () => { deleteItem(item.id); };
+  const handleDelete = (): void => {
+    deleteItem(item.id);
+  };
 
   return (
     <motion.div
@@ -187,7 +191,9 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                       value={price}
                       onChange={(e) => { setPrice(e.target.value); }}
                       onBlur={handlePriceSave}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePriceSave()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handlePriceSave();
+                      }}
                     />
                     {isUpdating && (
                       <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
@@ -195,7 +201,9 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                   </div>
                 ) : (
                   <button
-                    onClick={() => canEdit && setIsEditingPrice(true)}
+                    onClick={() => {
+                      if (canEdit) setIsEditingPrice(true);
+                    }}
                     className={cn(
                       'hover:text-solar-amber font-mono text-lg font-bold transition-colors',
                       canEdit && 'cursor-pointer',
@@ -219,7 +227,9 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                       value={stock}
                       onChange={(e) => { setStock(e.target.value); }}
                       onBlur={handleStockSave}
-                      onKeyDown={(e) => e.key === 'Enter' && handleStockSave()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleStockSave();
+                      }}
                     />
                     {isUpdating && (
                       <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
@@ -233,7 +243,9 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps) {
                       getStockColor(item.stockQty),
                       canEdit && 'cursor-pointer',
                     )}
-                    onClick={() => canEdit && setIsEditingStock(true)}
+                    onClick={() => {
+                      if (canEdit) setIsEditingStock(true);
+                    }}
                   >
                     {item.stockQty} {item.unit}
                   </Badge>

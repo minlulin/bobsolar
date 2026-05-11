@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { FileQuestion } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function NotFound() {
+export default function NotFound(): React.JSX.Element {
   return (
     <div className="bg-background flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/5">

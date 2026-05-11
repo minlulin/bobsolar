@@ -25,7 +25,7 @@ const FILTER_GROUPS: Array<{
   { id: 'on_hold', label: 'Breather', status: 'on_hold' },
 ];
 
-export default function ActiveProjectsPage() {
+export default function ActiveProjectsPage(): React.JSX.Element {
   const [filter, setFilter] = useState<string>('active');
 
   const queryFilters = useMemo<Partial<ProjectListFilter>>(() => {

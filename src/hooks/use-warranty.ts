@@ -8,7 +8,11 @@ import {
 import type { WarrantyListFilter } from '@/lib/validators/warranty';
 import { toast } from 'sonner';
 
-export function useWarrantySummary() {
+type ActionData<T> = T extends { data: infer D } ? D : never;
+
+export function useWarrantySummary(): ReturnType<typeof useQuery<
+  ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>
+>> {
   return useQuery({
     queryKey: ['warranty', 'summary'],
     queryFn: async () => {
@@ -20,7 +24,9 @@ export function useWarrantySummary() {
   });
 }
 
-export function useWarrantyAlerts(filter: Partial<WarrantyListFilter> = {}) {
+export function useWarrantyAlerts(
+  filter: Partial<WarrantyListFilter> = {},
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantyAlerts>>>>> {
   const tab = filter.tab ?? 'all';
 
   return useQuery({
@@ -34,35 +40,47 @@ export function useWarrantyAlerts(filter: Partial<WarrantyListFilter> = {}) {
   });
 }
 
-export function useResolveWarrantyAlert() {
+export function useResolveWarrantyAlert(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof resolveWarrantyAlert>>,
+  Error,
+  Parameters<typeof resolveWarrantyAlert>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: resolveWarrantyAlert,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        queryClient.invalidateQueries({ queryKey: ['warranty'] });
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        await queryClient.invalidateQueries({ queryKey: ['warranty'] });
+        await queryClient.invalidateQueries({ queryKey: ['projects'] });
         toast.success('Alert resolved');
       }
     },
-    onError: () => toast.error('Could not resolve'),
+    onError: () => {
+      toast.error('Could not resolve');
+    },
   });
 }
 
-export function useReopenWarrantyAlert() {
+export function useReopenWarrantyAlert(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof reopenWarrantyAlert>>,
+  Error,
+  Parameters<typeof reopenWarrantyAlert>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: reopenWarrantyAlert,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        queryClient.invalidateQueries({ queryKey: ['warranty'] });
+        await queryClient.invalidateQueries({ queryKey: ['warranty'] });
         toast.success('Alert reopened');
       }
     },
-    onError: () => toast.error('Could not reopen'),
+    onError: () => {
+      toast.error('Could not reopen');
+    },
   });
 }

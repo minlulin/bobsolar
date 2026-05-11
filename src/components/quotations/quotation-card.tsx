@@ -35,21 +35,25 @@ interface QuotationCardProps {
   quotation: QuotationWithCustomer;
 }
 
-export function QuotationCard({ quotation }: QuotationCardProps) {
+export function QuotationCard({
+  quotation,
+}: QuotationCardProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const config = STATUS_CONFIG[quotation.status];
   const Icon = config.icon;
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    startTransition(async () => {
-      const result = await deleteQuotation(quotation.id);
-      if (result.success) {
-        toast.success('Draft deleted successfully');
-      } else {
-        toast.error(result.error || 'Failed to delete draft');
-      }
+    startTransition((): void => {
+      void (async (): Promise<void> => {
+        const result = await deleteQuotation(quotation.id);
+        if (result.success) {
+          toast.success('Draft deleted successfully');
+        } else {
+          toast.error(result.error || 'Failed to delete draft');
+        }
+      })();
     });
   };
 
@@ -148,7 +152,7 @@ export function QuotationCard({ quotation }: QuotationCardProps) {
                 Total Amount
               </span>
               <span className="font-heading text-foreground font-bold">
-                {formatMMK(parseFloat(quotation.total.toString()))}
+                {formatMMK(parseFloat(quotation.total))}
               </span>
             </div>
 
@@ -159,7 +163,7 @@ export function QuotationCard({ quotation }: QuotationCardProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <User className="h-3 w-3" />
-                {quotation.createdBy?.name || 'Sales Team'}
+                {quotation.createdBy.name || 'Sales Team'}
               </div>
             </div>
           </div>

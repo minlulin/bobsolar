@@ -27,14 +27,18 @@ type ThemeContextValue = {
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 
-function applyThemeClass(theme: AppTheme) {
+function applyThemeClass(theme: AppTheme): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   root.classList.remove('light', 'dark');
   root.classList.add(theme);
 }
 
-function ThemeProvider({ children }: { children: React.ReactNode }) {
+function ThemeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.JSX.Element {
   const [theme, setThemeState] = React.useState<AppTheme>(() => {
     if (typeof window === 'undefined') return 'light';
     const savedTheme = window.localStorage.getItem('theme');
@@ -49,19 +53,19 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const mounted = React.useSyncExternalStore(
-    React.useCallback(() => () => undefined, []),
-    () => true,
-    () => false,
+    React.useCallback(() => (): void => undefined, []),
+    (): boolean => true,
+    (): boolean => false,
   );
 
-  const setTheme = React.useCallback((nextTheme: AppTheme) => {
+  const setTheme = React.useCallback((nextTheme: AppTheme): void => {
     setThemeState(nextTheme);
     window.localStorage.setItem('theme', nextTheme);
     applyThemeClass(nextTheme);
   }, []);
 
   const value = React.useMemo(
-    () => ({ theme, setTheme, mounted }),
+    (): ThemeContextValue => ({ theme, setTheme, mounted }),
     [theme, setTheme, mounted],
   );
 
@@ -70,7 +74,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAppTheme() {
+export function useAppTheme(): ThemeContextValue {
   const context = React.useContext(ThemeContext);
   if (!context) {
     throw new Error('useAppTheme must be used within Providers');
@@ -78,7 +82,7 @@ export function useAppTheme() {
   return context;
 }
 
-function handleQueryError(error: unknown) {
+function handleQueryError(error: unknown): void {
   if (isUnauthorizedError(error)) {
     toast.error('Session expired. Redirecting to sign in...');
     if (typeof window !== 'undefined') {
@@ -91,7 +95,7 @@ function handleQueryError(error: unknown) {
     toast.error('Connection lost. Please retry.', {
       action: {
         label: 'Retry',
-        onClick: () => {
+        onClick: (): void => {
           if (typeof window !== 'undefined') window.location.reload();
         },
       },
@@ -107,7 +111,11 @@ function handleQueryError(error: unknown) {
   toast.error(getErrorMessage(error));
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.JSX.Element {
   const [queryClient] = React.useState(
     () =>
       new QueryClient({

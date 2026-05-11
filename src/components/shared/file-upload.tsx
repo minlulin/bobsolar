@@ -21,14 +21,14 @@ export function FileUpload({
   onUploaded,
   disabled,
   className,
-}: FileUploadProps) {
+}: FileUploadProps): React.JSX.Element {
   const [preview, setPreview] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const submit = React.useCallback(
-    async (file: File) => {
+    async (file: File): Promise<void> => {
       setErr(null);
 
       const allowed = ['image/jpeg', 'image/png', 'image/webp'];
@@ -55,15 +55,15 @@ export function FileUpload({
           body: fd,
         });
 
-        const body = await res.json();
+        const body = (await res.json()) as { url?: string; error?: string };
         if (!res.ok || !body.url) {
           throw new Error(body.error || 'Upload failed');
         }
 
         URL.revokeObjectURL(localUrl);
-        setPreview(body.url as string);
+        setPreview(body.url);
 
-        onUploaded(body.url as string);
+        onUploaded(body.url);
       } catch (e) {
         URL.revokeObjectURL(localUrl);
         setPreview(null);

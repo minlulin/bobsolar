@@ -6,7 +6,7 @@ import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
 import { formatMMK } from '@/lib/utils';
 import { Calendar as CalendarIcon, Percent } from 'lucide-react';
 
-export function QuoteSummary() {
+export function QuoteSummary(): React.JSX.Element {
   const {
     discountPercent,
     taxPercent,

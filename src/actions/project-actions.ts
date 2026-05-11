@@ -155,7 +155,7 @@ async function seedDefaultWarrantyAlerts(projectId: string): Promise<void> {
 }
 
 function rollupWarranty(
-  alerts: { dueDate: Date; isResolved: boolean }[],
+  alerts: { isResolved: boolean; dueDate: Date }[],
 ): 'ok' | 'due_soon' | 'overdue' {
   const today = startOfToday();
   const soonBoundaryEnd = addDays(today, 30);
@@ -217,72 +217,77 @@ export async function convertQuotationToProject(
 
     while (retries > 0) {
       try {
-        return await db.transaction(async (tx) => {
-          // Lock the quotation row to prevent concurrent conversions
-          const quotation = await tx.query.quotations.findFirst({
-            where: eq(quotations.id, data.quotationId),
-            with: { customer: true, project: { columns: { id: true } } },
-          });
+        return await db.transaction(
+          async (tx): Promise<ActionResponse<Project>> => {
+            // Lock the quotation row to prevent concurrent conversions
+            const quotation = await tx.query.quotations.findFirst({
+              where: eq(quotations.id, data.quotationId),
+              with: { customer: true, project: { columns: { id: true } } },
+            });
 
-          if (!quotation) {
-            return handleNotFoundError('Quotation', data.quotationId);
-          }
-          if (quotation.status !== 'accepted') {
-            return handleStateError(
-              'Only accepted quotations can be converted.',
-            );
-          }
-          if (quotation.project) {
-            return handleStateError(
-              'This quotation is already linked to a project.',
-            );
-          }
+            if (!quotation) {
+              return handleNotFoundError('Quotation', data.quotationId);
+            }
+            if (quotation.status !== 'accepted') {
+              return handleStateError(
+                'Only accepted quotations can be converted.',
+              );
+            }
 
-          const customer = quotation.customer;
-          const defaultSite = [customer.address, customer.city]
-            .filter(Boolean)
-            .join(', ')
-            .trim();
+            if ((quotation as unknown as { project?: unknown }).project != null) {
+              return handleStateError(
+                'This quotation is already linked to a project.',
+              );
+            }
 
-          const siteAddress =
-            (data.siteAddress && data.siteAddress.trim()) || defaultSite || '—';
+            const customer = quotation.customer;
+            const defaultSite = [customer.address, customer.city]
+              .filter(Boolean)
+              .join(', ')
+              .trim();
 
-          const systemKwp =
-            data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
-              ? String(data.systemSizeKwp)
-              : '0';
+            const siteAddress =
+              (data.siteAddress && data.siteAddress.trim()) ||
+              defaultSite ||
+              '—';
 
-          // Get next project sequence within the transaction
-          const seq = await nextProjectSequence(year);
-          const projectNumber = formatProjectNumber(seq, year);
+            const systemKwp =
+              data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
+                ? String(data.systemSizeKwp)
+                : '0';
 
-          const [created] = await tx
-            .insert(projects)
-            .values({
-              projectNumber,
-              quotationId: quotation.id,
-              customerId: quotation.customerId,
-              status: 'planning',
-              siteAddress,
-              systemSizeKwp: systemKwp,
-              quotedTotal: quotation.total,
-              actualTotal: '0',
-              startDate: data.startDate ?? null,
-              targetCompletion: data.targetCompletion ?? null,
-              notes: data.notes ?? null,
-            })
-            .returning();
+            // Get next project sequence within the transaction
+            const seq = await nextProjectSequence(year);
+            const projectNumber = formatProjectNumber(seq, year);
 
-          if (!created) {
-            return handleStateError('Failed to create project');
-          }
+            const [created] = await tx
+              .insert(projects)
+              .values({
+                projectNumber,
+                quotationId: quotation.id,
+                customerId: quotation.customerId,
+                status: 'planning',
+                siteAddress,
+                systemSizeKwp: systemKwp,
+                quotedTotal: quotation.total,
+                actualTotal: '0',
+                startDate: data.startDate ?? null,
+                targetCompletion: data.targetCompletion ?? null,
+                notes: data.notes ?? null,
+              })
+              .returning();
 
-          revalidatePath('/projects');
-          revalidatePath(`/quotations/${quotation.id}`);
-          revalidatePath('/quotations');
+            if (!created) {
+              return handleStateError('Failed to create project');
+            }
 
-          return { success: true, data: created };
-        });
+            revalidatePath('/projects');
+            revalidatePath(`/quotations/${quotation.id}`);
+            revalidatePath('/quotations');
+
+            return { success: true, data: created };
+          },
+        );
       } catch (error: unknown) {
         if (
           error &&
@@ -401,13 +406,13 @@ export async function getProjects(
       .leftJoin(quotations, eq(projects.quotationId, quotations.id))
       .where(whereClause);
 
-    const totalCount = Number(countRows[0]?.count ?? 0);
+    const totalCount = countRows[0]?.count ?? 0;
 
     const items: ProjectListRow[] = rows.map((r) => ({
       ...r.project,
       customerName: r.customerName,
       quoteNumber: r.quoteNumber,
-      costTotal: Math.round(Number(r.costTotal)),
+      costTotal: Math.round(r.costTotal),
     }));
 
     if (scope === 'completed') {
@@ -559,7 +564,7 @@ export async function updateProject(
         return handleStateError('Only admins can change project status here.');
       }
       if (!isProjectStatus(existing.status)) {
-        return handleStateError(`Invalid current status: ${existing.status}`);
+        return handleStateError(`Invalid current status: ${existing.status as string}`);
       }
       if (!canTransitionProjectStatus(existing.status, data.status)) {
         return handleStateError(`Invalid status transition to ${data.status}`);
@@ -636,7 +641,7 @@ export async function markProjectCompleted(
     }
 
     if (!isProjectStatus(existing.status)) {
-      return handleStateError(`Invalid current status: ${existing.status}`);
+      return handleStateError(`Invalid current status: ${existing.status as string}`);
     }
 
     if (!canTransitionProjectStatus(existing.status, 'completed')) {

@@ -28,7 +28,7 @@ type EditableUser = {
   email: string;
 };
 
-export function UserManagementTab() {
+export function UserManagementTab(): React.JSX.Element {
   const usersQuery = useQuery({
     queryKey: ['settings', 'users'],
     queryFn: async () => {
@@ -49,7 +49,7 @@ export function UserManagementTab() {
 
   const users = usersQuery.data?.users ?? [];
 
-  async function handleUpdate() {
+  async function handleUpdate(): Promise<void> {
     if (!editing) return;
     const res = await updateSettingsUser(editing);
     if (res.success) {
@@ -61,7 +61,7 @@ export function UserManagementTab() {
     }
   }
 
-  async function handleCreate() {
+  async function handleCreate(): Promise<void> {
     const res = await createSettingsUser(newUser);
     if (res.success) {
       toast.success('User created');
@@ -73,7 +73,7 @@ export function UserManagementTab() {
     }
   }
 
-  async function handleResetPassword(userId: string) {
+  async function handleResetPassword(userId: string): Promise<void> {
     const res = await resetSettingsUserPassword(userId);
     if (res.success) {
       toast.success(`Temp password: ${res.data.temporaryPassword}`);
@@ -137,7 +137,12 @@ export function UserManagementTab() {
         ))}
       </div>
 
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+      <Dialog
+        open={!!editing}
+        onOpenChange={(o) => {
+          if (!o) setEditing(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>

@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function LoginPage() {
+export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const brandingQuery = useQuery({
@@ -49,7 +49,7 @@ export default function LoginPage() {
     },
   });
 
-  async function onSubmit(data: LoginInput) {
+  async function onSubmit(data: LoginInput): Promise<void> {
     setIsLoading(true);
     try {
       const result = await login(data);
@@ -141,7 +141,12 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                void handleSubmit(onSubmit)(e);
+              }}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

@@ -41,7 +41,7 @@ export function CustomerDialog({
   open,
   onOpenChange,
   onSaved,
-}: CustomerDialogProps) {
+}: CustomerDialogProps): React.JSX.Element {
   const isEdit = !!customer;
   const { mutate: createCustomer, isPending: isCreating } = useCreateCustomer();
   const { mutate: updateCustomer, isPending: isUpdating } = useUpdateCustomer();
@@ -80,8 +80,8 @@ export function CustomerDialog({
     }
   }, [customer, form]);
 
-  const onSubmit = (data: CreateCustomer) => {
-    if (isEdit && customer) {
+  const onSubmit = (data: CreateCustomer): void => {
+    if (customer) {
       updateCustomer(
         { id: customer.id, data },
         {
@@ -118,7 +118,9 @@ export function CustomerDialog({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={(e) => {
+              void form.handleSubmit(onSubmit)(e);
+            }}
             className="space-y-4 py-4"
           >
             <FormField<CreateCustomer, 'name'>

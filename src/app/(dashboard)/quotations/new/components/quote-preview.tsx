@@ -7,7 +7,7 @@ import { getCustomer } from '@/actions/customer-actions';
 import { format } from 'date-fns';
 import { FileText, Zap, MapPin, Phone } from 'lucide-react';
 
-export function QuotePreview() {
+export function QuotePreview(): React.JSX.Element {
   const {
     selectedCustomerId,
     items,
@@ -20,7 +20,7 @@ export function QuotePreview() {
 
   const { data: customerRes } = useQuery({
     queryKey: ['customers', selectedCustomerId],
-    queryFn: () => getCustomer(selectedCustomerId!),
+    queryFn: () => getCustomer(selectedCustomerId || ''),
     enabled: !!selectedCustomerId,
   });
 

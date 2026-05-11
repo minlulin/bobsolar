@@ -5,7 +5,7 @@ import { UPLOAD_MAX_SIZE_BYTES } from '@/lib/domain/policies';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const origin = request.headers.get('origin');
     const host = request.headers.get('host');
@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const entry = formData.get('file');
-    const folderRaw = String(formData.get('folder') || 'uploads');
+    const folderEntry = formData.get('folder');
+    const folderRaw = typeof folderEntry === 'string' ? folderEntry : 'uploads';
     const folder =
       folderRaw.replace(/[^a-zA-Z0-9_/-]/g, '').replace(/^\/+|\/+$/g, '') ||
       'uploads';

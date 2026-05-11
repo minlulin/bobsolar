@@ -6,7 +6,7 @@ import { useAppTheme } from '@/components/providers';
 
 import { Button } from '@/components/ui/button';
 
-export function ThemeToggle() {
+export function ThemeToggle(): React.JSX.Element {
   const { theme, setTheme, mounted } = useAppTheme();
   const isDark = theme === 'dark';
 

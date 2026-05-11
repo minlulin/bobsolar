@@ -40,14 +40,16 @@ interface QuoteDetailViewProps {
   };
 }
 
-export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
+export function QuoteDetailView({
+  quotation,
+}: QuoteDetailViewProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const loadFromQuotation = useQuoteBuilderStore(
     (state) => state.loadFromQuotation,
   );
 
-  const handleStatusChange = async (newStatus: Quotation['status']) => {
+  const handleStatusChange = (newStatus: Quotation['status']): void => {
     startTransition(async () => {
       const res = await updateQuotationStatus(quotation.id, newStatus);
       if (res.success) {
@@ -64,7 +66,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
     });
   };
 
-  const handleDuplicate = async () => {
+  const handleDuplicate = (): void => {
     startTransition(async () => {
       const res = await duplicateQuotation(quotation.id);
       if (res.success) {
@@ -76,7 +78,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
     });
   };
 
-  const handleReopen = async () => {
+  const handleReopen = (): void => {
     handleStatusChange('draft');
   };
 
@@ -130,14 +132,14 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
             <>
               <Button
                 variant="outline"
-                onClick={() => handleStatusChange('rejected')}
+                onClick={() => { handleStatusChange('rejected'); }}
                 disabled={isPending}
                 className="border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
               >
                 Mark Rejected
               </Button>
               <Button
-                onClick={() => handleStatusChange('accepted')}
+                onClick={() => { handleStatusChange('accepted'); }}
                 disabled={isPending}
                 className="bg-emerald-600 font-bold text-white hover:bg-emerald-700"
               >
@@ -149,7 +151,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
           {status === 'rejected' && (
             <Button
               variant="outline"
-              onClick={handleReopen}
+              onClick={() => { handleReopen(); }}
               disabled={isPending}
               className="border-white/10 bg-white/5 hover:bg-white/10"
             >
@@ -183,7 +185,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps) {
 
           <Button
             variant="outline"
-            onClick={handleDuplicate}
+            onClick={() => { handleDuplicate(); }}
             disabled={isPending}
             className="border-white/10 bg-white/5 hover:bg-white/10"
           >

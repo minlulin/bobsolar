@@ -20,7 +20,7 @@ const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
   { id: 'rejected', label: 'Rejected', status: 'rejected' },
 ];
 
-export default function QuotationsPage() {
+export default function QuotationsPage(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
@@ -36,12 +36,12 @@ export default function QuotationsPage() {
     limit,
   });
 
-  const quotations = response?.success ? response.data.items : [];
-  const total = response?.success ? response.data.total : 0;
+  const quotations = response?.items ?? [];
+  const total = response?.total ?? 0;
   const hasPrevious = currentPage > 1;
   const hasNext = currentPage * limit < total;
 
-  const navigatePage = (nextPage: number) => {
+  const navigatePage = (nextPage: number): void => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(nextPage));
     router.push(`/quotations?${params.toString()}`);

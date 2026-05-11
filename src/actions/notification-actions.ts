@@ -79,7 +79,7 @@ export async function getUnreadCount(): Promise<ActionResponse<number>> {
           eq(notifications.isRead, false),
         ),
       );
-    return { success: true, data: Number(row?.total ?? 0) };
+    return { success: true, data: row?.total ?? 0 };
   } catch (error) {
     return handleActionError(
       error,

@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/use-debounce';
 import { formatMMK } from '@/lib/utils';
 
-export function InventorySearch() {
+export function InventorySearch(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const debouncedSearch = useDebounce(search, 300);

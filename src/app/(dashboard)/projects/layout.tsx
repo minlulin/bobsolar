@@ -6,6 +6,6 @@ export const metadata: Metadata = {
 
 export default function ProjectsLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: Readonly<{ children: React.ReactNode }>): React.ReactNode {
   return children;
 }

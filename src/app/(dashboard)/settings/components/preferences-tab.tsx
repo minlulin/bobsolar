@@ -27,7 +27,7 @@ const defaults: Preferences = {
   defaultWarrantyMonths: '12',
 };
 
-export function PreferencesTab() {
+export function PreferencesTab(): React.JSX.Element {
   const [prefs, setPrefs] = React.useState<Preferences>(() => {
     if (typeof window === 'undefined') return defaults;
     const raw = window.localStorage.getItem(PREF_KEY);
@@ -40,7 +40,7 @@ export function PreferencesTab() {
     }
   });
 
-  function savePreferences() {
+  function savePreferences(): void {
     localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
     toast.success('Preferences saved');
   }

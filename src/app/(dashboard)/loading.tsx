@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react';
 
-export default function DashboardLoading() {
+export default function DashboardLoading(): React.JSX.Element {
   return (
     <div className="flex h-[50vh] w-full items-center justify-center">
       <div className="text-muted-foreground flex flex-col items-center gap-4">

@@ -10,7 +10,10 @@ type FeatureErrorProps = {
   reset: () => void;
 };
 
-export default function FeatureError({ error, reset }: FeatureErrorProps) {
+export default function FeatureError({
+  error,
+  reset,
+}: FeatureErrorProps): React.JSX.Element {
   useEffect(() => {
     console.error('[Feature Error Boundary]', error);
   }, [error]);

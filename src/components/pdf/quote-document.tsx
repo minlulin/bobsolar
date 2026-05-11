@@ -41,7 +41,7 @@ export function QuoteDocument({
   quotation,
   companyLogoUrl,
   companySettings = {},
-}: QuoteDocumentProps) {
+}: QuoteDocumentProps): React.JSX.Element {
   const { customer, items } = quotation;
 
   const companyName =

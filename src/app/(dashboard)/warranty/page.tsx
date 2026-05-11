@@ -25,7 +25,7 @@ const FILTER_TABS: Array<{ id: WarrantyListFilter['tab']; label: string }> = [
   { id: 'all', label: 'Everything' },
 ];
 
-export default function WarrantyPage() {
+export default function WarrantyPage(): React.JSX.Element {
   const [tab, setTab] = React.useState<WarrantyListFilter['tab']>('all');
 
   const { data: summary, error: summaryError } = useWarrantySummary();
@@ -124,7 +124,7 @@ export default function WarrantyPage() {
           animate="animate"
           className="grid gap-5 lg:grid-cols-2"
         >
-          {alerts?.map((a) => {
+          {alerts.map((a) => {
             let dueTone = 'text-emerald-200';
             if (!a.isResolved && new Date(a.dueDate) < new Date())
               dueTone = 'text-red-400';
@@ -210,7 +210,7 @@ function StatCard({
   label: string;
   count: number;
   tint: string;
-}) {
+}): React.JSX.Element {
   return (
     <div className={cn('rounded-[1.5rem] border px-8 py-6 text-center', tint)}>
       <p className="text-5xl">{emoji}</p>

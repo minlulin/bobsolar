@@ -10,7 +10,7 @@ import {
 } from '@/stores/quote-builder-store';
 import { formatMMK } from '@/lib/utils';
 
-export function QuoteItems() {
+export function QuoteItems(): React.JSX.Element {
   const items = useQuoteBuilderStore((state) => state.items);
   const setItems = useQuoteBuilderStore((state) => state.setItems);
 
@@ -60,7 +60,13 @@ export function QuoteItems() {
   );
 }
 
-function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }) {
+function ItemRow({
+  item,
+  index,
+}: {
+  item: QuoteBuilderItem;
+  index: number;
+}): React.JSX.Element {
   const updateItemQuantity = useQuoteBuilderStore(
     (state) => state.updateItemQuantity,
   );

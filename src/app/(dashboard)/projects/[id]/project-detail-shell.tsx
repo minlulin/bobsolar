@@ -76,7 +76,7 @@ import {
   REMARK_TYPE_ICONS,
 } from '@/lib/domain/enums';
 
-function statusBadgeTone(status: ProjectStatus) {
+function statusBadgeTone(status: ProjectStatus): string {
   switch (status) {
     case 'planning':
       return 'border-indigo-500/35 bg-indigo-500/10 text-indigo-200';
@@ -93,7 +93,10 @@ function statusBadgeTone(status: ProjectStatus) {
   }
 }
 
-function aggregateCosts(project: ProjectDetail) {
+function aggregateCosts(project: ProjectDetail): {
+  buckets: Record<CostType, number>;
+  total: number;
+} {
   const buckets: Record<CostType, number> = {
     material: 0,
     labor: 0,
@@ -136,7 +139,7 @@ export function ProjectDetailShell({
   id,
   isAdmin,
   userId,
-}: ProjectDetailShellProps) {
+}: ProjectDetailShellProps): React.JSX.Element {
   const router = useRouter();
   const { data: proj, error, isLoading, refetch } = useProject(id);
 
@@ -189,27 +192,30 @@ export function ProjectDetailShell({
     );
   }, [proj]);
 
-  const p = proj!;
-
   const canEditOperational =
-    p.status !== 'completed' && p.status !== 'cancelled';
+    proj?.status !== 'completed' && proj?.status !== 'cancelled';
 
   const filteredCosts = React.useMemo(() => {
-    if (costFilter === 'all') return p.costs;
-    return p.costs.filter((cost) => cost.costType === costFilter);
-  }, [p, costFilter]);
+    if (!proj) return [];
+    if (costFilter === 'all') return proj.costs;
+    return proj.costs.filter((cost) => cost.costType === costFilter);
+  }, [proj, costFilter]);
 
-  const { buckets: costBuckets, total: costSumAgg } = React.useMemo(
-    () => aggregateCosts(p),
-    [p],
-  );
+  const aggregate = React.useMemo(() => {
+    if (!proj) return { buckets: {} as Record<CostType, number>, total: 0 };
+    return aggregateCosts(proj);
+  }, [proj]);
+  const { buckets: costBuckets, total: costSumAgg } = aggregate;
 
-  const quoted = React.useMemo(() => Math.round(Number(p.quotedTotal)), [p]);
+  const quoted = React.useMemo(() => {
+    if (!proj) return 0;
+    return Math.round(Number(proj.quotedTotal));
+  }, [proj]);
 
   const variancePct = React.useMemo(() => {
-    if (quoted === 0) return 0;
-    return ((p.actualTotalComputed - quoted) / quoted) * 100;
-  }, [quoted, p]);
+    if (!proj || quoted === 0) return 0;
+    return ((proj.actualTotalComputed - quoted) / quoted) * 100;
+  }, [quoted, proj]);
 
   if (error) {
     return (
@@ -235,7 +241,12 @@ export function ProjectDetailShell({
     );
   }
 
-  async function persistAlertToggle(alertId: string, resolved: boolean) {
+  const p = proj;
+
+  async function persistAlertToggle(
+    alertId: string,
+    resolved: boolean,
+  ): Promise<void> {
     const ok = await persistWarrantyCheckbox(alertId, resolved);
     if (ok) {
       toast.success(resolved ? 'Alert resolved' : 'Alert reopened');
@@ -243,7 +254,7 @@ export function ProjectDetailShell({
     }
   }
 
-  function handleSubmitCost(ev: React.FormEvent) {
+  function handleSubmitCost(ev: React.SyntheticEvent): void {
     ev.preventDefault();
     const validated = addProjectCostSchema.safeParse({
       projectId: p.id,
@@ -274,7 +285,7 @@ export function ProjectDetailShell({
     });
   }
 
-  function handleSubmitRemark(ev: React.FormEvent) {
+  function handleSubmitRemark(ev: React.SyntheticEvent): void {
     ev.preventDefault();
     if (!remarkBody.trim()) return;
     addRemarkMutation.mutate(
@@ -292,7 +303,7 @@ export function ProjectDetailShell({
     );
   }
 
-  function submitAlert() {
+  function submitAlert(): void {
     const parsed = createWarrantyAlertSchema.safeParse({
       projectId: p.id,
       alertType: alertForm.alertType,
@@ -935,14 +946,16 @@ export function ProjectDetailShell({
                     id={`resolved-${alert.id}`}
                     checked={alert.isResolved}
                     disabled={busyAlertId === alert.id}
-                    onCheckedChange={async (val) => {
+                    onCheckedChange={(val) => {
                       if (val === 'indeterminate') return;
-                      setBusyAlertId(alert.id);
-                      try {
-                        await persistAlertToggle(alert.id, val);
-                      } finally {
-                        setBusyAlertId(null);
-                      }
+                      void (async (): Promise<void> => {
+                        setBusyAlertId(alert.id);
+                        try {
+                          await persistAlertToggle(alert.id, val);
+                        } finally {
+                          setBusyAlertId(null);
+                        }
+                      })();
                     }}
                   />
                 </div>
@@ -985,7 +998,7 @@ function ProjectOperationalNotes({
   disabled: boolean;
   initialNotes: string | null | undefined;
   onPersist: (draft: string) => void;
-}) {
+}): React.JSX.Element {
   const [draft, setDraft] = React.useState(() => initialNotes ?? '');
 
   return (

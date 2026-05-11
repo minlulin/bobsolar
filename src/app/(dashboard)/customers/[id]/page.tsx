@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import { CustomerDialog } from '@/components/customers/customer-dialog';
 
-export default function CustomerDetailPage() {
+export default function CustomerDetailPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -53,7 +53,7 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string): string => {
     return name
       .split(' ')
       .map((n) => n[0])

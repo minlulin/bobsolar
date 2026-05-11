@@ -16,14 +16,19 @@ interface ProjectTimelineProps {
 }
 
 function phaseReachable(status: ProjectModel['status']): number {
-  if (status === 'cancelled') return 0;
-  if (status === 'planning' || status === 'on_hold') return 0;
-  if (status === 'in_progress') return 1;
-  if (status === 'completed') return 2;
-  return 0;
+  switch (status) {
+    case 'in_progress':
+      return 1;
+    case 'completed':
+      return 2;
+    default:
+      return 0;
+  }
 }
 
-export function ProjectTimeline({ project }: ProjectTimelineProps) {
+export function ProjectTimeline({
+  project,
+}: ProjectTimelineProps): React.JSX.Element {
   const activeIdx = React.useMemo(
     () => phaseReachable(project.status),
     [project.status],

@@ -8,7 +8,11 @@ import {
 } from '@/actions/notification-actions';
 import { useNotificationStore } from '@/stores/notification-store';
 
-export function useNotifications() {
+type ActionData<T> = T extends { data: infer D } ? D : never;
+
+export function useNotifications(): ReturnType<typeof useQuery<
+  ActionData<Awaited<ReturnType<typeof getNotificationsWithFilter>>>
+>> {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
@@ -20,7 +24,9 @@ export function useNotifications() {
   });
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(): ReturnType<typeof useQuery<
+  ActionData<Awaited<ReturnType<typeof getUnreadCount>>>
+>> {
   return useQuery({
     queryKey: ['notifications', 'unread'],
     queryFn: async () => {
@@ -33,7 +39,12 @@ export function useUnreadCount() {
   });
 }
 
-export function useMarkNotificationAsRead() {
+export function useMarkNotificationAsRead(): ReturnType<typeof useMutation<
+  ActionData<Awaited<ReturnType<typeof markNotificationAsRead>>>,
+  Error,
+  string,
+  { previous: Array<{ id: string; isRead: boolean }> | undefined }
+>> {
   const queryClient = useQueryClient();
   const decrementUnread = useNotificationStore((s) => s.decrementUnread);
 
@@ -58,14 +69,19 @@ export function useMarkNotificationAsRead() {
       if (ctx?.previous)
         queryClient.setQueryData(['notifications'], ctx.previous);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
     },
   });
 }
 
-export function useMarkAllNotificationsAsRead() {
+export function useMarkAllNotificationsAsRead(): ReturnType<typeof useMutation<
+  ActionData<Awaited<ReturnType<typeof markAllNotificationsAsRead>>>,
+  Error,
+  void,
+  { previous: Array<{ isRead: boolean }> | undefined }
+>> {
   const queryClient = useQueryClient();
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
 
@@ -89,21 +105,25 @@ export function useMarkAllNotificationsAsRead() {
       if (ctx?.previous)
         queryClient.setQueryData(['notifications'], ctx.previous);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
     },
   });
 }
 
-export function useDeleteNotification() {
+export function useDeleteNotification(): ReturnType<typeof useMutation<
+  ActionData<Awaited<ReturnType<typeof deleteNotification>>>,
+  Error,
+  string
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => deleteNotification(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      await queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
     },
   });
 }

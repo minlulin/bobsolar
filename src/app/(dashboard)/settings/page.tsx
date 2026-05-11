@@ -30,7 +30,7 @@ const companySchema = z.object({
   [COMPANY_SETTING_KEYS.NAME]: z.string().min(1, 'Company name is required'),
   [COMPANY_SETTING_KEYS.ADDRESS]: z.string().optional(),
   [COMPANY_SETTING_KEYS.PHONE]: z.string().min(1, 'Phone is required'),
-  [COMPANY_SETTING_KEYS.EMAIL]: z.string().email('Invalid email'),
+  [COMPANY_SETTING_KEYS.EMAIL]: z.email(),
   [COMPANY_SETTING_KEYS.TAX_ID]: z.string().optional(),
   [COMPANY_SETTING_KEYS.BANK_NAME]: z.string().optional(),
   [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: z.string().optional(),
@@ -39,7 +39,7 @@ const companySchema = z.object({
 
 type CompanyForm = z.infer<typeof companySchema>;
 
-export default function SettingsPage() {
+export default function SettingsPage(): React.JSX.Element {
   const settingsQuery = useQuery({
     queryKey: ['settings', 'company'],
     queryFn: async () => {
@@ -94,7 +94,7 @@ export default function SettingsPage() {
     });
   }, [settingsQuery.data, reset]);
 
-  async function persistLogo(url: string) {
+  async function persistLogo(url: string): Promise<void> {
     setLogoSaving(true);
     try {
       const res = await setCompanyLogoUrl({ url });
@@ -102,14 +102,14 @@ export default function SettingsPage() {
         toast.success('Company logo synced');
         void settingsQuery.refetch();
       } else {
-        toast.error(res.error ?? 'Logo save failed');
+        toast.error(res.error);
       }
     } finally {
       setLogoSaving(false);
     }
   }
 
-  async function onSubmit(values: CompanyForm) {
+  async function onSubmit(values: CompanyForm): Promise<void> {
     setInfoSaving(true);
     try {
       const payload: Record<string, string> = {};
@@ -119,7 +119,7 @@ export default function SettingsPage() {
         toast.success('Company info saved successfully');
         void settingsQuery.refetch();
       } else {
-        toast.error(res.error ?? 'Failed to save company info');
+        toast.error(res.error);
       }
     } finally {
       setInfoSaving(false);
@@ -177,7 +177,12 @@ export default function SettingsPage() {
                 Company Profile
               </Label>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={(e) => {
+                  void handleSubmit(onSubmit)(e);
+                }}
+                className="space-y-4"
+              >
                 <div className="space-y-1">
                   <Label
                     htmlFor={COMPANY_SETTING_KEYS.NAME}

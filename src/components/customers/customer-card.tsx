@@ -27,10 +27,13 @@ interface CustomerCardProps {
   onEdit: (customer: Customer) => void;
 }
 
-export function CustomerCard({ customer, onEdit }: CustomerCardProps) {
+export function CustomerCard({
+  customer,
+  onEdit,
+}: CustomerCardProps): React.JSX.Element {
   const { mutate: deleteCustomer } = useDeleteCustomer();
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string): string => {
     return name
       .split(' ')
       .map((n) => n[0])

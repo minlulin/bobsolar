@@ -14,7 +14,11 @@ import {
 import type { ProjectListFilter } from '@/lib/validators/project';
 import { toast } from 'sonner';
 
-export function useProjects(filters: Partial<ProjectListFilter> = {}) {
+type ActionData<T> = T extends { data: infer D } ? D : never;
+
+export function useProjects(
+  filters: Partial<ProjectListFilter> = {},
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>> {
   const full: ProjectListFilter = {
     scope: filters.scope ?? 'active',
     status: filters.status,
@@ -37,7 +41,9 @@ export function useProjects(filters: Partial<ProjectListFilter> = {}) {
   });
 }
 
-export function useProject(id: string) {
+export function useProject(
+  id: string,
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProject>>>>> {
   return useQuery({
     queryKey: ['projects', id],
     queryFn: async () => {
@@ -50,140 +56,188 @@ export function useProject(id: string) {
   });
 }
 
-export function useConvertToProject() {
+export function useConvertToProject(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof convertQuotationToProject>>,
+  Error,
+  Parameters<typeof convertQuotationToProject>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: convertQuotationToProject,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (res.success) {
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        await queryClient.invalidateQueries({ queryKey: ['projects'] });
         toast.success(`Project ${res.data.projectNumber} created`);
       } else {
         toast.error(res.error);
       }
     },
-    onError: () => toast.error('Failed to create project'),
+    onError: () => {
+      toast.error('Failed to create project');
+    },
   });
 }
 
-export function useUpdateProject() {
+export function useUpdateProject(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof updateProject>>,
+  Error,
+  Parameters<typeof updateProject>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateProject,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project updated');
     },
-    onError: () => toast.error('Failed to update project'),
+    onError: () => {
+      toast.error('Failed to update project');
+    },
   });
 }
 
-export function useAddProjectCost() {
+export function useAddProjectCost(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof addProjectCost>>,
+  Error,
+  Parameters<typeof addProjectCost>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: addProjectCost,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Cost recorded');
     },
-    onError: () => toast.error('Failed to add cost'),
+    onError: () => {
+      toast.error('Failed to add cost');
+    },
   });
 }
 
-export function useDeleteProjectCost() {
+export function useDeleteProjectCost(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof deleteProjectCost>>,
+  Error,
+  Parameters<typeof deleteProjectCost>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteProjectCost,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Cost removed');
     },
-    onError: () => toast.error('Failed to remove cost'),
+    onError: () => {
+      toast.error('Failed to remove cost');
+    },
   });
 }
 
-export function useDeleteProjectRemark() {
+export function useDeleteProjectRemark(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof deleteProjectRemark>>,
+  Error,
+  Parameters<typeof deleteProjectRemark>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteProjectRemark,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Remark removed');
     },
-    onError: () => toast.error('Could not delete remark'),
+    onError: () => {
+      toast.error('Could not delete remark');
+    },
   });
 }
 
-export function useAddProjectRemark() {
+export function useAddProjectRemark(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof addProjectRemark>>,
+  Error,
+  Parameters<typeof addProjectRemark>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: addProjectRemark,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Posted');
     },
-    onError: () => toast.error('Failed to post remark'),
+    onError: () => {
+      toast.error('Failed to post remark');
+    },
   });
 }
 
-export function useMarkProjectCompleted() {
+export function useMarkProjectCompleted(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof markProjectCompleted>>,
+  Error,
+  Parameters<typeof markProjectCompleted>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: markProjectCompleted,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['warranty'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['warranty'] });
       toast.success('Project marked complete');
     },
-    onError: () => toast.error('Could not complete project'),
+    onError: () => {
+      toast.error('Could not complete project');
+    },
   });
 }
 
-export function useCreateProjectWarrantyAlert() {
+export function useCreateProjectWarrantyAlert(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof createWarrantyAlertForProject>>,
+  Error,
+  Parameters<typeof createWarrantyAlertForProject>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createWarrantyAlertForProject,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (!res.success) {
         toast.error(res.error);
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['warranty'] });
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      await queryClient.invalidateQueries({ queryKey: ['warranty'] });
       toast.success('Alert added');
     },
-    onError: () => toast.error('Failed to add alert'),
+    onError: () => {
+      toast.error('Failed to add alert');
+    },
   });
 }

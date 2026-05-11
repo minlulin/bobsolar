@@ -11,7 +11,7 @@ import { staggerContainer } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-export default function CompletedProjectsPage() {
+export default function CompletedProjectsPage(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [year, setYear] = useState<string>('');
 

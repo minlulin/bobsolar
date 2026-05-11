@@ -8,10 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-export function AccountTab() {
+export function AccountTab(): React.JSX.Element {
   const [isPending, startTransition] = React.useTransition();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const newPassword = formData.get('newPassword') as string;
@@ -27,14 +27,17 @@ export function AccountTab() {
       return;
     }
 
-    startTransition(async () => {
-      const res = await changePassword(formData);
-      if (res.success) {
-        toast.success('Password changed successfully');
-        (e.target as HTMLFormElement).reset();
-      } else {
-        toast.error(res.error || 'Failed to change password');
-      }
+    const form = e.currentTarget;
+    startTransition((): void => {
+      void (async (): Promise<void> => {
+        const res = await changePassword(formData);
+        if (res.success) {
+          toast.success('Password changed successfully');
+          form.reset();
+        } else {
+          toast.error(res.error || 'Failed to change password');
+        }
+      })();
     });
   };
 

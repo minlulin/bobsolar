@@ -41,7 +41,7 @@ export function QuoteEditor({
   mode,
   quotationId,
   initialQuoteNumber,
-}: QuoteEditorProps) {
+}: QuoteEditorProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const {
@@ -60,7 +60,7 @@ export function QuoteEditor({
     }
   }, [mode, reset]);
 
-  const handleSave = async (status: 'draft' | 'sent' = 'draft') => {
+  const handleSave = (status: 'draft' | 'sent' = 'draft'): void => {
     if (!selectedCustomerId) {
       toast.error('Please select a customer');
       return;
@@ -69,62 +69,70 @@ export function QuoteEditor({
       toast.error('Please add at least one item');
       return;
     }
+    if (mode === 'edit' && !quotationId) {
+      toast.error('Missing quotation ID');
+      return;
+    }
 
-    startTransition(async () => {
-      const data = {
-        customerId: selectedCustomerId,
-        items: items.map((item) => ({
-          itemId: item.itemId,
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discountPercentage: item.discountPercentage,
-          sortOrder: item.sortOrder,
-        })),
-        discountPercent,
-        taxPercent,
-        notes,
-        validUntil,
-      };
+    startTransition((): void => {
+      void (async (): Promise<void> => {
+        const data = {
+          customerId: selectedCustomerId,
+          items: items.map((item) => ({
+            itemId: item.itemId,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discountPercentage: item.discountPercentage,
+            sortOrder: item.sortOrder,
+          })),
+          discountPercent,
+          taxPercent,
+          notes,
+          validUntil,
+        };
 
-      const res =
-        mode === 'create'
-          ? await createQuotation(data)
-          : await updateQuotation(quotationId!, data);
-
-      if (res.success) {
-        if (status === 'sent') {
-          await updateQuotationStatus(res.data.id, 'sent');
-        }
-
-        toast.success(
+        const res =
           mode === 'create'
-            ? status === 'sent'
-              ? 'Quotation sent successfully'
-              : 'Quotation created'
-            : 'Quotation updated',
-        );
-        reset();
-        router.push('/quotations');
-        router.refresh();
-      } else {
-        toast.error(res.error);
-      }
+            ? await createQuotation(data)
+            : await updateQuotation(quotationId ?? '', data);
+
+        if (res.success) {
+          if (status === 'sent') {
+            await updateQuotationStatus(res.data.id, 'sent');
+          }
+
+          toast.success(
+            mode === 'create'
+              ? status === 'sent'
+                ? 'Quotation sent successfully'
+                : 'Quotation created'
+              : 'Quotation updated',
+          );
+          reset();
+          router.push('/quotations');
+          router.refresh();
+        } else {
+          toast.error(res.error);
+        }
+      })();
     });
   };
 
-  const handleDeleteDraft = () => {
+  const handleDeleteDraft = (): void => {
     if (mode !== 'edit' || !quotationId) return;
-    startTransition(async () => {
-      const res = await deleteQuotation(quotationId);
-      if (res.success) {
-        toast.success('Draft deleted successfully');
-        reset();
-        router.replace('/quotations');
-        router.refresh();
-      } else {
-        toast.error(res.error || 'Failed to delete draft');
-      }
+    startTransition((): void => {
+      void (async (): Promise<void> => {
+        const res = await deleteQuotation(quotationId);
+        if (res.success) {
+          toast.success('Draft deleted successfully');
+          reset();
+          router.replace('/quotations');
+          router.refresh();
+        } else {
+          toast.error(res.error || 'Failed to delete draft');
+        }
+      })();
     });
   };
 
@@ -186,7 +194,9 @@ export function QuoteEditor({
           )}
           <Button
             variant="outline"
-            onClick={() => handleSave('draft')}
+            onClick={() => {
+              handleSave('draft');
+            }}
             disabled={isPending}
             className="border-white/10 bg-white/5 transition-all hover:bg-white/10"
           >
@@ -198,7 +208,9 @@ export function QuoteEditor({
             {mode === 'create' ? 'Save Draft' : 'Update Draft'}
           </Button>
           <Button
-            onClick={() => handleSave('sent')}
+            onClick={() => {
+              handleSave('sent');
+            }}
             disabled={isPending}
             className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-700"
           >

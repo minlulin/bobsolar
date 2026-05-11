@@ -16,13 +16,13 @@ let insertedCustomerId: string | null = null;
 let createdUserId: string | null = null;
 
 vi.mock('@/lib/auth/validate', () => ({
-  requireAuth: async () => {
+  requireAuth: async (): Promise<{ userId: string; role: 'admin' | 'staff' }> => {
     if (!authUserId) throw new Error('Auth user not initialized');
-    return { userId: authUserId, role: 'admin' as const };
+    return await Promise.resolve({ userId: authUserId, role: 'admin' as const });
   },
-  requireAdmin: async () => {
+  requireAdmin: async (): Promise<{ userId: string; role: 'admin' }> => {
     if (!authUserId) throw new Error('Auth user not initialized');
-    return { userId: authUserId, role: 'admin' as const };
+    return await Promise.resolve({ userId: authUserId, role: 'admin' as const });
   },
 }));
 
@@ -30,7 +30,7 @@ neonConfig.webSocketConstructor = ws;
 
 async function getQuotationCount(): Promise<number> {
   const rows = await db.select({ total: count() }).from(quotations);
-  return Number(rows[0]?.total ?? 0);
+  return (rows[0]?.total ?? 0);
 }
 
 describeDb('DB ugly paths: constraint failures', () => {
@@ -121,8 +121,10 @@ describeDb('DB ugly paths: constraint failures', () => {
   it('createQuotation fails when itemId does not exist', async () => {
     const initialQuotes = await getQuotationCount();
 
-    const pool = new Pool({ connectionString: process.env['DATABASE_URL']! });
-    const insertRes = await pool.query(
+    const pool = new Pool({
+      connectionString: process.env['DATABASE_URL'] ?? '',
+    });
+    const insertRes = await pool.query<{ id: string }>(
       'insert into customers (name, phone) values ($1, $2) returning id',
       ['Customer for ugly path', '09-123456789'],
     );

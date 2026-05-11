@@ -17,7 +17,7 @@ export function showLinkedToast({
   href,
   description,
   variant = 'info',
-}: ToastLinkInput) {
+}: ToastLinkInput): string | number {
   return toast.custom((id) => (
     <Link
       href={href}

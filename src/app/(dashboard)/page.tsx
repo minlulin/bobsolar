@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Dashboard',
 };
 
-export default async function DashboardRootPage() {
+export default async function DashboardRootPage(): Promise<React.JSX.Element> {
   const queryClient = new QueryClient();
 
   const [stats, pipeline, activity, alerts] = await Promise.all([

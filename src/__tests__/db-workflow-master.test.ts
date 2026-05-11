@@ -50,17 +50,23 @@ const authState = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/auth/validate', () => ({
-  requireAuth: async () => {
+  requireAuth: async (): Promise<{ userId: string; role: 'admin' | 'staff' }> => {
     if (!authState.userId) {
       throw new Error('Auth context not initialized');
     }
-    return { userId: authState.userId, role: authState.role };
+    return await Promise.resolve({
+      userId: authState.userId,
+      role: authState.role,
+    });
   },
-  requireAdmin: async () => {
+  requireAdmin: async (): Promise<{ userId: string; role: 'admin' }> => {
     if (!authState.userId) {
       throw new Error('Auth context not initialized');
     }
-    return { userId: authState.userId, role: authState.role };
+    return await Promise.resolve({
+      userId: authState.userId,
+      role: authState.role,
+    });
   },
 }));
 
@@ -273,7 +279,7 @@ describeDb('Master workflow integration: DB + server actions', () => {
     const allAlerts = unwrap(await getWarrantyAlerts({ tab: 'all' }));
     const projectAlerts = allAlerts.filter((a) => a.projectId === projectId);
     expect(projectAlerts.length).toBeGreaterThanOrEqual(3);
-    warrantyAlertId = projectAlerts[0]!.id;
+    warrantyAlertId = projectAlerts[0]?.id ?? '';
 
     unwrap(await resolveWarrantyAlert(warrantyAlertId));
     unwrap(await reopenWarrantyAlert(warrantyAlertId));

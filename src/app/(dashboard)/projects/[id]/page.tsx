@@ -5,7 +5,9 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default async function ProjectWorkspacePage(props: Props) {
+export default async function ProjectWorkspacePage(
+  props: Props,
+): Promise<React.JSX.Element> {
   const { id } = await props.params;
 
   const session = await requireAuth();

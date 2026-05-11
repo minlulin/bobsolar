@@ -19,10 +19,10 @@ export function UserNav({
 }: {
   userName: string;
   userRole: string;
-}) {
+}): React.JSX.Element {
   const router = useRouter();
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     await logout();
   };
 
@@ -52,7 +52,12 @@ export function UserNav({
           <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+        <DropdownMenuItem
+          onClick={() => {
+            void handleLogout();
+          }}
+          className="text-destructive"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

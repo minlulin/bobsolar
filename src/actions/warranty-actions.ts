@@ -21,7 +21,7 @@ export type WarrantyAlertRow = InferSelectModel<typeof warrantyAlerts> & {
 
 function tabWhere(
   tab: 'overdue' | 'due_soon' | 'upcoming' | 'resolved' | 'all',
-) {
+): ReturnType<typeof and> | ReturnType<typeof eq> | undefined {
   const today = startOfToday();
   const soonEnd = addDays(today, WARRANTY_SOON_WINDOW_DAYS);
   switch (tab) {
@@ -101,10 +101,10 @@ export async function getWarrantySummary(): Promise<
     return {
       success: true,
       data: {
-        overdue: Number(overdueRow[0]?.overdue ?? 0),
-        dueSoon: Number(dueSoonRow[0]?.dueSoon ?? 0),
-        upcoming: Number(upcomingRow[0]?.upcoming ?? 0),
-        active: Number(activeRow[0]?.active ?? 0),
+        overdue: overdueRow[0]?.overdue ?? 0,
+        dueSoon: dueSoonRow[0]?.dueSoon ?? 0,
+        upcoming: upcomingRow[0]?.upcoming ?? 0,
+        active: activeRow[0]?.active ?? 0,
       },
     };
   } catch (error) {

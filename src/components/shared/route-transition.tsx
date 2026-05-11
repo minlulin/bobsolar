@@ -4,7 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
 
-export function RouteTransition({ children }: { children: ReactNode }) {
+export function RouteTransition({
+  children,
+}: {
+  children: ReactNode;
+}): React.JSX.Element {
   const pathname = usePathname();
 
   return (

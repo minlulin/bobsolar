@@ -11,7 +11,7 @@ import { CustomerCard } from '@/components/customers/customer-card';
 import { CustomerDialog } from '@/components/customers/customer-dialog';
 import { useCustomers } from '@/hooks/use-customers';
 
-export default function CustomersPage() {
+export default function CustomersPage(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -21,12 +21,12 @@ export default function CustomersPage() {
     limit: 50,
   });
 
-  const handleEdit = (customer: Customer) => {
+  const handleEdit = (customer: Customer): void => {
     setEditingCustomer(customer);
     setDialogOpen(true);
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (): void => {
     setEditingCustomer(null);
     setDialogOpen(true);
   };

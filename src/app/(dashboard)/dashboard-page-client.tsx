@@ -100,7 +100,7 @@ const ActivityStream = dynamic(
   { ssr: false },
 );
 
-export default function DashboardPage() {
+export default function DashboardPage(): React.JSX.Element {
   const statsQuery = useDashboardStats();
   const pipelineQuery = useDashboardPipeline();
   const activityQuery = useRecentActivity();
@@ -315,7 +315,13 @@ export default function DashboardPage() {
   );
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}): React.JSX.Element {
   return (
     <motion.div
       className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/55 p-4 shadow-[0_22px_70px_-52px_rgba(245,158,11,0.9),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl sm:p-5"
@@ -343,7 +349,7 @@ function StatCard({
   hint: string;
   loading: boolean;
   tone: string;
-}) {
+}): React.JSX.Element {
   return (
     <motion.div
       className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/55 p-4 shadow-[0_18px_55px_-46px_rgba(245,158,11,0.8),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl"
@@ -386,7 +392,7 @@ function QuickAction({
   href: string;
   label: string;
   icon: ReactNode;
-}) {
+}): React.JSX.Element {
   return (
     <motion.div
       whileHover={{ y: -3, scale: 1.025 }}

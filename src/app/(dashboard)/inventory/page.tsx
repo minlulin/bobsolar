@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 // For now, I'll assume all users can see, but only admin can edit (handled in server actions)
 // I'll check user role from a mock or session if possible.
 
-export default function InventoryPage() {
+export default function InventoryPage(): React.JSX.Element {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,12 +32,12 @@ export default function InventoryPage() {
     limit: 50,
   });
 
-  const handleEdit = (item: InventoryItem) => {
+  const handleEdit = (item: InventoryItem): void => {
     setEditingItem(item);
     setIsDialogOpen(true);
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (): void => {
     setEditingItem(null);
     setIsDialogOpen(true);
   };
@@ -100,7 +100,7 @@ export default function InventoryPage() {
             Scanning inventory...
           </p>
         </div>
-      ) : (response?.items?.length ?? 0) > 0 ? (
+      ) : response?.items && response.items.length > 0 ? (
 
         <motion.div
           variants={staggerContainer}
@@ -108,7 +108,7 @@ export default function InventoryPage() {
           animate="animate"
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
-{((response?.items ?? []) as unknown as DBInventoryItem[]).map((item) => (
+          {response.items.map((item) => (
             <InventoryCard
               key={item.id}
               item={item}

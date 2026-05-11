@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import type { Notification } from '@/lib/db/schema';
 import { useNotificationStore } from '@/stores/notification-store';
 
-export function NotificationBell() {
+export function NotificationBell(): React.JSX.Element {
   const { data: notifications, isLoading } = useNotifications();
   const unreadQuery = useUnreadCount();
   const markAsRead = useMarkNotificationAsRead();
@@ -47,13 +47,13 @@ export function NotificationBell() {
     if (unreadCount > prevUnread.current) {
       setPulseBadge(true);
       const timer = setTimeout(() => { setPulseBadge(false); }, 900);
-      return () => { clearTimeout(timer); };
+      return (): void => { clearTimeout(timer); };
     }
     prevUnread.current = unreadCount;
     return;
   }, [unreadCount, prevUnread]);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: Notification): void => {
     if (!notification.isRead) {
       markAsRead.mutate(notification.id);
     }

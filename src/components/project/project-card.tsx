@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import type { ProjectListRow } from '@/actions/project-actions';
 import { cn, formatMMK } from '@/lib/utils';
 
-function statusTone(status: ProjectListRow['status']) {
+function statusTone(status: ProjectListRow['status']): string {
   switch (status) {
     case 'planning':
       return 'border-indigo-500/35 bg-indigo-500/10 text-indigo-200';
@@ -28,7 +28,7 @@ function statusTone(status: ProjectListRow['status']) {
   }
 }
 
-function budgetPct(actual: number, quoted: number) {
+function budgetPct(actual: number, quoted: number): number {
   if (quoted <= 0) return actual > 0 ? 999 : 0;
   return (actual / quoted) * 100;
 }
@@ -41,7 +41,7 @@ interface ProjectCardProps {
 export function ProjectCard({
   project,
   hrefBase = '/projects',
-}: ProjectCardProps) {
+}: ProjectCardProps): React.JSX.Element {
   const quoted = React.useMemo(
     () => Number(project.quotedTotal),
     [project.quotedTotal],
@@ -122,17 +122,16 @@ export function ProjectCard({
                 Dates
               </p>
               <p className="text-xs leading-relaxed">
-                {project.startDate || project.createdAt
-                  ? format(
-                      new Date(project.startDate ?? project.createdAt),
-                      'MMM d',
-                    )
-                  : '—'}{' '}
+                {format(
+                  new Date(project.startDate ?? project.createdAt),
+                  'MMM d',
+                )}{' '}
                 →{' '}
-                {(project.targetCompletion ?? project.actualCompletion)
+                {project.targetCompletion || project.actualCompletion
                   ? format(
                       new Date(
-                        project.targetCompletion ?? project.actualCompletion!,
+                        (project.targetCompletion ??
+                          project.actualCompletion) as string | Date,
                       ),
                       'MMM d, yyyy',
                     )

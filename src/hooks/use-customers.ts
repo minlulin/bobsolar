@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getCustomers,
   getCustomer,
@@ -13,7 +13,7 @@ import {
 } from '@/lib/validators/customer';
 import { toast } from 'sonner';
 
-export function useCustomers(filters: CustomerFilter = {}): UseQueryResult<Awaited<ReturnType<typeof getCustomers>>> {
+export function useCustomers(filters: CustomerFilter = {}): ReturnType<typeof useQuery<Awaited<ReturnType<typeof getCustomers>>>> {
   return useQuery({
     queryKey: ['customers', filters],
     queryFn: () => getCustomers(filters),
@@ -21,7 +21,7 @@ export function useCustomers(filters: CustomerFilter = {}): UseQueryResult<Await
   });
 }
 
-export function useCustomer(id: string): UseQueryResult<Awaited<ReturnType<typeof getCustomer>>> {
+export function useCustomer(id: string): ReturnType<typeof useQuery<Awaited<ReturnType<typeof getCustomer>>>> {
   return useQuery({
     queryKey: ['customers', id],
     queryFn: () => getCustomer(id),
@@ -30,9 +30,11 @@ export function useCustomer(id: string): UseQueryResult<Awaited<ReturnType<typeo
   });
 }
 
-export function useCreateCustomer(): UseMutationResult<
-  Awaited<ReturnType<typeof createCustomer>>
-> {
+export function useCreateCustomer(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof createCustomer>>,
+  Error,
+  Parameters<typeof createCustomer>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -51,11 +53,11 @@ export function useCreateCustomer(): UseMutationResult<
   });
 }
 
-export function useUpdateCustomer(): UseMutationResult<
+export function useUpdateCustomer(): ReturnType<typeof useMutation<
   Awaited<ReturnType<typeof updateCustomer>>,
   Error,
   { id: string; data: Partial<CreateCustomer> }
-> {
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -75,11 +77,11 @@ export function useUpdateCustomer(): UseMutationResult<
   });
 }
 
-export function useDeleteCustomer(): UseMutationResult<
+export function useDeleteCustomer(): ReturnType<typeof useMutation<
   Awaited<ReturnType<typeof deleteCustomer>>,
   Error,
   Parameters<typeof deleteCustomer>[0]
-> {
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -98,7 +100,7 @@ export function useDeleteCustomer(): UseMutationResult<
   });
 }
 
-export function useSearchCustomers(query: string): UseQueryResult<Awaited<ReturnType<typeof searchCustomers>>> {
+export function useSearchCustomers(query: string): ReturnType<typeof useQuery<Awaited<ReturnType<typeof searchCustomers>>>> {
   return useQuery({
     queryKey: ['customers', 'search', query],
     queryFn: () => searchCustomers(query),

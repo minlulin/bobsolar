@@ -53,7 +53,7 @@ export function InventoryDialog({
   item,
   open,
   onOpenChange,
-}: InventoryDialogProps) {
+}: InventoryDialogProps): React.JSX.Element {
   const isEdit = !!item;
   const { mutate: createItem, isPending: isCreating } =
     useCreateInventoryItem();
@@ -81,7 +81,7 @@ export function InventoryDialog({
         name: item.name,
         category: item.category,
         unit: item.unit,
-        unitPrice: parseFloat(item.unitPrice.toString()),
+        unitPrice: parseFloat(item.unitPrice),
         stockQty: item.stockQty,
         brand: item.brand || '',
         modelNumber: item.modelNumber || '',
@@ -101,8 +101,8 @@ export function InventoryDialog({
     }
   }, [item, form]);
 
-  const onSubmit = (data: CreateInventoryItem) => {
-    if (isEdit && item) {
+  const onSubmit = (data: CreateInventoryItem): void => {
+    if (item) {
       updateItem(
         { id: item.id, data },
         {
@@ -131,7 +131,9 @@ export function InventoryDialog({
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={(e) => {
+              void form.handleSubmit(onSubmit)(e);
+            }}
             className="space-y-4 py-4"
           >
             <FormField<CreateInventoryItem, 'name'>

@@ -56,15 +56,18 @@ export function useInventoryItem(id: string): UseQueryResult<InventoryItemData> 
 }
 
 
-export function useCreateInventoryItem() {
+export function useCreateInventoryItem(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof createInventoryItem>>,
+  Error,
+  Parameters<typeof createInventoryItem>[0]
+>> {
   const queryClient = useQueryClient();
-
 
   return useMutation({
     mutationFn: createInventoryItem,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        await queryClient.invalidateQueries({ queryKey: ['inventory'] });
         toast.success('Item created successfully');
       } else {
         toast.error(response.error);
@@ -76,7 +79,11 @@ export function useCreateInventoryItem() {
   });
 }
 
-export function useUpdateInventoryItem() {
+export function useUpdateInventoryItem(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof updateInventoryItem>>,
+  Error,
+  { id: string; data: Partial<CreateInventoryItem> }
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -87,9 +94,9 @@ export function useUpdateInventoryItem() {
       id: string;
       data: Partial<CreateInventoryItem>;
     }) => updateInventoryItem(id, data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        await queryClient.invalidateQueries({ queryKey: ['inventory'] });
         toast.success('Item updated successfully');
       } else {
         toast.error(response.error);
@@ -101,14 +108,18 @@ export function useUpdateInventoryItem() {
   });
 }
 
-export function useDeleteInventoryItem() {
+export function useDeleteInventoryItem(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof deleteInventoryItem>>,
+  Error,
+  string
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteInventoryItem,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        await queryClient.invalidateQueries({ queryKey: ['inventory'] });
         toast.success('Item deleted successfully');
       } else {
         toast.error(response.error);
@@ -120,14 +131,18 @@ export function useDeleteInventoryItem() {
   });
 }
 
-export function useBulkUpdatePrices() {
+export function useBulkUpdatePrices(): ReturnType<typeof useMutation<
+  Awaited<ReturnType<typeof bulkUpdatePrices>>,
+  Error,
+  Parameters<typeof bulkUpdatePrices>[0]
+>> {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: bulkUpdatePrices,
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       if (response.success) {
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        await queryClient.invalidateQueries({ queryKey: ['inventory'] });
         toast.success('Prices updated successfully');
       } else {
         toast.error(response.error);

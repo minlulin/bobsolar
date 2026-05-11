@@ -259,7 +259,7 @@ describe('Phase 9: Dashboard Metrics', () => {
       rejected: number,
       expired: number,
       sent: number,
-    ) => {
+    ): number => {
       const denominator = accepted + rejected + expired + sent;
       return denominator === 0 ? 0 : Math.round((accepted / denominator) * 100);
     };

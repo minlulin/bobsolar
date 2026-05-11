@@ -24,7 +24,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { CustomerDialog } from '@/components/customers/customer-dialog';
 import { type Customer } from '@/lib/db/schema';
 
-export function CustomerSelector() {
+export function CustomerSelector(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);

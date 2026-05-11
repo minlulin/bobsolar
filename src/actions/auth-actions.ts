@@ -12,6 +12,7 @@ import {
   getSessionFromCookie,
   revokeAllUserSessions,
 } from '@/lib/auth/session';
+import type { ActionResponse } from '@/lib/utils/action-response';
 
 // Rate limiting configuration
 const MAX_FAILED_ATTEMPTS = 5;
@@ -107,7 +108,7 @@ function clearFailedAttempts(email: string): void {
   rateLimitMap.delete(key);
 }
 
-export async function login(data: LoginInput) {
+export async function login(data: LoginInput): Promise<ActionResponse<void>> {
   const result = loginSchema.safeParse(data);
 
   if (!result.success) {
@@ -145,10 +146,10 @@ export async function login(data: LoginInput) {
   clearFailedAttempts(email);
   await createSession(user.id, user.role);
 
-  return { success: true };
+  return { success: true, data: undefined };
 }
 
-export async function logout() {
+export async function logout(): Promise<never> {
   const session = await getSessionFromCookie();
   if (session) {
     await deleteSession(session.id);
@@ -156,7 +157,9 @@ export async function logout() {
   redirect('/login');
 }
 
-export async function changePassword(formData: FormData) {
+export async function changePassword(
+  formData: FormData,
+): Promise<ActionResponse<void>> {
   const session = await getSessionFromCookie();
   if (!session) return { success: false, error: 'Unauthorized' };
 
@@ -188,5 +191,5 @@ export async function changePassword(formData: FormData) {
   // Revoke all other sessions for this user (security: force re-login with new password)
   await revokeAllUserSessions(user.id, session.id);
 
-  return { success: true };
+  return { success: true, data: undefined };
 }

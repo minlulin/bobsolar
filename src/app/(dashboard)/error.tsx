@@ -10,7 +10,7 @@ export default function DashboardError({
 }: {
   error: Error & { digest?: string };
   reset: () => void;
-}) {
+}): React.JSX.Element {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error('[Dashboard Error Boundary]', error);

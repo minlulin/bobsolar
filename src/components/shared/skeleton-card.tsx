@@ -4,7 +4,9 @@ type SkeletonCardProps = {
   lines?: number;
 };
 
-export function SkeletonCard({ lines = 3 }: SkeletonCardProps) {
+export function SkeletonCard({
+  lines = 3,
+}: SkeletonCardProps): React.JSX.Element {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
       <Skeleton className="mb-4 h-5 w-1/2 bg-amber-500/20" />

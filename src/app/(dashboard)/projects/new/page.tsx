@@ -33,7 +33,7 @@ function QuotationConversionForm({
 }: {
   quoteId: string;
   quotation: QuotationDraft;
-}) {
+}): React.JSX.Element | null {
   const router = useRouter();
   const convertProject = useConvertToProject();
 
@@ -51,7 +51,7 @@ function QuotationConversionForm({
 
   if (quotation.project) return null;
 
-  function handleSubmit(ev: React.FormEvent) {
+  function handleSubmit(ev: React.SyntheticEvent): void {
     ev.preventDefault();
     convertProject.mutate(
       {
@@ -142,7 +142,7 @@ function QuotationConversionForm({
   );
 }
 
-function ConversionFlow() {
+function ConversionFlow(): React.JSX.Element | null {
   const searchParams = useSearchParams();
   const quoteId = searchParams.get('quoteId');
 
@@ -181,10 +181,7 @@ function ConversionFlow() {
   if (isError) {
     return (
       <div className="border-border rounded-[2rem] border bg-black/65 p-10 text-center">
-        {(error instanceof Error
-          ? error.message
-          : 'Unable to open quote'
-        ).toString()}
+        {error instanceof Error ? error.message : 'Unable to open quote'}
         <div className="mt-4">
           <Button asChild variant="ghost">
             <Link href={`/quotations/${quoteId}`}>Back to blueprint</Link>
@@ -213,7 +210,7 @@ function ConversionFlow() {
   );
 }
 
-export default function ConvertProjectBlueprintPage() {
+export default function ConvertProjectBlueprintPage(): React.JSX.Element {
   return (
     <div className="space-y-6 pb-36">
       <Suspense

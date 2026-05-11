@@ -30,13 +30,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAppTheme } from '@/components/providers';
 
-export function CommandBar() {
+export function CommandBar(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
   const { setTheme } = useAppTheme();
   const router = useRouter();
 
   React.useEffect(() => {
-    const down = (event: KeyboardEvent) => {
+    const down = (event: KeyboardEvent): void => {
       if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen((prev) => !prev);
@@ -44,10 +44,10 @@ export function CommandBar() {
     };
 
     document.addEventListener('keydown', down);
-    return () => { document.removeEventListener('keydown', down); };
+    return (): void => { document.removeEventListener('keydown', down); };
   }, []);
 
-  const runCommand = React.useCallback((action: () => void) => {
+  const runCommand = React.useCallback((action: () => void): void => {
     setOpen(false);
     action();
   }, []);

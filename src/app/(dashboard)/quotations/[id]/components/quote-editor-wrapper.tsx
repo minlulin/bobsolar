@@ -13,7 +13,9 @@ interface QuoteEditorWrapperProps {
   quotation: Quotation & { items: QuotationItem[]; customer: Customer };
 }
 
-export function QuoteEditorWrapper({ quotation }: QuoteEditorWrapperProps) {
+export function QuoteEditorWrapper({
+  quotation,
+}: QuoteEditorWrapperProps): React.JSX.Element {
   const loadFromQuotation = useQuoteBuilderStore(
     (state) => state.loadFromQuotation,
   );

@@ -7,7 +7,9 @@ interface QuotationPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function QuotationPage({ params }: QuotationPageProps) {
+export default async function QuotationPage({
+  params,
+}: QuotationPageProps): Promise<React.JSX.Element> {
   const { id } = await params;
   const res = await getQuotation(id);
 

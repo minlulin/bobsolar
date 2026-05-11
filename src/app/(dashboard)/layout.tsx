@@ -17,7 +17,7 @@ export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
-}) {
+}): Promise<React.JSX.Element> {
   const session = await requireAuth();
 
   const user = await db.query.users.findFirst({
