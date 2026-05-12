@@ -283,7 +283,9 @@ export async function runScheduledNotificationChecks(): Promise<
       const dedupeKeys = expiringCandidates
         .map((c) => c.notificationDedupeKey)
         .filter((v): v is string => typeof v === 'string');
-      const createdByIds = Array.from(new Set(expiringQuotes.map((q) => q.createdBy)));
+      const createdByIds = Array.from(
+        new Set(expiringQuotes.map((q) => q.createdBy)),
+      );
       const existingExpiring = await db
         .select({
           userId: notifications.userId,
@@ -358,8 +360,12 @@ export async function runScheduledNotificationChecks(): Promise<
       }));
     });
 
-    const dueSoonDedupeKeys = dueSoon.map((alert) => `warranty-due-soon-${alert.id}`);
-    const overdueDedupeKeys = overdue.map((alert) => `warranty-overdue-${alert.id}`);
+    const dueSoonDedupeKeys = dueSoon.map(
+      (alert) => `warranty-due-soon-${alert.id}`,
+    );
+    const overdueDedupeKeys = overdue.map(
+      (alert) => `warranty-overdue-${alert.id}`,
+    );
 
     if (dueSoonCandidates.length > 0 && dueSoonDedupeKeys.length > 0) {
       const existingDueSoon = await db

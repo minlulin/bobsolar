@@ -8,12 +8,10 @@ const kvEnvSchema = z.object({
   KV_REST_API_TOKEN: z.string().min(1),
 });
 
-function getKvEnv():
-  | {
-      url: string;
-      token: string;
-    }
-  | null {
+function getKvEnv(): {
+  url: string;
+  token: string;
+} | null {
   const parsed = kvEnvSchema.safeParse({
     KV_REST_API_URL: process.env['KV_REST_API_URL'],
     KV_REST_API_TOKEN: process.env['KV_REST_API_TOKEN'],

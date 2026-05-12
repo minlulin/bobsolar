@@ -29,10 +29,22 @@ export default function GlobalError({
           padding: '1rem',
         }}
       >
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+        <h2
+          style={{
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            marginBottom: '0.5rem',
+          }}
+        >
           Something went wrong
         </h2>
-        <p style={{ color: '#a1a1aa', marginBottom: '1.5rem', maxWidth: '28rem' }}>
+        <p
+          style={{
+            color: '#a1a1aa',
+            marginBottom: '1.5rem',
+            maxWidth: '28rem',
+          }}
+        >
           A critical error occurred. Please try again.
         </p>
         <button

@@ -32,3 +32,10 @@ branching, Neon auth, Neon connection strings, or Neon-related deployment work,
 the agent must follow:
 
 `.agents/skills/neon-postgres/SKILL.md`
+
+---
+
+When the user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints,
+the agent must follow:
+
+`.agents/skills/frontend-design/SKILL.md`

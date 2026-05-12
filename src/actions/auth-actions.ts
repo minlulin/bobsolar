@@ -43,7 +43,9 @@ async function isRateLimited(email: string): Promise<{
   if (entry.lockedUntil && now < entry.lockedUntil) {
     return {
       limited: true,
-      retryAfter: Math.ceil((entry.lockedUntil.getTime() - now.getTime()) / 1000),
+      retryAfter: Math.ceil(
+        (entry.lockedUntil.getTime() - now.getTime()) / 1000,
+      ),
     };
   }
 

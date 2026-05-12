@@ -495,10 +495,7 @@ export async function getProject(
     }
 
     const actualTotalComputed = Math.round(
-      row.costs.reduce(
-        (sum, cost) => sum + Math.round(Number(cost.amount)),
-        0,
-      ),
+      row.costs.reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
     );
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
