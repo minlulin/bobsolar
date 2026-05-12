@@ -7,15 +7,21 @@ type AdvisoryLockDb = {
 /**
  * PostgreSQL advisory lock helper.
  *
- * Uses `pg_try_advisory_lock` to avoid blocking and provide a clean
- * fallback when another process already holds the lock.
+ * IMPORTANT — connection semantics:
+ *   `pg_try_advisory_lock` is **session-scoped**. The lock lives on the
+ *   connection that took it, and a pooled `db` handle may hand back a
+ *   different connection on the next call. Callers MUST therefore pass a
+ *   transaction handle (`tx` from `db.transaction(async tx => …)`) so the
+ *   acquire / work / release sequence all runs on the same connection.
  *
  * Usage:
- *   const lock = new AdvisoryLock(db, BigInt(0x42_4f_42_53));
- *   if (await lock.acquire()) {
- *     // critical section
- *     await lock.release();
- *   }
+ *   await db.transaction(async (tx) => {
+ *     const lock = new AdvisoryLock(tx, BigInt(0x42_4f_42_53));
+ *     if (await lock.acquire()) {
+ *       // critical section
+ *       await lock.release();
+ *     }
+ *   });
  */
 export class AdvisoryLock {
   private db: AdvisoryLockDb;

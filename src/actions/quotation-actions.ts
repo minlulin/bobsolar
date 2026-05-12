@@ -141,18 +141,9 @@ export async function getQuotation(id: string): Promise<
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
-    // Auto-expire if applicable
-    await db
-      .update(quotations)
-      .set({ status: 'expired' })
-      .where(
-        and(
-          eq(quotations.id, validatedId),
-          eq(quotations.status, 'sent'),
-          lt(quotations.validUntil, new Date()),
-        ),
-      );
-
+    // NOTE: auto-expire is handled by `expireOverdueQuotations()` running on
+    // a schedule. Doing it here on every read costs a write round-trip for no
+    // benefit and creates write amplification under load.
     const item = await db.query.quotations.findFirst({
       where: eq(quotations.id, validatedId),
       with: {
@@ -202,31 +193,36 @@ export async function createQuotation(
     );
 
     const lockKey = BigInt(0x42_4f_42_53); // 'BOBS'
-    const lock = new AdvisoryLock(db, lockKey);
-    const acquired = await lock.acquire();
-    if (!acquired) {
-      return handleStateError(
-        'Too many concurrent requests – please try again',
-      );
-    }
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
+    let retries = 3;
 
-    try {
-      const yearStart = new Date(new Date().getFullYear(), 0, 1);
-      let retries = 3;
-      while (retries > 0) {
-        try {
-          const lastQuote = await db.query.quotations.findFirst({
-            where: and(sql`${quotations.createdAt} >= ${yearStart}`),
-            orderBy: [desc(quotations.createdAt)],
-          });
-
-          let nextSequence = 1;
-          if (lastQuote) {
-            nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+    while (retries > 0) {
+      try {
+        const result = await db.transaction(async (tx) => {
+          // Advisory lock MUST run on the same connection as the insert.
+          // Drizzle's transaction pins a single connection, so taking the
+          // lock inside `tx` is what makes this actually serialize.
+          const lock = new AdvisoryLock(tx, lockKey);
+          const acquired = await lock.acquire();
+          if (!acquired) {
+            throw Object.assign(
+              new Error('Too many concurrent requests – please try again'),
+              { code: 'LOCK_BUSY' },
+            );
           }
-          const quoteNumber = formatQuoteNumber(nextSequence);
 
-          const result = await db.transaction(async (tx) => {
+          try {
+            const lastQuote = await tx.query.quotations.findFirst({
+              where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+              orderBy: [desc(quotations.createdAt)],
+            });
+
+            let nextSequence = 1;
+            if (lastQuote) {
+              nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+            }
+            const quoteNumber = formatQuoteNumber(nextSequence);
+
             const [quote] = await tx
               .insert(quotations)
               .values({
@@ -264,35 +260,44 @@ export async function createQuotation(
             }));
 
             await tx.insert(quotationItems).values(itemsToInsert);
-
             return quote;
-          });
-
-          revalidateTag('quotations:list', 'default');
-          revalidateTag('dashboard:stats', 'default');
-          revalidatePath('/quotations');
-          return successResponse(result);
-        } catch (error: unknown) {
-          if (
-            error &&
-            typeof error === 'object' &&
-            'code' in error &&
-            error.code === '23505' &&
-            retries > 1
-          ) {
-            retries--;
-            continue;
+          } finally {
+            await lock.release();
           }
-          throw error;
-        }
-      }
+        });
 
-      return handleStateError(
-        'Failed to generate unique quote number after retries.',
-      );
-    } finally {
-      await lock.release();
+        revalidateTag('quotations:list', 'default');
+        revalidateTag('dashboard:stats', 'default');
+        revalidatePath('/quotations');
+        return successResponse(result);
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          (error as { code: string }).code === '23505' &&
+          retries > 1
+        ) {
+          retries--;
+          continue;
+        }
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          (error as { code: string }).code === 'LOCK_BUSY'
+        ) {
+          return handleStateError(
+            'Too many concurrent requests – please try again',
+          );
+        }
+        throw error;
+      }
     }
+
+    return handleStateError(
+      'Failed to generate unique quote number after retries.',
+    );
   } catch (error) {
     return handleActionError(
       error,
@@ -496,59 +501,73 @@ export async function duplicateQuotation(
 
     if (!original) return handleNotFoundError('Quotation', validatedId);
 
+    const lockKey = BigInt(0x42_4f_42_53); // 'BOBS'
+    const yearStart = new Date(new Date().getFullYear(), 0, 1);
     let retries = 3;
+
     while (retries > 0) {
       try {
-        const yearStart = new Date(new Date().getFullYear(), 0, 1);
-        const lastQuote = await db.query.quotations.findFirst({
-          where: and(sql`${quotations.createdAt} >= ${yearStart}`),
-          orderBy: [desc(quotations.createdAt)],
-        });
-
-        let nextSequence = 1;
-        if (lastQuote) {
-          nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
-        }
-        const quoteNumber = formatQuoteNumber(nextSequence);
-
         const result = await db.transaction(async (tx) => {
-          const [quote] = await tx
-            .insert(quotations)
-            .values({
-              quoteNumber,
-              customerId: original.customerId,
-              createdBy: auth.userId,
-              subtotal: original.subtotal,
-              discountPercent: original.discountPercent,
-              discountAmount: original.discountAmount,
-              taxPercent: original.taxPercent,
-              taxAmount: original.taxAmount,
-              total: original.total,
-              notes: original.notes,
-              validUntil: original.validUntil,
-              status: 'draft',
-            })
-            .returning();
-
-          if (!quote)
-            throw new Error(
-              'Failed to create duplicated quotation in database',
+          const lock = new AdvisoryLock(tx, lockKey);
+          const acquired = await lock.acquire();
+          if (!acquired) {
+            throw Object.assign(
+              new Error('Too many concurrent requests – please try again'),
+              { code: 'LOCK_BUSY' },
             );
+          }
 
-          const itemsToInsert = original.items.map((item, index) => ({
-            quotationId: quote.id,
-            itemId: item.itemId,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            discountPercentage: item.discountPercentage,
-            totalPrice: item.totalPrice,
-            sortOrder: index,
-          }));
+          try {
+            const lastQuote = await tx.query.quotations.findFirst({
+              where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+              orderBy: [desc(quotations.createdAt)],
+            });
 
-          await tx.insert(quotationItems).values(itemsToInsert);
+            let nextSequence = 1;
+            if (lastQuote) {
+              nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+            }
+            const quoteNumber = formatQuoteNumber(nextSequence);
 
-          return quote;
+            const [quote] = await tx
+              .insert(quotations)
+              .values({
+                quoteNumber,
+                customerId: original.customerId,
+                createdBy: auth.userId,
+                subtotal: original.subtotal,
+                discountPercent: original.discountPercent,
+                discountAmount: original.discountAmount,
+                taxPercent: original.taxPercent,
+                taxAmount: original.taxAmount,
+                total: original.total,
+                notes: original.notes,
+                validUntil: original.validUntil,
+                status: 'draft',
+              })
+              .returning();
+
+            if (!quote)
+              throw new Error(
+                'Failed to create duplicated quotation in database',
+              );
+
+            const itemsToInsert = original.items.map((item, index) => ({
+              quotationId: quote.id,
+              itemId: item.itemId,
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discountPercentage: item.discountPercentage,
+              totalPrice: item.totalPrice,
+              sortOrder: index,
+            }));
+
+            await tx.insert(quotationItems).values(itemsToInsert);
+            return quote;
+          } finally {
+            await lock.release();
+          }
         });
 
         revalidateTag('quotations:list', 'default');
@@ -560,11 +579,21 @@ export async function duplicateQuotation(
           error &&
           typeof error === 'object' &&
           'code' in error &&
-          error.code === '23505' &&
+          (error as { code: string }).code === '23505' &&
           retries > 1
         ) {
           retries--;
           continue;
+        }
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          (error as { code: string }).code === 'LOCK_BUSY'
+        ) {
+          return handleStateError(
+            'Too many concurrent requests – please try again',
+          );
         }
         throw error;
       }
@@ -680,6 +709,43 @@ export async function restoreQuotation(
       error,
       'restoreQuotation',
       'Failed to restore quotation',
+    );
+  }
+}
+
+/**
+ * Bulk auto-expire: sweeps quotations whose `validUntil` has passed while
+ * they are still in `sent` status. Designed for cron / scheduled invocation
+ * (e.g. Vercel Cron Jobs). Replaces the previous write-on-read pattern that
+ * mutated state on every detail-page hit.
+ */
+export async function expireOverdueQuotations(): Promise<
+  ActionResponse<{ expired: number }>
+> {
+  try {
+    await requireAuth();
+    const result = await db
+      .update(quotations)
+      .set({ status: 'expired', updatedAt: new Date() })
+      .where(
+        and(
+          eq(quotations.status, 'sent'),
+          lt(quotations.validUntil, new Date()),
+        ),
+      )
+      .returning({ id: quotations.id });
+
+    if (result.length > 0) {
+      revalidateTag('quotations:list', 'default');
+      revalidateTag('dashboard:stats', 'default');
+      revalidatePath('/quotations');
+    }
+    return successResponse({ expired: result.length });
+  } catch (error) {
+    return handleActionError(
+      error,
+      'expireOverdueQuotations',
+      'Failed to expire overdue quotations',
     );
   }
 }

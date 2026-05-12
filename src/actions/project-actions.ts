@@ -130,33 +130,6 @@ async function persistActualTotal(projectId: string): Promise<number> {
   return total;
 }
 
-async function seedDefaultWarrantyAlerts(projectId: string): Promise<void> {
-  const now = new Date();
-  await db.insert(warrantyAlerts).values([
-    {
-      projectId,
-      alertType: 'warranty_expiry',
-      description: 'Panel Warranty Check',
-      dueDate: addYears(now, 1),
-      isResolved: false,
-    },
-    {
-      projectId,
-      alertType: 'warranty_expiry',
-      description: 'Inverter Warranty Check',
-      dueDate: addYears(now, 1),
-      isResolved: false,
-    },
-    {
-      projectId,
-      alertType: 'maintenance_due',
-      description: 'System Maintenance',
-      dueDate: addMonths(now, 6),
-      isResolved: false,
-    },
-  ]);
-}
-
 function rollupWarranty(
   alerts: { isResolved: boolean; dueDate: Date }[],
 ): 'ok' | 'due_soon' | 'overdue' {
@@ -173,19 +146,6 @@ function rollupWarranty(
   if (overdue) return 'overdue';
   if (soon) return 'due_soon';
   return 'ok';
-}
-
-async function finalizeCompletionSideEffects(project: {
-  id: string;
-  projectNumber: string;
-}): Promise<void> {
-  await seedDefaultWarrantyAlerts(project.id);
-  await notifyAllUsers({
-    title: 'Project completed',
-    message: `Project ${project.projectNumber} completed!`,
-    type: 'info',
-    link: `/projects/${project.id}`,
-  });
 }
 
 async function maybeNotifyBudgetOverrun(
@@ -529,26 +489,85 @@ export async function getProject(
   }
 }
 
-/** @internal duplication reduced — run update logic once */
+/**
+ * Mark a project as completed and run completion side-effects (refresh
+ * actual_total, seed warranty alerts, fire notification). All DB writes
+ * run inside one transaction so we can't end up with `status='completed'`
+ * but missing warranty alerts (or vice versa) if a later step throws.
+ *
+ * Notifications are deliberately fired AFTER the tx commits so we never
+ * notify users about a state that was rolled back.
+ */
 async function applyProjectCompletion(
   projectRow: InferSelectModel<typeof projects>,
 ): Promise<void> {
-  // Only update if not already completed (idempotent)
-  const result = await db
-    .update(projects)
-    .set({
-      status: 'completed',
-      actualCompletion: new Date(),
-    })
-    .where(
-      and(eq(projects.id, projectRow.id), ne(projects.status, 'completed')),
-    )
-    .returning({ id: projects.id });
+  const didComplete = await db.transaction(async (tx) => {
+    // Idempotent: skip if already completed.
+    const updated = await tx
+      .update(projects)
+      .set({
+        status: 'completed',
+        actualCompletion: new Date(),
+      })
+      .where(
+        and(eq(projects.id, projectRow.id), ne(projects.status, 'completed')),
+      )
+      .returning({ id: projects.id });
 
-  // Only run side effects if the project was actually updated
-  if (result.length > 0) {
-    await persistActualTotal(projectRow.id);
-    await finalizeCompletionSideEffects(projectRow);
+    if (updated.length === 0) return false;
+
+    // Refresh actualTotal from costs ledger.
+    const [sumRow] = await tx
+      .select({
+        total:
+          sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
+            'total',
+          ),
+      })
+      .from(projectCosts)
+      .where(eq(projectCosts.projectId, projectRow.id));
+    const total = Math.round(Number(sumRow?.total ?? 0));
+    await tx
+      .update(projects)
+      .set({ actualTotal: String(total) })
+      .where(eq(projects.id, projectRow.id));
+
+    // Seed default warranty alerts.
+    const now = new Date();
+    await tx.insert(warrantyAlerts).values([
+      {
+        projectId: projectRow.id,
+        alertType: 'warranty_expiry',
+        description: 'Panel Warranty Check',
+        dueDate: addYears(now, 1),
+        isResolved: false,
+      },
+      {
+        projectId: projectRow.id,
+        alertType: 'warranty_expiry',
+        description: 'Inverter Warranty Check',
+        dueDate: addYears(now, 1),
+        isResolved: false,
+      },
+      {
+        projectId: projectRow.id,
+        alertType: 'maintenance_due',
+        description: 'System Maintenance',
+        dueDate: addMonths(now, 6),
+        isResolved: false,
+      },
+    ]);
+
+    return true;
+  });
+
+  if (didComplete) {
+    await notifyAllUsers({
+      title: 'Project completed',
+      message: `Project ${projectRow.projectNumber} completed!`,
+      type: 'info',
+      link: `/projects/${projectRow.id}`,
+    });
   }
 }
 
