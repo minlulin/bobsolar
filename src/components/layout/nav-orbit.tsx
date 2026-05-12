@@ -8,7 +8,6 @@ import {
   useMotionValue,
   useSpring,
   useTransform,
-  type MotionValue,
 } from 'framer-motion';
 import { Home, ClipboardList, Zap, Package, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -20,214 +19,120 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-const dockSpring = {
-  mass: 0.42,
-  stiffness: 280,
-  damping: 24,
-} as const;
+// --- Premium Physics Configuration ---
+// Insanely responsive spring: snaps without aggressive bounce
+const dockSpringConfig = {
+  mass: 0.1,
+  stiffness: 400,
+  damping: 30,
+};
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Quotes', href: '/quotations', icon: ClipboardList },
+  { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Quotations', href: '/quotations', icon: ClipboardList },
   { name: 'Projects', href: '/projects', icon: Zap },
   { name: 'Inventory', href: '/inventory', icon: Package },
-  { name: 'Customers', href: '/customers', icon: Users },
-] satisfies ReadonlyArray<{
-  name: string;
-  href: string;
-  icon: LucideIcon;
-}>;
+];
 
-type DockItemProps = {
-  href: string;
-  icon: LucideIcon;
-  isActive: boolean;
-  mouseX: MotionValue<number>;
-  name: string;
-};
-
-function DockItem({
-  href,
-  icon: Icon,
+function NavIcon({
+  item,
   isActive,
   mouseX,
-  name,
-}: DockItemProps): React.JSX.Element {
-  const ref = React.useRef<HTMLAnchorElement>(null);
-  const distance = useTransform(mouseX, (latestMouseX: number): number => {
-    const bounds = ref.current?.getBoundingClientRect();
+}: {
+  item: { name: string; href: string; icon: LucideIcon };
+  isActive: boolean;
+  mouseX: any;
+}) {
+  const Icon = item.icon;
+  const iconRef = React.useRef<HTMLDivElement>(null);
 
-    if (bounds === undefined || !Number.isFinite(latestMouseX)) {
-      return 1_000;
-    }
-
-    return latestMouseX - bounds.left - bounds.width / 2;
+  // Calculate distance from mouse to the center of this icon
+  const distance = useTransform(mouseX, (val: number) => {
+    const bounds = iconRef.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+    return val - bounds.x - bounds.width / 2;
   });
 
-  const itemWidth = useSpring(
-    useTransform(distance, [-150, 0, 150], [58, 76, 58], { clamp: true }),
-    dockSpring,
-  );
-  const iconSize = useSpring(
-    useTransform(distance, [-150, 0, 150], [20, 31, 20], { clamp: true }),
-    dockSpring,
-  );
-  const lift = useSpring(
-    useTransform(distance, [-150, 0, 150], [0, -13, 0], { clamp: true }),
-    dockSpring,
-  );
-  const glowOpacity = useSpring(
-    useTransform(distance, [-140, 0, 140], [0, 0.95, 0], { clamp: true }),
-    { ...dockSpring, damping: 28 },
-  );
+  // Transform distance into a scale value (Peak size: 64px, Base size: 40px)
+  // Magnification zone is [-150, 0, 150] pixels from center
+  const scaleSync = useTransform(distance, [-150, 0, 150], [1, 1.6, 1]);
+  const scale = useSpring(scaleSync, dockSpringConfig);
+
+  // Transform scale into translation to push adjacent icons away smoothly
+  const translateYSync = useTransform(distance, [-150, 0, 150], [0, -8, 0]);
+  const translateY = useSpring(translateYSync, dockSpringConfig);
 
   return (
-    <Tooltip>
+    <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <motion.div
-          className="relative flex h-full items-center justify-center"
-          style={{ width: itemWidth }}
-        >
-          <Link
-            ref={ref}
-            href={href}
-            aria-label={name}
-            aria-current={isActive ? 'page' : undefined}
-            className="group relative flex h-full w-full items-center justify-center rounded-xl outline-none"
+        <Link href={item.href} prefetch={true} className="relative group outline-none">
+          <motion.div
+            ref={iconRef}
+            style={{ scale, y: translateY }}
+            className={cn(
+              'relative flex items-center justify-center rounded-xl transition-colors duration-300',
+              'w-10 h-10', // Base size (40px)
+              isActive
+                ? 'text-[var(--color-solar-amber)]'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+            )}
           >
+            <Icon className="w-5 h-5 relative z-10 drop-shadow-md" strokeWidth={isActive ? 2.5 : 2} />
+
+            {/* Active Indicator (Flowing Solar Dot) */}
             {isActive && (
               <motion.div
-                layoutId="dock-active"
-                className="absolute inset-x-0 top-1 bottom-1 rounded-xl bg-white/10 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.22),0_14px_36px_-18px_rgb(245_158_11_/_0.85)]"
-                transition={{ type: 'spring', bounce: 0.16, duration: 0.65 }}
+                layoutId="nav-orbit-indicator"
+                className="absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-[var(--color-solar-amber)] shadow-[0_0_8px_rgba(var(--color-solar-amber),0.8)]"
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}
-
-            <motion.div
-              aria-hidden="true"
-              className="absolute h-11 w-11 rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.34)_0%,rgba(16,185,129,0.12)_46%,transparent_72%)] blur-xl"
-              style={{ opacity: glowOpacity, y: lift }}
-            />
-
-            <motion.div
-              className={cn(
-                'relative grid place-items-center rounded-xl border transition-colors duration-500',
-                'border-white/0 bg-white/0 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]',
-                'group-hover:border-white/15 group-hover:bg-white/10',
-                'group-focus-visible:border-solar-amber/60 group-focus-visible:ring-solar-amber/35 group-focus-visible:ring-2',
-                isActive && 'border-solar-amber/25 bg-solar-amber/10',
-              )}
-              style={{
-                height: itemWidth,
-                width: itemWidth,
-                y: lift,
-              }}
-              whileTap={{ scale: 0.92, y: -3 }}
-              transition={dockSpring}
-            >
-              <motion.span
-                className="absolute inset-0 rounded-xl bg-[linear-gradient(135deg,rgba(255,255,255,0.30),transparent_36%,rgba(255,255,255,0.08)_70%,transparent)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                aria-hidden="true"
-              />
-              <motion.div
-                className={cn(
-                  'relative grid place-items-center transition-colors duration-300',
-                  isActive ? 'text-solar-amber' : 'text-muted-foreground',
-                  'group-hover:text-foreground',
-                )}
-                style={{ height: iconSize, width: iconSize }}
-              >
-                <Icon
-                  className="h-full w-full"
-                  strokeWidth={isActive ? 2.35 : 2}
-                />
-              </motion.div>
-            </motion.div>
-
-            <motion.span
-              className={cn(
-                'bg-solar shadow-solar pointer-events-none absolute -bottom-3 h-1 rounded-full opacity-0',
-                isActive && 'opacity-100',
-              )}
-              animate={{ width: isActive ? 18 : 4 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            />
-          </Link>
-        </motion.div>
+          </motion.div>
+        </Link>
       </TooltipTrigger>
       <TooltipContent
-        side="top"
         sideOffset={16}
-        className="border border-white/10 bg-black/85 px-2.5 py-1 text-[11px] font-medium text-white shadow-2xl backdrop-blur-xl"
+        className="premium-glass text-foreground border-white/10 shadow-xl"
       >
-        {name}
+        <p className="font-medium text-sm">{item.name}</p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
-export function BottomDock(): React.JSX.Element {
+export function NavOrbit() {
   const pathname = usePathname();
-  const mouseX = useMotionValue(Number.POSITIVE_INFINITY);
+  const mouseX = useMotionValue(Infinity);
 
   return (
-    <TooltipProvider delayDuration={120}>
-      <motion.div
-        className="fixed bottom-5 left-1/2 z-50 w-full max-w-xl -translate-x-1/2 px-4 sm:bottom-6"
-        initial={{ opacity: 0, y: 22, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{
-          type: 'spring',
-          stiffness: 170,
-          damping: 22,
-          delay: 0.08,
-        }}
-      >
-        <motion.nav
-          aria-label="Primary navigation"
-          onMouseMove={(event: React.MouseEvent<HTMLElement>): void => {
-            mouseX.set(event.clientX);
-          }}
-          onMouseLeave={(): void => {
-            mouseX.set(Number.POSITIVE_INFINITY);
-          }}
-          className={cn(
-            'relative mx-auto flex h-[76px] w-fit max-w-full items-end justify-center gap-1 overflow-visible rounded-3xl px-2 pt-3 pb-2',
-            'border border-white/15 bg-black/72 shadow-[0_24px_80px_-32px_rgb(0_0_0_/_0.85),inset_0_1px_0_rgb(255_255_255_/_0.22)] backdrop-blur-2xl',
-            'before:pointer-events-none before:absolute before:inset-x-8 before:top-px before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/45 before:to-transparent',
-            'after:pointer-events-none after:absolute after:inset-0 after:rounded-3xl after:bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.18),transparent_46%)]',
-          )}
-        >
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+      <TooltipProvider>
+        <div className="relative pointer-events-auto group">
+          {/* Base Plate with Premium Glassmorphism */}
           <motion.div
-            aria-hidden="true"
-            className="absolute inset-x-5 bottom-1 h-5 rounded-full bg-black/45 blur-lg"
-            animate={{ opacity: [0.55, 0.8, 0.55], scaleX: [0.94, 1, 0.94] }}
-            transition={{
-              duration: 4.8,
-              ease: [0.33, 1, 0.68, 1],
-              repeat: Infinity,
-              repeatType: 'mirror',
-            }}
-          />
-          {navItems.map((item) => {
-            const isActive =
-              item.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(item.href);
-
-            return (
-              <DockItem
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                isActive={isActive}
+            className={cn(
+              'flex items-end gap-3 px-4 py-3 rounded-2xl',
+              'premium-glass',
+              // Add a subtle reflection beneath the dock
+              'after:absolute after:-bottom-4 after:left-[10%] after:right-[10%] after:h-4 after:bg-gradient-to-t after:from-transparent after:to-white/5 after:blur-md after:rounded-full after:-z-10'
+            )}
+            onMouseMove={(e) => mouseX.set(e.pageX)}
+            onMouseLeave={() => mouseX.set(Infinity)}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.5, delay: 0.1 }}
+          >
+            {navItems.map((item) => (
+              <NavIcon
+                key={item.name}
+                item={item}
+                isActive={pathname === item.href}
                 mouseX={mouseX}
-                name={item.name}
               />
-            );
-          })}
-        </motion.nav>
-      </motion.div>
-    </TooltipProvider>
+            ))}
+          </motion.div>
+        </div>
+      </TooltipProvider>
+    </div>
   );
 }

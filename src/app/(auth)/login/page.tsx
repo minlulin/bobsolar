@@ -111,7 +111,7 @@ export default function LoginPage(): React.JSX.Element {
         transition={{ duration: 0.5 }}
         className="z-10 w-full max-w-md"
       >
-        <Card className="glass border-none shadow-2xl">
+        <Card premium className="glass border-none shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <div className="mb-4 flex justify-center">
               <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">

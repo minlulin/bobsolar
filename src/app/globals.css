@@ -41,6 +41,15 @@
 
   --shadow-glow-solar: 0 0 20px -5px oklch(0.769 0.188 70.08 / 0.5);
   --shadow-glow-energy: 0 0 20px -5px oklch(0.723 0.219 165.829 / 0.5);
+
+  /* Premium Overhaul Shadows & Utilities */
+  --shadow-glass-inset: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  --shadow-glass-outset: 0 4px 12px -2px rgba(0, 0, 0, 0.2), 0 16px 32px -8px rgba(0, 0, 0, 0.3);
+  --shadow-card-rest: 0 8px 32px 0 rgba(0, 0, 0, 0.12);
+  --shadow-card-hover: 0 12px 48px -12px rgba(var(--color-solar-amber), 0.3);
+
+  /* Custom Easing for fluid transitions */
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
@@ -139,10 +148,33 @@
   .glass {
     @apply bg-card/60 border-white/10 backdrop-blur-lg;
   }
+
+  /* Premium Glass Overhaul Utilities */
+  .premium-glass {
+    @apply backdrop-blur-[32px] saturate-[180%];
+    background-color: rgba(255, 255, 255, 0.05); /* Default dark mode subtle tint */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-glass-inset), var(--shadow-glass-outset);
+  }
+
+  .dark .premium-glass {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .light .premium-glass {
+    background-color: rgba(255, 255, 255, 0.4);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), var(--shadow-glass-outset);
+  }
+
   .shadow-solar {
     box-shadow: var(--shadow-glow-solar);
   }
   .shadow-energy {
     box-shadow: var(--shadow-glow-energy);
+  }
+
+  /* High quality transition helper */
+  .transition-apple {
+    transition: all 0.4s var(--ease-apple);
   }
 }

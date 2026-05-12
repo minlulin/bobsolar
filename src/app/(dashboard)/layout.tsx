@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Image from 'next/image';
 import { requireAuth } from '@/lib/auth/validate';
-import { BottomDock } from '@/components/layout/nav-orbit';
+import { NavOrbit } from '@/components/layout/nav-orbit';
 import { CommandBar } from '@/components/layout/command-bar';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
@@ -81,7 +81,7 @@ export default async function DashboardLayout({
       </main>
 
       {/* Bottom Dock */}
-      <BottomDock />
+      <NavOrbit />
     </div>
   );
 }

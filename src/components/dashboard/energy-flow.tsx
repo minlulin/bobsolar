@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type * as React from 'react';
+import * as React from 'react';
 import { motion, type Transition } from 'framer-motion';
 
 type PipelineStage = {
@@ -25,164 +25,157 @@ function widthFromValue(value: number, maxValue: number): number {
   return Math.max(4, (value / maxValue) * 14);
 }
 
+// Organic Flow transition
 const flowTransition = {
   duration: 2.65,
   repeat: Number.POSITIVE_INFINITY,
-  ease: [0.45, 0, 0.2, 1],
+  ease: 'easeInOut',
 } satisfies Transition;
 
-export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
-  const nodes = stages.slice(0, 4);
-  const maxValue = Math.max(...nodes.map((n) => n.value), 1);
+// --- Cinematic Energy Orb Component ---
+function CinematicEnergyOrb() {
+  return (
+    <div className="relative w-48 h-48 flex items-center justify-center">
+      {/* 1. Outer Halo (Indigo/Ambient) - Slow rotation */}
+      <motion.div
+        className="absolute inset-0 rounded-full blur-[30px] opacity-20"
+        style={{
+          background: 'radial-gradient(circle, oklch(0.573 0.233 277.117 / 0.8) 0%, transparent 70%)',
+        }}
+        animate={{ rotate: 360, scale: [0.95, 1.05, 0.95] }}
+        transition={{ rotate: { duration: 20, repeat: Infinity, ease: 'linear' }, scale: { duration: 8, repeat: Infinity, ease: 'easeInOut' } }}
+      />
+
+      {/* 2. Mid-Corona (Emerald/Flow) - Breathing */}
+      <motion.div
+        className="absolute inset-4 rounded-full blur-[15px] opacity-60 mix-blend-screen"
+        style={{
+          background: 'radial-gradient(circle, oklch(0.723 0.219 165.829 / 1) 0%, transparent 60%)',
+        }}
+        animate={{ scale: [0.9, 1.1, 0.9] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* 3. The Core (Solar Amber) - Intense & Solid */}
+      <motion.div
+        className="absolute inset-10 rounded-full"
+        style={{
+          background: 'radial-gradient(circle at 30% 30%, oklch(0.9 0.1 70) 0%, oklch(0.769 0.188 70.08) 50%, oklch(0.6 0.2 50) 100%)',
+          boxShadow: '0 0 60px 20px rgba(var(--color-solar-amber), 0.4), inset 0 0 30px 5px rgba(255, 255, 255, 0.8)',
+        }}
+        animate={{
+          filter: ["brightness(1) blur(2px)", "brightness(1.2) blur(4px)", "brightness(1) blur(2px)"]
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        {/* Core Surface Texture (Noise) */}
+        <div className="absolute inset-0 rounded-full opacity-30 mix-blend-overlay"
+             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}
+        />
+      </motion.div>
+
+      {/* 4. Radiating Particles */}
+      {[...Array(6)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 rounded-full bg-[oklch(0.769_0.188_70.08)] shadow-[0_0_10px_rgba(var(--color-solar-amber),1)] blur-[1px]"
+          initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0, 1.5, 0],
+            x: Math.cos(i * 60 * (Math.PI / 180)) * 100,
+            y: Math.sin(i * 60 * (Math.PI / 180)) * 100,
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            delay: i * 0.5,
+            ease: "easeOut"
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function EnergyFlow({ stages }: EnergyFlowProps) {
+  if (!stages || stages.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 text-muted-foreground">
+        No pipeline data available.
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <motion.div
-      className="relative overflow-hidden rounded-3xl border border-amber-500/20 bg-[linear-gradient(135deg,rgba(9,9,11,0.96),rgba(24,24,27,0.9)_48%,rgba(69,26,3,0.46))] p-6 shadow-[0_28px_90px_-62px_rgba(16,185,129,0.9),inset_0_1px_0_rgba(255,255,255,0.1)]"
-      whileHover={{ y: -3 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-    >
-      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-emerald-200/45 to-transparent" />
-      <motion.div
-        aria-hidden="true"
-        className="absolute top-10 -left-24 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl"
-        animate={{ x: [0, 26, 0], opacity: [0.35, 0.62, 0.35] }}
-        transition={{
-          duration: 8,
-          ease: [0.33, 1, 0.68, 1],
-          repeat: Number.POSITIVE_INFINITY,
-        }}
-      />
-      <svg viewBox="0 0 900 240" className="hidden h-[220px] w-full md:block">
-        <defs>
-          <linearGradient id="flow-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="55%" stopColor="#10b981" />
-            <stop offset="100%" stopColor="#14b8a6" />
-          </linearGradient>
-        </defs>
+    <div className="relative flex flex-col items-center justify-center p-8 gap-12 overflow-hidden rounded-xl bg-card/10 border border-white/5 backdrop-blur-md">
+      {/* Background ambient lighting */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[oklch(0.769_0.188_70.08_/_0.05)] to-transparent pointer-events-none" />
 
-        <path
-          d="M170 120 C250 120, 270 120, 350 120"
-          stroke="url(#flow-grad)"
-          strokeWidth={widthFromValue(nodes[1]?.value ?? 0, maxValue)}
-          fill="none"
-          strokeLinecap="round"
-          opacity="0.75"
-        />
-        <path
-          d="M470 120 C550 120, 570 120, 650 120"
-          stroke="url(#flow-grad)"
-          strokeWidth={widthFromValue(nodes[2]?.value ?? 0, maxValue)}
-          fill="none"
-          strokeLinecap="round"
-          opacity="0.75"
-        />
-        <path
-          d="M650 120 C730 120, 750 120, 810 120"
-          stroke="url(#flow-grad)"
-          strokeWidth={widthFromValue(nodes[3]?.value ?? 0, maxValue)}
-          fill="none"
-          strokeLinecap="round"
-          opacity="0.75"
-        />
+      <CinematicEnergyOrb />
 
-        <motion.circle
-          r="6"
-          fill="#fbbf24"
-          animate={{ cx: [176, 234, 292, 344], cy: [120, 113, 127, 120] }}
-          transition={flowTransition}
-        />
-        <motion.circle
-          r="6"
-          fill="#34d399"
-          animate={{ cx: [476, 532, 590, 644], cy: [120, 128, 113, 120] }}
-          transition={{ ...flowTransition, delay: 0.36 }}
-        />
-        <motion.circle
-          r="6"
-          fill="#2dd4bf"
-          animate={{ cx: [656, 704, 758, 804], cy: [120, 112, 128, 120] }}
-          transition={{ ...flowTransition, delay: 0.72 }}
-        />
+      <div className="w-full max-w-2xl relative z-10 flex items-center justify-between">
+        {stages.map((stage, idx) => {
+          const isLast = idx === stages.length - 1;
+          const strokeW = widthFromValue(stage.value, maxValue);
 
-        {nodes.map((node, index) => {
-          const x = [80, 350, 650, 810][index] ?? 80;
-          const width = index === 3 ? 80 : 120;
           return (
-            <g key={node.key}>
-              <rect
-                x={x}
-                y={80}
-                width={width}
-                height={80}
-                rx="16"
-                fill="rgba(39,39,42,0.78)"
-                stroke="rgba(255,255,255,0.12)"
-              />
-              <text x={x + 10} y={106} fill="#f3f4f6" fontSize="12">
-                {node.label}
-              </text>
-              <text
-                x={x + 10}
-                y={134}
-                fill="#fbbf24"
-                fontSize="22"
-                fontWeight="700"
-              >
-                {node.count}
-              </text>
-              <text x={x + 10} y={152} fill="#cbd5e1" fontSize="11">
-                {getStageDetail(node)}
-              </text>
-            </g>
+            <React.Fragment key={stage.key}>
+              {/* The Node */}
+              <Link href={stage.href} className="group relative flex flex-col items-center outline-none">
+                <div className="relative w-12 h-12 flex items-center justify-center rounded-full bg-card border border-border/50 shadow-md group-hover:shadow-[var(--shadow-glow-solar)] group-hover:border-[oklch(0.769_0.188_70.08)] transition-all duration-500">
+                   <span className="text-sm font-semibold z-10 group-hover:text-[oklch(0.769_0.188_70.08)] transition-colors">{getStageDetail(stage)}</span>
+
+                   {/* Node Glow on Hover */}
+                   <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 bg-[oklch(0.769_0.188_70.08_/_0.1)] transition-opacity duration-500 blur-sm" />
+                </div>
+                <span className="absolute -bottom-8 text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors whitespace-nowrap">
+                  {stage.label}
+                </span>
+              </Link>
+
+              {/* The Connecting Energy Flow Line */}
+              {!isLast && (
+                <div className="flex-1 h-12 relative flex items-center group">
+                  <svg
+                    className="absolute inset-0 w-full h-full"
+                    preserveAspectRatio="none"
+                    viewBox="0 0 100 100"
+                  >
+                    {/* Base dim track */}
+                    <line
+                      x1="0" y1="50" x2="100" y2="50"
+                      stroke="currentColor"
+                      strokeWidth={strokeW}
+                      strokeLinecap="round"
+                      className="text-border/30"
+                    />
+                    {/* Flowing energy pulse */}
+                    <motion.line
+                      x1="0" y1="50" x2="100" y2="50"
+                      stroke="url(#flowGradient)"
+                      strokeWidth={strokeW}
+                      strokeLinecap="round"
+                      initial={{ strokeDasharray: '0 100', strokeDashoffset: 0, opacity: 0 }}
+                      animate={{ strokeDasharray: ['0 100', '100 100', '0 100'], strokeDashoffset: [0, -100, 0], opacity: [0, 1, 0] }}
+                      transition={flowTransition}
+                    />
+                    <defs>
+                      <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="oklch(0.723 0.219 165.829)" stopOpacity="0" />
+                        <stop offset="50%" stopColor="oklch(0.769 0.188 70.08)" stopOpacity="1" />
+                        <stop offset="100%" stopColor="oklch(0.573 0.233 277.117)" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
-      </svg>
-
-      <div className="grid grid-cols-1 gap-3 md:hidden">
-        {nodes.map((node) => (
-          <motion.div
-            key={node.key}
-            whileHover={{ y: -2, scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 26 }}
-          >
-            <Link
-              href={node.href}
-              className="block rounded-xl border border-white/10 bg-white/[0.035] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
-            >
-              <p className="text-xs text-white/60">{node.label}</p>
-              <p className="mt-1 text-xl font-semibold">{node.count}</p>
-              <p className="mt-1 text-sm text-amber-300">
-                {getStageDetail(node)}
-              </p>
-            </Link>
-          </motion.div>
-        ))}
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {nodes.map((node) => (
-          <motion.div
-            key={`${node.key}-link`}
-            whileHover={{ y: -2 }}
-            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-          >
-            <Link
-              href={node.href}
-              className="block rounded-xl border border-white/10 bg-white/[0.025] px-3 py-2 text-sm transition-colors hover:border-white/20 hover:bg-white/[0.06]"
-            >
-              <p className="text-white/70">{node.label}</p>
-              <p className="mt-1 font-semibold text-amber-300">
-                {getStageDetail(node)}
-              </p>
-            </Link>
-          </motion.div>
-        ))}
-      </div>
-      <p className="mt-3 text-xs tracking-[0.18em] text-amber-300 uppercase">
-        Energy Flow Pipeline
-      </p>
-    </motion.div>
+    </div>
   );
 }

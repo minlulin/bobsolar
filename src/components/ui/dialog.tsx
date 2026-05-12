@@ -39,7 +39,10 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        'data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs',
+        'fixed inset-0 z-50 bg-black/60 backdrop-blur-xl',
+        'after:absolute after:inset-0 after:opacity-[0.03] after:pointer-events-none',
+        'after:bg-[url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")]',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         className,
       )}
       {...props}
@@ -61,7 +64,14 @@ function DialogContent({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-          'bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl p-4 text-sm ring-1 duration-150 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:duration-0 outline-none sm:max-w-sm',
+          'fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 p-6 sm:max-w-lg outline-none',
+          'bg-[#141414]/90 border border-white/15 rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),inset_0_0_0_1px_rgba(255,255,255,0.05)]',
+          'duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'data-open:animate-in data-closed:animate-out',
+          'data-closed:fade-out-0 data-open:fade-in-0',
+          'data-closed:zoom-out-95 data-open:zoom-in-95',
+          'data-closed:slide-out-to-left-1/2 data-closed:slide-out-to-top-[48%]',
+          'data-open:slide-in-from-left-1/2 data-open:slide-in-from-top-[48%]',
           className,
         )}
         {...props}
