@@ -234,7 +234,12 @@ export async function getSessionAndRefresh(): Promise<{
   const cookieStore = await cookies();
   const sealedValue = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!sealedValue) {
-    cookieStore.delete(LEGACY_SESSION_COOKIE_NAME);
+    // NOTE: do NOT call `cookieStore.delete(LEGACY_SESSION_COOKIE_NAME)` here.
+    // This function is called from layouts/pages (e.g. (auth)/layout.tsx,
+    // (dashboard)/layout.tsx via requireAuth), and Next.js 16 forbids
+    // mutating cookies outside Server Actions / Route Handlers. The legacy
+    // cookie is already cleared on successful login via `createSession`,
+    // so a read path that finds no current session can simply return.
     return { session: null, refreshed: false };
   }
   assertSessionSecret();
