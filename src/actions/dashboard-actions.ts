@@ -1,0 +1,494 @@
+'use server';
+
+import { db } from '@/lib/db';
+import {
+  customers,
+  projects,
+  quotations,
+  users,
+  warrantyAlerts,
+} from '@/lib/db/schema';
+import { requireAuth } from '@/lib/auth/validate';
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  lte,
+  sql,
+} from 'drizzle-orm';
+import { endOfMonth, startOfDay, startOfMonth, subMonths } from 'date-fns';
+import {
+  successResponse,
+  type ActionResponse,
+} from '@/lib/utils/action-response';
+
+import { handleActionError } from '@/lib/utils/error';
+import { unstable_cache } from 'next/cache';
+
+export type DashboardStats = {
+  userName: string;
+  totalRevenue: number;
+  activeProjectsCount: number;
+  pendingQuotationsCount: number;
+  acceptedThisMonth: number;
+  totalCustomers: number;
+  overdueAlertsCount: number;
+  revenueTrendPercent: number;
+  quotationConversionRate: number;
+};
+
+export type DashboardPipelineNode = {
+  key: 'customers' | 'quotations' | 'projects' | 'completed';
+  label: string;
+  count: number;
+  value: number;
+  href: string;
+};
+
+export type ActivityItem = {
+  type: 'quotation' | 'project' | 'customer' | 'alert';
+  description: string;
+  timestamp: Date;
+  link: string;
+};
+
+export type UpcomingAlertItem = {
+  id: string;
+  projectNumber: string;
+  description: string;
+  dueDate: Date;
+  alertType: 'warranty_expiry' | 'maintenance_due' | 'follow_up';
+  isOverdue: boolean;
+};
+
+function toInt(value: unknown): number {
+  return Number(value ?? 0);
+}
+
+const getCachedSharedStats = unstable_cache(
+  async () => {
+    const today = new Date();
+    const thisMonthStart = startOfMonth(today);
+    const thisMonthEnd = endOfMonth(today);
+    const prevMonthStart = startOfMonth(subMonths(today, 1));
+    const prevMonthEnd = endOfMonth(subMonths(today, 1));
+    const startToday = startOfDay(today);
+
+    const [
+      [totalRevenueRow],
+      [activeProjectsRow],
+      [pendingQuotesRow],
+      [acceptedThisMonthRow],
+      [customersRow],
+      [overdueAlertsRow],
+      [thisMonthRevenueRow],
+      [prevMonthRevenueRow],
+      [acceptedTotalRow],
+      [sentTotalRow],
+      [rejectedTotalRow],
+      [expiredTotalRow],
+    ] = await Promise.all([
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
+        ),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(
+          and(
+            eq(quotations.status, 'accepted'),
+            gte(quotations.updatedAt, thisMonthStart),
+            lte(quotations.updatedAt, thisMonthEnd),
+          ),
+        ),
+      db
+        .select({ total: count() })
+        .from(customers)
+        .where(eq(customers.isArchived, false)),
+      db
+        .select({ total: count() })
+        .from(warrantyAlerts)
+        .where(
+          and(
+            eq(warrantyAlerts.isResolved, false),
+            lt(warrantyAlerts.dueDate, startToday),
+          ),
+        ),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.status, 'completed'),
+            gte(projects.actualCompletion, thisMonthStart),
+            lte(projects.actualCompletion, thisMonthEnd),
+          ),
+        ),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.status, 'completed'),
+            gte(projects.actualCompletion, prevMonthStart),
+            lte(projects.actualCompletion, prevMonthEnd),
+          ),
+        ),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'accepted')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'sent')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'rejected')),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(eq(quotations.status, 'expired')),
+    ]);
+
+    return {
+      totalRevenueRow,
+      activeProjectsRow,
+      pendingQuotesRow,
+      acceptedThisMonthRow,
+      customersRow,
+      overdueAlertsRow,
+      thisMonthRevenueRow,
+      prevMonthRevenueRow,
+      acceptedTotalRow,
+      sentTotalRow,
+      rejectedTotalRow,
+      expiredTotalRow,
+    };
+  },
+  ['dashboard:shared-stats'],
+  { tags: ['dashboard:stats'], revalidate: 300 },
+);
+
+export async function getDashboardStats(): Promise<
+  ActionResponse<DashboardStats>
+> {
+  try {
+    const auth = await requireAuth();
+
+    const [viewer, shared] = await Promise.all([
+      db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, auth.userId))
+        .limit(1),
+      getCachedSharedStats(),
+    ]);
+
+    const {
+      totalRevenueRow,
+      activeProjectsRow,
+      pendingQuotesRow,
+      acceptedThisMonthRow,
+      customersRow,
+      overdueAlertsRow,
+      thisMonthRevenueRow,
+      prevMonthRevenueRow,
+      acceptedTotalRow,
+      sentTotalRow,
+      rejectedTotalRow,
+      expiredTotalRow,
+    } = shared;
+
+    const thisMonthRevenue = Number(thisMonthRevenueRow?.total ?? 0);
+    const prevMonthRevenue = Number(prevMonthRevenueRow?.total ?? 0);
+    const revenueTrendPercent =
+      prevMonthRevenue <= 0
+        ? thisMonthRevenue > 0
+          ? 100
+          : 0
+        : ((thisMonthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+
+    const acceptedTotal = toInt(acceptedTotalRow?.total);
+    const rejectedTotal = toInt(rejectedTotalRow?.total);
+    const expiredTotal = toInt(expiredTotalRow?.total);
+    const sentTotal = toInt(sentTotalRow?.total);
+    const closedTotal =
+      acceptedTotal + rejectedTotal + expiredTotal + sentTotal;
+    const quotationConversionRate =
+      closedTotal <= 0 ? 0 : (acceptedTotal / closedTotal) * 100;
+
+    return successResponse({
+      userName: viewer[0]?.name ?? 'User',
+      totalRevenue: Number(totalRevenueRow?.total ?? 0),
+      activeProjectsCount: toInt(activeProjectsRow?.total),
+      pendingQuotationsCount: toInt(pendingQuotesRow?.total),
+      acceptedThisMonth: toInt(acceptedThisMonthRow?.total),
+      totalCustomers: toInt(customersRow?.total),
+      overdueAlertsCount: toInt(overdueAlertsRow?.total),
+      revenueTrendPercent: Number(revenueTrendPercent.toFixed(1)),
+      quotationConversionRate: Number(quotationConversionRate.toFixed(1)),
+    });
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getDashboardStats',
+      'Failed to fetch dashboard stats',
+    );
+  }
+}
+
+export async function getDashboardPipeline(): Promise<
+  ActionResponse<{ stages: DashboardPipelineNode[] }>
+> {
+  try {
+    await requireAuth();
+
+    const [
+      [customersCountRow],
+      [activeQuoteCountRow],
+      [activeQuoteValueRow],
+      [activeProjectCountRow],
+      [activeProjectValueRow],
+      [completedCountRow],
+      [completedValueRow],
+    ] = await Promise.all([
+      db
+        .select({ total: count() })
+        .from(customers)
+        .where(eq(customers.isArchived, false)),
+      db
+        .select({ total: count() })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${quotations.total}::numeric), 0)`,
+        })
+        .from(quotations)
+        .where(inArray(quotations.status, ['draft', 'sent'])),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
+        ),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(
+          inArray(projects.status, ['planning', 'in_progress', 'on_hold']),
+        ),
+      db
+        .select({ total: count() })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+      db
+        .select({
+          total: sql<string>`coalesce(sum(${projects.actualTotal}::numeric), 0)`,
+        })
+        .from(projects)
+        .where(eq(projects.status, 'completed')),
+    ]);
+
+    const stages: DashboardPipelineNode[] = [
+      {
+        key: 'customers',
+        label: 'Customers',
+        count: toInt(customersCountRow?.total),
+        value: 0,
+        href: '/customers',
+      },
+      {
+        key: 'quotations',
+        label: 'Active Quotes',
+        count: toInt(activeQuoteCountRow?.total),
+        value: Number(activeQuoteValueRow?.total ?? 0),
+        href: '/quotations',
+      },
+      {
+        key: 'projects',
+        label: 'Active Projects',
+        count: toInt(activeProjectCountRow?.total),
+        value: Number(activeProjectValueRow?.total ?? 0),
+        href: '/projects',
+      },
+      {
+        key: 'completed',
+        label: 'Completed',
+        count: toInt(completedCountRow?.total),
+        value: Number(completedValueRow?.total ?? 0),
+        href: '/projects/completed',
+      },
+    ];
+
+    return successResponse({ stages });
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getDashboardPipeline',
+      'Failed to fetch dashboard pipeline',
+    );
+  }
+}
+
+export async function getRecentActivity(
+  limit = 10,
+): Promise<ActionResponse<ActivityItem[]>> {
+  try {
+    await requireAuth();
+
+    const safeLimit = Math.max(1, Math.min(limit, 30));
+
+    const [quotationRows, projectRows, customerRows, alertRows] =
+      await Promise.all([
+        db
+          .select({
+            id: quotations.id,
+            quoteNumber: quotations.quoteNumber,
+            createdAt: quotations.createdAt,
+          })
+          .from(quotations)
+          .orderBy(desc(quotations.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: projects.id,
+            projectNumber: projects.projectNumber,
+            status: projects.status,
+            createdAt: projects.createdAt,
+          })
+          .from(projects)
+          .orderBy(desc(projects.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            createdAt: customers.createdAt,
+          })
+          .from(customers)
+          .where(eq(customers.isArchived, false))
+          .orderBy(desc(customers.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: warrantyAlerts.id,
+            projectId: warrantyAlerts.projectId,
+            description: warrantyAlerts.description,
+            dueDate: warrantyAlerts.dueDate,
+            createdAt: warrantyAlerts.createdAt,
+          })
+          .from(warrantyAlerts)
+          .where(eq(warrantyAlerts.isResolved, false))
+          .orderBy(desc(warrantyAlerts.createdAt))
+          .limit(safeLimit),
+      ]);
+
+    const activities: ActivityItem[] = [
+      ...quotationRows.map((row) => ({
+        type: 'quotation' as const,
+        description: `New quotation ${row.quoteNumber} created`,
+        timestamp: row.createdAt,
+        link: `/quotations/${row.id}`,
+      })),
+      ...projectRows.map((row) => ({
+        type: 'project' as const,
+        description:
+          row.status === 'completed'
+            ? `Project ${row.projectNumber} marked as completed`
+            : `Project ${row.projectNumber} created`,
+        timestamp: row.createdAt,
+        link: `/projects/${row.id}`,
+      })),
+      ...customerRows.map((row) => ({
+        type: 'customer' as const,
+        description: `Customer ${row.name} added`,
+        timestamp: row.createdAt,
+        link: '/customers',
+      })),
+      ...alertRows.map((row) => ({
+        type: 'alert' as const,
+        description: `Warranty alert due: ${row.description}`,
+        timestamp: row.createdAt,
+        link: `/projects/${row.projectId}`,
+      })),
+    ];
+
+    activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return successResponse(activities.slice(0, safeLimit));
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getRecentActivity',
+      'Failed to fetch recent activity',
+    );
+  }
+}
+
+export async function getUpcomingAlerts(
+  limit = 5,
+): Promise<ActionResponse<UpcomingAlertItem[]>> {
+  try {
+    await requireAuth();
+    const safeLimit = Math.max(1, Math.min(limit, 20));
+
+    const rows = await db
+      .select({
+        id: warrantyAlerts.id,
+        projectId: projects.id,
+        projectNumber: projects.projectNumber,
+        description: warrantyAlerts.description,
+        dueDate: warrantyAlerts.dueDate,
+        alertType: warrantyAlerts.alertType,
+      })
+      .from(warrantyAlerts)
+      .innerJoin(projects, eq(warrantyAlerts.projectId, projects.id))
+      .where(eq(warrantyAlerts.isResolved, false))
+      .orderBy(asc(warrantyAlerts.dueDate))
+      .limit(safeLimit);
+
+    const today = startOfDay(new Date());
+    const items: UpcomingAlertItem[] = rows.map((row) => ({
+      id: row.id,
+      projectNumber: row.projectNumber,
+      description: row.description,
+      dueDate: row.dueDate,
+      alertType: row.alertType,
+      isOverdue: row.dueDate.getTime() < today.getTime(),
+    }));
+
+    return successResponse(items);
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getUpcomingAlerts',
+      'Failed to fetch upcoming alerts',
+    );
+  }
+}
