@@ -3,7 +3,7 @@
 import { randomBytes } from 'crypto';
 import { db } from '@/lib/db';
 import { companySettings, users, type User } from '@/lib/db/schema';
-import { requireAuth } from '@/lib/auth/validate';
+import { requireAdmin, requireAuth } from '@/lib/auth/validate';
 import { eq, sql } from 'drizzle-orm';
 import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { z } from 'zod';
@@ -76,7 +76,7 @@ export async function setCompanyLogoUrl(
   raw: unknown,
 ): Promise<ActionResponse<{ url: string }>> {
   try {
-    await requireAuth();
+    await requireAdmin();
     const { url } = setLogoSchema.parse(raw);
 
     await db
@@ -109,7 +109,7 @@ export async function updateCompanySettings(
   data: Record<string, string>,
 ): Promise<ActionResponse<null>> {
   try {
-    await requireAuth();
+    await requireAdmin();
 
     const entries = Object.entries(data);
     if (entries.length > 0) {
@@ -166,8 +166,10 @@ export async function getSettingsUsers(): Promise<
     });
     if (!me) return errorResponse('User not found');
 
-    const userRows = await db.query.users.findMany();
-    return successResponse({ isAdmin: true, users: userRows, me });
+    const isAdmin = auth.role === 'admin';
+    // Non-admin callers only see themselves; admins see the full roster.
+    const userRows = isAdmin ? await db.query.users.findMany() : [me];
+    return successResponse({ isAdmin, users: userRows, me });
   } catch (error) {
     return errorResponse(
       error instanceof Error ? error.message : 'Failed to load users',
@@ -179,7 +181,7 @@ export async function updateSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<null>> {
   try {
-    await requireAuth();
+    await requireAdmin();
     const parsed = updateUserSchema.parse(raw);
     await db
       .update(users)
@@ -205,7 +207,7 @@ export async function createSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<null>> {
   try {
-    await requireAuth();
+    await requireAdmin();
     const parsed = createUserSchema.parse(raw);
     const existing = await db.query.users.findMany();
     if (existing.length >= USER_CAP) {
@@ -237,7 +239,7 @@ export async function resetSettingsUserPassword(
   userId: string,
 ): Promise<ActionResponse<{ temporaryPassword: string }>> {
   try {
-    await requireAuth();
+    await requireAdmin();
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });

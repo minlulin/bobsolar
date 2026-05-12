@@ -9,36 +9,35 @@ import { uuidSchema } from '@/lib/validators/common';
 const SESSION_COOKIE_NAME = 'bobsolar_session';
 const LEGACY_SESSION_COOKIE_NAME = 'session_id';
 
-function assertSessionSecret(): void {
+function assertSessionSecret(): string {
   const secret = process.env['SESSION_SECRET'];
   if (!secret || secret.trim().length < 32) {
     throw new Error(
       'SESSION_SECRET is not set (or too short). Set a strong secret (>= 32 chars).',
     );
   }
+  return secret;
 }
 
-function getSessionSecretOrPlaceholder(): string {
-  // Avoid throwing at module evaluation time (e.g. during `next build`).
-  // All session entry points call `assertSessionSecret()` before doing real work.
-  const secret = process.env['SESSION_SECRET'];
-  return secret && secret.trim().length >= 32
-    ? secret
-    : 'insecure-placeholder-secret-insecure-placeholder-secret';
+/**
+ * Build the iron-session config lazily so the encryption key is read from
+ * the env at request time. Avoids capturing a placeholder secret at module
+ * evaluation, which would silently produce forgeable cookies if the env var
+ * arrived after import (or was missing on a single deployment).
+ */
+function buildIronSessionConfig(): SessionOptions {
+  return {
+    cookieName: SESSION_COOKIE_NAME,
+    password: assertSessionSecret(),
+    cookieOptions: {
+      httpOnly: true,
+      secure: process.env['NODE_ENV'] === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SESSION_TTL_SECONDS,
+    },
+  };
 }
-
-// Iron-session configuration for encrypted cookies
-const ironSessionConfig: SessionOptions = {
-  cookieName: SESSION_COOKIE_NAME,
-  password: getSessionSecretOrPlaceholder(),
-  cookieOptions: {
-    httpOnly: true,
-    secure: process.env['NODE_ENV'] === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS,
-  },
-};
 
 // Session data interface for iron-session
 type IronSessionData = {
@@ -81,10 +80,7 @@ async function sealSession(sessionId: string): Promise<string> {
   const session = await getIronSession<IronSessionData>(
     mockRequest,
     mockResponse,
-    {
-      ...ironSessionConfig,
-      password: ironSessionConfig.password,
-    },
+    buildIronSessionConfig(),
   );
 
   session.sid = sessionId;
@@ -119,7 +115,7 @@ async function unsealSession(
     const session = await getIronSession<IronSessionData>(
       mockRequest,
       mockResponse,
-      ironSessionConfig,
+      buildIronSessionConfig(),
     );
 
     return session.sid ? session : null;
@@ -279,5 +275,5 @@ export async function cleanupExpiredSessions(): Promise<number> {
   return result.length;
 }
 
-// Export session config for middleware usage if needed
-export { ironSessionConfig, SESSION_COOKIE_NAME };
+// Export session config builder for middleware/route usage.
+export { buildIronSessionConfig, SESSION_COOKIE_NAME };

@@ -48,6 +48,7 @@ export function UserManagementTab(): React.JSX.Element {
   });
 
   const users = usersQuery.data?.users ?? [];
+  const isAdmin = usersQuery.data?.isAdmin ?? false;
 
   async function handleUpdate(): Promise<void> {
     if (!editing) return;
@@ -90,18 +91,26 @@ export function UserManagementTab(): React.JSX.Element {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-lg font-semibold">User Management</h3>
-        <Button
-          disabled={users.length >= USER_CAP}
-          onClick={() => {
-            setCreating(true);
-          }}
-        >
-          Add User
-        </Button>
+        {isAdmin ? (
+          <Button
+            disabled={users.length >= USER_CAP}
+            onClick={() => {
+              setCreating(true);
+            }}
+          >
+            Add User
+          </Button>
+        ) : null}
       </div>
-      <p className="text-muted-foreground text-xs">
-        Maximum {USER_CAP} users allowed. Current: {users.length}/{USER_CAP}
-      </p>
+      {isAdmin ? (
+        <p className="text-muted-foreground text-xs">
+          Maximum {USER_CAP} users allowed. Current: {users.length}/{USER_CAP}
+        </p>
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          Only admins can manage users. Showing your account only.
+        </p>
+      )}
 
       <div className="space-y-3">
         {users.map((user) => (
@@ -113,28 +122,30 @@ export function UserManagementTab(): React.JSX.Element {
               <p className="font-medium">{user.name}</p>
               <p className="text-foreground/60 text-xs">{user.email}</p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setEditing({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                  });
-                }}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void handleResetPassword(user.id)}
-              >
-                Reset Password
-              </Button>
-            </div>
+            {isAdmin ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditing({
+                      id: user.id,
+                      name: user.name,
+                      email: user.email,
+                    });
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleResetPassword(user.id)}
+                >
+                  Reset Password
+                </Button>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
