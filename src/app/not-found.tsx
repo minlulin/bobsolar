@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { FileQuestion } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function NotFound(): React.JSX.Element {
   return (
@@ -15,12 +14,12 @@ export default function NotFound(): React.JSX.Element {
         We couldn&apos;t find the page you&apos;re looking for. It might have
         been moved or deleted.
       </p>
-      <Button
-        asChild
-        className="bg-white font-medium text-black hover:bg-white/90"
+      <Link
+        href="/"
+        className="inline-flex h-10 items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
       >
-        <Link href="/">Return to Dashboard</Link>
-      </Button>
+        Return to Dashboard
+      </Link>
     </div>
   );
 }
