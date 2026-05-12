@@ -61,8 +61,11 @@ async function getCachedCompanySettingsMap(): Promise<Record<string, string>> {
 export async function getCompanySettings(): Promise<
   ActionResponse<Record<string, string>>
 > {
+  // Auth gate is intentionally outside `try/catch` so that `redirect()` thrown
+  // by `requireAuth()` / `requireAdmin()` propagates to Next.js instead of
+  // being caught and serialised as `{ success: false, error: "NEXT_REDIRECT" }`.
+  await requireAuth();
   try {
-    await requireAuth();
     const map = await getCachedCompanySettingsMap();
     return successResponse(map);
   } catch (error) {
@@ -75,8 +78,8 @@ export async function getCompanySettings(): Promise<
 export async function setCompanyLogoUrl(
   raw: unknown,
 ): Promise<ActionResponse<{ url: string }>> {
+  await requireAdmin();
   try {
-    await requireAdmin();
     const { url } = setLogoSchema.parse(raw);
 
     await db
@@ -108,9 +111,8 @@ export async function setCompanyLogoUrl(
 export async function updateCompanySettings(
   data: Record<string, string>,
 ): Promise<ActionResponse<null>> {
+  await requireAdmin();
   try {
-    await requireAdmin();
-
     const entries = Object.entries(data);
     if (entries.length > 0) {
       await db
@@ -159,8 +161,8 @@ export async function getPublicCompanyBranding(): Promise<
 export async function getSettingsUsers(): Promise<
   ActionResponse<{ isAdmin: boolean; users: User[]; me: User | null }>
 > {
+  const auth = await requireAuth();
   try {
-    const auth = await requireAuth();
     const me = await db.query.users.findFirst({
       where: eq(users.id, auth.userId),
     });
@@ -180,8 +182,8 @@ export async function getSettingsUsers(): Promise<
 export async function updateSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<null>> {
+  await requireAdmin();
   try {
-    await requireAdmin();
     const parsed = updateUserSchema.parse(raw);
     await db
       .update(users)
@@ -206,8 +208,8 @@ export async function updateSettingsUser(
 export async function createSettingsUser(
   raw: unknown,
 ): Promise<ActionResponse<null>> {
+  await requireAdmin();
   try {
-    await requireAdmin();
     const parsed = createUserSchema.parse(raw);
     const existing = await db.query.users.findMany();
     if (existing.length >= USER_CAP) {
@@ -238,8 +240,8 @@ export async function createSettingsUser(
 export async function resetSettingsUserPassword(
   userId: string,
 ): Promise<ActionResponse<{ temporaryPassword: string }>> {
+  await requireAdmin();
   try {
-    await requireAdmin();
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
