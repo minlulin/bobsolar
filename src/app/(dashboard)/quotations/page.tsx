@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Search, Loader2, FileText } from 'lucide-react';
+import { Plus, Search, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { staggerContainer } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { QuotationCard } from '@/components/quotations/quotation-card';
 import { useQuotations } from '@/hooks/use-quotations';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type QuotationStatus } from '@/lib/db/schema';
+import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
 
 const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
   { id: 'all', label: 'All' },
@@ -101,9 +102,7 @@ export default function QuotationsPage(): React.JSX.Element {
 
       {/* Content Section */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="text-solar h-8 w-8 animate-spin" />
-        </div>
+        <ListGridSkeleton count={8} />
       ) : quotations.length > 0 ? (
         <motion.div
           variants={staggerContainer}

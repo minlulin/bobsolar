@@ -6,7 +6,7 @@ import { InventoryCard } from '@/components/inventory/inventory-card';
 import { InventoryDialog } from '@/components/inventory/inventory-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Loader2, PackageSearch } from 'lucide-react';
+import { Plus, Search, PackageSearch } from 'lucide-react';
 import {
   type InventoryItem,
   inventoryCategoryEnum,
@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import { staggerContainer } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
 // If ui-store doesn't have role, we might need a separate auth hook/store.
 // For now, I'll assume all users can see, but only admin can edit (handled in server actions)
 // I'll check user role from a mock or session if possible.
@@ -97,12 +98,7 @@ export default function InventoryPage(): React.JSX.Element {
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center gap-4 py-20">
-          <Loader2 className="text-solar-amber h-10 w-10 animate-spin" />
-          <p className="text-muted-foreground animate-pulse">
-            Scanning inventory...
-          </p>
-        </div>
+        <ListGridSkeleton count={8} />
       ) : response?.items && response.items.length > 0 ? (
         <motion.div
           variants={staggerContainer}

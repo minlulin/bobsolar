@@ -119,6 +119,8 @@ export default function LoginPage(): React.JSX.Element {
                   src={logoSrc}
                   alt={`${companyName} Logo`}
                   fill
+                  sizes="64px"
+                  priority
                   className="object-contain p-2"
                   unoptimized
                 />

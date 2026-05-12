@@ -13,6 +13,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { ActionResponse } from '@/lib/utils/action-response';
 import { uuidSchema } from '@/lib/validators/common';
+import { deleteCacheValue, getOrSetCacheValue } from '@/lib/cache';
 
 export async function getInventoryItems(
   rawFilters: unknown = {},
@@ -95,6 +96,7 @@ export async function createInventoryItem(
     if (!item) {
       return { success: false, error: 'Failed to create inventory item' };
     }
+    await deleteCacheValue('inventory:categories');
 
     revalidatePath('/inventory');
     return { success: true, data: item };
@@ -140,6 +142,7 @@ export async function updateInventoryItem(
     if (!item) {
       return { success: false, error: 'Item not found or failed to update' };
     }
+    await deleteCacheValue('inventory:categories');
 
     revalidatePath('/inventory');
     return { success: true, data: item };
@@ -165,6 +168,7 @@ export async function deleteInventoryItem(
       .update(inventoryItems)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(inventoryItems.id, validatedId));
+    await deleteCacheValue('inventory:categories');
 
     revalidatePath('/inventory');
     return { success: true, data: undefined };
@@ -199,6 +203,7 @@ export async function bulkUpdatePrices(
           .where(eq(inventoryItems.id, update.id));
       }
     });
+    await deleteCacheValue('inventory:categories');
 
     revalidatePath('/inventory');
     return { success: true, data: undefined };
@@ -218,15 +223,20 @@ export async function getInventoryCategories(): Promise<
 > {
   try {
     await requireAuth();
-
-    const results = await db
-      .select({
-        category: inventoryItems.category,
-        count: sql<number>`count(*)`.mapWith(Number),
-      })
-      .from(inventoryItems)
-      .where(eq(inventoryItems.isActive, true))
-      .groupBy(inventoryItems.category);
+    const results = await getOrSetCacheValue(
+      'inventory:categories',
+      z.array(z.object({ category: z.string(), count: z.number() })),
+      async (): Promise<{ category: string; count: number }[]> =>
+        db
+          .select({
+            category: inventoryItems.category,
+            count: sql<number>`count(*)`.mapWith(Number),
+          })
+          .from(inventoryItems)
+          .where(eq(inventoryItems.isActive, true))
+          .groupBy(inventoryItems.category),
+      { ttlSeconds: 600 },
+    );
 
     return { success: true, data: results };
   } catch {

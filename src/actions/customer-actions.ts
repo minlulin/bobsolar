@@ -14,6 +14,10 @@ import { z } from 'zod';
 import type { ActionResponse } from '@/lib/utils/action-response';
 import { uuidSchema } from '@/lib/validators/common';
 
+const deleteCustomerInputSchema = z.object({
+  id: uuidSchema,
+});
+
 export async function getCustomers(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<{ items: Customer[]; total: number }>> {
@@ -159,9 +163,16 @@ export async function deleteCustomer(
 ): Promise<ActionResponse<void>> {
   try {
     await requireAuth();
-    const validatedId = uuidSchema.parse(id);
+    const { id: validatedId } = deleteCustomerInputSchema.parse({ id });
 
-    await db.delete(customers).where(eq(customers.id, validatedId));
+    await db
+      .update(customers)
+      .set({
+        isArchived: true,
+        archivedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, validatedId));
 
     revalidatePath('/customers');
     return { success: true, data: undefined };

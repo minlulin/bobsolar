@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Loader2, Users, UserPlus } from 'lucide-react';
+import { useOptimistic, useState } from 'react';
+import { Search, Users, UserPlus } from 'lucide-react';
 import { type Customer } from '@/lib/db/schema';
 import { motion } from 'framer-motion';
 import { staggerContainer } from '@/lib/motion';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { CustomerCard } from '@/components/customers/customer-card';
 import { CustomerDialog } from '@/components/customers/customer-dialog';
 import { useCustomers } from '@/hooks/use-customers';
+import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
 
 export default function CustomersPage(): React.JSX.Element {
   const [search, setSearch] = useState('');
@@ -32,6 +33,11 @@ export default function CustomersPage(): React.JSX.Element {
   };
 
   const customers = response?.success ? response.data.items : [];
+  const [optimisticCustomers, removeOptimisticCustomer] = useOptimistic(
+    customers,
+    (state: Customer[], removedId: string) =>
+      state.filter((customer) => customer.id !== removedId),
+  );
 
   return (
     <div className="space-y-8">
@@ -71,21 +77,20 @@ export default function CustomersPage(): React.JSX.Element {
 
       {/* Content Section */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="text-solar h-8 w-8 animate-spin" />
-        </div>
-      ) : customers.length > 0 ? (
+        <ListGridSkeleton count={9} />
+      ) : optimisticCustomers.length > 0 ? (
         <motion.div
           variants={staggerContainer}
           initial="initial"
           animate="animate"
           className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {customers.map((customer) => (
+          {optimisticCustomers.map((customer) => (
             <CustomerCard
               key={customer.id}
               customer={customer}
               onEdit={handleEdit}
+              onDelete={removeOptimisticCustomer}
             />
           ))}
         </motion.div>

@@ -109,6 +109,19 @@ export const sessions = pgTable('sessions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const authRateLimits = pgTable(
+  'auth_rate_limits',
+  {
+    key: text('key').primaryKey(),
+    attempts: integer('attempts').default(0).notNull(),
+    lockedUntil: timestamp('locked_until'),
+    lastAttemptAt: timestamp('last_attempt_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('auth_rate_limits_locked_until_idx').on(table.lockedUntil)],
+);
+
 export const customers = pgTable('customers', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -118,6 +131,7 @@ export const customers = pgTable('customers', {
   city: text('city'),
   notes: text('notes'),
   isArchived: boolean('is_archived').default(false).notNull(),
+  archivedAt: timestamp('archived_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -427,6 +441,9 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
+
+export type AuthRateLimit = InferSelectModel<typeof authRateLimits>;
+export type NewAuthRateLimit = InferInsertModel<typeof authRateLimits>;
 
 export type Customer = InferSelectModel<typeof customers>;
 export type NewCustomer = InferInsertModel<typeof customers>;

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { renderToStream } from '@react-pdf/renderer';
-import { QuoteDocument } from '@/components/pdf/quote-document';
 import { db } from '@/lib/db';
 import { quotations } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -53,6 +51,11 @@ export async function GET(
       },
       {},
     );
+
+    const [{ renderToStream }, { QuoteDocument }] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/components/pdf/quote-document'),
+    ]);
 
     // Render PDF
     const pdfStream = await renderToStream(

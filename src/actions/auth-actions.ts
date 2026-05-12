@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { authRateLimits, users } from '@/lib/db/schema';
+import { and, eq, isNull, lt } from 'drizzle-orm';
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
 import { verifyPassword } from '@/lib/auth/password';
 import {
@@ -17,95 +17,101 @@ import type { ActionResponse } from '@/lib/utils/action-response';
 // Rate limiting configuration
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour cleanup window
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // opportunistic cleanup (serverless-friendly)
-
-interface RateLimitEntry {
-  attempts: number;
-  lockedUntil: number | null;
-  lastAttempt: number;
-}
-
-// In-memory rate limiter (sufficient for 3-person team)
-const rateLimitMap = new Map<string, RateLimitEntry>();
-let lastCleanupAt = 0;
-
-function maybeCleanupRateLimiter(now: number): void {
-  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
-  lastCleanupAt = now;
-
-  for (const [key, entry] of rateLimitMap.entries()) {
-    if (!entry.lockedUntil && now - entry.lastAttempt > RATE_LIMIT_WINDOW_MS) {
-      rateLimitMap.delete(key);
-      continue;
-    }
-    if (entry.lockedUntil && now > entry.lockedUntil) {
-      rateLimitMap.delete(key);
-    }
-  }
-}
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour tracking window
+const RATE_LIMIT_TTL_MS = 24 * 60 * 60 * 1000; // delete stale rows older than 24h
 
 function getRateLimitKey(email: string): string {
   return email.toLowerCase().trim();
 }
 
-function isRateLimited(email: string): {
+async function isRateLimited(email: string): Promise<{
   limited: boolean;
   retryAfter?: number;
-} {
+}> {
   const key = getRateLimitKey(email);
-  const entry = rateLimitMap.get(key);
+  const entry = await db.query.authRateLimits.findFirst({
+    where: eq(authRateLimits.key, key),
+  });
 
   if (!entry) {
     return { limited: false };
   }
 
-  const now = Date.now();
-  maybeCleanupRateLimiter(now);
+  const now = new Date();
 
   // Check if still locked out
   if (entry.lockedUntil && now < entry.lockedUntil) {
     return {
       limited: true,
-      retryAfter: Math.ceil((entry.lockedUntil - now) / 1000),
+      retryAfter: Math.ceil((entry.lockedUntil.getTime() - now.getTime()) / 1000),
     };
   }
 
-  // Clear expired lockout
   if (entry.lockedUntil && now >= entry.lockedUntil) {
-    entry.lockedUntil = null;
-    entry.attempts = 0;
+    await db
+      .update(authRateLimits)
+      .set({
+        attempts: 0,
+        lockedUntil: null,
+        updatedAt: now,
+      })
+      .where(eq(authRateLimits.key, key));
   }
 
   return { limited: false };
 }
 
-function recordFailedAttempt(email: string): void {
+async function recordFailedAttempt(email: string): Promise<void> {
   const key = getRateLimitKey(email);
-  const now = Date.now();
-  maybeCleanupRateLimiter(now);
-  const entry = rateLimitMap.get(key);
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
+
+  const entry = await db.query.authRateLimits.findFirst({
+    where: eq(authRateLimits.key, key),
+  });
 
   if (!entry) {
-    rateLimitMap.set(key, {
+    await db.insert(authRateLimits).values({
+      key,
       attempts: 1,
       lockedUntil: null,
-      lastAttempt: now,
+      lastAttemptAt: now,
+      updatedAt: now,
     });
     return;
   }
 
-  entry.attempts += 1;
-  entry.lastAttempt = now;
+  const baseAttempts = entry.lastAttemptAt < windowStart ? 0 : entry.attempts;
+  const attempts = baseAttempts + 1;
+  const lockedUntil =
+    attempts >= MAX_FAILED_ATTEMPTS
+      ? new Date(now.getTime() + LOCKOUT_DURATION_MS)
+      : null;
 
-  if (entry.attempts >= MAX_FAILED_ATTEMPTS) {
-    entry.lockedUntil = now + LOCKOUT_DURATION_MS;
-  }
+  await db
+    .update(authRateLimits)
+    .set({
+      attempts,
+      lockedUntil,
+      lastAttemptAt: now,
+      updatedAt: now,
+    })
+    .where(eq(authRateLimits.key, key));
+
+  const staleBefore = new Date(now.getTime() - RATE_LIMIT_TTL_MS);
+  await db
+    .delete(authRateLimits)
+    .where(
+      and(
+        isNull(authRateLimits.lockedUntil),
+        lt(authRateLimits.lastAttemptAt, staleBefore),
+      ),
+    );
 }
 
-function clearFailedAttempts(email: string): void {
+async function clearFailedAttempts(email: string): Promise<void> {
   const key = getRateLimitKey(email);
-  rateLimitMap.delete(key);
+  await db.delete(authRateLimits).where(eq(authRateLimits.key, key));
 }
 
 export async function login(data: LoginInput): Promise<ActionResponse<void>> {
@@ -118,7 +124,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<void>> {
   const { email, password } = result.data;
 
   // Check rate limit before any DB lookup
-  const rateLimitCheck = isRateLimited(email);
+  const rateLimitCheck = await isRateLimited(email);
   if (rateLimitCheck.limited) {
     const minutes = Math.ceil((rateLimitCheck.retryAfter ?? 0) / 60);
     return {
@@ -138,12 +144,12 @@ export async function login(data: LoginInput): Promise<ActionResponse<void>> {
   const isValid = await verifyPassword(password, hashToVerify);
 
   if (!user || !isValid) {
-    recordFailedAttempt(email);
+    await recordFailedAttempt(email);
     return { success: false, error: 'Invalid credentials' };
   }
 
   // Success - clear failed attempts and create session
-  clearFailedAttempts(email);
+  await clearFailedAttempts(email);
   await createSession(user.id, user.role);
 
   return { success: true, data: undefined };

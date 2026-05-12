@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Loader2, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { staggerContainer } from '@/lib/motion';
@@ -11,6 +11,7 @@ import { ProjectCard } from '@/components/project/project-card';
 import { Button } from '@/components/ui/button';
 import type { InferSelectModel } from 'drizzle-orm';
 import { projects } from '@/lib/db/schema';
+import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
 
 type ProjectStatus = InferSelectModel<typeof projects>['status'];
 
@@ -97,9 +98,7 @@ export default function ActiveProjectsPage(): React.JSX.Element {
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-[50vh] items-center justify-center">
-          <Loader2 className="text-solar h-10 w-10 animate-spin" />
-        </div>
+        <ListGridSkeleton count={6} />
       ) : error ? (
         <div className="border-destructive/40 rounded-3xl border p-14 text-center text-sm text-red-200">
           {error instanceof Error

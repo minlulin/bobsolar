@@ -129,6 +129,23 @@ export function useDeleteInventoryItem(): ReturnType<
 
   return useMutation({
     mutationFn: deleteInventoryItem,
+    onMutate: async (deletedId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['inventory'] });
+      const snapshots = queryClient.getQueriesData<InventoryItemsData>({
+        queryKey: ['inventory'],
+      });
+
+      snapshots.forEach(([key, previous]) => {
+        if (!previous) return;
+        queryClient.setQueryData<InventoryItemsData>(key, {
+          ...previous,
+          items: previous.items.filter((item) => item.id !== deletedId),
+          total: Math.max(0, previous.total - 1),
+        });
+      });
+
+      return { snapshots };
+    },
     onSuccess: async (response) => {
       if (response.success) {
         await queryClient.invalidateQueries({ queryKey: ['inventory'] });
@@ -137,7 +154,10 @@ export function useDeleteInventoryItem(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      context?.snapshots?.forEach(([key, previous]) => {
+        queryClient.setQueryData(key, previous);
+      });
       toast.error('Failed to delete item');
     },
   });

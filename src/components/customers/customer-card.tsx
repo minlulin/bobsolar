@@ -25,11 +25,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 interface CustomerCardProps {
   customer: Customer;
   onEdit: (customer: Customer) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function CustomerCard({
   customer,
   onEdit,
+  onDelete,
 }: CustomerCardProps): React.JSX.Element {
   const { mutate: deleteCustomer } = useDeleteCustomer();
 
@@ -50,7 +52,7 @@ export function CustomerCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="group relative overflow-hidden border-white/5 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10">
+      <Card className="group relative overflow-hidden border-white/5 bg-white/5 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_14px_34px_-18px_rgba(245,158,11,0.5)] motion-reduce:transform-none">
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -97,6 +99,7 @@ export function CustomerCard({
                     if (
                       confirm('Are you sure you want to delete this customer?')
                     ) {
+                      onDelete?.(customer.id);
                       deleteCustomer(customer.id);
                     }
                   }}

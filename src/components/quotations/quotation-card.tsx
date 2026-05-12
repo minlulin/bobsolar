@@ -66,7 +66,7 @@ export function QuotationCard({
       transition={{ duration: 0.2 }}
     >
       <Card
-        className="group cursor-pointer border-white/5 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
+        className="group cursor-pointer border-white/5 bg-white/5 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_14px_34px_-18px_rgba(16,185,129,0.45)] motion-reduce:transform-none"
         onClick={() => {
           router.push(`/quotations/${quotation.id}`);
         }}

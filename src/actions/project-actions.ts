@@ -494,7 +494,12 @@ export async function getProject(
       return handleNotFoundError('Project', validatedId);
     }
 
-    const actualTotalComputed = await sumProjectCosts(validatedId);
+    const actualTotalComputed = Math.round(
+      row.costs.reduce(
+        (sum, cost) => sum + Math.round(Number(cost.amount)),
+        0,
+      ),
+    );
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
 

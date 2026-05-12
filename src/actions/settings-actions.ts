@@ -12,6 +12,11 @@ import { hashPassword } from '@/lib/auth/password';
 import { revokeAllUserSessions } from '@/lib/auth/session';
 import { COMPANY_SETTING_KEYS } from '@/lib/domain/settings-keys';
 import { USER_CAP } from '@/lib/domain/policies';
+import {
+  deleteCacheValue,
+  getOrSetCacheValue,
+  setCacheValue,
+} from '@/lib/cache';
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
@@ -41,11 +46,17 @@ export async function getCompanySettings(): Promise<
 > {
   try {
     await requireAuth();
-    const rows = await db.select().from(companySettings);
-    const map: Record<string, string> = {};
-    for (const row of rows) {
-      map[row.key] = row.value;
-    }
+    const map = await getOrSetCacheValue(
+      'settings:company',
+      z.record(z.string(), z.string()),
+      async (): Promise<Record<string, string>> => {
+        const rows = await db.select().from(companySettings);
+        const loaded: Record<string, string> = {};
+        for (const row of rows) loaded[row.key] = row.value;
+        return loaded;
+      },
+      { ttlSeconds: 600 },
+    );
     return { success: true, data: map };
   } catch (error) {
     return {
@@ -69,6 +80,8 @@ export async function setCompanyLogoUrl(
         target: companySettings.key,
         set: { value: url, updatedAt: new Date() },
       });
+    await deleteCacheValue('settings:company');
+    await deleteCacheValue('settings:branding');
 
     revalidatePath('/settings');
     revalidatePath('/', 'layout');
@@ -104,6 +117,8 @@ export async function updateCompanySettings(
           });
       }
     });
+    await deleteCacheValue('settings:company');
+    await deleteCacheValue('settings:branding');
 
     revalidatePath('/settings');
 
@@ -117,21 +132,35 @@ export async function updateCompanySettings(
 }
 
 export async function getCompanyLogoUrl(): Promise<string | null> {
-  const [row] = await db
-    .select()
-    .from(companySettings)
-    .where(eq(companySettings.key, LOGO_KEY))
-    .limit(1);
-  return row?.value ?? null;
+  const settings = await getOrSetCacheValue(
+    'settings:company',
+    z.record(z.string(), z.string()),
+    async (): Promise<Record<string, string>> => {
+      const rows = await db.select().from(companySettings);
+      const loaded: Record<string, string> = {};
+      for (const row of rows) loaded[row.key] = row.value;
+      return loaded;
+    },
+    { ttlSeconds: 600 },
+  );
+  return settings[LOGO_KEY] ?? null;
 }
 
 export async function getPublicCompanyBranding(): Promise<
   ActionResponse<{ companyName: string; logoUrl: string | null }>
 > {
   try {
-    const rows = await db.select().from(companySettings);
-    const map: Record<string, string> = {};
-    for (const row of rows) map[row.key] = row.value;
+    const map = await getOrSetCacheValue(
+      'settings:branding',
+      z.record(z.string(), z.string()),
+      async (): Promise<Record<string, string>> => {
+        const rows = await db.select().from(companySettings);
+        const loaded: Record<string, string> = {};
+        for (const row of rows) loaded[row.key] = row.value;
+        return loaded;
+      },
+      { ttlSeconds: 600 },
+    );
     return {
       success: true,
       data: {
@@ -177,6 +206,9 @@ export async function updateSettingsUser(
       .update(users)
       .set({ name: parsed.name, email: parsed.email })
       .where(eq(users.id, parsed.id));
+    await setCacheValue('settings:last-user-mutation', String(Date.now()), {
+      ttlSeconds: 300,
+    });
     revalidatePath('/settings');
     return { success: true, data: undefined };
   } catch (error) {
@@ -210,6 +242,9 @@ export async function createSettingsUser(
       name: parsed.name,
       email: parsed.email,
       passwordHash,
+    });
+    await setCacheValue('settings:last-user-mutation', String(Date.now()), {
+      ttlSeconds: 300,
     });
     revalidatePath('/settings');
     return { success: true, data: undefined };

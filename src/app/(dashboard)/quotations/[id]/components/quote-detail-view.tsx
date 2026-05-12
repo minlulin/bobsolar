@@ -45,11 +45,16 @@ export function QuoteDetailView({
 }: QuoteDetailViewProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [optimisticStatus, setOptimisticStatus] = React.useOptimistic<
+    Quotation['status'],
+    Quotation['status']
+  >(quotation.status, (_prev, next) => next);
   const loadFromQuotation = useQuoteBuilderStore(
     (state) => state.loadFromQuotation,
   );
 
   const handleStatusChange = (newStatus: Quotation['status']): void => {
+    setOptimisticStatus(newStatus);
     startTransition(async () => {
       const res = await updateQuotationStatus(quotation.id, newStatus);
       if (res.success) {
@@ -62,6 +67,7 @@ export function QuoteDetailView({
         router.refresh();
       } else {
         toast.error(res.error);
+        router.refresh();
       }
     });
   };
@@ -82,7 +88,7 @@ export function QuoteDetailView({
     handleStatusChange('draft');
   };
 
-  const status = quotation.status;
+  const status = optimisticStatus;
   const config = STATUS_CONFIG[status];
   const StatusIcon = config.icon;
 
