@@ -9,6 +9,7 @@ import {
   jsonb,
   pgEnum,
   index,
+  unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import {
@@ -346,6 +347,14 @@ export const notifications = pgTable(
       table.createdAt,
     ),
     index('notifications_dedupe_key_idx').on(table.notificationDedupeKey),
+    // DB-level dedupe guarantee. Pairs with `onConflictDoNothing()` on
+    // every notification insert so concurrent crons can't double-write.
+    // Multiple rows with NULL dedupe key remain allowed (Postgres treats
+    // NULLs as distinct in unique constraints by default).
+    unique('notifications_user_dedupe_key_unique').on(
+      table.userId,
+      table.notificationDedupeKey,
+    ),
   ],
 );
 

@@ -208,9 +208,17 @@ export async function createNotification(
       }));
       const toInsert = filterNewNotifications(candidates, existingKeys);
       if (toInsert.length > 0) {
-        await db.insert(notifications).values(toInsert);
+        const inserted = await db
+          .insert(notifications)
+          .values(toInsert)
+          .onConflictDoNothing({
+            target: [notifications.userId, notifications.notificationDedupeKey],
+          })
+          .returning({ id: notifications.id });
+        createdCount = inserted.length;
+      } else {
+        createdCount = 0;
       }
-      createdCount = toInsert.length;
     } else {
       // No deduplication - create for all users
       const values = data.userIds.map((userId) => ({
@@ -304,7 +312,12 @@ export async function runScheduledNotificationChecks(): Promise<
       const existingKeys = buildExistingNotificationMap(existingExpiring);
       const toInsert = filterNewNotifications(expiringCandidates, existingKeys);
       if (toInsert.length > 0) {
-        await db.insert(notifications).values(toInsert);
+        await db
+          .insert(notifications)
+          .values(toInsert)
+          .onConflictDoNothing({
+            target: [notifications.userId, notifications.notificationDedupeKey],
+          });
       }
     }
 
@@ -387,7 +400,12 @@ export async function runScheduledNotificationChecks(): Promise<
       const existingKeys = buildExistingNotificationMap(existingDueSoon);
       const toInsert = filterNewNotifications(dueSoonCandidates, existingKeys);
       if (toInsert.length > 0) {
-        await db.insert(notifications).values(toInsert);
+        await db
+          .insert(notifications)
+          .values(toInsert)
+          .onConflictDoNothing({
+            target: [notifications.userId, notifications.notificationDedupeKey],
+          });
       }
     }
 
@@ -412,7 +430,12 @@ export async function runScheduledNotificationChecks(): Promise<
       const existingKeys = buildExistingNotificationMap(existingOverdue);
       const toInsert = filterNewNotifications(overdueCandidates, existingKeys);
       if (toInsert.length > 0) {
-        await db.insert(notifications).values(toInsert);
+        await db
+          .insert(notifications)
+          .values(toInsert)
+          .onConflictDoNothing({
+            target: [notifications.userId, notifications.notificationDedupeKey],
+          });
       }
     }
 
