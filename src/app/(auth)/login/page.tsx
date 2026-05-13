@@ -182,7 +182,9 @@ export default function LoginPage(): React.JSX.Element {
                   />
                   <button
                     type="button"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
                     className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                     onClick={() => {
                       setShowPassword((prev) => !prev);
