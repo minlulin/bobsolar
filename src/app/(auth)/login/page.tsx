@@ -115,12 +115,12 @@ export default function LoginPage(): React.JSX.Element {
         <Card premium className="glass border-none shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="bg-solar shadow-solar relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl">
+              <div className="bg-solar shadow-solar relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl">
                 <Image
                   src={logoSrc}
                   alt={`${companyName} Logo`}
                   fill
-                  sizes="64px"
+                  sizes="96px"
                   priority
                   className="object-contain p-2"
                   unoptimized

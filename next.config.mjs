@@ -17,7 +17,7 @@ const csp = [
   "object-src 'none'",
   "form-action 'self'",
   // Next.js dev/prod ships inline runtime; allow self + inline for now.
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
   "font-src 'self' data:",

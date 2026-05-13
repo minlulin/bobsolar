@@ -61,3 +61,4 @@ NeonMCP.md
 /.codex
 /.agents
 /.husky
+.env*.local
