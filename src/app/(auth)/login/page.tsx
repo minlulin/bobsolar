@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
   const brandingQuery = useQuery({
     queryKey: ['public', 'branding'],
     queryFn: async () => {
@@ -169,13 +170,31 @@ export default function LoginPage(): React.JSX.Element {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  {...register('password')}
-                  className={errors.password ? 'border-destructive' : ''}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    {...register('password')}
+                    className={
+                      errors.password ? 'border-destructive pr-10' : 'pr-10'
+                    }
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                    onClick={() => {
+                      setShowPassword((prev) => !prev);
+                    }}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-destructive text-xs">
                     {errors.password.message}
