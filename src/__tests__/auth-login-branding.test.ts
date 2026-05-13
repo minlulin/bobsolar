@@ -12,7 +12,7 @@ vi.mock('@/lib/db', () => ({
   db: {
     query: {
       users: {
-        findFirst: vi.fn(async () => ({
+        findFirst: vi.fn(() => ({
           id: '00000000-0000-4000-8000-000000000001',
           role: 'admin',
           passwordHash:
@@ -21,14 +21,14 @@ vi.mock('@/lib/db', () => ({
         })),
       },
       authRateLimits: {
-        findFirst: vi.fn(async () => null),
+        findFirst: vi.fn(() => null),
       },
     },
     delete: vi.fn(() => ({
-      where: vi.fn(async () => []),
+      where: vi.fn(() => []),
     })),
     select: vi.fn(() => ({
-      from: vi.fn(async () => {
+      from: vi.fn(() => {
         if (queryState.shouldThrowBrandingQuery) {
           throw new Error('relation "company_settings" does not exist');
         }
@@ -39,19 +39,20 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/auth/password', () => ({
-  verifyPassword: vi.fn(async () => true),
+  verifyPassword: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock('@/lib/auth/session', () => ({
-  createSession: vi.fn(async () => {
+  createSession: vi.fn(() => {
     if (sessionState.shouldFailSessionCreation) {
       throw new Error('SESSION_SECRET is not set');
     }
+    return undefined;
   }),
   clearSessionCookies: vi.fn(),
   deleteSession: vi.fn(),
-  getSessionFromCookie: vi.fn(async () => null),
-  revokeAllUserSessions: vi.fn(async () => 0),
+  getSessionFromCookie: vi.fn(() => Promise.resolve(null)),
+  revokeAllUserSessions: vi.fn(() => Promise.resolve(0)),
 }));
 
 describe('auth and branding resilience', () => {
