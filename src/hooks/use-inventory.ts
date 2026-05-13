@@ -1,0 +1,195 @@
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryResult,
+} from '@tanstack/react-query';
+
+import {
+  getInventoryItems,
+  getInventoryItem,
+  createInventoryItem,
+  updateInventoryItem,
+  deleteInventoryItem,
+  bulkUpdatePrices,
+} from '@/actions/inventory-actions';
+import {
+  type InventoryFilter,
+  type CreateInventoryItem,
+} from '@/lib/validators/inventory';
+import { toast } from 'sonner';
+import { inventoryKeys } from '@/lib/query-keys';
+
+type ActionData<T> = T extends { data: infer D } ? D : never;
+
+type InventoryItemsData = ActionData<
+  Awaited<
+    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItems>
+  >
+>;
+
+type InventoryItemData = ActionData<
+  Awaited<
+    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItem>
+  >
+>;
+
+export function useInventoryItems(
+  filters: InventoryFilter = {},
+): UseQueryResult<InventoryItemsData> {
+  return useQuery({
+    queryKey: inventoryKeys.list(filters),
+    queryFn: async () => {
+      const res = await getInventoryItems(filters);
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useInventoryItem(
+  id: string,
+): UseQueryResult<InventoryItemData> {
+  return useQuery({
+    queryKey: inventoryKeys.detail(id),
+    queryFn: async () => {
+      const res = await getInventoryItem(id);
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useCreateInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof createInventoryItem>>,
+    Error,
+    Parameters<typeof createInventoryItem>[0]
+  >
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createInventoryItem,
+    onSuccess: async (response) => {
+      if (response.success) {
+        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+        toast.success('Item created successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to create item');
+    },
+  });
+}
+
+export function useUpdateInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof updateInventoryItem>>,
+    Error,
+    { id: string; data: Partial<CreateInventoryItem> }
+  >
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CreateInventoryItem>;
+    }) => updateInventoryItem(id, data),
+    onSuccess: async (response) => {
+      if (response.success) {
+        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+        toast.success('Item updated successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update item');
+    },
+  });
+}
+
+export function useDeleteInventoryItem(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof deleteInventoryItem>>,
+    Error,
+    string
+  >
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteInventoryItem,
+    onMutate: async (deletedId: string) => {
+      await queryClient.cancelQueries({ queryKey: inventoryKeys.all });
+      const snapshots = queryClient.getQueriesData<InventoryItemsData>({
+        queryKey: inventoryKeys.all,
+      });
+
+      snapshots.forEach(([key, previous]) => {
+        if (!previous) return;
+        queryClient.setQueryData<InventoryItemsData>(key, {
+          ...previous,
+          items: previous.items.filter((item) => item.id !== deletedId),
+          total: Math.max(0, previous.total - 1),
+        });
+      });
+
+      return { snapshots };
+    },
+    onSuccess: async (response) => {
+      if (response.success) {
+        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+        toast.success('Item deleted successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: (_error, _variables, context) => {
+      if (!context) {
+        toast.error('Failed to delete item');
+        return;
+      }
+
+      context.snapshots.forEach(([key, previous]) => {
+        queryClient.setQueryData(key, previous);
+      });
+      toast.error('Failed to delete item');
+    },
+  });
+}
+
+export function useBulkUpdatePrices(): ReturnType<
+  typeof useMutation<
+    Awaited<ReturnType<typeof bulkUpdatePrices>>,
+    Error,
+    Parameters<typeof bulkUpdatePrices>[0]
+  >
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: bulkUpdatePrices,
+    onSuccess: async (response) => {
+      if (response.success) {
+        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
+        toast.success('Prices updated successfully');
+      } else {
+        toast.error(response.error);
+      }
+    },
+    onError: () => {
+      toast.error('Failed to update prices');
+    },
+  });
+}
