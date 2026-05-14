@@ -1,6 +1,7 @@
 import './load-env-local';
 import { db } from './index';
 import { users, companySettings, warrantyAlerts } from './schema';
+import { getDatabaseUrl } from './database-url';
 import { hashPassword } from '../auth/password';
 import { COMPANY_SETTING_KEYS } from '../domain/settings-keys';
 
@@ -23,9 +24,11 @@ if (process.env['NODE_ENV'] === 'production' && !ALLOW_PROD_SEED) {
 async function seed(): Promise<void> {
   console.log('🌱 Seeding database...');
 
-  if (!process.env['DATABASE_URL']?.trim()) {
+  try {
+    getDatabaseUrl();
+  } catch {
     console.error(
-      '❌ DATABASE_URL is not set. Add your connection string to .env.local.',
+      '❌ Database connection URL is not set. Add your connection string to .env.local.',
     );
     process.exit(1);
   }

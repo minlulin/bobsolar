@@ -2,6 +2,7 @@ import { config as loadEnvFile } from 'dotenv';
 import { neonConfig, Pool } from '@neondatabase/serverless';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import ws from 'ws';
+import { getDatabaseUrl } from './database-url';
 
 type MigrationRow = {
   id: number;
@@ -13,12 +14,7 @@ async function main(): Promise<void> {
   loadEnvFile({ path: '.env.local' });
   neonConfig.webSocketConstructor = ws;
 
-  const databaseUrl = process.env['DATABASE_URL']?.trim();
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is not set in .env.local');
-  }
-
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = new Pool({ connectionString: getDatabaseUrl() });
 
   try {
     await pool.query('CREATE SCHEMA IF NOT EXISTS drizzle');

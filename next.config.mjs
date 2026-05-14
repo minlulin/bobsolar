@@ -4,8 +4,8 @@ import withBundleAnalyzerInit from '@next/bundle-analyzer';
  * Baseline security headers applied to every response.
  *
  * The CSP intentionally allows `'unsafe-inline'` for styles (Tailwind / shadcn
- * inject a few inline styles) and `'unsafe-eval'` is NOT allowed. `script-src`
- * is locked to `'self'` plus Next.js' inline bootstrap nonce path.
+ * inject a few inline styles). `unsafe-eval` is currently allowed because a
+ * shipped client chunk still evaluates dynamic code in the browser.
  *
  * Vercel Blob URLs (`*.public.blob.vercel-storage.com`) are allow-listed for
  * `img-src` because uploaded logos and assets live there.

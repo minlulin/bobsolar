@@ -1,19 +1,19 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
 import * as schema from './schema';
+import { getDatabaseUrl } from './database-url';
 
-// `neon-serverless` uses websockets in Node; ensure the websocket constructor exists.
-neonConfig.webSocketConstructor = ws;
+// Vercel runs on modern Node with a native WebSocket implementation. Using it
+// avoids bundling ws' optional native mask helpers into serverless functions.
+if (typeof WebSocket !== 'undefined') {
+  neonConfig.webSocketConstructor = WebSocket;
+}
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 export function getDb(): ReturnType<typeof drizzle<typeof schema>> {
   if (!_db) {
-    if (!process.env['DATABASE_URL']) {
-      throw new Error('DATABASE_URL is not set');
-    }
-    const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
+    const pool = new Pool({ connectionString: getDatabaseUrl() });
     _db = drizzle(pool, { schema });
   }
   return _db;
