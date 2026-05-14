@@ -7,10 +7,10 @@
 // SESSION & AUTHENTICATION
 // =============================================================================
 
-/** Session duration in milliseconds (7 days) */
-export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** Session duration in milliseconds (180 days) */
+export const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
-/** Session duration in seconds (7 days) */
+/** Session duration in seconds (180 days) */
 export const SESSION_TTL_SECONDS = SESSION_TTL_MS / 1000;
 
 // =============================================================================
