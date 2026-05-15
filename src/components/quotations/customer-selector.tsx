@@ -35,8 +35,9 @@ export function CustomerSelector({
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: response, isLoading } = useSearchCustomers(debouncedSearch);
-  const customers = response?.success ? response.data : [];
+  const { data: customersData, isLoading } =
+    useSearchCustomers(debouncedSearch);
+  const customers = customersData ?? [];
 
   const selectedCustomer = customers.find((c) => c.id === value);
 

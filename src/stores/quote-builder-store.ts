@@ -29,6 +29,7 @@ interface QuoteBuilderState {
   setCustomer: (customerId: string | null) => void;
   addItem: (inventoryItem: InventoryItem) => void;
   removeItem: (index: number) => void;
+  updateItem: (index: number, partial: Partial<QuoteBuilderItem>) => void;
   updateItemQuantity: (index: number, quantity: number) => void;
   updateItemPrice: (index: number, unitPrice: number) => void;
   updateItemDiscount: (index: number, discountPercentage: number) => void;
@@ -106,45 +107,39 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
     });
   },
 
-  updateItemQuantity: (index, quantity): void => {
+  updateItem: (index: number, partial: Partial<QuoteBuilderItem>): void => {
     set((state) => {
       const newItems = [...state.items];
       if (newItems[index]) {
-        const sanitizedQuantity = Math.max(1, Math.round(quantity));
-        newItems[index] = { ...newItems[index], quantity: sanitizedQuantity };
+        const existing = newItems[index];
+        newItems[index] = { ...existing, ...partial };
+        // If quantity is being updated, sanitize it
+        if (partial.quantity !== undefined) {
+          newItems[index] = {
+            ...newItems[index],
+            quantity: Math.max(1, Math.round(partial.quantity)),
+          };
+        }
       }
       return { items: newItems };
     });
+  },
+
+  updateItemQuantity: (index, quantity): void => {
+    const sanitizedQuantity = Math.max(1, Math.round(quantity));
+    get().updateItem(index, { quantity: sanitizedQuantity });
   },
 
   updateItemPrice: (index, unitPrice): void => {
-    set((state) => {
-      const newItems = [...state.items];
-      if (newItems[index]) {
-        newItems[index] = { ...newItems[index], unitPrice };
-      }
-      return { items: newItems };
-    });
+    get().updateItem(index, { unitPrice });
   },
 
   updateItemDiscount: (index, discountPercentage): void => {
-    set((state) => {
-      const newItems = [...state.items];
-      if (newItems[index]) {
-        newItems[index] = { ...newItems[index], discountPercentage };
-      }
-      return { items: newItems };
-    });
+    get().updateItem(index, { discountPercentage });
   },
 
   updateItemDescription: (index, description): void => {
-    set((state) => {
-      const newItems = [...state.items];
-      if (newItems[index]) {
-        newItems[index] = { ...newItems[index], description };
-      }
-      return { items: newItems };
-    });
+    get().updateItem(index, { description });
   },
 
   setItems: (items): void => {

@@ -287,7 +287,7 @@ export function QuoteDetailView({
             }
           >
             <Download className="mr-2 h-4 w-4" />
-            Download PDF
+            Print / Save PDF
           </Button>
         </div>
       </div>

@@ -40,7 +40,7 @@ export default function CustomersPage(): React.JSX.Element {
     setDialogOpen(true);
   };
 
-  const customers = response?.success ? response.data.items : [];
+  const customers = response?.items ?? [];
   const [optimisticCustomers, removeOptimisticCustomer] = useOptimistic(
     customers,
     (state: Customer[], removedId: string) =>

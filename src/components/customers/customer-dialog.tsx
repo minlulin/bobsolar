@@ -86,7 +86,7 @@ export function CustomerDialog({
         { id: customer.id, data },
         {
           onSuccess: (res) => {
-            if (res.success) {
+            if (res.success && res.data) {
               onSaved?.(res.data);
               onOpenChange(false);
             }
@@ -96,7 +96,7 @@ export function CustomerDialog({
     } else {
       createCustomer(data, {
         onSuccess: (res) => {
-          if (res.success) {
+          if (res.success && res.data) {
             onSaved?.(res.data);
             onOpenChange(false);
           }

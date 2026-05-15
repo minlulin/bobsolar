@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { getCurrentUser } from '@/lib/auth/validate';
 import { getCompanyLogoUrl } from '@/actions/settings-actions';
 import { uuidSchema } from '@/lib/validators/common';
-import { Readable } from 'stream';
+import { QuoteHtml } from '@/components/pdf/quote-html';
 
 export async function GET(
   _request: NextRequest,
@@ -45,40 +45,25 @@ export async function GET(
       {},
     );
 
-    const [{ renderToStream }, { QuoteDocument }] = await Promise.all([
-      import('@react-pdf/renderer'),
-      import('@/components/pdf/quote-document'),
-    ]);
+    // Render as HTML with print-optimized styles
+    const html = QuoteHtml({
+      quotation,
+      companyLogoUrl,
+      companySettings,
+      type: 'quotation',
+    });
 
-    // Render PDF and collect into a buffer
-    const pdfStream = (await renderToStream(
-      QuoteDocument({
-        quotation: quotation,
-        companyLogoUrl,
-        companySettings,
-      }),
-    )) as unknown as Readable;
-
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of pdfStream) {
-      chunks.push(chunk as Uint8Array);
-    }
-    const pdfBuffer = Buffer.from(Buffer.concat(chunks));
-
-    // Return PDF response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(html, {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${quotation.quoteNumber}.pdf"`,
-        'Content-Length': pdfBuffer.length.toString(),
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {
-    console.error('PDF generation error:', error);
+    console.error('Print page generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { error: 'Failed to generate print page' },
       { status: 500 },
     );
   }

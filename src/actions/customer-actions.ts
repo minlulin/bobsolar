@@ -16,6 +16,7 @@ import {
   successResponse,
   type ActionResponse,
 } from '@/lib/utils/action-response';
+import { handleActionError } from '@/lib/utils/error';
 import { uuidSchema } from '@/lib/validators/common';
 
 const deleteCustomerInputSchema = z.object({
@@ -57,8 +58,12 @@ export async function getCustomers(
     const total = totals[0]?.total ?? 0;
 
     return successResponse({ items, total });
-  } catch {
-    return errorResponse('Failed to fetch customers');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getCustomers',
+      'Failed to fetch customers',
+    );
   }
 }
 
@@ -78,8 +83,8 @@ export async function getCustomer(
     }
 
     return successResponse(item);
-  } catch {
-    return errorResponse('Failed to fetch customer');
+  } catch (error) {
+    return handleActionError(error, 'getCustomer', 'Failed to fetch customer');
   }
 }
 
@@ -106,10 +111,11 @@ export async function createCustomer(
     revalidatePath('/customers');
     return successResponse(item);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || 'Validation failed');
-    }
-    return errorResponse('Failed to create customer');
+    return handleActionError(
+      error,
+      'createCustomer',
+      'Failed to create customer',
+    );
   }
 }
 
@@ -146,10 +152,11 @@ export async function updateCustomer(
     revalidatePath('/customers');
     return successResponse(item);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || 'Validation failed');
-    }
-    return errorResponse('Failed to update customer');
+    return handleActionError(
+      error,
+      'updateCustomer',
+      'Failed to update customer',
+    );
   }
 }
 
@@ -171,8 +178,12 @@ export async function deleteCustomer(
 
     revalidatePath('/customers');
     return successResponse(null);
-  } catch {
-    return errorResponse('Failed to archive customer');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'deleteCustomer',
+      'Failed to archive customer',
+    );
   }
 }
 
@@ -194,7 +205,11 @@ export async function searchCustomers(
     });
 
     return successResponse(items);
-  } catch {
-    return errorResponse('Failed to search customers');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'searchCustomers',
+      'Failed to search customers',
+    );
   }
 }

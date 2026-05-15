@@ -57,15 +57,7 @@ const nextConfig = {
   // Prevent Next.js from bundling ws/pg native addons into serverless functions.
   // Vercel provides these at runtime; bundling causes native addon load failures
   // (e.g. 'b.mask is not a function' from bufferutil).
-  // @react-pdf/renderer v4+ is ESM-only and uses internal eval()-like rendering;
-  // bundling it causes 'ba.Component is not a constructor' / eval failures.
-  // See: https://react-pdf.org/compatibility
-  serverExternalPackages: [
-    'ws',
-    'bufferutil',
-    'utf-8-validate',
-    '@react-pdf/renderer',
-  ],
+  serverExternalPackages: ['ws', 'bufferutil', 'utf-8-validate'],
   async headers() {
     const isDev = process.env.NODE_ENV !== 'production';
     return [

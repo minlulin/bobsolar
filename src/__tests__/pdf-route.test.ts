@@ -1,23 +1,277 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// ─── Test 1: Font registration is resilient ────────────────────────────────
+// ─── Helper: create mock quotation with plain objects ──────────────────
+// (Avoids importing from @/lib/db/schema which triggers drizzle-orm side effects)
 
-describe('PDF: Font registration resilience', () => {
-  it('font registration is wrapped in try-catch to handle Vercel missing font files', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(
-      require.resolve('../../src/components/pdf/quote-document.tsx'),
-      'utf-8',
-    );
-    // The Font.register must be wrapped in try-catch so that missing font file
-    // on Vercel serverless does not crash the module import.
-    expect(src).toMatch(/try\s*\{/);
-    expect(src).toMatch(/Font\.register/);
-    expect(src).toMatch(/catch\s*\{/);
+interface MockCustomer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+  address: string | null;
+  city: string | null;
+  notes: string | null;
+  isArchived: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface MockItem {
+  id: string;
+  quotationId: string;
+  itemId: string | null;
+  description: string;
+  quantity: string;
+  discountPercentage: string;
+  unitPrice: string;
+  totalPrice: string;
+  sortOrder: number;
+}
+
+interface MockQuotation {
+  id: string;
+  quoteNumber: string;
+  customerId: string;
+  createdBy: string;
+  status: string;
+  subtotal: string;
+  discountPercent: string;
+  discountAmount: string;
+  taxPercent: string;
+  taxAmount: string;
+  total: string;
+  notes: string | null;
+  validUntil: Date | null;
+  isArchived: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  items: MockItem[];
+  customer: MockCustomer;
+}
+
+function mockCustomer(overrides: Partial<MockCustomer> = {}): MockCustomer {
+  return {
+    id: 'c-1',
+    name: 'Test Customer',
+    email: 'customer@example.com',
+    phone: '09-123456789',
+    address: '123 Test St',
+    city: 'Yangon',
+    notes: null,
+    isArchived: false,
+    archivedAt: null,
+    createdAt: new Date('2026-05-01'),
+    updatedAt: new Date('2026-05-01'),
+    ...overrides,
+  };
+}
+
+function mockItem(overrides: Partial<MockItem> = {}): MockItem {
+  return {
+    id: 'item-1',
+    quotationId: 'q-1',
+    itemId: null,
+    description: 'Solar Panel 400W',
+    quantity: '10',
+    discountPercentage: '0',
+    unitPrice: '350000',
+    totalPrice: '3500000',
+    sortOrder: 0,
+    ...overrides,
+  };
+}
+
+function mockQuotation(
+  overrides: Partial<MockQuotation> & {
+    items?: MockItem[];
+    customer?: MockCustomer;
+  } = {},
+): MockQuotation {
+  return {
+    id: '00000000-0000-4000-8000-000000000001',
+    quoteNumber: 'QT-2026-0001',
+    customerId: 'c-1',
+    createdBy: 'user-1',
+    status: 'sent',
+    subtotal: '6150000',
+    discountPercent: '5',
+    discountAmount: '307500',
+    taxPercent: '10',
+    taxAmount: '584250',
+    total: '6426750',
+    notes: 'Test notes',
+    validUntil: new Date('2026-06-01'),
+    isArchived: false,
+    archivedAt: null,
+    createdAt: new Date('2026-05-01'),
+    updatedAt: new Date('2026-05-01'),
+    items: [mockItem()],
+    customer: mockCustomer(),
+    ...overrides,
+  };
+}
+
+// ─── Test Suite 1: QuoteHtml produces valid HTML with correct content ────
+
+describe('Quotation HTML Print Template', () => {
+  it('renders full HTML document with doctype and lang attribute', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation(),
+      companyLogoUrl: null,
+      companySettings: {
+        company_name: 'BOB Solar',
+        company_address: '123 Solar St',
+      },
+    });
+
+    expect(html).toMatch(/^<!DOCTYPE html>/);
+    expect(html).toMatch(/<html lang="my">/);
+    expect(html).toMatch(/QT-2026-0001/);
+    expect(html).toMatch(/BOB Solar/);
+    expect(html).toMatch(/Test Customer/);
+    expect(html).toMatch(/Solar Panel 400W/);
+    expect(html).toMatch(/6,426,750/); // grand total formatted
+  });
+
+  it('includes A4 print styles with @page rule', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        items: [],
+        discountPercent: '0',
+        discountAmount: '0',
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+    });
+
+    expect(html).toMatch(/@page\s*\{/);
+    expect(html).toMatch(/size:\s*A4/);
+    expect(html).toMatch(/@media print/);
+    expect(html).toMatch(/no-print\s*\{/);
+    expect(html).toMatch(/\.page-break\s*\{/);
+  });
+
+  it('includes Burmese-supporting font fallback stack', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        items: [],
+        discountPercent: '0',
+        discountAmount: '0',
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+    });
+
+    // Should contain @font-face for local Inter fonts (no Google Fonts dependency)
+    expect(html).toMatch(/@font-face/);
+    expect(html).toMatch(/\/fonts\/inter-regular\.woff2/);
+    expect(html).toMatch(/\/fonts\/inter-bold\.woff2/);
+    // Should contain Burmese-capable system font fallbacks
+    expect(html).toMatch(/Padauk/);
+    expect(html).toMatch(/Noto Sans Myanmar/);
+    expect(html).toMatch(/Myanmar Text/);
+    expect(html).toMatch(/Myanmar Sangam MN/);
+  });
+
+  it('supports voucher type with correct title', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        quoteNumber: 'VC-2026-0001',
+        items: [],
+        discountPercent: '0',
+        discountAmount: '0',
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+      type: 'voucher',
+    });
+
+    expect(html).toMatch(/VOUCHER/);
+    expect(html).toMatch(/Expires On/);
+  });
+
+  it('includes Save as PDF button with window.print()', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        items: [],
+        discountPercent: '0',
+        discountAmount: '0',
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+    });
+
+    expect(html).toMatch(/window\.print\(\)/);
+    expect(html).toMatch(/Save as PDF/);
+    expect(html).toMatch(/btn-primary/);
+    expect(html).toMatch(/screen-toolbar/);
+    expect(html).toMatch(/print-area/);
+  });
+
+  it('handles discount and tax display correctly', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        discountPercent: '10',
+        discountAmount: '615000',
+        taxPercent: '5',
+        taxAmount: '276750',
+      }),
+    });
+
+    expect(html).toMatch(/Discount \(10%\)/);
+    expect(html).toMatch(/Commercial Tax \(5%\)/);
+    expect(html).toMatch(/615,000/); // formatted discount amount
+    expect(html).toMatch(/276,750/); // formatted tax amount
+  });
+
+  it('omits discount section when discount is zero', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        discountPercent: '0',
+        discountAmount: '0',
+        items: [],
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+    });
+
+    expect(html).not.toMatch(/Discount/);
+  });
+
+  it('renders company logo when URL is provided', async () => {
+    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        items: [],
+        discountPercent: '0',
+        discountAmount: '0',
+        taxPercent: '0',
+        taxAmount: '0',
+        notes: null,
+      }),
+      companyLogoUrl: 'https://example.com/logo.png',
+    });
+
+    expect(html).toMatch(/src="https:\/\/example\.com\/logo\.png/);
+    expect(html).toMatch(/company-logo/);
   });
 });
 
-// ─── Test 2: PDF route handles font/rendering errors gracefully ─────────────
+// ─── Test Suite 2: Route handler serves HTML, handles errors gracefully ──
 
 vi.mock('@/lib/auth/validate', () => ({
   getCurrentUser: vi.fn(() => Promise.resolve({ id: 'user-1', role: 'admin' })),
@@ -31,6 +285,9 @@ vi.mock('@/lib/db', () => ({
           Promise.resolve({
             id: '00000000-0000-4000-8000-000000000001',
             quoteNumber: 'QT-2026-0001',
+            customerId: 'c-1',
+            createdBy: 'user-1',
+            status: 'sent',
             subtotal: '6150000',
             discountPercent: '5',
             discountAmount: '307500',
@@ -38,25 +295,11 @@ vi.mock('@/lib/db', () => ({
             taxAmount: '584250',
             total: '6426750',
             notes: 'Test notes',
-            createdAt: new Date(),
             validUntil: new Date(),
-            items: [
-              {
-                id: 'item-1',
-                description: 'Solar Panel 400W',
-                quantity: '10',
-                unitPrice: '350000',
-                totalPrice: '3500000',
-              },
-            ],
-            customer: {
-              id: 'cust-1',
-              name: 'Test Customer',
-              phone: '09-123456789',
-              email: 'customer@example.com',
-              address: '123 Test St',
-              city: 'Yangon',
-            },
+            isArchived: false,
+            archivedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           }),
         ),
       },
@@ -76,21 +319,36 @@ vi.mock('@/actions/settings-actions', () => ({
   getCompanyLogoUrl: vi.fn(() => Promise.resolve(null)),
 }));
 
-describe('PDF: Route handler error resilience', () => {
+describe('PDF route: HTML print page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns 500 JSON with error message when renderToStream fails', async () => {
-    // Simulate renderToStream failure (e.g. font missing, stream error)
-    vi.doMock('@react-pdf/renderer', () => ({
-      renderToStream: vi.fn(() => {
-        throw new Error('PDF rendering failed: font not found');
-      }),
-    }));
+  it('returns text/html content type instead of application/pdf', async () => {
+    const fs = await import('fs');
+    const src = fs.readFileSync(
+      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
+      'utf-8',
+    );
 
-    // We can't easily test the route in isolation without a full Next.js
-    // environment, but we can verify the error handling structure exists.
+    expect(src).toMatch(/Content-Type.*text\/html/);
+    expect(src).not.toMatch(/application\/pdf/);
+  });
+
+  it('uses QuoteHtml component instead of @react-pdf/renderer', async () => {
+    const fs = await import('fs');
+    const src = fs.readFileSync(
+      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
+      'utf-8',
+    );
+
+    expect(src).toMatch(/QuoteHtml/);
+    expect(src).not.toMatch(/@react-pdf\/renderer/);
+    expect(src).not.toMatch(/renderToStream/);
+    expect(src).not.toMatch(/pdfBuffer/);
+  });
+
+  it('handles errors gracefully with catch block', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(
       require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
@@ -98,43 +356,43 @@ describe('PDF: Route handler error resilience', () => {
     );
 
     expect(src).toMatch(/catch\s*\(error\)/);
-    expect(src).toMatch(/Failed to generate PDF/);
+    expect(src).toMatch(/Failed to generate print page/);
   });
 
-  it('does NOT save PDF to Vercel Blob storage', async () => {
+  it('does NOT use Readable stream from Node.js', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(
       require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
       'utf-8',
     );
 
-    // The PDF route should NOT import from @vercel/blob
-    expect(src).not.toMatch(/@vercel\/blob/);
-    expect(src).not.toMatch(/uploadFileFromBufferOrBlob/);
-    expect(src).not.toMatch(/put\(/);
+    expect(src).not.toMatch(/import.*Readable/);
+    expect(src).not.toMatch(/for await/);
   });
 
-  it('next.config.mjs marks @react-pdf/renderer as server external package', async () => {
+  it('does NOT import from @react-pdf/renderer in html component', async () => {
+    const fs = await import('fs');
+    const componentSrc = fs.readFileSync(
+      require.resolve('../../src/components/pdf/quote-html.tsx'),
+      'utf-8',
+    );
+
+    expect(componentSrc).not.toMatch(/@react-pdf/);
+  });
+});
+
+// ─── Test Suite 3: next.config.mjs cleanup ────────────────────────────────
+
+describe('next.config.mjs cleanup', () => {
+  it('no longer lists @react-pdf/renderer in serverExternalPackages', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(
       require.resolve('../../next.config.mjs'),
       'utf-8',
     );
-    expect(src).toMatch(/@react-pdf\/renderer/);
+
+    expect(src).not.toMatch(/@react-pdf\/renderer/);
   });
 });
 
-// ─── Test 3: Stream handling is robust ─────────────────────────────────────
-
-describe('PDF: Stream handling', () => {
-  it('uses proper Node.js ReadableStream pipe instead of fragile type cast', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(
-      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
-      'utf-8',
-    );
-
-    // Should NOT cast to AsyncIterable - should use stream-to-buffer properly
-    expect(src).not.toMatch(/as AsyncIterable/);
-  });
-});
+// ─── Test Suite 4: Unused packages are confirmed absent ───────────────────

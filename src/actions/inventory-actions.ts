@@ -16,6 +16,7 @@ import {
   successResponse,
   type ActionResponse,
 } from '@/lib/utils/action-response';
+import { handleActionError } from '@/lib/utils/error';
 import { uuidSchema } from '@/lib/validators/common';
 import { deleteCacheValue } from '@/lib/cache';
 
@@ -77,8 +78,12 @@ export async function getInventoryItems(
     );
 
     return successResponse(data);
-  } catch {
-    return errorResponse('Failed to fetch inventory items');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getInventoryItems',
+      'Failed to fetch inventory items',
+    );
   }
 }
 
@@ -98,8 +103,12 @@ export async function getInventoryItem(
     }
 
     return successResponse(item);
-  } catch {
-    return errorResponse('Failed to fetch inventory item');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getInventoryItem',
+      'Failed to fetch inventory item',
+    );
   }
 }
 
@@ -128,10 +137,11 @@ export async function createInventoryItem(
     revalidatePath('/inventory');
     return successResponse(item);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || 'Validation failed');
-    }
-    return errorResponse('Failed to create inventory item');
+    return handleActionError(
+      error,
+      'createInventoryItem',
+      'Failed to create inventory item',
+    );
   }
 }
 
@@ -172,10 +182,11 @@ export async function updateInventoryItem(
     revalidatePath('/inventory');
     return successResponse(item);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || 'Validation failed');
-    }
-    return errorResponse('Failed to update inventory item');
+    return handleActionError(
+      error,
+      'updateInventoryItem',
+      'Failed to update inventory item',
+    );
   }
 }
 
@@ -195,8 +206,12 @@ export async function deleteInventoryItem(
     revalidateTag('inventory:list', 'default');
     revalidatePath('/inventory');
     return successResponse(null);
-  } catch {
-    return errorResponse('Failed to delete inventory item');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'deleteInventoryItem',
+      'Failed to delete inventory item',
+    );
   }
 }
 
@@ -232,10 +247,11 @@ export async function bulkUpdatePrices(
     revalidatePath('/inventory');
     return successResponse(null);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return errorResponse(error.issues[0]?.message || 'Validation failed');
-    }
-    return errorResponse('Failed to bulk update prices');
+    return handleActionError(
+      error,
+      'bulkUpdatePrices',
+      'Failed to bulk update prices',
+    );
   }
 }
 
@@ -261,7 +277,11 @@ export async function getInventoryCategories(): Promise<
     await requireAuth();
     const results = await getCachedInventoryCategories();
     return successResponse(results);
-  } catch {
-    return errorResponse('Failed to fetch categories');
+  } catch (error) {
+    return handleActionError(
+      error,
+      'getInventoryCategories',
+      'Failed to fetch categories',
+    );
   }
 }

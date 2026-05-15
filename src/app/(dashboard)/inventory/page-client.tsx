@@ -15,11 +15,7 @@ const InventoryDialog = dynamic(
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, PackageSearch } from 'lucide-react';
-import {
-  type InventoryItem,
-  inventoryCategoryEnum,
-  type InventoryItem as DBInventoryItem,
-} from '@/lib/db/schema';
+import { type InventoryItem, inventoryCategoryEnum } from '@/lib/db/schema';
 import { motion } from 'framer-motion';
 import { staggerContainer } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -29,6 +25,8 @@ type InventoryPageClientProps = {
   canEdit: boolean;
 };
 
+type PaginatedItems = { items: InventoryItem[]; total: number };
+
 export function InventoryPageClient({
   canEdit,
 }: InventoryPageClientProps): React.JSX.Element {
@@ -37,11 +35,13 @@ export function InventoryPageClient({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
-  const { data: response, isLoading } = useInventoryItems({
+  const { data: rawResponse, isLoading } = useInventoryItems({
     search,
-    category: category as DBInventoryItem['category'],
+    category: category as InventoryItem['category'] | undefined,
     limit: 50,
   });
+
+  const response = rawResponse as PaginatedItems | undefined;
 
   const handleEdit = (item: InventoryItem): void => {
     setEditingItem(item);
@@ -112,7 +112,7 @@ export function InventoryPageClient({
 
       {isLoading ? (
         <ListGridSkeleton count={8} />
-      ) : response?.items && response.items.length > 0 ? (
+      ) : response && response.items.length > 0 ? (
         <motion.div
           variants={staggerContainer}
           initial="initial"
@@ -135,7 +135,7 @@ export function InventoryPageClient({
           </div>
           <h3 className="text-xl font-semibold">No items found</h3>
           <p className="text-muted-foreground mt-2 max-w-xs">
-            We couldn&apos;t find any items matching your search or filters.
+            We couldn&lsquo;t find any items matching your search or filters.
           </p>
           <Button
             variant="link"

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 // ─── Test 1: next.config.mjs has serverExternalPackages for ws/pg ───────────
 
 describe('Next.js bundling configuration', () => {
-  it('next.config.mjs marks ws, pg and @react-pdf/renderer as server external packages', async () => {
+  it('next.config.mjs marks only current ws native addons as server external packages', async () => {
     const fs = await import('fs');
     const src = fs.readFileSync(
       require.resolve('../../next.config.mjs'),
@@ -13,7 +13,7 @@ describe('Next.js bundling configuration', () => {
     expect(src).toMatch(/ws/);
     expect(src).toMatch(/bufferutil/);
     expect(src).toMatch(/utf-8-validate/);
-    expect(src).toMatch(/@react-pdf\/renderer/);
+    expect(src).not.toMatch(/@react-pdf\/renderer/);
   });
 });
 

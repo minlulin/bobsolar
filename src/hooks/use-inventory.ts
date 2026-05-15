@@ -1,9 +1,4 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  type UseQueryResult,
-} from '@tanstack/react-query';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import {
   getInventoryItems,
@@ -17,26 +12,12 @@ import {
   type InventoryFilter,
   type CreateInventoryItem,
 } from '@/lib/validators/inventory';
-import { toast } from 'sonner';
 import { inventoryKeys } from '@/lib/query-keys';
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
-
-type InventoryItemsData = ActionData<
-  Awaited<
-    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItems>
-  >
->;
-
-type InventoryItemData = ActionData<
-  Awaited<
-    ReturnType<typeof import('@/actions/inventory-actions').getInventoryItem>
-  >
->;
+import { createMutationHook } from '@/hooks/mutation-factory';
 
 export function useInventoryItems(
   filters: InventoryFilter = {},
-): UseQueryResult<InventoryItemsData> {
+): UseQueryResult {
   return useQuery({
     queryKey: inventoryKeys.list(filters),
     queryFn: async () => {
@@ -48,9 +29,7 @@ export function useInventoryItems(
   });
 }
 
-export function useInventoryItem(
-  id: string,
-): UseQueryResult<InventoryItemData> {
+export function useInventoryItem(id: string): UseQueryResult {
   return useQuery({
     queryKey: inventoryKeys.detail(id),
     queryFn: async () => {
@@ -63,133 +42,32 @@ export function useInventoryItem(
   });
 }
 
-export function useCreateInventoryItem(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof createInventoryItem>>,
-    Error,
-    Parameters<typeof createInventoryItem>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useCreateInventoryItem = createMutationHook({
+  mutationFn: (data: CreateInventoryItem) => createInventoryItem(data),
+  invalidateKeys: [inventoryKeys.all],
+  successMessage: 'Item created successfully',
+  errorMessage: 'Failed to create item',
+});
 
-  return useMutation({
-    mutationFn: createInventoryItem,
-    onSuccess: async (response) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-        toast.success('Item created successfully');
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: () => {
-      toast.error('Failed to create item');
-    },
-  });
-}
+export const useUpdateInventoryItem = createMutationHook({
+  mutationFn: (args: { id: string; data: Partial<CreateInventoryItem> }) =>
+    updateInventoryItem(args.id, args.data),
+  invalidateKeys: [inventoryKeys.all],
+  successMessage: 'Item updated successfully',
+  errorMessage: 'Failed to update item',
+});
 
-export function useUpdateInventoryItem(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof updateInventoryItem>>,
-    Error,
-    { id: string; data: Partial<CreateInventoryItem> }
-  >
-> {
-  const queryClient = useQueryClient();
+export const useDeleteInventoryItem = createMutationHook({
+  mutationFn: (id: string) => deleteInventoryItem(id),
+  invalidateKeys: [inventoryKeys.all],
+  successMessage: 'Item deleted successfully',
+  errorMessage: 'Failed to delete item',
+});
 
-  return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<CreateInventoryItem>;
-    }) => updateInventoryItem(id, data),
-    onSuccess: async (response) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-        toast.success('Item updated successfully');
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: () => {
-      toast.error('Failed to update item');
-    },
-  });
-}
-
-export function useDeleteInventoryItem(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof deleteInventoryItem>>,
-    Error,
-    string
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteInventoryItem,
-    onMutate: async (deletedId: string) => {
-      await queryClient.cancelQueries({ queryKey: inventoryKeys.all });
-      const snapshots = queryClient.getQueriesData<InventoryItemsData>({
-        queryKey: inventoryKeys.all,
-      });
-
-      snapshots.forEach(([key, previous]) => {
-        if (!previous) return;
-        queryClient.setQueryData<InventoryItemsData>(key, {
-          ...previous,
-          items: previous.items.filter((item) => item.id !== deletedId),
-          total: Math.max(0, previous.total - 1),
-        });
-      });
-
-      return { snapshots };
-    },
-    onSuccess: async (response) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-        toast.success('Item deleted successfully');
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (_error, _variables, context) => {
-      if (!context) {
-        toast.error('Failed to delete item');
-        return;
-      }
-
-      context.snapshots.forEach(([key, previous]) => {
-        queryClient.setQueryData(key, previous);
-      });
-      toast.error('Failed to delete item');
-    },
-  });
-}
-
-export function useBulkUpdatePrices(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof bulkUpdatePrices>>,
-    Error,
-    Parameters<typeof bulkUpdatePrices>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: bulkUpdatePrices,
-    onSuccess: async (response) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-        toast.success('Prices updated successfully');
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: () => {
-      toast.error('Failed to update prices');
-    },
-  });
-}
+export const useBulkUpdatePrices = createMutationHook({
+  mutationFn: (items: Array<{ id: string; unitPrice: number }>) =>
+    bulkUpdatePrices(items),
+  invalidateKeys: [inventoryKeys.all],
+  successMessage: 'Prices updated successfully',
+  errorMessage: 'Failed to update prices',
+});

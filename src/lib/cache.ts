@@ -9,7 +9,7 @@ const kvEnvSchema = z.object({
 });
 
 function getKvEnv(): {
-  url: string;
+  baseUrl: string;
   token: string;
 } | null {
   const parsed = kvEnvSchema.safeParse({
@@ -18,7 +18,7 @@ function getKvEnv(): {
   });
   if (!parsed.success) return null;
   return {
-    url: parsed.data.KV_REST_API_URL.replace(/\/$/, ''),
+    baseUrl: parsed.data.KV_REST_API_URL.replace(/\/$/, ''),
     token: parsed.data.KV_REST_API_TOKEN,
   };
 }
@@ -27,11 +27,27 @@ function namespacedKey(key: string): string {
   return `${CACHE_PREFIX}:${key}`;
 }
 
+/**
+ * Build a properly encoded KV REST API URL from path segments.
+ * Uses URL constructor to avoid fragile join('/') issues.
+ */
+function buildKvUrl(baseUrl: string, ...segments: string[]): URL {
+  const url = new URL(baseUrl);
+  // Append each segment as a path component (already properly encoded)
+  for (const segment of segments) {
+    url.pathname =
+      url.pathname.replace(/\/$/, '') + '/' + encodeURIComponent(segment);
+  }
+  return url;
+}
+
 async function kvCommand<T>(command: string[]): Promise<T | null> {
   const env = getKvEnv();
   if (!env) return null;
 
-  const response = await fetch(`${env.url}/${command.join('/')}`, {
+  const kvUrl = buildKvUrl(env.baseUrl, ...command);
+
+  const response = await fetch(kvUrl, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${env.token}`,
@@ -56,10 +72,7 @@ export async function getCacheValue<T>(
   key: string,
   schema: z.ZodType<T>,
 ): Promise<T | null> {
-  const raw = await kvCommand<unknown>([
-    'get',
-    encodeURIComponent(namespacedKey(key)),
-  ]);
+  const raw = await kvCommand<unknown>(['get', namespacedKey(key)]);
   if (raw === null) return null;
   const hydrated =
     typeof raw === 'string'
@@ -86,15 +99,15 @@ export async function setCacheValue(
   const ttlSeconds = options?.ttlSeconds ?? DEFAULT_TTL_SECONDS;
   await kvCommand<unknown>([
     'set',
-    encodeURIComponent(namespacedKey(key)),
-    encodeURIComponent(JSON.stringify(value)),
+    namespacedKey(key),
+    JSON.stringify(value),
     'EX',
     String(ttlSeconds),
   ]);
 }
 
 export async function deleteCacheValue(key: string): Promise<void> {
-  await kvCommand<unknown>(['del', encodeURIComponent(namespacedKey(key))]);
+  await kvCommand<unknown>(['del', namespacedKey(key)]);
 }
 
 export async function getOrSetCacheValue<T>(

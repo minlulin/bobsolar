@@ -35,8 +35,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const { data: response, isLoading } = useCustomer(id);
-  const customer = response?.success ? response.data : null;
+  const { data: customer, isLoading } = useCustomer(id);
 
   if (isLoading) {
     return (
