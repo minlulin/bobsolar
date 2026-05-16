@@ -62,98 +62,112 @@ function QuotationConversionForm({
       },
       {
         onSuccess: (res) => {
-          if (res.success) router.replace(`/projects/${res.data.id}`);
+          if (res.success) {
+            router.replace(`/projects/${res.data.id}`);
+          }
         },
       },
     );
   }
 
-  function normalizeSystemSizeInput(value: string): string {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return '';
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed) || parsed <= 0) return '';
-    return String(parsed);
-  }
-
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-border bg-card grid gap-7 rounded-xl border px-10 py-12"
+      className="border-border bg-card mx-auto max-w-3xl rounded-2xl border p-10 shadow-lg"
     >
-      <div className="space-y-2">
-        <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.45em] uppercase">
-          Originating blueprint ·{' '}
-          <span className="text-orange-400">{quotation.quoteNumber}</span>
-        </p>
-        <h1 className="font-heading text-foreground text-3xl tracking-tighter uppercase">
-          Convert to orbital project
+      <div className="mb-10 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold tracking-widest text-emerald-500 uppercase">
+            Approved Quotation
+          </div>
+          <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+            {quotation.quoteNumber}
+          </span>
+        </div>
+        <h1 className="font-heading text-primary text-4xl font-black tracking-tighter uppercase">
+          Initialize Project
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Client ·{' '}
-          <span className="text-emerald-200">{quotation.customer.name}</span>
+        <p className="text-muted-foreground text-sm font-medium">
+          Transitioning client{' '}
+          <span className="text-primary font-bold">
+            {quotation.customer.name}
+          </span>{' '}
+          to technical planning phase.
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label>Site dossier · address narrative</Label>
-        <Textarea
-          rows={5}
-          value={siteAddress}
-          onChange={(e) => {
-            setSiteAddress(e.target.value);
-          }}
-          required
-        />
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label>System sizing · kWp (optional)</Label>
-          <Input
-            placeholder="Eg. 5.5"
-            type="number"
-            step={0.1}
-            value={systemSize}
-            onChange={(e) => {
-              setSystemSize(e.target.value);
-            }}
-            onBlur={(e) => {
-              setSystemSize(normalizeSystemSizeInput(e.target.value));
-            }}
-          />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <Label>Risk chatter / logistics overlays</Label>
+      <div className="grid gap-8">
+        <div className="space-y-3">
+          <Label className="text-primary text-[10px] font-bold tracking-widest uppercase">
+            Installation Site Address
+          </Label>
           <Textarea
-            rows={4}
-            value={notes}
+            rows={3}
+            className="border-border bg-muted/20 focus:bg-background rounded-xl transition-colors"
+            value={siteAddress}
             onChange={(e) => {
-              setNotes(e.target.value);
+              setSiteAddress(e.target.value);
             }}
+            required
+            placeholder="Confirm the exact site location for the solar infrastructure..."
           />
         </div>
-      </div>
 
-      <div className="flex flex-wrap gap-5">
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-full"
-          asChild
-        >
-          <Link href={`/quotations/${quoteId}`}>Abort</Link>
-        </Button>
-        <Button
-          className="rounded-full bg-gradient-to-r from-orange-500 to-orange-700 px-10 font-bold uppercase"
-          disabled={convertProject.isPending || !siteAddress.trim()}
-          type="submit"
-        >
-          {convertProject.isPending ? (
-            <Loader2 className="mr-3 h-4 w-4 animate-spin" />
-          ) : null}
-          Launch commissioning
-        </Button>
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="space-y-3">
+            <Label className="text-primary text-[10px] font-bold tracking-widest uppercase">
+              Target System Capacity (kWp)
+            </Label>
+            <Input
+              placeholder="E.g. 10.5"
+              type="number"
+              step={0.1}
+              className="border-border bg-muted/20 h-12 rounded-xl"
+              value={systemSize}
+              onChange={(e) => {
+                setSystemSize(e.target.value);
+              }}
+            />
+          </div>
+
+          <div className="col-span-full space-y-3">
+            <Label className="text-primary text-[10px] font-bold tracking-widest uppercase">
+              Technical Brief / Project Notes
+            </Label>
+            <Textarea
+              rows={4}
+              className="border-border bg-muted/20 focus:bg-background rounded-xl"
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+              }}
+              placeholder="Additional logistics or hardware requirements for the installation team..."
+            />
+          </div>
+        </div>
+
+        <div className="border-border flex items-center justify-end gap-4 border-t pt-6">
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-muted-foreground hover:text-primary rounded-xl px-6 font-bold"
+            onClick={() => {
+              router.back();
+            }}
+          >
+            Cancel Initialization
+          </Button>
+          <Button
+            className="bg-accent hover:bg-accent/90 shadow-accent/20 h-14 rounded-xl px-10 text-lg font-black tracking-tight text-white shadow-xl"
+            disabled={convertProject.isPending || !siteAddress.trim()}
+            type="submit"
+          >
+            {convertProject.isPending ? (
+              <Loader2 className="mr-3 h-5 w-5 animate-spin" />
+            ) : null}
+            Commence Project
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -172,16 +186,21 @@ function ConversionFlow(): React.JSX.Element | null {
 
   if (!quoteId) {
     return (
-      <div className="border-border bg-card/80 rounded-[2rem] border p-10 text-center text-sm leading-relaxed">
-        Anchor this flow from{' '}
-        <span className="text-orange-400">Convert to Project</span> on accepted
-        quotes OR append <code>?quoteId=uuid</code> when deep-linking.
+      <div className="border-border bg-card mx-auto max-w-2xl rounded-2xl border p-12 text-center shadow-sm">
+        <div className="mb-6 flex justify-center">
+          <div className="bg-muted/30 rounded-full p-4">
+            <Loader2 className="text-muted-foreground h-8 w-8 opacity-20" />
+          </div>
+        </div>
+        <p className="text-muted-foreground mb-8 text-sm leading-relaxed font-medium">
+          Project initialization must be triggered from an accepted quotation
+          detail page.
+        </p>
         <Button
           asChild
-          variant="outline"
-          className="border-border/70 mt-6 rounded-full"
+          className="bg-primary shadow-primary/20 h-12 rounded-xl px-8 font-bold text-white shadow-lg"
         >
-          <Link href="/quotations">Quotations constellation</Link>
+          <Link href="/quotations">Return to Quotations</Link>
         </Button>
       </div>
     );
@@ -189,21 +208,30 @@ function ConversionFlow(): React.JSX.Element | null {
 
   if (isFetching) {
     return (
-      <div className="flex h-[62vh] items-center justify-center">
-        <Loader2 className="text-solar h-10 w-10 animate-spin" />
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="text-accent h-12 w-12 animate-spin" />
+        <p className="text-muted-foreground text-[10px] font-bold tracking-[0.2em] uppercase">
+          Synchronizing Pipeline...
+        </p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="border-border bg-card/82 rounded-[2rem] border p-10 text-center">
-        {error instanceof Error ? error.message : 'Unable to open quote'}
-        <div className="mt-4">
-          <Button asChild variant="ghost">
-            <Link href={`/quotations/${quoteId}`}>Back to blueprint</Link>
-          </Button>
-        </div>
+      <div className="mx-auto max-w-2xl rounded-2xl border border-red-500/20 bg-red-500/5 p-10 text-center">
+        <p className="mb-4 font-bold text-red-500">
+          {error instanceof Error
+            ? error.message
+            : 'System synchronization error.'}
+        </p>
+        <Button
+          asChild
+          variant="outline"
+          className="rounded-xl border-red-500/20 hover:bg-red-500/10"
+        >
+          <Link href={`/quotations/${quoteId}`}>Return to Quotation</Link>
+        </Button>
       </div>
     );
   }
@@ -212,8 +240,19 @@ function ConversionFlow(): React.JSX.Element | null {
 
   if (quotation.status !== 'accepted') {
     return (
-      <div className="border-border bg-card/85 text-foreground rounded-[2rem] border p-10 text-center leading-relaxed">
-        This conversion gate opens after the customer signs off on acceptance.
+      <div className="border-border bg-card mx-auto max-w-2xl rounded-2xl border p-12 text-center shadow-sm">
+        <h3 className="text-primary mb-2 text-xl font-black tracking-tighter uppercase">
+          Status Restricted
+        </h3>
+        <p className="text-muted-foreground mb-8 text-sm leading-relaxed font-medium">
+          This project gate only opens once the quotation status has been
+          finalized to{' '}
+          <span className="font-bold text-emerald-500 uppercase">Accepted</span>
+          .
+        </p>
+        <Button asChild className="bg-primary rounded-xl font-bold">
+          <Link href={`/quotations/${quoteId}`}>Return to Details</Link>
+        </Button>
       </div>
     );
   }
@@ -229,11 +268,11 @@ function ConversionFlow(): React.JSX.Element | null {
 
 export default function ConvertProjectBlueprintPage(): React.JSX.Element {
   return (
-    <div className="space-y-6 pb-36">
+    <div className="container mx-auto max-w-5xl px-4 pt-12 pb-36">
       <Suspense
         fallback={
-          <div className="flex h-[62vh] items-center justify-center">
-            <Loader2 className="text-solar h-10 w-10 animate-spin" />
+          <div className="flex h-[60vh] items-center justify-center">
+            <Loader2 className="text-accent h-12 w-12 animate-spin" />
           </div>
         }
       >

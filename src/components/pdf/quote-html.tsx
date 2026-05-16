@@ -3,10 +3,7 @@ import { format } from 'date-fns';
 import {
   COMPANY_SETTING_KEYS,
   COMPANY_SETTING_DEFAULTS,
-  formatBankDetails,
 } from '@/lib/domain/settings-keys';
-
-const DEFAULT_TAGLINE = 'Powering Tomorrow with Solar Energy';
 
 interface QuoteHtmlCustomer {
   id: string;
@@ -50,7 +47,6 @@ interface QuoteHtmlProps {
 
 export function QuoteHtml({
   quotation,
-  companyLogoUrl,
   companySettings = {},
   type = 'quotation',
 }: QuoteHtmlProps): string {
@@ -68,21 +64,17 @@ export function QuoteHtml({
   const companyEmail =
     companySettings[COMPANY_SETTING_KEYS.EMAIL] ||
     COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.EMAIL];
-  const companyTaxId =
-    companySettings[COMPANY_SETTING_KEYS.TAX_ID] ||
-    COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.TAX_ID];
 
   const title = type === 'voucher' ? 'VOUCHER' : 'QUOTATION';
-  const validUntilLabel = type === 'voucher' ? 'Expires On' : 'Valid Until';
 
   const itemsHtml = items
     .map(
-      (item, index) => `
-      <tr class="${index % 2 === 0 ? 'row-even' : ''}">
-        <td class="cell cell-num">${index + 1}</td>
-        <td class="cell cell-desc">${item.description}</td>
-        <td class="cell cell-qty">${Number(item.quantity).toFixed(2)}</td>
-        <td class="cell cell-unit">MMK</td>
+      (item) => `
+      <tr class="item-row">
+        <td class="cell cell-desc">
+          <div class="item-title">${item.description}</div>
+        </td>
+        <td class="cell cell-qty">${Number(item.quantity)}</td>
         <td class="cell cell-price">${formatMMK(Number(item.unitPrice))}</td>
         <td class="cell cell-total">${formatMMK(Number(item.totalPrice))}</td>
       </tr>`,
@@ -93,7 +85,7 @@ export function QuoteHtml({
     Number(quotation.discountPercent) > 0
       ? `
           <div class="totals-row">
-            <span class="totals-label discount">Discount (${quotation.discountPercent}%)</span>
+            <span class="totals-label">Incentive Applied (${quotation.discountPercent}%)</span>
             <span class="totals-value discount">-${formatMMK(Number(quotation.discountAmount))}</span>
           </div>`
       : '';
@@ -102,8 +94,8 @@ export function QuoteHtml({
     Number(quotation.taxPercent) > 0
       ? `
           <div class="totals-row">
-            <span class="totals-label tax">Commercial Tax (${quotation.taxPercent}%)</span>
-            <span class="totals-value tax">+${formatMMK(Number(quotation.taxAmount))}</span>
+            <span class="totals-label">Commercial Tax (${quotation.taxPercent}%)</span>
+            <span class="totals-value">+${formatMMK(Number(quotation.taxAmount))}</span>
           </div>`
       : '';
 
@@ -111,520 +103,221 @@ export function QuoteHtml({
     quotation.notes && type === 'quotation'
       ? `
         <div class="notes-section">
-          <h2 class="section-title">Notes & Terms</h2>
+          <div class="notes-title">Terms & Technical Conditions</div>
           <p class="notes-content">${quotation.notes}</p>
         </div>`
       : '';
 
-  const logoHtml = companyLogoUrl
-    ? `<img src="${companyLogoUrl}" alt="${companyName}" class="company-logo" />`
-    : '';
-
   return `<!DOCTYPE html>
-<html lang="my">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${companyName} - ${title} ${quotation.quoteNumber}</title>
   <style>
-    @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/inter-regular.woff2') format('woff2');
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
+    :root {
+      --primary: #0F172A;
+      --accent: #D97706;
+      --slate: #64748B;
+      --border: #E2E8F0;
     }
-    @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/inter-semibold.woff2') format('woff2');
-      font-weight: 600;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'Inter';
-      src: url('/fonts/inter-bold.woff2') format('woff2');
-      font-weight: 700;
-      font-style: normal;
-      font-display: swap;
-    }
-
-    /* Print-optimized A4 styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body {
-      /* Font stack: Inter for Latin, then Burmese-capable fallbacks:
-         - Padauk / Noto Sans Myanmar: common on Linux/Android
-         - Myanmar Text: Windows 10+
-         - Myanmar Sangam MN: macOS/iOS
-         - Noto Sans Myanmar: Google Fonts system fallback
-      */
-      font-family: 'Inter', 'Padauk', 'Noto Sans Myanmar', 'Myanmar Text', 'Myanmar Sangam MN', sans-serif;
-      font-size: 10pt;
-      color: #121212;
-      line-height: 1.5;
+      font-family: 'Inter', -apple-system, sans-serif;
+      font-size: 11px;
+      color: var(--primary);
+      line-height: 1.6;
       -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
     }
 
-    @media print {
-      @page {
-        size: A4;
-        margin: 15mm 20mm;
-      }
-
-      body {
-        font-size: 9pt;
-      }
-
-      .no-print {
-        display: none !important;
-      }
-
-      .page-break {
-        page-break-before: always;
-      }
-
-      a {
-        text-decoration: none;
-        color: inherit;
-      }
+    @page {
+      size: A4;
+      margin: 20mm;
     }
 
-    /* Screen-only styles */
     .screen-toolbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      position: fixed; top: 0; left: 0; right: 0;
+      background: var(--primary); color: white;
+      padding: 12px 24px; display: flex; justify-content: center; gap: 15px;
       z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 12px 24px;
-      background: #121212;
-      color: #fff;
-      font-size: 14px;
     }
 
-    .screen-toolbar button {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
+    .btn {
+      padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none;
     }
-
-    .screen-toolbar button:hover {
-      opacity: 0.9;
-    }
-
-    .screen-toolbar .btn-primary {
-      background: #F59E0B;
-      color: #121212;
-    }
-
-    .screen-toolbar .btn-secondary {
-      background: #27272A;
-      color: #fff;
-    }
-
-    .screen-toolbar .btn-secondary:hover {
-      background: #3F3F46;
-    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
 
     .print-area {
-      max-width: 210mm;
-      margin: 0 auto;
-      padding: 60px 40px 80px;
+      max-width: 210mm; margin: 0 auto; padding: 60px 40px;
     }
 
     @media print {
-      .print-area {
-        padding: 0;
-        max-width: none;
-      }
+      .screen-toolbar { display: none !important; }
+      .print-area { padding: 0; }
     }
 
-    /* Header */
+    /* Header Design */
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #F59E0B;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 40px; border-bottom: 3px solid var(--primary); padding-bottom: 30px;
     }
 
-    .header-left {
-      flex: 1;
+    .brand-section { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .logo-placeholder { 
+      background: var(--primary); color: white; width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center; border-radius: 8px;
+      font-weight: 900; font-size: 14px;
     }
+    .brand-name { font-size: 22px; font-weight: 900; letter-spacing: -1px; text-transform: uppercase; color: var(--primary); }
+    
+    .company-details { font-size: 8px; color: var(--slate); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
-    .company-logo {
-      width: 72px;
-      max-height: 72px;
-      object-fit: contain;
-      margin-bottom: 10px;
+    .doc-info { text-align: right; }
+    .doc-type { font-size: 32px; font-weight: 900; color: #E2E8F0; text-transform: uppercase; line-height: 1; margin-bottom: 5px; }
+    .doc-id { font-size: 14px; font-weight: 900; color: var(--accent); }
+    .doc-date { font-size: 9px; color: var(--slate); font-weight: 700; }
+
+    /* Client Section */
+    .client-section { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+    .section-label { 
+      font-size: 8px; font-weight: 900; color: var(--accent); 
+      text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid var(--border);
+      padding-bottom: 5px; margin-bottom: 10px;
     }
+    .client-name { font-size: 16px; font-weight: 900; color: var(--primary); margin-bottom: 5px; }
+    .client-meta { font-size: 9px; color: var(--slate); font-weight: 500; }
 
-    .company-name {
-      font-size: 24px;
-      font-weight: 700;
-      color: #D97706;
-      margin-bottom: 4px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+    /* Table Design */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    th { 
+      text-align: left; padding: 12px 0; font-size: 8px; font-weight: 900; 
+      color: var(--slate); text-transform: uppercase; letter-spacing: 1px;
+      border-bottom: 2px solid var(--primary);
     }
+    td { padding: 15px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+    
+    .item-title { font-size: 11px; font-weight: 800; color: var(--primary); }
+    .cell-qty { width: 60px; text-align: center; font-weight: 700; color: var(--slate); }
+    .cell-price { width: 120px; text-align: right; font-weight: 700; color: var(--slate); }
+    .cell-total { width: 120px; text-align: right; font-weight: 900; color: var(--primary); }
 
-    .company-tagline {
-      font-size: 9px;
-      color: #71717A;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
+    /* Totals */
+    .summary-section { display: flex; justify-content: flex-end; margin-bottom: 40px; }
+    .totals-box { width: 240px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-weight: 700; }
+    .totals-label { color: var(--slate); font-size: 9px; text-transform: uppercase; }
+    .grand-total { border-top: 2px solid var(--primary); margin-top: 10px; padding-top: 10px; }
+    .grand-total-val { font-size: 20px; font-weight: 900; color: var(--primary); letter-spacing: -0.5px; }
+
+    /* Notes & Footer */
+    .notes-section { margin-top: 50px; }
+    .notes-title { font-size: 9px; font-weight: 900; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .notes-content { font-size: 9px; color: var(--slate); max-width: 400px; line-height: 1.8; }
+
+    .signature-section { 
+      display: flex; justify-content: space-between; align-items: flex-end; 
+      margin-top: 80px; padding-top: 20px;
     }
+    .sig-box { width: 180px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .sig-label { font-size: 8px; font-weight: 900; text-transform: uppercase; color: var(--primary); letter-spacing: 1px; }
 
-    .company-details {
-      font-size: 8px;
-      color: #52525B;
-      line-height: 1.5;
-    }
-
-    .header-right {
-      width: 180px;
-      text-align: right;
-    }
-
-    .doc-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: #71717A;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 4px;
-    }
-
-    .doc-number {
-      font-size: 16px;
-      font-weight: 700;
-      color: #F59E0B;
-      margin-bottom: 8px;
-    }
-
-    .doc-meta {
-      font-size: 8px;
-      color: #71717A;
-      line-height: 1.6;
-    }
-
-    /* Customer section */
-    .section-title {
-      font-size: 9px;
-      font-weight: 700;
-      color: #D97706;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-    }
-
-    .customer-section {
-      margin-bottom: 25px;
-    }
-
-    .customer-box {
-      background: #FAFAFA;
-      padding: 15px;
-      border-left: 3px solid #F59E0B;
-      border-radius: 4px;
-    }
-
-    .customer-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #121212;
-      margin-bottom: 6px;
-    }
-
-    .customer-detail {
-      font-size: 9px;
-      color: #52525B;
-      line-height: 1.5;
-    }
-
-    /* Items table */
-    .table-container {
-      margin-bottom: 20px;
-    }
-
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .table thead th {
-      background: #121212;
-      color: #fff;
-      padding: 8px 10px;
-      font-size: 8px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-align: left;
-    }
-
-    .table thead th:first-child {
-      border-top-left-radius: 4px;
-    }
-
-    .table thead th:last-child {
-      border-top-right-radius: 4px;
-    }
-
-    .table tbody tr {
-      border-bottom: 1px solid #E4E4E7;
-    }
-
-    .row-even {
-      background: #FAFAFA;
-    }
-
-    .cell {
-      padding: 10px;
-      font-size: 9px;
-      color: #121212;
-      vertical-align: top;
-    }
-
-    .cell-num {
-      width: 30px;
-      text-align: center;
-    }
-
-    .cell-desc {
-      width: auto;
-    }
-
-    .cell-qty {
-      width: 50px;
-      text-align: right;
-    }
-
-    .cell-unit {
-      width: 50px;
-      text-align: right;
-    }
-
-    .cell-price {
-      width: 80px;
-      text-align: right;
-    }
-
-    .cell-total {
-      width: 80px;
-      text-align: right;
-    }
-
-    /* Totals section */
-    .totals-section {
-      margin-top: 10px;
-      margin-left: auto;
-      width: 250px;
-    }
-
-    .totals-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-    }
-
-    .totals-label {
-      font-size: 9px;
-      color: #52525B;
-    }
-
-    .totals-value {
-      font-size: 9px;
-      color: #121212;
-      text-align: right;
-    }
-
-    .totals-label.discount,
-    .totals-value.discount {
-      color: #6366F1;
-    }
-
-    .totals-label.tax,
-    .totals-value.tax {
-      color: #10B981;
-    }
-
-    .totals-divider {
-      border-top: 1px solid #D4D4D8;
-      margin-top: 8px;
-      padding-top: 8px;
-      margin-bottom: 4px;
-    }
-
-    .grand-total-label {
-      font-size: 10px;
-      font-weight: 700;
-      color: #D97706;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .grand-total-value {
-      font-size: 14px;
-      font-weight: 700;
-      color: #D97706;
-      text-align: right;
-    }
-
-    /* Notes section */
-    .notes-section {
-      margin-top: 30px;
-      padding-top: 15px;
-      border-top: 1px solid #E4E4E7;
-    }
-
-    .notes-content {
-      font-size: 8px;
-      color: #52525B;
-      line-height: 1.6;
-    }
-
-    /* Footer */
-    .footer {
-      margin-top: 40px;
-      padding-top: 15px;
-      border-top: 1px solid #E4E4E7;
-      text-align: center;
-    }
-
-    .footer-text {
-      font-size: 8px;
-      color: #A1A1AA;
-    }
-
-    .bank-details {
-      margin-top: 8px;
-      font-size: 7px;
-      color: #71717A;
-    }
-
-    .thank-you {
-      margin-top: 10px;
-      font-size: 10px;
-      font-weight: 700;
-      color: #F59E0B;
-      letter-spacing: 1px;
+    .footer { 
+      margin-top: 60px; text-align: center; border-top: 1px solid var(--border); 
+      padding-top: 20px; font-size: 8px; color: var(--slate); font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <!-- Screen toolbar - hidden when printing -->
-  <div class="screen-toolbar no-print">
-    <span>${title} — ${quotation.quoteNumber}</span>
-    <button class="btn-primary" onclick="window.print()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-        <rect x="6" y="14" width="12" height="8"></rect>
-      </svg>
-      Save as PDF / Print
-    </button>
-    <button class="btn-secondary" onclick="window.close()">
-      Close
-    </button>
+  <div class="screen-toolbar">
+    <span style="font-weight: 900; opacity: 0.6; letter-spacing: 1px;">PREVIEW MODE</span>
+    <button class="btn btn-primary" onclick="window.print()">PRINT DOCUMENT</button>
+    <button class="btn btn-secondary" onclick="window.close()">CLOSE WINDOW</button>
   </div>
 
-  <!-- Main print content -->
   <div class="print-area">
-    <!-- Header -->
     <div class="header">
-      <div class="header-left">
-        ${logoHtml}
-        <div class="company-name">${companyName}</div>
-        <div class="company-tagline">${DEFAULT_TAGLINE}</div>
+      <div>
+        <div class="brand-section">
+          <div class="logo-placeholder">BS</div>
+          <span class="brand-name">${companyName}</span>
+        </div>
         <div class="company-details">
-          ${companyAddress}<br />
-          Phone: ${companyPhone} | Email: ${companyEmail}<br />
-          Tax ID: ${companyTaxId}
+          Infrastructure Division • Solar Energy Solutions<br/>
+          ${companyAddress}<br/>
+          ${companyPhone} • ${companyEmail}
         </div>
       </div>
-      <div class="header-right">
-        <div class="doc-title">${title}</div>
-        <div class="doc-number">${quotation.quoteNumber}</div>
-        <div class="doc-meta">
-          Date: ${format(new Date(quotation.createdAt), 'MMM dd, yyyy')}${quotation.validUntil ? `<br />${validUntilLabel}: ${format(new Date(quotation.validUntil), 'MMM dd, yyyy')}` : ''}
+      <div class="doc-info">
+        <div class="doc-type">${title}</div>
+        <div class="doc-id">${quotation.quoteNumber}</div>
+        <div class="doc-date">${format(new Date(quotation.createdAt), 'MMMM dd, yyyy')}</div>
+      </div>
+    </div>
+
+    <div class="client-section">
+      <div>
+        <div class="section-label">Prepared For</div>
+        <div class="client-name">${customer.name}</div>
+        <div class="client-meta">
+          ${customer.phone} ${customer.email ? `• ${customer.email}` : ''}<br/>
+          ${customer.address}${customer.city ? `, ${customer.city}` : ''}
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Validity & Terms</div>
+        <div class="client-meta">
+          <strong>Valid Until:</strong> ${quotation.validUntil ? format(new Date(quotation.validUntil), 'MMM dd, yyyy') : 'N/A'}<br/>
+          <strong>Project Ref:</strong> ${quotation.quoteNumber}<br/>
+          <strong>Currency:</strong> Myanmar Kyat (MMK)
         </div>
       </div>
     </div>
 
-    <!-- Customer Section -->
-    <div class="customer-section">
-      <h2 class="section-title">Bill To</h2>
-      <div class="customer-box">
-        <div class="customer-name">${customer.name}</div>
-        <div class="customer-detail">
-          ${customer.phone}${customer.email ? ` | ${customer.email}` : ''}${customer.address ? `<br />${customer.address}${customer.city ? `, ${customer.city}` : ''}` : ''}
+    <table>
+      <thead>
+        <tr>
+          <th>Component Description</th>
+          <th style="text-align:center">Qty</th>
+          <th style="text-align:right">Unit Price</th>
+          <th style="text-align:right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+    </table>
+
+    <div class="summary-section">
+      <div class="totals-box">
+        <div class="totals-row">
+          <span class="totals-label">Subtotal</span>
+          <span>${formatMMK(Number(quotation.subtotal))}</span>
+        </div>
+        ${discountHtml}
+        ${taxHtml}
+        <div class="totals-row grand-total">
+          <span class="totals-label" style="color:var(--primary)">Project Total</span>
+          <span class="grand-total-val">${formatMMK(Number(quotation.total))}</span>
         </div>
       </div>
     </div>
 
-    <!-- Items Table -->
-    <div class="table-container">
-      <table class="table">
-        <thead>
-          <tr>
-            <th class="cell-num">#</th>
-            <th class="cell-desc">Description</th>
-            <th class="cell-qty">Qty</th>
-            <th class="cell-unit">Cur.</th>
-            <th class="cell-price">Unit Price</th>
-            <th class="cell-total">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Totals Section -->
-    <div class="totals-section">
-      <div class="totals-row">
-        <span class="totals-label">Subtotal</span>
-        <span class="totals-value">${formatMMK(Number(quotation.subtotal))}</span>
-      </div>
-      ${discountHtml}
-      ${taxHtml}
-      <div class="totals-row totals-divider">
-        <span class="grand-total-label">Grand Total</span>
-        <span class="grand-total-value">${formatMMK(Number(quotation.total))}</span>
-      </div>
-    </div>
-
-    <!-- Notes Section -->
     ${notesHtml}
 
-    <!-- Footer -->
+    <div class="signature-section">
+      <div class="sig-box">
+        <div class="sig-label">Customer Acceptance</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-label">Authorized Signatory</div>
+      </div>
+    </div>
+
     <div class="footer">
-      <p class="footer-text">
-        All prices are in Myanmar Kyat (MMK). Payment due within 30 days of invoice date.
-      </p>
-      <p class="bank-details">${formatBankDetails(companySettings)}</p>
-      <p class="thank-you">Thank you for choosing ${companyName}</p>
+      This document is a formal proposal. All hardware specifications are subject to final site survey.<br/>
+      Generated by BOB Solar Infrastructure System • Yangon, Myanmar
     </div>
   </div>
 </body>

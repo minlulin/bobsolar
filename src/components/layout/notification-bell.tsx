@@ -2,15 +2,20 @@
 
 import * as React from 'react';
 import { motion } from 'motion/react';
-import { Bell, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
+import {
+  Bell,
+  Loader2,
+  Info,
+  AlertTriangle,
+  PlayCircle,
+  Plus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useNotifications,
@@ -33,7 +38,7 @@ function isSafeInternalLink(link: string): boolean {
 }
 
 export function NotificationBell(): React.JSX.Element {
-  const { data: notifications, isLoading } = useNotifications();
+  const { data: notifications, isPending } = useNotifications();
   const unreadQuery = useUnreadCount();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
@@ -75,8 +80,8 @@ export function NotificationBell(): React.JSX.Element {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
@@ -95,33 +100,33 @@ export function NotificationBell(): React.JSX.Element {
             </span>
           )}
         </Button>
-      </SheetTrigger>
-      <SheetContent className="bg-card border-border flex w-full flex-col sm:max-w-md">
-        <SheetHeader className="border-border/70 border-b pb-4">
-          <div className="flex items-center justify-between">
-            <SheetTitle>Notifications</SheetTitle>
-            {unreadCount > 0 && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    markAllAsRead.mutate();
-                  }}
-                  disabled={markAllAsRead.isPending}
-                  className="text-muted-foreground hover:text-foreground h-8 text-xs"
-                >
-                  {markAllAsRead.isPending && (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  )}
-                  Mark all as read
-                </Button>
-              </div>
-            )}
-          </div>
-        </SheetHeader>
-        <ScrollArea className="-mx-6 flex-1 px-6">
-          {isLoading ? (
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        className="bg-card border-border flex w-80 flex-col p-0 sm:w-96"
+      >
+        <div className="border-border/70 flex items-center justify-between border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Notifications</h2>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                markAllAsRead.mutate();
+              }}
+              disabled={markAllAsRead.isPending}
+              className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs"
+            >
+              {markAllAsRead.isPending && (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              )}
+              Mark all
+            </Button>
+          )}
+        </div>
+        <ScrollArea className="h-[400px]">
+          {isPending ? (
             <div className="flex h-32 items-center justify-center">
               <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
             </div>
@@ -131,7 +136,7 @@ export function NotificationBell(): React.JSX.Element {
               <p className="text-muted-foreground text-sm">No notifications</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2 py-4">
+            <div className="flex flex-col gap-1 p-2">
               {notifications?.map((notification) => (
                 <motion.div
                   key={notification.id}
@@ -142,27 +147,27 @@ export function NotificationBell(): React.JSX.Element {
                     handleNotificationClick(notification);
                   }}
                   className={cn(
-                    'hover:bg-muted/55 relative flex cursor-pointer gap-4 rounded-xl border p-4 transition-colors',
+                    'hover:bg-muted/50 relative flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors',
                     notification.isRead
                       ? 'border-transparent bg-transparent'
-                      : 'border-border/70 bg-muted/35',
+                      : 'border-border/50 bg-muted/20',
                   )}
                 >
-                  <div className="mt-1">
+                  <div className="mt-0.5 shrink-0">
                     {notification.type === 'info' && (
-                      <Info className="h-5 w-5 text-blue-500" />
+                      <Info className="h-4 w-4 text-blue-500" />
                     )}
                     {notification.type === 'warning' && (
-                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
                     )}
                     {notification.type === 'action' && (
-                      <PlayCircle className="h-5 w-5 text-emerald-500" />
+                      <PlayCircle className="h-4 w-4 text-emerald-500" />
                     )}
                   </div>
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-0.5">
                     <p
                       className={cn(
-                        'text-sm font-medium',
+                        'text-xs leading-none font-semibold',
                         notification.isRead
                           ? 'text-muted-foreground'
                           : 'text-foreground',
@@ -170,45 +175,47 @@ export function NotificationBell(): React.JSX.Element {
                     >
                       {notification.title}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
                       {notification.message}
                     </p>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground/70 text-[10px]">
                       {formatDistanceToNow(new Date(notification.createdAt), {
                         addSuffix: true,
                       })}
                     </p>
                   </div>
-                  {!notification.isRead && (
-                    <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-500" />
-                  )}
                   <button
                     type="button"
                     aria-label={`Remove notification: ${notification.title}`}
-                    className="text-muted-foreground hover:text-foreground absolute right-3 bottom-2 text-[10px]"
+                    className="text-muted-foreground/50 hover:text-foreground absolute top-2 right-2 p-1 transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteOne.mutate(notification.id);
                     }}
                   >
-                    Remove
+                    <span className="sr-only">Remove</span>
+                    <Plus className="h-3 w-3 rotate-45" />
                   </button>
                 </motion.div>
               ))}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground mt-2"
-                onClick={() => {
-                  markAllAsRead.mutate();
-                }}
-              >
-                Clear all
-              </Button>
             </div>
           )}
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+        {notifications && notifications.length > 0 && (
+          <div className="border-border/70 border-t p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground h-8 w-full text-xs"
+              onClick={() => {
+                markAllAsRead.mutate();
+              }}
+            >
+              Clear all notifications
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

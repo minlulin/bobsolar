@@ -43,7 +43,7 @@ export function CustomerSelector(): React.JSX.Element {
   );
   const setCustomer = useQuoteBuilderStore((state) => state.setCustomer);
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isPending } = useQuery({
     queryKey: ['customers', 'search', debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch && !selectedCustomerId) return [];
@@ -102,7 +102,7 @@ export function CustomerSelector(): React.JSX.Element {
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading
+                {isPending
                   ? 'Searching...'
                   : 'No customer found. Add one, then come back and select.'}
               </CommandEmpty>

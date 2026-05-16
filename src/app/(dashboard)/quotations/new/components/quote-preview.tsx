@@ -6,7 +6,7 @@ import { formatMMK } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { getCustomer } from '@/actions/customer-actions';
 import { format } from 'date-fns';
-import { FileText, Zap, MapPin, Phone } from 'lucide-react';
+import { FileText, MapPin, Phone } from 'lucide-react';
 
 export function QuotePreview(): React.JSX.Element {
   const {
@@ -29,98 +29,123 @@ export function QuotePreview(): React.JSX.Element {
 
   return (
     <div className="sticky top-8 h-fit">
-      <div className="mb-4 flex items-center gap-2 px-2">
-        <FileText className="h-4 w-4 text-amber-500" />
-        <h3 className="text-muted-foreground text-sm font-bold tracking-wider uppercase">
-          Live Preview
-        </h3>
+      <div className="mb-4 flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <FileText className="text-primary h-4 w-4" />
+          <h3 className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
+            Document Preview
+          </h3>
+        </div>
+        <div className="bg-primary/5 text-primary rounded-full px-2 py-0.5 text-[8px] font-bold uppercase">
+          Drafting Mode
+        </div>
       </div>
 
-      <div className="flex aspect-[1/1.414] w-full flex-col overflow-hidden rounded-lg bg-white p-8 text-[10px] text-zinc-950 shadow-2xl shadow-amber-500/5">
-        {/* Company Header */}
-        <div className="mb-6 flex items-start justify-between border-b-2 border-amber-500 pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-amber-600">
-              <Zap className="h-5 w-5 fill-current" />
-              <span className="text-xl font-black tracking-tighter uppercase italic">
+      <div className="border-border/40 flex aspect-[1/1.414] w-full flex-col overflow-hidden rounded-2xl bg-white p-10 text-[10px] text-zinc-950 shadow-2xl ring-1 ring-zinc-200/50">
+        {/* Document Branding */}
+        <div className="mb-8 flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <div className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg">
+                <span className="text-xs font-black text-white">BS</span>
+              </div>
+              <span className="text-primary text-lg font-black tracking-tighter uppercase">
                 BOB Solar
               </span>
             </div>
-            <p className="text-muted-foreground leading-tight">
-              Premium Solar Solutions
+            <p className="text-muted-foreground text-[8px] leading-relaxed font-medium tracking-tighter uppercase">
+              Energy Infrastructure & Installation
               <br />
-              Yangon, Myanmar
+              Premium Service Division
             </p>
           </div>
           <div className="space-y-1 text-right">
-            <h2 className="text-2xl font-black text-zinc-300 uppercase">
+            <h2 className="text-3xl font-black tracking-tighter text-zinc-200 uppercase">
               Quotation
             </h2>
-            <p className="font-bold">QT-2026-XXXX</p>
-            <p className="text-muted-foreground">
-              {format(new Date(), 'MMM dd, yyyy')}
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <p className="text-primary font-bold">QT-2026-####</p>
+              <p className="text-muted-foreground font-medium">
+                {format(new Date(), 'MMMM dd, yyyy')}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="mb-8 grid grid-cols-2 gap-8">
-          <div className="space-y-1.5">
-            <h4 className="mb-1 border-b border-amber-100 pb-0.5 text-[8px] font-bold text-amber-600 uppercase">
-              Client
+        {/* Client & Metadata */}
+        <div className="mb-10 grid grid-cols-2 gap-12">
+          <div className="space-y-3">
+            <h4 className="border-primary/20 text-primary border-b pb-1 text-[7px] font-bold tracking-widest uppercase">
+              Project For
             </h4>
-            <p className="text-sm font-bold">{customer?.name || '---'}</p>
-            <div className="text-muted-foreground flex items-center gap-1">
-              <Phone className="h-2.5 w-2.5" />
-              <span>{customer?.phone || '---'}</span>
-            </div>
-            <div className="text-muted-foreground flex items-start gap-1">
-              <MapPin className="mt-0.5 h-2.5 w-2.5" />
-              <span>
-                {customer?.address
-                  ? `${customer.address}, ${customer.city}`
-                  : '---'}
-              </span>
+            <div className="space-y-1">
+              <p className="text-primary text-sm font-black">
+                {customer?.name || '---'}
+              </p>
+              <div className="text-muted-foreground flex items-center gap-1.5 font-medium">
+                <Phone className="text-accent h-2.5 w-2.5" />
+                <span>{customer?.phone || '---'}</span>
+              </div>
+              <div className="text-muted-foreground flex items-start gap-1.5 font-medium">
+                <MapPin className="text-accent mt-0.5 h-2.5 w-2.5" />
+                <span className="max-w-[150px]">
+                  {customer?.address
+                    ? `${customer.address}, ${customer.city}`
+                    : '---'}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-1.5 text-right">
-            <h4 className="mb-1 border-b border-amber-100 pb-0.5 text-right text-[8px] font-bold text-amber-600 uppercase">
-              Validity
+          <div className="space-y-3 text-right">
+            <h4 className="border-primary/20 text-primary border-b pb-1 text-right text-[7px] font-bold tracking-widest uppercase">
+              Terms
             </h4>
-            <p className="font-bold">Valid Until</p>
-            <p>{validUntil ? format(validUntil, 'MMM dd, yyyy') : '---'}</p>
+            <div className="space-y-1">
+              <p className="text-[9px] font-bold uppercase">Validity Period</p>
+              <p className="text-muted-foreground font-medium">
+                Valid Until{' '}
+                {validUntil ? format(validUntil, 'MMM dd, yyyy') : '---'}
+              </p>
+              <div className="bg-accent/10 text-accent mt-2 inline-block px-2 py-0.5 text-[7px] font-bold uppercase">
+                Solar Infrastructure Proposal
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="min-h-0 flex-1 overflow-auto pr-1">
+        {/* Line Items */}
+        <div className="min-h-0 flex-1 overflow-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-zinc-200">
-                <th className="text-muted-foreground py-2 text-left text-[8px] font-bold uppercase">
+              <tr className="border-primary/10 border-b-2">
+                <th className="text-muted-foreground py-3 text-left text-[7px] font-bold tracking-widest uppercase">
                   Description
                 </th>
-                <th className="text-muted-foreground py-2 text-center text-[8px] font-bold uppercase">
+                <th className="text-muted-foreground py-3 text-center text-[7px] font-bold tracking-widest uppercase">
                   Qty
                 </th>
-                <th className="text-muted-foreground py-2 text-right text-[8px] font-bold uppercase">
-                  Price
+                <th className="text-muted-foreground py-3 text-right text-[7px] font-bold tracking-widest uppercase">
+                  Unit Price
                 </th>
-                <th className="text-muted-foreground py-2 text-right text-[8px] font-bold uppercase">
-                  Total
+                <th className="text-muted-foreground py-3 text-right text-[7px] font-bold tracking-widest uppercase">
+                  Amount
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {items.map((item, i) => (
                 <tr key={item.id ?? item.itemId ?? `${item.description}-${i}`}>
-                  <td className="py-2.5 font-medium">{item.description}</td>
-                  <td className="py-2.5 text-center">{item.quantity}</td>
-                  <td className="py-2.5 text-right">
+                  <td className="text-primary py-4 font-bold">
+                    {item.description}
+                  </td>
+                  <td className="py-4 text-center font-medium text-zinc-500">
+                    {item.quantity}
+                  </td>
+                  <td className="py-4 text-right font-medium text-zinc-500">
                     {formatMMK(item.unitPrice)}
                   </td>
-                  <td className="py-2.5 text-right font-bold">
+                  <td className="text-primary py-4 text-right font-black">
                     {formatMMK(item.quantity * item.unitPrice)}
                   </td>
                 </tr>
@@ -129,9 +154,9 @@ export function QuotePreview(): React.JSX.Element {
                 <tr>
                   <td
                     colSpan={4}
-                    className="py-12 text-center text-zinc-300 italic"
+                    className="py-16 text-center font-medium text-zinc-300 italic"
                   >
-                    No items added to quotation
+                    Select inventory items to generate proposal lines
                   </td>
                 </tr>
               )}
@@ -139,19 +164,21 @@ export function QuotePreview(): React.JSX.Element {
           </table>
         </div>
 
-        {/* Totals */}
-        <div className="mt-8 flex justify-end border-t-2 border-zinc-950 pt-4">
-          <div className="w-48 space-y-2">
+        {/* Financial Summary */}
+        <div className="mt-10 flex justify-end">
+          <div className="w-56 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-[8px] font-bold uppercase">
+              <span className="text-muted-foreground text-[7px] font-bold tracking-widest uppercase">
                 Subtotal
               </span>
-              <span className="font-bold">{formatMMK(totals.subtotal)}</span>
+              <span className="text-primary font-bold">
+                {formatMMK(totals.subtotal)}
+              </span>
             </div>
             {totals.discountAmount > 0 && (
               <div className="flex items-center justify-between text-red-600">
-                <span className="text-[8px] font-bold uppercase">
-                  Discount ({discountPercent}%)
+                <span className="text-[7px] font-bold tracking-widest uppercase">
+                  Incentive ({discountPercent}%)
                 </span>
                 <span className="font-bold">
                   -{formatMMK(totals.discountAmount)}
@@ -160,38 +187,46 @@ export function QuotePreview(): React.JSX.Element {
             )}
             {totals.taxAmount > 0 && (
               <div className="flex items-center justify-between text-blue-600">
-                <span className="text-[8px] font-bold uppercase">
-                  Tax ({taxPercent}%)
+                <span className="text-[7px] font-bold tracking-widest uppercase">
+                  Taxation ({taxPercent}%)
                 </span>
                 <span className="font-bold">
                   +{formatMMK(totals.taxAmount)}
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between border-t border-zinc-200 pt-2">
-              <span className="text-[10px] font-black text-amber-600 uppercase">
-                Grand Total
-              </span>
-              <span className="text-lg font-black text-zinc-950">
-                {formatMMK(totals.total)}
-              </span>
+            <div className="border-primary border-t-2 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-primary text-[9px] font-black tracking-tighter uppercase">
+                  Proposal Total
+                </span>
+                <span className="text-primary text-xl font-black tracking-tighter">
+                  {formatMMK(totals.total)}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-1 text-right text-[6px] font-medium tracking-tight uppercase">
+                All prices in Myanmar Kyat (MMK)
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-muted-foreground mt-auto flex items-end justify-between border-t border-zinc-100 pt-8 text-[7px]">
-          <div className="space-y-1">
-            <p className="text-[8px] font-bold text-zinc-950 uppercase">
-              Notes & Terms
+        {/* Terms & Signature */}
+        <div className="mt-auto flex items-end justify-between border-t border-zinc-100 pt-10">
+          <div className="space-y-2">
+            <p className="text-primary text-[8px] font-black tracking-widest uppercase">
+              Terms & Conditions
             </p>
-            <p className="max-w-[200px] whitespace-pre-wrap">
-              {notes || 'Thank you for your business.'}
+            <p className="text-muted-foreground max-w-[280px] text-[7px] leading-relaxed font-medium">
+              {notes ||
+                'This quotation is subject to technical site survey. Hardware availability is confirmed upon acceptance. 50% downpayment required for project initiation.'}
             </p>
           </div>
-          <div className="text-right">
-            <p className="font-bold text-zinc-950 uppercase">Approved By</p>
-            <div className="mt-1 ml-auto h-8 w-24 border-b border-zinc-200"></div>
+          <div className="space-y-4 text-right">
+            <div className="border-primary/20 ml-auto h-12 w-32 border-b-2"></div>
+            <p className="text-primary text-[8px] font-black tracking-widest uppercase">
+              Authorized Signature
+            </p>
           </div>
         </div>
       </div>

@@ -9,9 +9,19 @@ import {
 } from '@/actions/customer-actions';
 import type { CustomerFilter, CreateCustomer } from '@/lib/validators/customer';
 import { createMutationHook } from '@/hooks/mutation-factory';
-import type { Customer } from '@/lib/db/schema';
+import type { Customer, Quotation, Project } from '@/lib/db/schema';
 
 type PaginatedCustomers = { items: Customer[]; total: number };
+
+export type CustomerWithHistory = Customer & {
+  quotations: (Quotation & {
+    createdBy: { name: string };
+  })[];
+  projects: (Project & {
+    quotation: { quoteNumber: string } | null;
+    costs: { amount: string }[];
+  })[];
+};
 
 export function useCustomers(
   filters: CustomerFilter = {},
@@ -27,8 +37,8 @@ export function useCustomers(
   });
 }
 
-export function useCustomer(id: string): UseQueryResult<Customer> {
-  return useQuery<Customer>({
+export function useCustomer(id: string): UseQueryResult<CustomerWithHistory> {
+  return useQuery<CustomerWithHistory>({
     queryKey: ['customers', id],
     queryFn: async () => {
       const res = await getCustomer(id);

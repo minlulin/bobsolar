@@ -98,9 +98,9 @@ function NavIcon({
       </TooltipTrigger>
       <TooltipContent
         sideOffset={16}
-        className="premium-glass text-foreground border-border/70 shadow-xl"
+        className="premium-glass border-border/70 text-foreground px-4 py-2 shadow-2xl"
       >
-        <p className="text-sm font-medium">{item.name}</p>
+        <p className="text-xs font-bold tracking-wide uppercase">{item.name}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -118,7 +118,7 @@ export function NavOrbit(): React.JSX.Element {
           <motion.div
             className={cn(
               'flex items-end gap-3 rounded-2xl px-4 py-3',
-              'premium-glass',
+              'premium-glass border border-white/10 shadow-2xl',
               // Add a subtle reflection beneath the dock
               'after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-white/5 after:blur-md',
             )}

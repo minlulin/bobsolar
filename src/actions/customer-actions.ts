@@ -1,7 +1,12 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { customers, type Customer } from '@/lib/db/schema';
+import {
+  customers,
+  type Customer,
+  type Quotation,
+  type Project,
+} from '@/lib/db/schema';
 import {
   createCustomerSchema,
   updateCustomerSchema,
@@ -22,6 +27,16 @@ import { uuidSchema } from '@/lib/validators/common';
 const deleteCustomerInputSchema = z.object({
   id: uuidSchema,
 });
+
+type CustomerWithHistory = Customer & {
+  quotations: (Quotation & {
+    createdBy: { name: string };
+  })[];
+  projects: (Project & {
+    quotation: { quoteNumber: string } | null;
+    costs: { amount: string }[];
+  })[];
+};
 
 export async function getCustomers(
   rawFilters: unknown = {},
@@ -69,13 +84,34 @@ export async function getCustomers(
 
 export async function getCustomer(
   id: string,
-): Promise<ActionResponse<Customer>> {
+): Promise<ActionResponse<CustomerWithHistory>> {
   try {
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
     const item = await db.query.customers.findFirst({
       where: eq(customers.id, validatedId),
+      with: {
+        quotations: {
+          orderBy: (q, { desc }) => [desc(q.createdAt)],
+          with: {
+            createdBy: {
+              columns: { name: true },
+            },
+          },
+        },
+        projects: {
+          orderBy: (p, { desc }) => [desc(p.createdAt)],
+          with: {
+            quotation: {
+              columns: { quoteNumber: true },
+            },
+            costs: {
+              columns: { amount: true },
+            },
+          },
+        },
+      },
     });
 
     if (!item) {

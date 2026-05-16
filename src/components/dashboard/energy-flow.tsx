@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import * as React from 'react';
+import { motion } from 'motion/react';
 
 type PipelineStage = {
   key: 'customers' | 'quotations' | 'projects' | 'completed';
@@ -32,54 +33,61 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
   const maxValue = Math.max(...stages.map((s) => s.value), 1);
 
   return (
-    <div className="border-border bg-card relative rounded-xl border p-6">
-      <h3 className="text-foreground mb-6 text-sm font-semibold tracking-wide">
+    <div className="border-border bg-card relative rounded-xl border p-6 pb-12">
+      <h3 className="text-foreground mb-10 text-sm font-semibold tracking-wide">
         Pipeline Flow
       </h3>
 
-      <div className="relative z-10 flex w-full items-center justify-between">
+      <div className="relative z-10 flex w-full items-start justify-between px-4">
         {stages.map((stage, idx) => {
           const isLast = idx === stages.length - 1;
           const strokeW = widthFromValue(stage.value, maxValue);
 
           return (
             <React.Fragment key={stage.key}>
-              {/* The Node */}
-              <Link
-                href={stage.href}
-                className="group relative flex flex-col items-center outline-none"
-              >
-                <div className="bg-card border-border group-hover:border-solar relative flex h-12 w-12 items-center justify-center rounded-full border transition-colors">
-                  <span className="text-foreground group-hover:text-solar z-10 text-sm font-semibold transition-colors">
-                    {stage.count.toLocaleString('en-US')}
-                  </span>
+              <div className="flex flex-col items-center gap-4">
+                {/* The Node + Line container */}
+                <div className="flex items-center">
+                  <Link
+                    href={stage.href}
+                    className="group border-border bg-card hover:border-solar-amber relative flex h-12 w-12 items-center justify-center rounded-full border shadow-sm transition-all outline-none"
+                  >
+                    <span className="text-foreground group-hover:text-solar-amber z-10 text-sm font-bold transition-colors">
+                      {stage.count.toLocaleString('en-US')}
+                    </span>
+                    {/* Active pulse effect */}
+                    {stage.count > 0 && (
+                      <span className="bg-solar-amber/10 absolute inset-0 animate-ping rounded-full" />
+                    )}
+                  </Link>
+
+                  {/* The Connecting Line (Relative to node) */}
+                  {!isLast && (
+                    <div className="relative flex h-1 w-12 flex-1 items-center sm:w-24 md:w-32">
+                      <div
+                        className="bg-border/40 h-full w-full overflow-hidden rounded-full"
+                        style={{ height: strokeW / 2 }}
+                      >
+                        <motion.div
+                          initial={{ x: '-100%' }}
+                          animate={{ x: '0%' }}
+                          transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: 'linear',
+                          }}
+                          className="via-solar-amber/30 h-full w-full bg-gradient-to-r from-transparent to-transparent"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <span className="text-muted-foreground group-hover:text-foreground absolute -bottom-8 text-xs font-medium whitespace-nowrap transition-colors">
+
+                {/* The Label */}
+                <span className="text-muted-foreground text-[10px] font-bold tracking-widest whitespace-nowrap uppercase">
                   {stage.label}
                 </span>
-              </Link>
-
-              {/* The Connecting Line */}
-              {!isLast && (
-                <div className="relative flex h-12 flex-1 items-center">
-                  <svg
-                    className="absolute inset-0 h-full w-full"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 100 100"
-                  >
-                    <line
-                      x1="0"
-                      y1="50"
-                      x2="100"
-                      y2="50"
-                      stroke="currentColor"
-                      strokeWidth={strokeW}
-                      strokeLinecap="round"
-                      className="text-border"
-                    />
-                  </svg>
-                </div>
-              )}
+              </div>
             </React.Fragment>
           );
         })}

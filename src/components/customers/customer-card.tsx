@@ -9,6 +9,7 @@ import {
   Trash2,
   FileText,
 } from 'lucide-react';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { type Customer } from '@/lib/db/schema';
 import { useDeleteCustomer } from '@/hooks/use-customers';
@@ -140,13 +141,15 @@ export function CustomerCard({
               <span>0 Quotations</span>
             </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hover:bg-solar/10 hover:text-solar h-8 gap-2 text-xs"
-            >
-              View History
-            </Button>
+            <Link href={`/customers/${customer.id}`}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="hover:bg-solar/10 hover:text-solar h-8 gap-2 text-xs"
+              >
+                View History
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

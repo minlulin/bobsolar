@@ -15,7 +15,7 @@ type ActivityItem = {
 
 type ActivityStreamProps = {
   items: ActivityItem[];
-  isLoading?: boolean;
+  isPending?: boolean;
 };
 
 const streamItem = {
@@ -30,9 +30,9 @@ const streamItem = {
 
 export function ActivityStream({
   items,
-  isLoading = false,
+  isPending = false,
 }: ActivityStreamProps): React.JSX.Element {
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="space-y-3">
         {[0, 1, 2].map((index) => (

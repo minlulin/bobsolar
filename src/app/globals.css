@@ -1,11 +1,10 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  /* Only what shadcn/ui needs — minimal token set */
+@theme {
+  /* Design System Tokens — aligned with 2026 standards */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -30,49 +29,65 @@
 }
 
 :root {
-  /* Light theme — clean, high contrast */
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.15 0 0);
+  /* Professional Light — high contrast, soft surfaces */
+  --background: oklch(0.985 0.005 247); /* Soft Slate */
+  --foreground: oklch(0.208 0.042 265.75); /* Deep Navy */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0 0);
+  --card-foreground: oklch(0.208 0.042 265.75);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0 0);
-  --primary: oklch(0.769 0.188 70.08);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.82 0.01 80);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.94 0 0);
-  --muted-foreground: oklch(0.55 0 0);
-  --accent: oklch(0.15 0 0);
-  --accent-foreground: oklch(0.98 0 0);
+  --popover-foreground: oklch(0.208 0.042 265.75);
+  --primary: oklch(0.208 0.042 265.75); /* Deep Navy */
+  --primary-foreground: oklch(0.985 0.005 247);
+  --secondary: oklch(0.92 0.01 247);
+  --secondary-foreground: oklch(0.208 0.042 265.75);
+  --muted: oklch(0.94 0.01 247);
+  --muted-foreground: oklch(0.45 0.02 265);
+  --accent: oklch(0.605 0.186 64.3); /* Solar Gold Accent */
+  --accent-foreground: oklch(0.985 0.005 247);
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0 0);
-  --input: oklch(0.88 0 0);
-  --ring: oklch(0.769 0.188 70.08);
+  --border: oklch(0.88 0.01 247);
+  --input: oklch(0.88 0.01 247);
+  --ring: oklch(0.605 0.186 64.3);
 }
 
 .dark {
-  /* Dark theme — deep charcoal, not pure black */
-  --background: oklch(0.13 0 0);
-  --foreground: oklch(0.92 0 0);
-  --card: oklch(0.17 0 0);
-  --card-foreground: oklch(0.92 0 0);
-  --popover: oklch(0.17 0 0);
-  --popover-foreground: oklch(0.92 0 0);
-  --primary: oklch(0.769 0.188 70.08);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.22 0 0);
-  --secondary-foreground: oklch(0.92 0 0);
-  --muted: oklch(0.2 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.92 0 0);
-  --accent-foreground: oklch(0.15 0 0);
+  /* Midnight Dark — deep charcoal navy, not pure black */
+  --background: oklch(0.12 0.02 265);
+  --foreground: oklch(0.92 0.01 247);
+  --card: oklch(0.16 0.02 265);
+  --card-foreground: oklch(0.92 0.01 247);
+  --popover: oklch(0.16 0.02 265);
+  --popover-foreground: oklch(0.92 0.01 247);
+  --primary: oklch(0.92 0.01 247);
+  --primary-foreground: oklch(0.12 0.02 265);
+  --secondary: oklch(0.22 0.02 265);
+  --secondary-foreground: oklch(0.92 0.01 247);
+  --muted: oklch(0.2 0.02 265);
+  --muted-foreground: oklch(0.6 0.02 265);
+  --accent: oklch(0.605 0.186 64.3);
+  --accent-foreground: oklch(0.985 0.005 247);
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.25 0 0);
-  --ring: oklch(0.769 0.188 70.08);
+  --border: oklch(0.25 0.02 265);
+  --input: oklch(0.25 0.02 265);
+  --ring: oklch(0.605 0.186 64.3);
+}
+
+@layer utilities {
+  .premium-glass {
+    @apply bg-background/70 border-border/50 backdrop-blur-xl;
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05),
+      0 4px 24px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .premium-glass {
+    @apply bg-card/60 border-white/10;
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.03),
+      0 8px 32px -1px rgba(0, 0, 0, 0.3);
+  }
 }
 
 @layer base {
