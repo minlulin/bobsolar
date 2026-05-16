@@ -43,7 +43,7 @@ export function AccountTab(): React.JSX.Element {
 
   return (
     <div className="space-y-8">
-      <div className="border-border bg-card/80 max-w-2xl space-y-6 rounded-[2rem] border p-8 backdrop-blur">
+      <div className="border-border bg-card max-w-2xl space-y-6 rounded-xl border p-6">
         <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
           Change Password
         </Label>

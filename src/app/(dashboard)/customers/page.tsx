@@ -3,7 +3,7 @@
 import { useOptimistic, useState } from 'react';
 import { Search, Users, UserPlus } from 'lucide-react';
 import { type Customer } from '@/lib/db/schema';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { staggerContainer } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

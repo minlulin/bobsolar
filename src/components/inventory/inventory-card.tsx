@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { type InventoryCategory, type InventoryItem } from '@/lib/db/schema';
@@ -19,7 +19,7 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   useUpdateInventoryItem,
   useDeleteInventoryItem,
@@ -257,7 +257,7 @@ export function InventoryCard({
 
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="bg-solar/10 text-solar-amber shadow-glow-solar rounded-xl p-3">
+            <div className="bg-solar/10 text-solar-amber rounded-xl p-3">
               <Icon className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1">

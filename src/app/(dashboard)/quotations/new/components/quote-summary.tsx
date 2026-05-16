@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
+import { useQuoteTotals } from '@/hooks/use-quote-totals';
 import { formatMMK } from '@/lib/utils';
 import { Calendar as CalendarIcon, Percent } from 'lucide-react';
 
@@ -17,16 +18,14 @@ export function QuoteSummary(): React.JSX.Element {
     setTax,
     setNotes,
     setValidUntil,
-    getTotals,
   } = useQuoteBuilderStore();
+  const totals = useQuoteTotals();
   const [discountInput, setDiscountInput] = React.useState<string>(
     String(discountPercent),
   );
   const [taxInput, setTaxInput] = React.useState<string>(String(taxPercent));
   const [isDiscountEditing, setIsDiscountEditing] = React.useState(false);
   const [isTaxEditing, setIsTaxEditing] = React.useState(false);
-
-  const totals = getTotals();
 
   return (
     <div className="border-border/60 grid grid-cols-1 gap-8 border-t pt-6 md:grid-cols-2">
@@ -152,7 +151,7 @@ export function QuoteSummary(): React.JSX.Element {
                   All prices in Myanmar Kyat (MMK)
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-amber-400 to-orange-600 bg-clip-text font-mono text-3xl font-black tracking-tighter text-transparent drop-shadow-sm">
+              <div className="text-foreground font-mono text-3xl font-black tracking-tighter">
                 {formatMMK(totals.total)}
               </div>
             </div>

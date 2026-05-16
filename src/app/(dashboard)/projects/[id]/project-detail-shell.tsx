@@ -10,7 +10,7 @@ import {
   Plus,
   ClipboardCheck,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -472,7 +472,7 @@ export function ProjectDetailShell({
             ].map((card) => (
               <div
                 key={card.label}
-                className="surface-card rounded-3xl px-7 py-6"
+                className="bg-card border-border rounded-3xl border px-7 py-6"
               >
                 <p className="text-muted-foreground mb-2 text-[10px] font-bold uppercase">
                   {card.label}
@@ -498,7 +498,7 @@ export function ProjectDetailShell({
 
           <div className="grid gap-6 lg:grid-cols-2">
             <motion.div variants={staggerContainer} animate="animate">
-              <div className="surface-card space-y-5 rounded-[2rem] p-6">
+              <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
                 <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
                   Site briefing
                 </h3>
@@ -540,7 +540,7 @@ export function ProjectDetailShell({
                     className={cn(
                       'rounded-full text-[11px] tracking-wide uppercase',
                       costFilter === chip &&
-                        'shadow-glow-solar border-transparent',
+                        'border-amber-500/50 bg-amber-500/10',
                     )}
                     onClick={() => {
                       setCostFilter(chip);
@@ -663,7 +663,7 @@ export function ProjectDetailShell({
             </p>
           )}
 
-          <div className="surface-card rounded-[2rem] p-6">
+          <div className="bg-card border-border rounded-[2rem] border p-6">
             <p className="text-muted-foreground mb-10 text-[10px] font-bold uppercase">
               Ledger composition
             </p>
@@ -695,7 +695,7 @@ export function ProjectDetailShell({
             <div className="space-y-3">
               {filteredCosts.map((cost) => (
                 <motion.div key={cost.id} variants={staggerItem}>
-                  <div className="surface-subtle border-border/70 flex gap-5 rounded-[1.75rem] border px-6 py-4 text-sm hover:border-emerald-300/65">
+                  <div className="bg-muted/35 border-border/70 flex gap-5 rounded-[1.75rem] border px-6 py-4 text-sm hover:border-emerald-300/65">
                     <div className="flex-1 space-y-1">
                       <p className="text-base font-semibold">
                         {cost.description}
@@ -771,7 +771,7 @@ export function ProjectDetailShell({
         <TabsContent value="remarks" className="space-y-6">
           {canEditOperational ? (
             <form
-              className="surface-card space-y-6 rounded-[2rem] p-6"
+              className="bg-card border-border space-y-6 rounded-[2rem] border p-6"
               onSubmit={handleSubmitRemark}
             >
               <div className="grid gap-3 md:grid-cols-5">
@@ -819,14 +819,14 @@ export function ProjectDetailShell({
             </p>
           )}
 
-          <ScrollArea className="surface-card h-[520px] rounded-[2rem] p-6">
+          <ScrollArea className="bg-card border-border h-[520px] rounded-[2rem] border p-6">
             <div className="space-y-4 pr-6">
               {proj.remarks.map((remark, idx) => (
                 <motion.div
                   key={remark.id}
                   variants={staggerItem}
                   custom={idx}
-                  className="surface-subtle border-border/70 rounded-[1.5rem] border p-5"
+                  className="bg-muted/35 border-border/70 rounded-[1.5rem] border p-5"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -871,7 +871,7 @@ export function ProjectDetailShell({
         </TabsContent>
 
         <TabsContent value="warranty" className="space-y-6">
-          <div className="surface-card flex flex-wrap items-center justify-between gap-4 rounded-[2rem] px-8 py-6">
+          <div className="bg-card border-border flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border px-8 py-6">
             <div>
               <p className="text-foreground text-lg font-semibold tracking-[0.4em] uppercase">
                 Warranty rhythm
@@ -963,7 +963,7 @@ export function ProjectDetailShell({
               <div
                 key={alert.id}
                 className={cn(
-                  'surface-card rounded-[1.75rem] border p-6',
+                  'bg-card rounded-[1.75rem] border p-6',
                   alert.isResolved
                     ? 'border-border/50 opacity-65'
                     : new Date(alert.dueDate) < new Date()
@@ -1035,7 +1035,7 @@ function ProjectOperationalNotes({
   const [draft, setDraft] = React.useState(() => initialNotes ?? '');
 
   return (
-    <div className="surface-card space-y-5 rounded-[2rem] p-6">
+    <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
       <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
         Operational notes
       </h3>

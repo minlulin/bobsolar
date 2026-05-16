@@ -143,7 +143,7 @@ export default function SettingsPage(): React.JSX.Element {
       </div>
 
       <Tabs defaultValue="company" className="w-full">
-        <TabsList className="border-border/60 bg-card/80 mb-8 border">
+        <TabsList className="border-border bg-card mb-8 border">
           <TabsTrigger value="company">Company Info</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
@@ -152,7 +152,7 @@ export default function SettingsPage(): React.JSX.Element {
 
         <TabsContent value="company">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <section className="border-border bg-card/80 space-y-4 rounded-[2rem] border p-8 backdrop-blur">
+            <section className="border-border bg-card space-y-4 rounded-xl border p-6">
               <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
                 Brand crest
               </Label>
@@ -172,7 +172,7 @@ export default function SettingsPage(): React.JSX.Element {
               )}
             </section>
 
-            <section className="border-border bg-card/80 space-y-6 rounded-[2rem] border p-8 backdrop-blur">
+            <section className="border-border bg-card space-y-6 rounded-xl border p-6">
               <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
                 Company Profile
               </Label>

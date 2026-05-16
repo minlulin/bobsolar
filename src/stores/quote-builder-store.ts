@@ -4,7 +4,6 @@ import {
   type Quotation,
   type QuotationItem,
 } from '@/lib/db/schema';
-import { calculateQuotation, type PricingResult } from '@/lib/pricing/engine';
 
 export interface QuoteBuilderItem {
   id?: string; // UUID from DB if existing
@@ -44,9 +43,6 @@ interface QuoteBuilderState {
   loadFromQuotation: (
     quotation: Quotation & { items: QuotationItem[] },
   ) => void;
-
-  // Derived (via helper)
-  getTotals: () => PricingResult;
 }
 
 const initialState = {
@@ -58,7 +54,7 @@ const initialState = {
   validUntil: null,
 };
 
-export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
+export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
   ...initialState,
 
   setCustomer: (customerId): void => {
@@ -199,14 +195,5 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>((set, get) => ({
           sortOrder: item.sortOrder,
         })),
     });
-  },
-
-  getTotals: (): PricingResult => {
-    const state = get();
-    return calculateQuotation(
-      state.items,
-      state.discountPercent,
-      state.taxPercent,
-    );
   },
 }));

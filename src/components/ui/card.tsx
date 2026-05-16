@@ -5,31 +5,16 @@ import { cn } from '@/lib/utils';
 function Card({
   className,
   size = 'default',
-  premium = false,
   ...props
 }: React.ComponentProps<'div'> & {
   size?: 'default' | 'sm';
-  premium?: boolean;
 }): React.JSX.Element {
   return (
     <div
       data-slot="card"
       data-size={size}
       className={cn(
-        'group/card text-card-foreground flex flex-col gap-4 overflow-hidden rounded-xl py-4 text-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl',
-
-        premium
-          ? [
-              'relative overflow-hidden',
-              'bg-card/40 shadow-[var(--shadow-card-rest),var(--shadow-glass-inset)] backdrop-blur-2xl',
-              'border border-[rgba(255,255,255,0.08)]',
-              'transition-apple duration-500 hover:-translate-y-[2px] hover:scale-[1.01]',
-              'hover:shadow-[var(--shadow-card-hover),var(--shadow-glass-inset)]',
-              'after:pointer-events-none after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:transition-opacity after:duration-500 hover:after:opacity-100',
-              'after:bg-gradient-to-br after:from-white/10 after:to-transparent',
-            ]
-          : 'bg-card ring-foreground/10 shadow-xs ring-1',
-
+        'bg-card border-border text-card-foreground flex flex-col gap-4 overflow-hidden rounded-xl border py-4 text-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl',
         className,
       )}
       {...props}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type * as React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { motion, type Variants } from 'framer-motion';
+import { motion, type Variants } from 'motion/react';
 import { AlertTriangle, FileText, FolderKanban, Users } from 'lucide-react';
 
 type ActivityItem = {

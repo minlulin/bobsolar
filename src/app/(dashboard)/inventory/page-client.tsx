@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, PackageSearch } from 'lucide-react';
 import { type InventoryItem, inventoryCategoryEnum } from '@/lib/db/schema';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { staggerContainer } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
@@ -67,10 +67,7 @@ export function InventoryPageClient({
           </p>
         </div>
         {canEdit && (
-          <Button
-            onClick={handleAddNew}
-            className="bg-solar shadow-glow-solar group text-white"
-          >
+          <Button onClick={handleAddNew} className="bg-solar group text-white">
             <Plus className="mr-2 h-4 w-4 transition-transform group-hover:rotate-90" />
             Add New Item
           </Button>
@@ -100,7 +97,7 @@ export function InventoryPageClient({
               className={cn(
                 'rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all',
                 category === cat || (cat === 'all' && category === null)
-                  ? 'bg-solar shadow-glow-solar border-transparent text-white'
+                  ? 'bg-solar border-transparent text-white'
                   : 'bg-card/50 text-muted-foreground border-border hover:bg-card',
               )}
             >

@@ -58,6 +58,16 @@ const nextConfig = {
   // Vercel provides these at runtime; bundling causes native addon load failures
   // (e.g. 'b.mask is not a function' from bufferutil).
   serverExternalPackages: ['ws', 'bufferutil', 'utf-8-validate'],
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      'date-fns',
+    ],
+  },
   async headers() {
     const isDev = process.env.NODE_ENV !== 'production';
     return [

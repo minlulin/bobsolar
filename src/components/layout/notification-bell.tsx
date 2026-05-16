@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Bell, Loader2, Info, AlertTriangle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -96,7 +96,7 @@ export function NotificationBell(): React.JSX.Element {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="surface-card flex w-full flex-col sm:max-w-md">
+      <SheetContent className="bg-card border-border flex w-full flex-col sm:max-w-md">
         <SheetHeader className="border-border/70 border-b pb-4">
           <div className="flex items-center justify-between">
             <SheetTitle>Notifications</SheetTitle>

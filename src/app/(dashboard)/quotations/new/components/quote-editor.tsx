@@ -44,7 +44,7 @@ import {
   updateQuotation,
   updateQuotationStatus,
 } from '@/actions/quotation-actions';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 interface QuoteEditorProps {
   mode: 'create' | 'edit';

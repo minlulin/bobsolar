@@ -9,7 +9,7 @@ import {
   Trash2,
   FileText,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { type Customer } from '@/lib/db/schema';
 import { useDeleteCustomer } from '@/hooks/use-customers';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,7 +52,7 @@ export function CustomerCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="group border-border/60 bg-muted/45 hover:bg-muted/55 relative overflow-hidden backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-18px_rgba(245,158,11,0.5)] motion-reduce:transform-none">
+      <Card className="group border-border bg-muted/25 hover:bg-muted/45 relative transition-colors">
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">

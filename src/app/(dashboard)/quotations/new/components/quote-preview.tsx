@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
+import { useQuoteTotals } from '@/hooks/use-quote-totals';
 import { formatMMK } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { getCustomer } from '@/actions/customer-actions';
@@ -15,8 +16,8 @@ export function QuotePreview(): React.JSX.Element {
     taxPercent,
     notes,
     validUntil,
-    getTotals,
   } = useQuoteBuilderStore();
+  const totals = useQuoteTotals();
 
   const { data: customerRes } = useQuery({
     queryKey: ['customers', selectedCustomerId],
@@ -25,7 +26,6 @@ export function QuotePreview(): React.JSX.Element {
   });
 
   const customer = customerRes?.success ? customerRes.data : null;
-  const totals = getTotals();
 
   return (
     <div className="sticky top-8 h-fit">

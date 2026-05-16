@@ -77,7 +77,7 @@ export function ProjectCard({
 
   return (
     <div className="transition-all">
-      <Card className="surface-card group transition hover:-translate-y-1 hover:shadow-[0_20px_50px_-15px_rgba(245,158,11,.45)]">
+      <Card className="bg-card border-border group hover:bg-muted/30 border transition-colors">
         <CardContent className="relative space-y-5 p-7">
           <div className="flex items-start justify-between gap-4">
             <div>

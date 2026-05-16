@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -112,7 +112,7 @@ export default function LoginPage(): React.JSX.Element {
         transition={{ duration: 0.5 }}
         className="z-10 w-full max-w-md"
       >
-        <Card premium className="glass border-none shadow-2xl">
+        <Card className="glass border-none shadow-2xl">
           <CardHeader className="space-y-1 text-center">
             <div className="mb-4 flex justify-center">
               <div className="bg-solar shadow-solar relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl">

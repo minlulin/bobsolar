@@ -40,10 +40,10 @@ export default async function DashboardLayout({
         Skip to content
       </a>
       {/* Top Bar */}
-      <header className="bg-background/80 border-border/60 sticky top-0 z-40 w-full border-b backdrop-blur-md">
+      <header className="bg-background border-border sticky top-0 z-40 w-full border-b">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="bg-solar shadow-solar relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
+            <div className="bg-solar relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
               <Image
                 src="/icons/logo.png"
                 alt="BOB Solar Logo"

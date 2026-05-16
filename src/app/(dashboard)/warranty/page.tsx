@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
@@ -94,7 +94,7 @@ export default function WarrantyPage(): React.JSX.Element {
             type="button"
             variant={tab === t.id ? 'secondary' : 'ghost'}
             className={`rounded-full text-[11px] font-bold uppercase ${
-              tab === t.id ? 'shadow-glow-solar border-transparent' : ''
+              tab === t.id ? 'border-amber-500/50 bg-amber-500/10' : ''
             }`}
             onClick={() => {
               setTab(t.id);
@@ -135,7 +135,7 @@ export default function WarrantyPage(): React.JSX.Element {
             return (
               <div
                 key={a.id}
-                className="border-border bg-card/80 flex flex-col gap-6 rounded-[1.85rem] border p-6 backdrop-blur"
+                className="border-border bg-card flex flex-col gap-6 rounded-xl border p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

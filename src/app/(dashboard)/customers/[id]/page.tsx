@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import dynamic from 'next/dynamic';

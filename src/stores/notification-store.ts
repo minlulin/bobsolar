@@ -9,7 +9,7 @@ type NotificationStore = {
   setOpen: (isOpen: boolean) => void;
 };
 
-export const useNotificationStore = create<NotificationStore>((set) => ({
+export const useNotificationStore = create<NotificationStore>()((set) => ({
   unreadCount: 0,
   isOpen: false,
   setUnreadCount: (count: number): void => {

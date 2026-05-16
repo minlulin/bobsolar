@@ -79,7 +79,7 @@ function QuotationConversionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-border/70 bg-card/78 grid gap-7 rounded-[2rem] border px-10 py-12 backdrop-blur"
+      className="border-border bg-card grid gap-7 rounded-xl border px-10 py-12"
     >
       <div className="space-y-2">
         <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.45em] uppercase">

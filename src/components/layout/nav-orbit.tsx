@@ -3,8 +3,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import type { MotionValue } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import type { MotionValue } from 'motion/react';
 import { Home, ClipboardList, Zap, Package, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';

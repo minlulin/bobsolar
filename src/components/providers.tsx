@@ -7,7 +7,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { toast } from 'sonner';
 import { NotificationToast } from '@/components/shared/notification-toast';
 import {

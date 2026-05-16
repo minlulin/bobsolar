@@ -99,7 +99,7 @@ export function QuotationCard({
   return (
     <div className="transition-all hover:-translate-y-1">
       <Card
-        className="surface-card group hover:bg-muted/50 cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_34px_-18px_rgba(16,185,129,0.45)] motion-reduce:transform-none"
+        className="bg-card border-border group hover:bg-muted/30 cursor-pointer border transition-colors"
         onClick={() => {
           router.push(`/quotations/${quotation.id}`);
         }}
