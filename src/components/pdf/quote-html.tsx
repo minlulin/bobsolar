@@ -47,6 +47,7 @@ interface QuoteHtmlProps {
 
 export function QuoteHtml({
   quotation,
+  companyLogoUrl,
   companySettings = {},
   type = 'quotation',
 }: QuoteHtmlProps): string {
@@ -66,6 +67,7 @@ export function QuoteHtml({
     COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.EMAIL];
 
   const title = type === 'voucher' ? 'VOUCHER' : 'QUOTATION';
+  const validUntilLabel = type === 'voucher' ? 'Expires On' : 'Valid Until:';
 
   const itemsHtml = items
     .map(
@@ -85,7 +87,7 @@ export function QuoteHtml({
     Number(quotation.discountPercent) > 0
       ? `
           <div class="totals-row">
-            <span class="totals-label">Incentive Applied (${quotation.discountPercent}%)</span>
+            <span class="totals-label">Discount (${quotation.discountPercent}%)</span>
             <span class="totals-value discount">-${formatMMK(Number(quotation.discountAmount))}</span>
           </div>`
       : '';
@@ -108,8 +110,12 @@ export function QuoteHtml({
         </div>`
       : '';
 
+  const logoHtml = companyLogoUrl
+    ? `<img src="${companyLogoUrl}" alt="Company Logo" class="company-logo" style="max-height: 36px; max-width: 120px;" />`
+    : `<div class="logo-placeholder">BS</div>`;
+
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
   <meta charset="UTF-8" />
   <title>${companyName} - ${title} ${quotation.quoteNumber}</title>
@@ -120,11 +126,22 @@ export function QuoteHtml({
       --slate: #64748B;
       --border: #E2E8F0;
     }
+
+    @font-face {
+      font-family: 'Inter';
+      src: url('/fonts/inter-regular.woff2') format('woff2');
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: 'Inter';
+      src: url('/fonts/inter-bold.woff2') format('woff2');
+      font-weight: 700;
+    }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: 'Inter', 'Padauk', 'Noto Sans Myanmar', 'Myanmar Text', 'Myanmar Sangam MN', -apple-system, sans-serif;
       font-size: 11px;
       color: var(--primary);
       line-height: 1.6;
@@ -152,6 +169,9 @@ export function QuoteHtml({
     .print-area {
       max-width: 210mm; margin: 0 auto; padding: 60px 40px;
     }
+
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
 
     @media print {
       .screen-toolbar { display: none !important; }
@@ -230,9 +250,9 @@ export function QuoteHtml({
   </style>
 </head>
 <body>
-  <div class="screen-toolbar">
+  <div class="screen-toolbar no-print">
     <span style="font-weight: 900; opacity: 0.6; letter-spacing: 1px;">PREVIEW MODE</span>
-    <button class="btn btn-primary" onclick="window.print()">PRINT DOCUMENT</button>
+    <button class="btn btn-primary" onclick="window.print()">Save as PDF</button>
     <button class="btn btn-secondary" onclick="window.close()">CLOSE WINDOW</button>
   </div>
 
@@ -240,7 +260,7 @@ export function QuoteHtml({
     <div class="header">
       <div>
         <div class="brand-section">
-          <div class="logo-placeholder">BS</div>
+          ${logoHtml}
           <span class="brand-name">${companyName}</span>
         </div>
         <div class="company-details">
@@ -268,7 +288,7 @@ export function QuoteHtml({
       <div>
         <div class="section-label">Validity & Terms</div>
         <div class="client-meta">
-          <strong>Valid Until:</strong> ${quotation.validUntil ? format(new Date(quotation.validUntil), 'MMM dd, yyyy') : 'N/A'}<br/>
+          <strong>${validUntilLabel}</strong> ${quotation.validUntil ? format(new Date(quotation.validUntil), 'MMM dd, yyyy') : 'N/A'}<br/>
           <strong>Project Ref:</strong> ${quotation.quoteNumber}<br/>
           <strong>Currency:</strong> Myanmar Kyat (MMK)
         </div>
@@ -306,7 +326,7 @@ export function QuoteHtml({
 
     ${notesHtml}
 
-    <div class="signature-section">
+    <div class="signature-section page-break">
       <div class="sig-box">
         <div class="sig-label">Customer Acceptance</div>
       </div>
