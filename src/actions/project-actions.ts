@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { db } from '@/lib/db';
+import { db } from "@/lib/db";
 import {
   projects,
   projectCosts,
@@ -14,21 +14,9 @@ import {
   type WarrantyAlert,
   type Customer,
   type Quotation,
-} from '@/lib/db/schema';
-import {
-  eq,
-  and,
-  asc,
-  desc,
-  sql,
-  ilike,
-  or,
-  gte,
-  lte,
-  inArray,
-  ne,
-} from 'drizzle-orm';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
+} from "@/lib/db/schema";
+import { eq, and, asc, desc, sql, ilike, or, gte, lte, inArray, ne } from "drizzle-orm";
+import { requireAuth, requireAdmin } from "@/lib/auth/validate";
 import {
   addMonths,
   addYears,
@@ -37,12 +25,9 @@ import {
   startOfDay,
   startOfToday,
   endOfDay,
-} from 'date-fns';
-import { revalidatePath } from 'next/cache';
-import {
-  formatProjectNumber,
-  extractProjectSequence,
-} from '@/lib/utils/project-number';
+} from "date-fns";
+import { revalidatePath } from "next/cache";
+import { formatProjectNumber, extractProjectSequence } from "@/lib/utils/project-number";
 import {
   convertToProjectSchema,
   updateProjectSchema,
@@ -52,36 +37,31 @@ import {
   createWarrantyAlertSchema,
   isProjectStatus,
   projectListFilterSchema,
-} from '@/lib/validators/project';
-import { BUDGET_VARIANCE_THRESHOLD } from '@/lib/domain/policies';
+} from "@/lib/validators/project";
+import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
+import { successResponse, type ActionResponse } from "@/lib/utils/action-response";
+import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
+import { uuidSchema } from "@/lib/validators/common";
+import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
+import type { InferSelectModel } from "drizzle-orm";
 import {
-  successResponse,
-  type ActionResponse,
-} from '@/lib/utils/action-response';
-import {
-  handleActionError,
-  handleNotFoundError,
-  handleStateError,
-} from '@/lib/utils/error';
-import { uuidSchema } from '@/lib/validators/common';
-import {
-  notifyAdminUsers,
-  notifyAllUsers,
-} from '@/lib/notifications/broadcast';
-import type { InferSelectModel } from 'drizzle-orm';
+  assertFinanceSsotDrift,
+  createBalancedJournalEntry,
+  mapCostTypeToExpenseAccount,
+} from "@/lib/finance/ledger";
 
 export type ProjectListRow = InferSelectModel<typeof projects> & {
   customerName: string | null;
   quoteNumber: string | null;
   costTotal: number;
   /** Only set when listing completed installations */
-  warrantySummary?: 'ok' | 'due_soon' | 'overdue';
+  warrantySummary?: "ok" | "due_soon" | "overdue";
 };
 
 export type ProjectDetail = InferSelectModel<typeof projects> & {
   customer: Customer;
   quotation:
-    | (Pick<Quotation, 'id' | 'quoteNumber' | 'total'> & {
+    | (Pick<Quotation, "id" | "quoteNumber" | "total"> & {
         notes: string | null;
       })
     | null;
@@ -112,9 +92,7 @@ async function nextProjectSequence(year: number): Promise<number> {
 async function sumProjectCosts(projectId: string): Promise<number> {
   const [row] = await db
     .select({
-      total: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
-        'total',
-      ),
+      total: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("total"),
     })
     .from(projectCosts)
     .where(eq(projectCosts.projectId, projectId));
@@ -132,7 +110,7 @@ async function persistActualTotal(projectId: string): Promise<number> {
 
 function rollupWarranty(
   alerts: { isResolved: boolean; dueDate: Date }[],
-): 'ok' | 'due_soon' | 'overdue' {
+): "ok" | "due_soon" | "overdue" {
   const today = startOfToday();
   const soonBoundaryEnd = addDays(today, 30);
   let overdue = false;
@@ -143,9 +121,9 @@ function rollupWarranty(
     if (isBefore(dueDay, today)) overdue = true;
     else if (dueDay.getTime() <= soonBoundaryEnd.getTime()) soon = true;
   }
-  if (overdue) return 'overdue';
-  if (soon) return 'due_soon';
-  return 'ok';
+  if (overdue) return "overdue";
+  if (soon) return "due_soon";
+  return "ok";
 }
 
 async function maybeNotifyBudgetOverrun(
@@ -161,16 +139,14 @@ async function maybeNotifyBudgetOverrun(
   if (previousSpend > threshold) return;
 
   await notifyAdminUsers({
-    title: 'Project budget alert',
-    message: `Spend on project has exceeded quoted total by more than 10% (actual ${actualSpend.toLocaleString('en-MM')} MMK).`,
-    type: 'warning',
+    title: "Project budget alert",
+    message: `Spend on project has exceeded quoted total by more than 10% (actual ${actualSpend.toLocaleString("en-MM")} MMK).`,
+    type: "warning",
     link: `/projects/${projectId}`,
   });
 }
 
-export async function convertQuotationToProject(
-  raw: unknown,
-): Promise<ActionResponse<Project>> {
+export async function convertQuotationToProject(raw: unknown): Promise<ActionResponse<Project>> {
   try {
     await requireAuth();
     const data = convertToProjectSchema.parse(raw);
@@ -180,85 +156,71 @@ export async function convertQuotationToProject(
 
     while (retries > 0) {
       try {
-        return await db.transaction(
-          async (tx): Promise<ActionResponse<Project>> => {
-            // Lock the quotation row to prevent concurrent conversions
-            const quotation = await tx.query.quotations.findFirst({
-              where: eq(quotations.id, data.quotationId),
-              with: { customer: true, project: { columns: { id: true } } },
-            });
+        return await db.transaction(async (tx): Promise<ActionResponse<Project>> => {
+          // Lock the quotation row to prevent concurrent conversions
+          const quotation = await tx.query.quotations.findFirst({
+            where: eq(quotations.id, data.quotationId),
+            with: { customer: true, project: { columns: { id: true } } },
+          });
 
-            if (!quotation) {
-              return handleNotFoundError('Quotation', data.quotationId);
-            }
-            if (quotation.status !== 'accepted') {
-              return handleStateError(
-                'Only accepted quotations can be converted.',
-              );
-            }
+          if (!quotation) {
+            return handleNotFoundError("Quotation", data.quotationId);
+          }
+          if (quotation.status !== "accepted") {
+            return handleStateError("Only accepted quotations can be converted.");
+          }
 
-            if (
-              (quotation as unknown as { project?: unknown }).project != null
-            ) {
-              return handleStateError(
-                'This quotation is already linked to a project.',
-              );
-            }
+          if ((quotation as unknown as { project?: unknown }).project != null) {
+            return handleStateError("This quotation is already linked to a project.");
+          }
 
-            const customer = quotation.customer;
-            const defaultSite = [customer.address, customer.city]
-              .filter(Boolean)
-              .join(', ')
-              .trim();
+          const customer = quotation.customer;
+          const defaultSite = [customer.address, customer.city].filter(Boolean).join(", ").trim();
 
-            const siteAddress =
-              (data.siteAddress && data.siteAddress.trim()) ||
-              defaultSite ||
-              '—';
+          const siteAddress = (data.siteAddress && data.siteAddress.trim()) || defaultSite || "—";
 
-            const systemKwp =
-              data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
-                ? String(data.systemSizeKwp)
-                : '0';
+          const systemKwp =
+            data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
+              ? String(data.systemSizeKwp)
+              : "0";
 
-            // Get next project sequence within the transaction
-            const seq = await nextProjectSequence(year);
-            const projectNumber = formatProjectNumber(seq, year);
+          // Get next project sequence within the transaction
+          const seq = await nextProjectSequence(year);
+          const projectNumber = formatProjectNumber(seq, year);
 
-            const [created] = await tx
-              .insert(projects)
-              .values({
-                projectNumber,
-                quotationId: quotation.id,
-                customerId: quotation.customerId,
-                status: 'planning',
-                siteAddress,
-                systemSizeKwp: systemKwp,
-                quotedTotal: quotation.total,
-                actualTotal: '0',
-                startDate: data.startDate ?? null,
-                targetCompletion: data.targetCompletion ?? null,
-                notes: data.notes ?? null,
-              })
-              .returning();
+          const [created] = await tx
+            .insert(projects)
+            .values({
+              projectNumber,
+              quotationId: quotation.id,
+              customerId: quotation.customerId,
+              status: "planning",
+              siteAddress,
+              systemSizeKwp: systemKwp,
+              quotedTotal: quotation.total,
+              actualTotal: "0",
+              startDate: data.startDate ?? null,
+              targetCompletion: data.targetCompletion ?? null,
+              notes: data.notes ?? null,
+            })
+            .returning();
 
-            if (!created) {
-              return handleStateError('Failed to create project');
-            }
+          if (!created) {
+            return handleStateError("Failed to create project");
+          }
 
-            revalidatePath('/projects');
-            revalidatePath(`/quotations/${quotation.id}`);
-            revalidatePath('/quotations');
+          revalidatePath("/projects");
+          revalidatePath(`/quotations/${quotation.id}`);
+          revalidatePath("/quotations");
 
-            return successResponse(created);
-          },
-        );
+          return successResponse(created);
+        });
       } catch (error: unknown) {
         if (
           error &&
-          typeof error === 'object' &&
-          'code' in error &&
-          error.code === '23505' &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "23505" &&
           retries > 1
         ) {
           // 23505 is unique_violation - could be project number or quotation_id conflict
@@ -269,15 +231,9 @@ export async function convertQuotationToProject(
       }
     }
 
-    return handleStateError(
-      'Failed to generate unique project number after retries.',
-    );
+    return handleStateError("Failed to generate unique project number after retries.");
   } catch (error) {
-    return handleActionError(
-      error,
-      'convertQuotationToProject',
-      'Failed to convert quotation',
-    );
+    return handleActionError(error, "convertQuotationToProject", "Failed to convert quotation");
   }
 }
 
@@ -288,37 +244,28 @@ export async function getProjects(
     await requireAuth();
 
     const filters = projectListFilterSchema.parse(rawFilters);
-    const {
-      scope,
-      status,
-      search,
-      year,
-      completedFrom,
-      completedTo,
-      limit,
-      offset,
-    } = filters;
+    const { scope, status, search, year, completedFrom, completedTo, limit, offset } = filters;
 
     const scopeCond =
-      scope === 'active'
-        ? inArray(projects.status, ['planning', 'in_progress', 'on_hold'])
-        : eq(projects.status, 'completed');
+      scope === "active"
+        ? inArray(projects.status, ["planning", "in_progress", "on_hold"])
+        : eq(projects.status, "completed");
 
     const statusCond = status ? eq(projects.status, status) : undefined;
 
     const yearCond =
-      year && scope === 'completed'
+      year && scope === "completed"
         ? sql`extract(year from ${projects.actualCompletion}) = ${year}`
         : year
           ? sql`extract(year from ${projects.createdAt}) = ${year}`
           : undefined;
 
     const completedFromCond =
-      completedFrom && scope === 'completed'
+      completedFrom && scope === "completed"
         ? gte(projects.actualCompletion, startOfDay(completedFrom))
         : undefined;
     const completedToCond =
-      completedTo && scope === 'completed'
+      completedTo && scope === "completed"
         ? lte(projects.actualCompletion, endOfDay(completedTo))
         : undefined;
 
@@ -328,7 +275,7 @@ export async function getProjects(
           sql`exists (
               select 1 from ${customers} c
               where c.id = ${projects.customerId}
-              and c.name ilike ${'%' + search.trim() + '%'}
+              and c.name ilike ${"%" + search.trim() + "%"}
             )`,
         )
       : undefined;
@@ -348,10 +295,9 @@ export async function getProjects(
           project: projects,
           customerName: customers.name,
           quoteNumber: quotations.quoteNumber,
-          costTotal:
-            sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
-              'cost_total',
-            ),
+          costTotal: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
+            "cost_total",
+          ),
         })
         .from(projects)
         .innerJoin(customers, eq(projects.customerId, customers.id))
@@ -359,11 +305,7 @@ export async function getProjects(
         .leftJoin(projectCosts, eq(projectCosts.projectId, projects.id))
         .where(whereClause)
         .groupBy(projects.id, customers.name, quotations.quoteNumber)
-        .orderBy(
-          scope === 'completed'
-            ? desc(projects.actualCompletion)
-            : desc(projects.createdAt),
-        )
+        .orderBy(scope === "completed" ? desc(projects.actualCompletion) : desc(projects.createdAt))
         .limit(limit)
         .offset(offset),
       db
@@ -383,7 +325,7 @@ export async function getProjects(
       costTotal: Math.round(r.costTotal),
     }));
 
-    if (scope === 'completed') {
+    if (scope === "completed") {
       const ids = rows.map((r) => r.project.id);
       if (ids.length > 0) {
         const allAlerts = await db.query.warrantyAlerts.findMany({
@@ -410,13 +352,11 @@ export async function getProjects(
 
     return successResponse({ items, total: totalCount });
   } catch (error) {
-    return handleActionError(error, 'getProjects', 'Failed to fetch projects');
+    return handleActionError(error, "getProjects", "Failed to fetch projects");
   }
 }
 
-export async function getProject(
-  id: string,
-): Promise<ActionResponse<ProjectDetail>> {
+export async function getProject(id: string): Promise<ActionResponse<ProjectDetail>> {
   try {
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
@@ -457,7 +397,7 @@ export async function getProject(
     });
 
     if (!row) {
-      return handleNotFoundError('Project', validatedId);
+      return handleNotFoundError("Project", validatedId);
     }
 
     const actualTotalComputed = Math.round(
@@ -466,13 +406,13 @@ export async function getProject(
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
 
-    const costs: ProjectDetail['costs'] = row.costs.map((c) => ({
+    const costs: ProjectDetail["costs"] = row.costs.map((c) => ({
       ...c,
       inventoryItem: c.inventoryItem,
       addedByUser: c.addedBy,
     }));
 
-    const remarks: ProjectDetail['remarks'] = row.remarks.map((rem) => ({
+    const remarks: ProjectDetail["remarks"] = row.remarks.map((rem) => ({
       ...rem,
       author: rem.author,
     }));
@@ -487,7 +427,7 @@ export async function getProject(
       budgetVariance,
     });
   } catch (error) {
-    return handleActionError(error, 'getProject', 'Failed to fetch project');
+    return handleActionError(error, "getProject", "Failed to fetch project");
   }
 }
 
@@ -508,12 +448,10 @@ async function applyProjectCompletion(
     const updated = await tx
       .update(projects)
       .set({
-        status: 'completed',
+        status: "completed",
         actualCompletion: new Date(),
       })
-      .where(
-        and(eq(projects.id, projectRow.id), ne(projects.status, 'completed')),
-      )
+      .where(and(eq(projects.id, projectRow.id), ne(projects.status, "completed")))
       .returning({ id: projects.id });
 
     if (updated.length === 0) return false;
@@ -521,10 +459,7 @@ async function applyProjectCompletion(
     // Refresh actualTotal from costs ledger.
     const [sumRow] = await tx
       .select({
-        total:
-          sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
-            'total',
-          ),
+        total: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("total"),
       })
       .from(projectCosts)
       .where(eq(projectCosts.projectId, projectRow.id));
@@ -539,22 +474,22 @@ async function applyProjectCompletion(
     await tx.insert(warrantyAlerts).values([
       {
         projectId: projectRow.id,
-        alertType: 'warranty_expiry',
-        description: 'Panel Warranty Check',
+        alertType: "warranty_expiry",
+        description: "Panel Warranty Check",
         dueDate: addYears(now, 1),
         isResolved: false,
       },
       {
         projectId: projectRow.id,
-        alertType: 'warranty_expiry',
-        description: 'Inverter Warranty Check',
+        alertType: "warranty_expiry",
+        description: "Inverter Warranty Check",
         dueDate: addYears(now, 1),
         isResolved: false,
       },
       {
         projectId: projectRow.id,
-        alertType: 'maintenance_due',
-        description: 'System Maintenance',
+        alertType: "maintenance_due",
+        description: "System Maintenance",
         dueDate: addMonths(now, 6),
         isResolved: false,
       },
@@ -565,17 +500,15 @@ async function applyProjectCompletion(
 
   if (didComplete) {
     await notifyAllUsers({
-      title: 'Project completed',
+      title: "Project completed",
       message: `Project ${projectRow.projectNumber} completed!`,
-      type: 'info',
+      type: "info",
       link: `/projects/${projectRow.id}`,
     });
   }
 }
 
-export async function updateProject(
-  raw: unknown,
-): Promise<ActionResponse<Project>> {
+export async function updateProject(raw: unknown): Promise<ActionResponse<Project>> {
   try {
     const auth = await requireAuth();
     const data = updateProjectSchema.parse(raw);
@@ -583,30 +516,28 @@ export async function updateProject(
     const existing = await db.query.projects.findFirst({
       where: eq(projects.id, data.id),
     });
-    if (!existing) return handleNotFoundError('Project', data.id);
+    if (!existing) return handleNotFoundError("Project", data.id);
 
     if (data.status !== undefined && data.status !== existing.status) {
-      if (auth.role !== 'admin') {
-        return handleStateError('Only admins can change project status here.');
+      if (auth.role !== "admin") {
+        return handleStateError("Only admins can change project status here.");
       }
       if (!isProjectStatus(existing.status)) {
-        return handleStateError(
-          `Invalid current status: ${existing.status as string}`,
-        );
+        return handleStateError(`Invalid current status: ${existing.status as string}`);
       }
       if (!canTransitionProjectStatus(existing.status, data.status)) {
         return handleStateError(`Invalid status transition to ${data.status}`);
       }
 
-      if (data.status === 'completed') {
+      if (data.status === "completed") {
         await applyProjectCompletion(existing);
       } else {
         const patch: Partial<typeof projects.$inferInsert> = {
           status: data.status,
         };
         if (
-          existing.status === 'planning' &&
-          data.status === 'in_progress' &&
+          existing.status === "planning" &&
+          data.status === "in_progress" &&
           !existing.startDate
         ) {
           patch.startDate = new Date();
@@ -624,9 +555,9 @@ export async function updateProject(
         await db.update(projects).set(patch).where(eq(projects.id, data.id));
 
         await notifyAllUsers({
-          title: 'Project status changed',
-          message: `Project ${existing.projectNumber} moved from ${existing.status.replace('_', ' ')} to ${data.status.replace('_', ' ')}.`,
-          type: 'info',
+          title: "Project status changed",
+          message: `Project ${existing.projectNumber} moved from ${existing.status.replace("_", " ")} to ${data.status.replace("_", " ")}.`,
+          type: "info",
           link: `/projects/${existing.id}`,
         });
       }
@@ -650,48 +581,38 @@ export async function updateProject(
     const updated = await db.query.projects.findFirst({
       where: eq(projects.id, data.id),
     });
-    if (!updated) return handleNotFoundError('Project', data.id);
+    if (!updated) return handleNotFoundError("Project", data.id);
 
-    revalidatePath('/projects');
+    revalidatePath("/projects");
     revalidatePath(`/projects/${data.id}`);
-    revalidatePath('/projects/completed');
-    revalidatePath('/warranty');
+    revalidatePath("/projects/completed");
+    revalidatePath("/warranty");
 
     return successResponse(updated);
   } catch (error) {
-    return handleActionError(
-      error,
-      'updateProject',
-      'Failed to update project',
-    );
+    return handleActionError(error, "updateProject", "Failed to update project");
   }
 }
 
-export async function markProjectCompleted(
-  id: string,
-): Promise<ActionResponse<Project>> {
+export async function markProjectCompleted(id: string): Promise<ActionResponse<Project>> {
   try {
     await requireAdmin();
     const validatedId = uuidSchema.parse(id);
     const existing = await db.query.projects.findFirst({
       where: eq(projects.id, validatedId),
     });
-    if (!existing) return handleNotFoundError('Project', validatedId);
+    if (!existing) return handleNotFoundError("Project", validatedId);
 
-    if (existing.status === 'completed') {
-      return handleStateError('Project is already completed.');
+    if (existing.status === "completed") {
+      return handleStateError("Project is already completed.");
     }
 
     if (!isProjectStatus(existing.status)) {
-      return handleStateError(
-        `Invalid current status: ${existing.status as string}`,
-      );
+      return handleStateError(`Invalid current status: ${existing.status as string}`);
     }
 
-    if (!canTransitionProjectStatus(existing.status, 'completed')) {
-      return handleStateError(
-        'Cannot mark this project completed from its current status.',
-      );
+    if (!canTransitionProjectStatus(existing.status, "completed")) {
+      return handleStateError("Cannot mark this project completed from its current status.");
     }
 
     await applyProjectCompletion(existing);
@@ -699,51 +620,74 @@ export async function markProjectCompleted(
     const updated = await db.query.projects.findFirst({
       where: eq(projects.id, validatedId),
     });
-    if (!updated) return handleNotFoundError('Project', validatedId);
+    if (!updated) return handleNotFoundError("Project", validatedId);
 
-    revalidatePath('/projects');
+    revalidatePath("/projects");
     revalidatePath(`/projects/${validatedId}`);
-    revalidatePath('/projects/completed');
-    revalidatePath('/warranty');
+    revalidatePath("/projects/completed");
+    revalidatePath("/warranty");
 
     return successResponse(updated);
   } catch (error) {
-    return handleActionError(
-      error,
-      'markProjectCompleted',
-      'Failed to complete project',
-    );
+    return handleActionError(error, "markProjectCompleted", "Failed to complete project");
   }
 }
 
-export async function addProjectCost(
-  raw: unknown,
-): Promise<ActionResponse<ProjectCost[]>> {
+export async function addProjectCost(raw: unknown): Promise<ActionResponse<ProjectCost[]>> {
   try {
     const auth = await requireAuth();
+    assertFinanceSsotDrift();
     const data = addProjectCostSchema.parse(raw);
 
     const projectRow = await db.query.projects.findFirst({
       where: eq(projects.id, data.projectId),
     });
-    if (!projectRow) return handleNotFoundError('Project', data.projectId);
-    if (
-      projectRow.status === 'completed' ||
-      projectRow.status === 'cancelled'
-    ) {
-      return handleStateError(
-        'Cannot add costs to a completed or cancelled project.',
-      );
+    if (!projectRow) return handleNotFoundError("Project", data.projectId);
+    if (projectRow.status === "completed" || projectRow.status === "cancelled") {
+      return handleStateError("Cannot add costs to a completed or cancelled project.");
     }
 
-    await db.insert(projectCosts).values({
-      projectId: data.projectId,
-      itemId: data.itemId ?? null,
-      description: data.description,
-      amount: String(Math.round(data.amount)),
-      costType: data.costType,
-      incurredDate: data.incurredDate,
-      addedBy: auth.userId,
+    await db.transaction(async (tx) => {
+      const [createdCost] = await tx
+        .insert(projectCosts)
+        .values({
+          projectId: data.projectId,
+          itemId: data.itemId ?? null,
+          description: data.description,
+          amount: String(Math.round(data.amount)),
+          costType: data.costType,
+          incurredDate: data.incurredDate,
+          addedBy: auth.userId,
+        })
+        .returning({ id: projectCosts.id });
+
+      if (!createdCost) {
+        throw new Error("cost_insert_failed");
+      }
+
+      const expenseAccount = mapCostTypeToExpenseAccount(data.costType);
+      const amountRounded = Math.round(data.amount);
+      await createBalancedJournalEntry({
+        tx,
+        entryDate: data.incurredDate,
+        memo: data.description,
+        sourceType: "project_expense",
+        sourceId: createdCost.id,
+        projectId: data.projectId,
+        createdBy: auth.userId,
+        lines: [
+          {
+            accountCode: expenseAccount,
+            debit: amountRounded,
+            credit: 0,
+          },
+          {
+            accountCode: "cash_on_hand",
+            debit: 0,
+            credit: amountRounded,
+          },
+        ],
+      });
     });
 
     const actualSpend = await persistActualTotal(data.projectId);
@@ -761,11 +705,11 @@ export async function addProjectCost(
     });
 
     revalidatePath(`/projects/${data.projectId}`);
-    revalidatePath('/projects');
+    revalidatePath("/projects");
 
     return successResponse(costs);
   } catch (error) {
-    return handleActionError(error, 'addProjectCost', 'Failed to add cost');
+    return handleActionError(error, "addProjectCost", "Failed to add cost");
   }
 }
 
@@ -778,27 +722,21 @@ export async function deleteProjectCost(
     const cost = await db.query.projectCosts.findFirst({
       where: eq(projectCosts.id, validatedCostId),
     });
-    if (!cost) return handleNotFoundError('Cost record', validatedCostId);
+    if (!cost) return handleNotFoundError("Cost record", validatedCostId);
 
     await db.delete(projectCosts).where(eq(projectCosts.id, validatedCostId));
     await persistActualTotal(cost.projectId);
 
     revalidatePath(`/projects/${cost.projectId}`);
-    revalidatePath('/projects');
+    revalidatePath("/projects");
 
     return successResponse({ projectId: cost.projectId });
   } catch (error) {
-    return handleActionError(
-      error,
-      'deleteProjectCost',
-      'Failed to delete cost',
-    );
+    return handleActionError(error, "deleteProjectCost", "Failed to delete cost");
   }
 }
 
-export async function addProjectRemark(
-  raw: unknown,
-): Promise<ActionResponse<ProjectRemark[]>> {
+export async function addProjectRemark(raw: unknown): Promise<ActionResponse<ProjectRemark[]>> {
   try {
     const auth = await requireAuth();
     const data = addProjectRemarkSchema.parse(raw);
@@ -806,7 +744,7 @@ export async function addProjectRemark(
     const projectRow = await db.query.projects.findFirst({
       where: eq(projects.id, data.projectId),
     });
-    if (!projectRow) return handleNotFoundError('Project', data.projectId);
+    if (!projectRow) return handleNotFoundError("Project", data.projectId);
 
     await db.insert(projectRemarks).values({
       projectId: data.projectId,
@@ -824,7 +762,7 @@ export async function addProjectRemark(
 
     return successResponse(remarks);
   } catch (error) {
-    return handleActionError(error, 'addProjectRemark', 'Failed to add remark');
+    return handleActionError(error, "addProjectRemark", "Failed to add remark");
   }
 }
 
@@ -838,27 +776,21 @@ export async function deleteProjectRemark(
     const remark = await db.query.projectRemarks.findFirst({
       where: eq(projectRemarks.id, validatedRemarkId),
     });
-    if (!remark) return handleNotFoundError('Remark', validatedRemarkId);
+    if (!remark) return handleNotFoundError("Remark", validatedRemarkId);
 
     const isAuthor = remark.authorId === auth.userId;
-    const isAdmin = auth.role === 'admin';
+    const isAdmin = auth.role === "admin";
     if (!isAuthor && !isAdmin) {
-      return handleStateError('You can only delete your own remarks.');
+      return handleStateError("You can only delete your own remarks.");
     }
 
-    await db
-      .delete(projectRemarks)
-      .where(eq(projectRemarks.id, validatedRemarkId));
+    await db.delete(projectRemarks).where(eq(projectRemarks.id, validatedRemarkId));
 
     revalidatePath(`/projects/${remark.projectId}`);
 
     return successResponse({ projectId: remark.projectId });
   } catch (error) {
-    return handleActionError(
-      error,
-      'deleteProjectRemark',
-      'Failed to delete remark',
-    );
+    return handleActionError(error, "deleteProjectRemark", "Failed to delete remark");
   }
 }
 
@@ -872,7 +804,7 @@ export async function createWarrantyAlertForProject(
     const projectRow = await db.query.projects.findFirst({
       where: eq(projects.id, data.projectId),
     });
-    if (!projectRow) return handleNotFoundError('Project', data.projectId);
+    if (!projectRow) return handleNotFoundError("Project", data.projectId);
 
     const [alert] = await db
       .insert(warrantyAlerts)
@@ -885,24 +817,24 @@ export async function createWarrantyAlertForProject(
       })
       .returning();
 
-    if (!alert) return handleStateError('Failed to create alert');
+    if (!alert) return handleStateError("Failed to create alert");
 
     await notifyAllUsers({
-      title: 'New warranty alert',
+      title: "New warranty alert",
       message: `${projectRow.projectNumber}: ${data.description}`,
-      type: 'action',
+      type: "action",
       link: `/projects/${data.projectId}`,
     });
 
     revalidatePath(`/projects/${data.projectId}`);
-    revalidatePath('/warranty');
+    revalidatePath("/warranty");
 
     return successResponse(alert);
   } catch (error) {
     return handleActionError(
       error,
-      'createWarrantyAlertForProject',
-      'Failed to create warranty alert',
+      "createWarrantyAlertForProject",
+      "Failed to create warranty alert",
     );
   }
 }

@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { db } from '@/lib/db';
+import { db } from "@/lib/db";
 import {
   projectPayments,
   paymentMethods,
@@ -8,65 +8,90 @@ import {
   projectCosts,
   type ProjectPayment,
   type PaymentMethod,
-} from '@/lib/db/schema';
-import { eq, desc, sql, and, gte } from 'drizzle-orm';
-import { requireAuth } from '@/lib/auth/validate';
-import { recordPaymentSchema } from '@/lib/validators/payment';
+} from "@/lib/db/schema";
+import { eq, desc, sql, and, gte } from "drizzle-orm";
+import { requireAuth } from "@/lib/auth/validate";
+import { recordPaymentSchema } from "@/lib/validators/payment";
 import {
-  successResponse,
-  type ActionResponse,
-} from '@/lib/utils/action-response';
-import {
-  handleActionError,
-  handleNotFoundError,
-  handleStateError,
-} from '@/lib/utils/error';
-import { revalidatePath } from 'next/cache';
-import { startOfMonth } from 'date-fns';
+  assertFinanceSsotDrift,
+  createBalancedJournalEntry,
+  mapPaymentMethodNameToAssetAccount,
+} from "@/lib/finance/ledger";
+import { successResponse, type ActionResponse } from "@/lib/utils/action-response";
+import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
+import { revalidatePath } from "next/cache";
+import { startOfMonth } from "date-fns";
 
-export async function recordPayment(
-  raw: unknown,
-): Promise<ActionResponse<ProjectPayment>> {
+export async function recordPayment(raw: unknown): Promise<ActionResponse<ProjectPayment>> {
   try {
     const auth = await requireAuth();
+    assertFinanceSsotDrift();
     const data = recordPaymentSchema.parse(raw);
 
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, data.projectId),
     });
-    if (!project) return handleNotFoundError('Project', data.projectId);
+    if (!project) return handleNotFoundError("Project", data.projectId);
 
     const method = await db.query.paymentMethods.findFirst({
       where: eq(paymentMethods.id, data.paymentMethodId),
     });
-    if (!method)
-      return handleNotFoundError('Payment method', data.paymentMethodId);
+    if (!method) return handleNotFoundError("Payment method", data.paymentMethodId);
 
-    const [payment] = await db
-      .insert(projectPayments)
-      .values({
+    const assetAccount = mapPaymentMethodNameToAssetAccount(method.name);
+    if (!assetAccount) {
+      return handleStateError(`Unsupported payment method '${method.name}' for ledger mapping.`);
+    }
+
+    const payment = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(projectPayments)
+        .values({
+          projectId: data.projectId,
+          amount: String(Math.round(data.amount)),
+          paymentMethodId: data.paymentMethodId,
+          paymentDate: data.paymentDate,
+          reference: data.reference ?? null,
+          notes: data.notes ?? null,
+          createdBy: auth.userId,
+        })
+        .returning();
+
+      if (!created) {
+        throw new Error("payment_insert_failed");
+      }
+
+      await createBalancedJournalEntry({
+        tx,
+        entryDate: data.paymentDate,
+        memo: data.notes ?? `Project payment received via ${method.name}`,
+        sourceType: "project_payment",
+        sourceId: created.id,
         projectId: data.projectId,
-        amount: String(Math.round(data.amount)),
-        paymentMethodId: data.paymentMethodId,
-        paymentDate: data.paymentDate,
-        reference: data.reference ?? null,
-        notes: data.notes ?? null,
         createdBy: auth.userId,
-      })
-      .returning();
+        lines: [
+          {
+            accountCode: assetAccount,
+            debit: Math.round(data.amount),
+            credit: 0,
+          },
+          {
+            accountCode: "accounts_receivable",
+            debit: 0,
+            credit: Math.round(data.amount),
+          },
+        ],
+      });
 
-    if (!payment) return handleStateError('Failed to record payment');
+      return created;
+    });
 
     revalidatePath(`/projects/${data.projectId}`);
-    revalidatePath('/projects');
+    revalidatePath("/projects");
 
     return successResponse(payment);
   } catch (error) {
-    return handleActionError(
-      error,
-      'recordPayment',
-      'Failed to record payment',
-    );
+    return handleActionError(error, "recordPayment", "Failed to record payment");
   }
 }
 
@@ -81,10 +106,7 @@ export async function getProjectPayments(
         methodName: paymentMethods.name,
       })
       .from(projectPayments)
-      .innerJoin(
-        paymentMethods,
-        eq(projectPayments.paymentMethodId, paymentMethods.id),
-      )
+      .innerJoin(paymentMethods, eq(projectPayments.paymentMethodId, paymentMethods.id))
       .where(eq(projectPayments.projectId, projectId))
       .orderBy(desc(projectPayments.paymentDate));
 
@@ -95,17 +117,11 @@ export async function getProjectPayments(
       })),
     );
   } catch (error) {
-    return handleActionError(
-      error,
-      'getProjectPayments',
-      'Failed to fetch payments',
-    );
+    return handleActionError(error, "getProjectPayments", "Failed to fetch payments");
   }
 }
 
-export async function getPaymentMethods(): Promise<
-  ActionResponse<PaymentMethod[]>
-> {
+export async function getPaymentMethods(): Promise<ActionResponse<PaymentMethod[]>> {
   try {
     await requireAuth();
     const methods = await db.query.paymentMethods.findMany({
@@ -114,11 +130,7 @@ export async function getPaymentMethods(): Promise<
     });
     return successResponse(methods);
   } catch (error) {
-    return handleActionError(
-      error,
-      'getPaymentMethods',
-      'Failed to fetch payment methods',
-    );
+    return handleActionError(error, "getPaymentMethods", "Failed to fetch payment methods");
   }
 }
 
@@ -154,22 +166,14 @@ export async function getFinanceSummary(): Promise<
 
     const costs = await db
       .select({
-        amount:
-          sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
-            'amount',
-          ),
-        month: sql<string>`date_trunc('month', incurred_date)::date`.as(
-          'month',
-        ),
+        amount: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("amount"),
+        month: sql<string>`date_trunc('month', incurred_date)::date`.as("month"),
       })
       .from(projectCosts)
       .where(gte(projectCosts.incurredDate, sixMonthsAgo))
       .groupBy(sql`date_trunc('month', incurred_date)`);
 
-    const monthlyMap = new Map<
-      string,
-      { incoming: number; outgoing: number }
-    >();
+    const monthlyMap = new Map<string, { incoming: number; outgoing: number }>();
 
     for (const p of payments) {
       const m = formatMonthKey(p.paymentDate);
@@ -201,17 +205,13 @@ export async function getFinanceSummary(): Promise<
 
     const [totalPayments] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as(
-          'sum',
-        ),
+        sum: sql<number>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as("sum"),
       })
       .from(projectPayments);
 
     const [totalCosts] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as(
-          'sum',
-        ),
+        sum: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("sum"),
       })
       .from(projectCosts);
 
@@ -220,7 +220,7 @@ export async function getFinanceSummary(): Promise<
       .from(projects)
       .where(
         and(
-          eq(projects.status, 'completed'),
+          eq(projects.status, "completed"),
           sql`cast(${projects.quotedTotal} as numeric) > coalesce((
             select sum(cast(${projectPayments.amount} as numeric))
             from ${projectPayments}
@@ -236,15 +236,11 @@ export async function getFinanceSummary(): Promise<
       unpaidCompleted: unpaidCompletedRows[0]?.count ?? 0,
     });
   } catch (error) {
-    return handleActionError(
-      error,
-      'getFinanceSummary',
-      'Failed to fetch finance summary',
-    );
+    return handleActionError(error, "getFinanceSummary", "Failed to fetch finance summary");
   }
 }
 
 function formatMonthKey(date: Date | string): string {
   const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }

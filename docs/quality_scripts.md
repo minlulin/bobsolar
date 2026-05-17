@@ -5,7 +5,7 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 ## Core Quality Gates
 
 - `pnpm green:code`  
-  Runs code-only gate: typecheck, lint, format check, and non-DB tests.
+  Runs code-only gate: typecheck, Oxlint, Biome check, and non-DB tests.
 
 - `pnpm green:db`  
   Runs DB gate on test database via `pnpm test:db`.
@@ -29,6 +29,23 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
   - `src/__tests__/db-ugly-path.test.ts`
   - `src/__tests__/db-workflow-master.test.ts`
 
+## Lint / Format Commands
+
+- `pnpm lint`  
+  Runs Oxlint (`--deny-warnings`) for fast rule enforcement.
+
+- `pnpm biome:check`  
+  Runs Biome lint + formatting diagnostics.
+
+- `pnpm biome:fix`  
+  Applies Biome safe fixes and formatting changes.
+
+- `pnpm format`  
+  Formats repository with Biome.
+
+- `pnpm format:check`  
+  Checks formatting with Biome.
+
 ## Database Commands
 
 - `pnpm db:migrate`  
@@ -41,6 +58,10 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 - `pnpm db:migrate:test`  
   Runs schema push against test DB config (`TEST_DATABASE_URL`) via `drizzle.test.config.ts`.
   Use this for cloned/resettable test branches where migration history may not match.
+
+- `pnpm db:test:ping`  
+  Quick connectivity probe for `TEST_DATABASE_URL` (fails fast with actionable
+  network/auth output before migration/test steps).
 
 - `pnpm db:seed`  
   Seeds database using env values from `.env.local`.
@@ -56,4 +77,7 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 - `.env.local` must define:
   - `DATABASE_URL` (production/main branch DB)
   - `TEST_DATABASE_URL` (test branch DB)
+- Recommended for test migrations:
+  - `TEST_DATABASE_URL_DIRECT` (direct Neon endpoint, non-pooler) used by
+    `db:migrate:test` to avoid PgBouncer/pooled migration issues
 - DB tests require network access to Neon.

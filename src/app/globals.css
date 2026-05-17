@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -24,6 +24,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-solar: var(--solar);
   --color-solar-amber: oklch(0.769 0.188 70.08);
   --radius: 0.5rem;
 }
@@ -44,6 +45,7 @@
   --muted-foreground: oklch(0.45 0.02 265);
   --accent: oklch(0.605 0.186 64.3); /* Solar Gold Accent */
   --accent-foreground: oklch(0.985 0.005 247);
+  --solar: oklch(0.605 0.186 64.3);
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.88 0.01 247);
@@ -67,6 +69,7 @@
   --muted-foreground: oklch(0.6 0.02 265);
   --accent: oklch(0.605 0.186 64.3);
   --accent-foreground: oklch(0.985 0.005 247);
+  --solar: oklch(0.605 0.186 64.3);
   --destructive: oklch(0.55 0.18 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.25 0.02 265);
@@ -96,6 +99,6 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv11';
+    font-feature-settings: "ss01", "ss02", "cv01", "cv11";
   }
 }

@@ -11,423 +11,464 @@ import {
   index,
   unique,
   uniqueIndex,
-} from 'drizzle-orm/pg-core';
-import {
-  relations,
-  sql,
-  type InferSelectModel,
-  type InferInsertModel,
-} from 'drizzle-orm';
+  check,
+} from "drizzle-orm/pg-core";
+import { relations, sql, type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
 // --- Enums ---
 
-export const userRoleEnum = pgEnum('user_role', ['admin', 'staff']);
+export const userRoleEnum = pgEnum("user_role", ["admin", "staff"]);
 
-export const inventoryCategoryEnum = pgEnum('inventory_category', [
-  'panel',
-  'inverter',
-  'battery',
-  'mounting',
-  'cable',
-  'accessory',
-  'labor',
+export const inventoryCategoryEnum = pgEnum("inventory_category", [
+  "panel",
+  "inverter",
+  "battery",
+  "mounting",
+  "cable",
+  "accessory",
+  "labor",
 ]);
 
-export type InventoryCategory =
-  (typeof inventoryCategoryEnum.enumValues)[number];
+export type InventoryCategory = (typeof inventoryCategoryEnum.enumValues)[number];
 
-export const inventoryUnitEnum = pgEnum('inventory_unit', [
-  'pcs',
-  'meter',
-  'set',
-  'kWp',
-  'job',
-]);
+export const inventoryUnitEnum = pgEnum("inventory_unit", ["pcs", "meter", "set", "kWp", "job"]);
 
 export type InventoryUnit = (typeof inventoryUnitEnum.enumValues)[number];
 
-export const quotationStatusEnum = pgEnum('quotation_status', [
-  'draft',
-  'sent',
-  'accepted',
-  'rejected',
-  'expired',
+export const quotationStatusEnum = pgEnum("quotation_status", [
+  "draft",
+  "sent",
+  "accepted",
+  "rejected",
+  "expired",
 ]);
 
 export type QuotationStatus = (typeof quotationStatusEnum.enumValues)[number];
 
-export const projectStatusEnum = pgEnum('project_status', [
-  'planning',
-  'in_progress',
-  'on_hold',
-  'completed',
-  'cancelled',
+export const projectStatusEnum = pgEnum("project_status", [
+  "planning",
+  "in_progress",
+  "on_hold",
+  "completed",
+  "cancelled",
 ]);
 
-export const costTypeEnum = pgEnum('cost_type', [
-  'material',
-  'labor',
-  'transport',
-  'misc',
+export const costTypeEnum = pgEnum("cost_type", ["material", "labor", "transport", "misc"]);
+
+export const remarkTypeEnum = pgEnum("remark_type", ["note", "issue", "update"]);
+
+export const alertTypeEnum = pgEnum("alert_type", [
+  "warranty_expiry",
+  "maintenance_due",
+  "follow_up",
 ]);
 
-export const remarkTypeEnum = pgEnum('remark_type', [
-  'note',
-  'issue',
-  'update',
+export const notificationTypeEnum = pgEnum("notification_type", ["info", "warning", "action"]);
+
+export const voucherTypeEnum = pgEnum("voucher_type", [
+  "completion_certificate",
+  "final_payment_voucher",
 ]);
 
-export const alertTypeEnum = pgEnum('alert_type', [
-  'warranty_expiry',
-  'maintenance_due',
-  'follow_up',
+export const ledgerAccountTypeEnum = pgEnum("ledger_account_type", [
+  "asset",
+  "liability",
+  "equity",
+  "income",
+  "expense",
 ]);
 
-export const notificationTypeEnum = pgEnum('notification_type', [
-  'info',
-  'warning',
-  'action',
-]);
-
-export const voucherTypeEnum = pgEnum('voucher_type', [
-  'completion_certificate',
-  'final_payment_voucher',
+export const journalSourceTypeEnum = pgEnum("journal_source_type", [
+  "project_payment",
+  "project_expense",
+  "manual_adjustment",
+  "opening_balance",
+  "backfill",
 ]);
 
 // --- Tables ---
 
-export const users = pgTable('users', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  email: text('email').unique().notNull(),
-  passwordHash: text('password_hash').notNull(),
-  name: text('name').notNull(),
-  role: userRoleEnum('role').default('staff').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").unique().notNull(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  role: userRoleEnum("role").default("staff").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const sessions = pgTable('sessions', {
-  id: text('id').primaryKey(), // crypto.randomUUID()
-  userId: uuid('user_id')
-    .references(() => users.id, { onDelete: 'cascade' })
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(), // crypto.randomUUID()
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
-  role: text('role').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+  role: text("role").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const authRateLimits = pgTable(
-  'auth_rate_limits',
+  "auth_rate_limits",
   {
-    key: text('key').primaryKey(),
-    attempts: integer('attempts').default(0).notNull(),
-    lockedUntil: timestamp('locked_until'),
-    lastAttemptAt: timestamp('last_attempt_at').defaultNow().notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    key: text("key").primaryKey(),
+    attempts: integer("attempts").default(0).notNull(),
+    lockedUntil: timestamp("locked_until"),
+    lastAttemptAt: timestamp("last_attempt_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [index('auth_rate_limits_locked_until_idx').on(table.lockedUntil)],
+  (table) => [index("auth_rate_limits_locked_until_idx").on(table.lockedUntil)],
 );
 
-export const customers = pgTable('customers', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  email: text('email'),
-  phone: text('phone').notNull(),
-  address: text('address'),
-  city: text('city'),
-  notes: text('notes'),
-  isArchived: boolean('is_archived').default(false).notNull(),
-  archivedAt: timestamp('archived_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+export const customers = pgTable("customers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone").notNull(),
+  address: text("address"),
+  city: text("city"),
+  notes: text("notes"),
+  isArchived: boolean("is_archived").default(false).notNull(),
+  archivedAt: timestamp("archived_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const inventoryItems = pgTable('inventory_items', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  category: inventoryCategoryEnum('category').notNull(),
-  unit: inventoryUnitEnum('unit').notNull(),
-  unitPrice: decimal('unit_price', { precision: 15, scale: 0 }).notNull(),
-  stockQty: integer('stock_qty').default(0).notNull(),
-  brand: text('brand'),
-  modelNumber: text('model_number'),
-  specifications: jsonb('specifications'),
-  isActive: boolean('is_active').default(true).notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+export const inventoryItems = pgTable("inventory_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  category: inventoryCategoryEnum("category").notNull(),
+  unit: inventoryUnitEnum("unit").notNull(),
+  unitPrice: decimal("unit_price", { precision: 15, scale: 0 }).notNull(),
+  stockQty: integer("stock_qty").default(0).notNull(),
+  brand: text("brand"),
+  modelNumber: text("model_number"),
+  specifications: jsonb("specifications"),
+  isActive: boolean("is_active").default(true).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const quotations = pgTable(
-  'quotations',
+  "quotations",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    quoteNumber: text('quote_number').unique().notNull(), // QT-2026-0001
-    customerId: uuid('customer_id')
-      .references(() => customers.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    quoteNumber: text("quote_number").unique().notNull(), // QT-2026-0001
+    customerId: uuid("customer_id")
+      .references(() => customers.id, { onDelete: "cascade" })
       .notNull(),
-    createdBy: uuid('created_by')
+    createdBy: uuid("created_by")
       .references(() => users.id)
       .notNull(),
-    status: quotationStatusEnum('status').default('draft').notNull(),
-    subtotal: decimal('subtotal', { precision: 15, scale: 0 }).notNull(),
-    discountPercent: decimal('discount_percent', {
+    status: quotationStatusEnum("status").default("draft").notNull(),
+    subtotal: decimal("subtotal", { precision: 15, scale: 0 }).notNull(),
+    discountPercent: decimal("discount_percent", {
       precision: 5,
       scale: 2,
     })
-      .default('0')
+      .default("0")
       .notNull(),
-    discountAmount: decimal('discount_amount', {
+    discountAmount: decimal("discount_amount", {
       precision: 15,
       scale: 0,
     })
-      .default('0')
+      .default("0")
       .notNull(),
-    taxPercent: decimal('tax_percent', { precision: 5, scale: 2 })
-      .default('0')
-      .notNull(),
-    taxAmount: decimal('tax_amount', { precision: 15, scale: 0 })
-      .default('0')
-      .notNull(),
-    total: decimal('total', { precision: 15, scale: 0 }).notNull(),
-    notes: text('notes'),
-    validUntil: timestamp('valid_until'),
-    isArchived: boolean('is_archived').default(false).notNull(),
-    archivedAt: timestamp('archived_at'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    taxPercent: decimal("tax_percent", { precision: 5, scale: 2 }).default("0").notNull(),
+    taxAmount: decimal("tax_amount", { precision: 15, scale: 0 }).default("0").notNull(),
+    total: decimal("total", { precision: 15, scale: 0 }).notNull(),
+    notes: text("notes"),
+    validUntil: timestamp("valid_until"),
+    isArchived: boolean("is_archived").default(false).notNull(),
+    archivedAt: timestamp("archived_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
-    index('quotations_status_created_at_idx').on(table.status, table.createdAt),
-    index('quotations_archived_status_created_at_idx').on(
+    index("quotations_status_created_at_idx").on(table.status, table.createdAt),
+    index("quotations_archived_status_created_at_idx").on(
       table.isArchived,
       table.status,
       table.createdAt,
     ),
-    index('quotations_customer_id_idx').on(table.customerId),
-    index('quotations_created_by_idx').on(table.createdBy),
+    index("quotations_customer_id_idx").on(table.customerId),
+    index("quotations_created_by_idx").on(table.createdBy),
   ],
 );
 
 export const quotationItems = pgTable(
-  'quotation_items',
+  "quotation_items",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    quotationId: uuid('quotation_id')
-      .references(() => quotations.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    quotationId: uuid("quotation_id")
+      .references(() => quotations.id, { onDelete: "cascade" })
       .notNull(),
-    itemId: uuid('item_id').references(() => inventoryItems.id),
-    description: text('description').notNull(),
-    quantity: decimal('quantity', { precision: 12, scale: 2 }).notNull(),
-    discountPercentage: decimal('discount_percentage', {
+    itemId: uuid("item_id").references(() => inventoryItems.id),
+    description: text("description").notNull(),
+    quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
+    discountPercentage: decimal("discount_percentage", {
       precision: 5,
       scale: 2,
-    }).default('0'),
-    unitPrice: decimal('unit_price', { precision: 15, scale: 0 }).notNull(), // Snapshot
-    totalPrice: decimal('total_price', { precision: 15, scale: 0 }).notNull(),
-    sortOrder: integer('sort_order').notNull(),
+    }).default("0"),
+    unitPrice: decimal("unit_price", { precision: 15, scale: 0 }).notNull(), // Snapshot
+    totalPrice: decimal("total_price", { precision: 15, scale: 0 }).notNull(),
+    sortOrder: integer("sort_order").notNull(),
   },
-  (table) => [index('quotation_items_quotation_id_idx').on(table.quotationId)],
+  (table) => [index("quotation_items_quotation_id_idx").on(table.quotationId)],
 );
 
 export const projects = pgTable(
-  'projects',
+  "projects",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectNumber: text('project_number').unique().notNull(), // PJ-2026-0001
-    quotationId: uuid('quotation_id').references(() => quotations.id),
-    customerId: uuid('customer_id')
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectNumber: text("project_number").unique().notNull(), // PJ-2026-0001
+    quotationId: uuid("quotation_id").references(() => quotations.id),
+    customerId: uuid("customer_id")
       .references(() => customers.id)
       .notNull(),
-    status: projectStatusEnum('status').default('planning').notNull(),
-    siteAddress: text('site_address').notNull(),
-    systemSizeKwp: decimal('system_size_kwp', {
+    status: projectStatusEnum("status").default("planning").notNull(),
+    siteAddress: text("site_address").notNull(),
+    systemSizeKwp: decimal("system_size_kwp", {
       precision: 10,
       scale: 2,
     }).notNull(),
-    quotedTotal: decimal('quoted_total', { precision: 15, scale: 0 }).notNull(),
-    actualTotal: decimal('actual_total', {
+    quotedTotal: decimal("quoted_total", { precision: 15, scale: 0 }).notNull(),
+    actualTotal: decimal("actual_total", {
       precision: 15,
       scale: 0,
-    }).default('0'),
-    startDate: timestamp('start_date'),
-    targetCompletion: timestamp('target_completion'),
-    actualCompletion: timestamp('actual_completion'),
-    notes: text('notes'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    }).default("0"),
+    startDate: timestamp("start_date"),
+    targetCompletion: timestamp("target_completion"),
+    actualCompletion: timestamp("actual_completion"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     // Unique constraint: one project per quotation (where quotation_id is not null)
-    uniqueIndex('projects_quotation_id_unique')
+    uniqueIndex("projects_quotation_id_unique")
       .on(table.quotationId)
       .where(sql`${table.quotationId} is not null`),
-    index('projects_status_created_at_idx').on(table.status, table.createdAt),
-    index('projects_customer_id_idx').on(table.customerId),
-    index('projects_quotation_id_idx').on(table.quotationId),
+    index("projects_status_created_at_idx").on(table.status, table.createdAt),
+    index("projects_customer_id_idx").on(table.customerId),
+    index("projects_quotation_id_idx").on(table.quotationId),
   ],
 );
 
 export const projectCosts = pgTable(
-  'project_costs',
+  "project_costs",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectId: uuid('project_id')
-      .references(() => projects.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    itemId: uuid('item_id').references(() => inventoryItems.id),
-    description: text('description').notNull(),
-    amount: decimal('amount', { precision: 15, scale: 0 }).notNull(),
-    costType: costTypeEnum('cost_type').notNull(),
-    incurredDate: timestamp('incurred_date').defaultNow().notNull(),
-    addedBy: uuid('added_by')
+    itemId: uuid("item_id").references(() => inventoryItems.id),
+    description: text("description").notNull(),
+    amount: decimal("amount", { precision: 15, scale: 0 }).notNull(),
+    costType: costTypeEnum("cost_type").notNull(),
+    incurredDate: timestamp("incurred_date").defaultNow().notNull(),
+    addedBy: uuid("added_by")
       .references(() => users.id)
       .notNull(),
   },
   (table) => [
-    index('project_costs_project_id_idx').on(table.projectId),
-    index('project_costs_incurred_date_idx').on(table.incurredDate),
+    index("project_costs_project_id_idx").on(table.projectId),
+    index("project_costs_incurred_date_idx").on(table.incurredDate),
   ],
 );
 
 export const projectRemarks = pgTable(
-  'project_remarks',
+  "project_remarks",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectId: uuid('project_id')
-      .references(() => projects.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    authorId: uuid('author_id')
+    authorId: uuid("author_id")
       .references(() => users.id)
       .notNull(),
-    content: text('content').notNull(),
-    remarkType: remarkTypeEnum('remark_type').default('note').notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    content: text("content").notNull(),
+    remarkType: remarkTypeEnum("remark_type").default("note").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [index('project_remarks_project_id_idx').on(table.projectId)],
+  (table) => [index("project_remarks_project_id_idx").on(table.projectId)],
 );
 
 export const warrantyAlerts = pgTable(
-  'warranty_alerts',
+  "warranty_alerts",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectId: uuid('project_id')
-      .references(() => projects.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    alertType: alertTypeEnum('alert_type').notNull(),
-    description: text('description').notNull(),
-    dueDate: timestamp('due_date').notNull(),
-    isResolved: boolean('is_resolved').default(false).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    alertType: alertTypeEnum("alert_type").notNull(),
+    description: text("description").notNull(),
+    dueDate: timestamp("due_date").notNull(),
+    isResolved: boolean("is_resolved").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index('warranty_alerts_resolved_due_date_idx').on(
-      table.isResolved,
-      table.dueDate,
-    ),
-    index('warranty_alerts_project_id_idx').on(table.projectId),
+    index("warranty_alerts_resolved_due_date_idx").on(table.isResolved, table.dueDate),
+    index("warranty_alerts_project_id_idx").on(table.projectId),
   ],
 );
 
 export const notifications = pgTable(
-  'notifications',
+  "notifications",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    userId: uuid('user_id')
-      .references(() => users.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    title: text('title').notNull(),
-    message: text('message').notNull(),
-    type: notificationTypeEnum('type').default('info').notNull(),
-    link: text('link'),
-    isRead: boolean('is_read').default(false).notNull(),
-    notificationDedupeKey: text('notification_dedupe_key'),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    type: notificationTypeEnum("type").default("info").notNull(),
+    link: text("link"),
+    isRead: boolean("is_read").default(false).notNull(),
+    notificationDedupeKey: text("notification_dedupe_key"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index('notifications_user_read_created_at_idx').on(
-      table.userId,
-      table.isRead,
-      table.createdAt,
-    ),
-    index('notifications_user_created_at_idx').on(
-      table.userId,
-      table.createdAt,
-    ),
-    index('notifications_dedupe_key_idx').on(table.notificationDedupeKey),
+    index("notifications_user_read_created_at_idx").on(table.userId, table.isRead, table.createdAt),
+    index("notifications_user_created_at_idx").on(table.userId, table.createdAt),
+    index("notifications_dedupe_key_idx").on(table.notificationDedupeKey),
     // DB-level dedupe guarantee. Pairs with `onConflictDoNothing()` on
     // every notification insert so concurrent crons can't double-write.
     // Multiple rows with NULL dedupe key remain allowed (Postgres treats
     // NULLs as distinct in unique constraints by default).
-    unique('notifications_user_dedupe_key_unique').on(
-      table.userId,
-      table.notificationDedupeKey,
-    ),
+    unique("notifications_user_dedupe_key_unique").on(table.userId, table.notificationDedupeKey),
   ],
 );
 
-export const companySettings = pgTable('company_settings', {
-  key: text('key').primaryKey(),
-  value: text('value').notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+export const companySettings = pgTable("company_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const projectVouchers = pgTable(
-  'project_vouchers',
+  "project_vouchers",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectId: uuid('project_id')
-      .references(() => projects.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    voucherNumber: text('voucher_number').unique().notNull(),
-    voucherType: voucherTypeEnum('voucher_type').notNull(),
-    issuedAt: timestamp('issued_at').defaultNow().notNull(),
-    totalAmount: decimal('total_amount', { precision: 15, scale: 0 }).notNull(),
-    paidAmount: decimal('paid_amount', { precision: 15, scale: 0 }).notNull(),
-    balanceAmount: decimal('balance_amount', {
+    voucherNumber: text("voucher_number").unique().notNull(),
+    voucherType: voucherTypeEnum("voucher_type").notNull(),
+    issuedAt: timestamp("issued_at").defaultNow().notNull(),
+    totalAmount: decimal("total_amount", { precision: 15, scale: 0 }).notNull(),
+    paidAmount: decimal("paid_amount", { precision: 15, scale: 0 }).notNull(),
+    balanceAmount: decimal("balance_amount", {
       precision: 15,
       scale: 0,
     }).notNull(),
-    notes: text('notes'),
-    createdBy: uuid('created_by')
+    notes: text("notes"),
+    createdBy: uuid("created_by")
       .references(() => users.id)
       .notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index('project_vouchers_project_id_idx').on(table.projectId),
-    index('project_vouchers_voucher_type_idx').on(table.voucherType),
+    index("project_vouchers_project_id_idx").on(table.projectId),
+    index("project_vouchers_voucher_type_idx").on(table.voucherType),
   ],
 );
 
-export const paymentMethods = pgTable('payment_methods', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
+export const paymentMethods = pgTable("payment_methods", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const projectPayments = pgTable(
-  'project_payments',
+  "project_payments",
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    projectId: uuid('project_id')
-      .references(() => projects.id, { onDelete: 'cascade' })
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    voucherId: uuid('voucher_id').references(() => projectVouchers.id),
-    amount: decimal('amount', { precision: 15, scale: 0 }).notNull(),
-    paymentMethodId: uuid('payment_method_id')
+    voucherId: uuid("voucher_id").references(() => projectVouchers.id),
+    amount: decimal("amount", { precision: 15, scale: 0 }).notNull(),
+    paymentMethodId: uuid("payment_method_id")
       .references(() => paymentMethods.id)
       .notNull(),
-    paymentDate: timestamp('payment_date').defaultNow().notNull(),
-    reference: text('reference'),
-    notes: text('notes'),
-    createdBy: uuid('created_by')
+    paymentDate: timestamp("payment_date").defaultNow().notNull(),
+    reference: text("reference"),
+    notes: text("notes"),
+    createdBy: uuid("created_by")
       .references(() => users.id)
       .notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index('project_payments_project_id_idx').on(table.projectId),
-    index('project_payments_voucher_id_idx').on(table.voucherId),
-    index('project_payments_payment_date_idx').on(table.paymentDate),
+    index("project_payments_project_id_idx").on(table.projectId),
+    index("project_payments_voucher_id_idx").on(table.voucherId),
+    index("project_payments_payment_date_idx").on(table.paymentDate),
+  ],
+);
+
+export const ledgerAccounts = pgTable(
+  "ledger_accounts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    code: text("code").unique().notNull(),
+    name: text("name").notNull(),
+    type: ledgerAccountTypeEnum("type").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("ledger_accounts_code_idx").on(table.code),
+    index("ledger_accounts_type_idx").on(table.type),
+  ],
+);
+
+export const journalEntries = pgTable(
+  "journal_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    entryDate: timestamp("entry_date").defaultNow().notNull(),
+    memo: text("memo"),
+    sourceType: journalSourceTypeEnum("source_type").notNull(),
+    sourceId: uuid("source_id"),
+    createdBy: uuid("created_by")
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("journal_entries_entry_date_idx").on(table.entryDate),
+    index("journal_entries_source_idx").on(table.sourceType, table.sourceId),
+    index("journal_entries_created_by_idx").on(table.createdBy),
+  ],
+);
+
+export const journalLines = pgTable(
+  "journal_lines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    entryId: uuid("entry_id")
+      .references(() => journalEntries.id, { onDelete: "cascade" })
+      .notNull(),
+    accountId: uuid("account_id")
+      .references(() => ledgerAccounts.id)
+      .notNull(),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    debit: decimal("debit", { precision: 15, scale: 0 }).default("0").notNull(),
+    credit: decimal("credit", { precision: 15, scale: 0 }).default("0").notNull(),
+    memo: text("memo"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("journal_lines_entry_id_idx").on(table.entryId),
+    index("journal_lines_account_id_idx").on(table.accountId),
+    index("journal_lines_project_id_idx").on(table.projectId),
+    check("journal_lines_non_negative_check", sql`${table.debit} >= 0 and ${table.credit} >= 0`),
+    check(
+      "journal_lines_single_side_check",
+      sql`(${table.debit} > 0 and ${table.credit} = 0) or (${table.credit} > 0 and ${table.debit} = 0)`,
+    ),
   ],
 );
 
@@ -446,13 +487,10 @@ export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
 }));
 
-export const inventoryItemsRelations = relations(
-  inventoryItems,
-  ({ many }) => ({
-    quotationItems: many(quotationItems),
-    projectCosts: many(projectCosts),
-  }),
-);
+export const inventoryItemsRelations = relations(inventoryItems, ({ many }) => ({
+  quotationItems: many(quotationItems),
+  projectCosts: many(projectCosts),
+}));
 
 export const quotationsRelations = relations(quotations, ({ one, many }) => ({
   customer: one(customers, {
@@ -521,48 +559,66 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
-export const projectVouchersRelations = relations(
-  projectVouchers,
-  ({ one }) => ({
-    project: one(projects, {
-      fields: [projectVouchers.projectId],
-      references: [projects.id],
-    }),
-    createdBy: one(users, {
-      fields: [projectVouchers.createdBy],
-      references: [users.id],
-    }),
+export const projectVouchersRelations = relations(projectVouchers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectVouchers.projectId],
+    references: [projects.id],
   }),
-);
+  createdBy: one(users, {
+    fields: [projectVouchers.createdBy],
+    references: [users.id],
+  }),
+}));
 
-export const paymentMethodsRelations = relations(
-  paymentMethods,
-  ({ many }) => ({
-    payments: many(projectPayments),
-  }),
-);
+export const paymentMethodsRelations = relations(paymentMethods, ({ many }) => ({
+  payments: many(projectPayments),
+}));
 
-export const projectPaymentsRelations = relations(
-  projectPayments,
-  ({ one }) => ({
-    project: one(projects, {
-      fields: [projectPayments.projectId],
-      references: [projects.id],
-    }),
-    voucher: one(projectVouchers, {
-      fields: [projectPayments.voucherId],
-      references: [projectVouchers.id],
-    }),
-    paymentMethod: one(paymentMethods, {
-      fields: [projectPayments.paymentMethodId],
-      references: [paymentMethods.id],
-    }),
-    createdBy: one(users, {
-      fields: [projectPayments.createdBy],
-      references: [users.id],
-    }),
+export const ledgerAccountsRelations = relations(ledgerAccounts, ({ many }) => ({
+  lines: many(journalLines),
+}));
+
+export const journalEntriesRelations = relations(journalEntries, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [journalEntries.createdBy],
+    references: [users.id],
   }),
-);
+  lines: many(journalLines),
+}));
+
+export const journalLinesRelations = relations(journalLines, ({ one }) => ({
+  entry: one(journalEntries, {
+    fields: [journalLines.entryId],
+    references: [journalEntries.id],
+  }),
+  account: one(ledgerAccounts, {
+    fields: [journalLines.accountId],
+    references: [ledgerAccounts.id],
+  }),
+  project: one(projects, {
+    fields: [journalLines.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const projectPaymentsRelations = relations(projectPayments, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectPayments.projectId],
+    references: [projects.id],
+  }),
+  voucher: one(projectVouchers, {
+    fields: [projectPayments.voucherId],
+    references: [projectVouchers.id],
+  }),
+  paymentMethod: one(paymentMethods, {
+    fields: [projectPayments.paymentMethodId],
+    references: [paymentMethods.id],
+  }),
+  createdBy: one(users, {
+    fields: [projectPayments.createdBy],
+    references: [users.id],
+  }),
+}));
 
 // Update projects relations to include vouchers and payments
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -579,6 +635,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   warrantyAlerts: many(warrantyAlerts),
   vouchers: many(projectVouchers),
   payments: many(projectPayments),
+  journalLines: many(journalLines),
 }));
 
 // --- Types ---
@@ -627,3 +684,12 @@ export type NewPaymentMethod = InferInsertModel<typeof paymentMethods>;
 
 export type ProjectPayment = InferSelectModel<typeof projectPayments>;
 export type NewProjectPayment = InferInsertModel<typeof projectPayments>;
+
+export type LedgerAccount = InferSelectModel<typeof ledgerAccounts>;
+export type NewLedgerAccount = InferInsertModel<typeof ledgerAccounts>;
+
+export type JournalEntry = InferSelectModel<typeof journalEntries>;
+export type NewJournalEntry = InferInsertModel<typeof journalEntries>;
+
+export type JournalLine = InferSelectModel<typeof journalLines>;
+export type NewJournalLine = InferInsertModel<typeof journalLines>;

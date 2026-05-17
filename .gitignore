@@ -62,3 +62,5 @@ NeonMCP.md
 /.agents
 /.husky
 .env*.local
+/.playwright
+/.claude 

@@ -5,65 +5,80 @@
  * - 1 admin user
  * - Default company settings
  * - Default payment methods
+ * - Master ledger accounts
  *
  * No test data, no sample customers/projects/quotations.
  */
 
-import './load-env-local';
-import { db } from './index';
-import { users, companySettings, paymentMethods } from './schema';
-import { hashPassword } from '@/lib/auth/password';
+import "./load-env-local";
+import { db } from "./index";
+import { users, companySettings, paymentMethods, ledgerAccounts } from "./schema";
+import { hashPassword } from "@/lib/auth/password";
+import {
+  LEDGER_ACCOUNT_CODES,
+  LEDGER_ACCOUNT_CODE_TYPE_MAP,
+  LEDGER_ACCOUNT_LABELS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_PRESETS,
+} from "@/lib/domain/enums";
 
 async function main(): Promise<void> {
-  console.log('Seeding factory bootstrap data…');
+  console.log("Seeding factory bootstrap data...");
 
-  const passwordHash = await hashPassword('admin123');
+  const passwordHash = await hashPassword("admin123");
 
   await db.insert(users).values({
-    email: 'admin@bobsolar.com',
+    email: "admin@bobsolar.com",
     passwordHash,
-    name: 'Admin',
-    role: 'admin',
+    name: "Admin",
+    role: "admin",
   });
 
-  console.log('✓ Admin user created');
+  console.log("Admin user created");
 
   const settings: { key: string; value: string }[] = [
-    { key: 'company_name', value: 'BOB Solar' },
-    { key: 'company_address', value: 'Yangon, Myanmar' },
-    { key: 'company_phone', value: '+95-1-234567' },
-    { key: 'company_email', value: 'info@bobsolar.com' },
+    { key: "company_name", value: "BOB Solar" },
+    { key: "company_address", value: "Yangon, Myanmar" },
+    { key: "company_phone", value: "+95-1-234567" },
+    { key: "company_email", value: "info@bobsolar.com" },
   ];
 
-  for (const s of settings) {
+  for (const setting of settings) {
     await db
       .insert(companySettings)
-      .values(s)
+      .values(setting)
       .onConflictDoUpdate({
         target: companySettings.key,
-        set: { value: s.value },
+        set: { value: setting.value },
       });
   }
 
-  console.log('✓ Company settings seeded');
+  console.log("Company settings seeded");
 
-  const methods: { name: string }[] = [
-    { name: 'Cash' },
-    { name: 'Bank Transfer' },
-    { name: 'Mobile Wallet' },
-    { name: 'Cheque' },
-    { name: 'Other' },
-  ];
+  const methods = PAYMENT_METHOD_PRESETS.map((method) => ({
+    name: PAYMENT_METHOD_LABELS[method],
+  }));
 
-  for (const m of methods) {
-    await db.insert(paymentMethods).values(m);
+  for (const method of methods) {
+    await db.insert(paymentMethods).values(method).onConflictDoNothing();
   }
 
-  console.log('✓ Payment methods seeded');
-  console.log('Factory bootstrap complete.');
+  console.log("Payment methods seeded");
+
+  const accounts = LEDGER_ACCOUNT_CODES.map((code) => ({
+    code,
+    name: LEDGER_ACCOUNT_LABELS[code],
+    type: LEDGER_ACCOUNT_CODE_TYPE_MAP[code],
+    isActive: true,
+  }));
+
+  await db.insert(ledgerAccounts).values(accounts).onConflictDoNothing();
+
+  console.log("Ledger accounts seeded");
+  console.log("Factory bootstrap complete.");
 }
 
-main().catch((err: unknown) => {
-  console.error('Bootstrap failed:', err);
+main().catch((error: unknown) => {
+  console.error("Bootstrap failed:", error);
   process.exit(1);
 });
