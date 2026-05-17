@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Search, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useSearchCustomers } from '@/hooks/use-customers';
+import { getCustomer } from '@/actions/customer-actions';
 import { type Customer } from '@/lib/db/schema';
 import { useDebounce } from '@/hooks/use-debounce';
 
@@ -39,7 +41,18 @@ export function CustomerSelector({
     useSearchCustomers(debouncedSearch);
   const customers = customersData ?? [];
 
-  const selectedCustomer = customers.find((c) => c.id === value);
+  const foundInSearch = customers.find((c) => c.id === value);
+  const { data: customerById } = useQuery({
+    queryKey: ['customer', 'lookup', value],
+    queryFn: async () => {
+      const res = await getCustomer(value);
+      if (!res.success) return null;
+      return { id: res.data.id, name: res.data.name, phone: res.data.phone };
+    },
+    enabled: !!value && !foundInSearch,
+    staleTime: 5 * 60 * 1000,
+  });
+  const selectedCustomer = foundInSearch ?? customerById ?? null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

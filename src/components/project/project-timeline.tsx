@@ -17,6 +17,7 @@ interface ProjectTimelineProps {
 
 function phaseReachable(status: ProjectModel['status']): number {
   switch (status) {
+    case 'on_hold':
     case 'in_progress':
       return 1;
     case 'completed':

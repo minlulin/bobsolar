@@ -37,17 +37,12 @@ import { uuidSchema } from '@/lib/validators/common';
 // =============================================================================
 
 describe('Phase 1: Authentication Logic', () => {
-  it('loginSchema rejects invalid email formats', () => {
+  it('loginSchema rejects empty username or password', () => {
     expect(
       loginSchema.safeParse({ email: '', password: 'password123' }).success,
     ).toBe(false);
     expect(
-      loginSchema.safeParse({ email: 'not-email', password: 'password123' })
-        .success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({ email: 'test@example.com', password: '' })
-        .success,
+      loginSchema.safeParse({ email: 'admin', password: '' }).success,
     ).toBe(false);
   });
 

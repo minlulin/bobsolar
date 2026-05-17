@@ -13,8 +13,8 @@ import withBundleAnalyzerInit from '@next/bundle-analyzer';
 /** @param {boolean} isDev */
 function buildCsp(isDev) {
   const scriptSrc = isDev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline'";
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com"
+    : "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com";
 
   return [
     "default-src 'self'",

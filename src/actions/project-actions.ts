@@ -309,7 +309,9 @@ export async function getProjects(
     const yearCond =
       year && scope === 'completed'
         ? sql`extract(year from ${projects.actualCompletion}) = ${year}`
-        : undefined;
+        : year
+          ? sql`extract(year from ${projects.createdAt}) = ${year}`
+          : undefined;
 
     const completedFromCond =
       completedFrom && scope === 'completed'
@@ -602,6 +604,13 @@ export async function updateProject(
         const patch: Partial<typeof projects.$inferInsert> = {
           status: data.status,
         };
+        if (
+          existing.status === 'planning' &&
+          data.status === 'in_progress' &&
+          !existing.startDate
+        ) {
+          patch.startDate = new Date();
+        }
         if (data.siteAddress !== undefined) {
           patch.siteAddress = data.siteAddress?.trim() || existing.siteAddress;
         }
@@ -613,6 +622,13 @@ export async function updateProject(
         }
         if (data.notes !== undefined) patch.notes = data.notes;
         await db.update(projects).set(patch).where(eq(projects.id, data.id));
+
+        await notifyAllUsers({
+          title: 'Project status changed',
+          message: `Project ${existing.projectNumber} moved from ${existing.status.replace('_', ' ')} to ${data.status.replace('_', ' ')}.`,
+          type: 'info',
+          link: `/projects/${existing.id}`,
+        });
       }
     } else {
       const patch: Partial<typeof projects.$inferInsert> = {};
@@ -821,7 +837,6 @@ export async function deleteProjectRemark(
 
     const remark = await db.query.projectRemarks.findFirst({
       where: eq(projectRemarks.id, validatedRemarkId),
-      with: { author: { columns: { id: true } } },
     });
     if (!remark) return handleNotFoundError('Remark', validatedRemarkId);
 

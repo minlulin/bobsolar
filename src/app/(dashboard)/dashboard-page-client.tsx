@@ -66,6 +66,13 @@ const ActivityStream = dynamic(
     ),
   { ssr: false },
 );
+const FinanceSummary = dynamic(
+  () =>
+    import('@/components/dashboard/finance-summary').then(
+      (m) => m.FinanceSummary,
+    ),
+  { ssr: false },
+);
 
 export default function DashboardPage(): React.JSX.Element {
   const statsQuery = useDashboardStats();
@@ -262,6 +269,10 @@ export default function DashboardPage(): React.JSX.Element {
             </Link>
           </div>
         </SectionCard>
+      </motion.div>
+
+      <motion.div variants={item} className="col-span-12 lg:col-span-4">
+        <FinanceSummary />
       </motion.div>
     </motion.div>
   );

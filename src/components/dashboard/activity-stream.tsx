@@ -73,7 +73,7 @@ export function ActivityStream({
           >
             <ActivityIcon type={activity.type} />
             <div>
-              <p className="group-hover:text-foreground text-sm transition-colors">
+              <p className="text-muted-foreground group-hover:text-foreground text-sm transition-colors">
                 {activity.description}
               </p>
               <p className="text-muted-foreground text-xs">

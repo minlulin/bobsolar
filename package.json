@@ -17,6 +17,8 @@
     "db:baseline": "tsx src/lib/db/baseline-migrations.ts",
     "db:migrate:test": "pnpm exec drizzle-kit push --config drizzle.test.config.ts",
     "db:seed": "tsx src/lib/db/seed.ts",
+    "db:reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=full",
+    "db:factory-reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=factory",
     "test": "vitest run",
     "test:code": "vitest run --exclude src/__tests__/db-ugly-path.test.ts --exclude src/__tests__/db-workflow-master.test.ts",
     "test:db": "pnpm db:migrate:test && vitest run --no-file-parallelism src/__tests__/db-ugly-path.test.ts src/__tests__/db-workflow-master.test.ts",

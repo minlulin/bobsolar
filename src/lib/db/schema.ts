@@ -89,6 +89,11 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'action',
 ]);
 
+export const voucherTypeEnum = pgEnum('voucher_type', [
+  'completion_certificate',
+  'final_payment_voucher',
+]);
+
 // --- Tables ---
 
 export const users = pgTable('users', {
@@ -364,6 +369,68 @@ export const companySettings = pgTable('company_settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const projectVouchers = pgTable(
+  'project_vouchers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id, { onDelete: 'cascade' })
+      .notNull(),
+    voucherNumber: text('voucher_number').unique().notNull(),
+    voucherType: voucherTypeEnum('voucher_type').notNull(),
+    issuedAt: timestamp('issued_at').defaultNow().notNull(),
+    totalAmount: decimal('total_amount', { precision: 15, scale: 0 }).notNull(),
+    paidAmount: decimal('paid_amount', { precision: 15, scale: 0 }).notNull(),
+    balanceAmount: decimal('balance_amount', {
+      precision: 15,
+      scale: 0,
+    }).notNull(),
+    notes: text('notes'),
+    createdBy: uuid('created_by')
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('project_vouchers_project_id_idx').on(table.projectId),
+    index('project_vouchers_voucher_type_idx').on(table.voucherType),
+  ],
+);
+
+export const paymentMethods = pgTable('payment_methods', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const projectPayments = pgTable(
+  'project_payments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectId: uuid('project_id')
+      .references(() => projects.id, { onDelete: 'cascade' })
+      .notNull(),
+    voucherId: uuid('voucher_id').references(() => projectVouchers.id),
+    amount: decimal('amount', { precision: 15, scale: 0 }).notNull(),
+    paymentMethodId: uuid('payment_method_id')
+      .references(() => paymentMethods.id)
+      .notNull(),
+    paymentDate: timestamp('payment_date').defaultNow().notNull(),
+    reference: text('reference'),
+    notes: text('notes'),
+    createdBy: uuid('created_by')
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('project_payments_project_id_idx').on(table.projectId),
+    index('project_payments_voucher_id_idx').on(table.voucherId),
+    index('project_payments_payment_date_idx').on(table.paymentDate),
+  ],
+);
+
 // --- Relations ---
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -414,20 +481,6 @@ export const quotationItemsRelations = relations(quotationItems, ({ one }) => ({
   }),
 }));
 
-export const projectsRelations = relations(projects, ({ one, many }) => ({
-  quotation: one(quotations, {
-    fields: [projects.quotationId],
-    references: [quotations.id],
-  }),
-  customer: one(customers, {
-    fields: [projects.customerId],
-    references: [customers.id],
-  }),
-  costs: many(projectCosts),
-  remarks: many(projectRemarks),
-  warrantyAlerts: many(warrantyAlerts),
-}));
-
 export const projectCostsRelations = relations(projectCosts, ({ one }) => ({
   project: one(projects, {
     fields: [projectCosts.projectId],
@@ -468,6 +521,66 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+export const projectVouchersRelations = relations(
+  projectVouchers,
+  ({ one }) => ({
+    project: one(projects, {
+      fields: [projectVouchers.projectId],
+      references: [projects.id],
+    }),
+    createdBy: one(users, {
+      fields: [projectVouchers.createdBy],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const paymentMethodsRelations = relations(
+  paymentMethods,
+  ({ many }) => ({
+    payments: many(projectPayments),
+  }),
+);
+
+export const projectPaymentsRelations = relations(
+  projectPayments,
+  ({ one }) => ({
+    project: one(projects, {
+      fields: [projectPayments.projectId],
+      references: [projects.id],
+    }),
+    voucher: one(projectVouchers, {
+      fields: [projectPayments.voucherId],
+      references: [projectVouchers.id],
+    }),
+    paymentMethod: one(paymentMethods, {
+      fields: [projectPayments.paymentMethodId],
+      references: [paymentMethods.id],
+    }),
+    createdBy: one(users, {
+      fields: [projectPayments.createdBy],
+      references: [users.id],
+    }),
+  }),
+);
+
+// Update projects relations to include vouchers and payments
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  quotation: one(quotations, {
+    fields: [projects.quotationId],
+    references: [quotations.id],
+  }),
+  customer: one(customers, {
+    fields: [projects.customerId],
+    references: [customers.id],
+  }),
+  costs: many(projectCosts),
+  remarks: many(projectRemarks),
+  warrantyAlerts: many(warrantyAlerts),
+  vouchers: many(projectVouchers),
+  payments: many(projectPayments),
+}));
+
 // --- Types ---
 
 export type User = InferSelectModel<typeof users>;
@@ -505,3 +618,12 @@ export type NewNotification = InferInsertModel<typeof notifications>;
 
 export type CompanySetting = InferSelectModel<typeof companySettings>;
 export type NewCompanySetting = InferInsertModel<typeof companySettings>;
+
+export type ProjectVoucher = InferSelectModel<typeof projectVouchers>;
+export type NewProjectVoucher = InferInsertModel<typeof projectVouchers>;
+
+export type PaymentMethod = InferSelectModel<typeof paymentMethods>;
+export type NewPaymentMethod = InferInsertModel<typeof paymentMethods>;
+
+export type ProjectPayment = InferSelectModel<typeof projectPayments>;
+export type NewProjectPayment = InferInsertModel<typeof projectPayments>;

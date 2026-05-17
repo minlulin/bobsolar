@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { loginSchema, type LoginInput } from '@/lib/validators/auth';
+import { userRoleSchema } from '@/lib/domain/enums';
 import { verifyPassword } from '@/lib/auth/password';
 import {
   clearSessionCookies,
@@ -34,7 +35,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
 
   // Uniform timing: always verify password even if user not found (mitigates timing attacks)
   const dummyHash =
-    '$2a$10$00000000000000000000000000000000000000000000000000000000000000';
+    '00000000000000000000000000000000:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   const hashToVerify = user?.passwordHash ?? dummyHash;
   const isValid = await verifyPassword(password, hashToVerify);
 
@@ -43,7 +44,8 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   }
 
   try {
-    await createSession(user.id, user.role);
+    const parsedRole = userRoleSchema.parse(user.role);
+    await createSession(user.id, parsedRole);
   } catch (error) {
     console.error('[login.createSession]', error);
     return errorResponse(

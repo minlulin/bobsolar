@@ -3,13 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  ChevronLeft,
-  Loader2,
-  Trash2,
-  Plus,
-  ClipboardCheck,
-} from 'lucide-react';
+import { ChevronLeft, Loader2, Trash2, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,6 +40,7 @@ import { cn, formatMMK } from '@/lib/utils';
 import { staggerContainer, staggerItem } from '@/lib/motion';
 import type { ProjectDetail } from '@/actions/project-actions';
 import { ProjectTimeline } from '@/components/project/project-timeline';
+import { ProjectStateRail } from '@/components/project/project-state-rail';
 import {
   useProject,
   useUpdateProject,
@@ -56,13 +51,13 @@ import {
   useDeleteProjectRemark,
   useCreateProjectWarrantyAlert,
 } from '@/hooks/use-projects';
+import { useProjectVouchers, useGenerateVoucher } from '@/hooks/use-vouchers';
 import {
   resolveWarrantyAlert as resolveWarrantyAlertAction,
   reopenWarrantyAlert as reopenWarrantyAlertAction,
 } from '@/actions/warranty-actions';
 import { toast } from 'sonner';
 import {
-  permittedNextStatuses,
   isProjectStatus,
   type ProjectStatus,
   addProjectCostSchema,
@@ -181,16 +176,6 @@ export function ProjectDetailShell({
   });
 
   const [busyAlertId, setBusyAlertId] = React.useState<string | null>(null);
-
-  // All useMemo hooks must be called before any early returns
-  const statusTransitions = React.useMemo((): ProjectStatus[] => {
-    if (!proj) return [];
-    if (!isProjectStatus(proj.status)) return [];
-    const current: ProjectStatus = proj.status;
-    return [current, ...permittedNextStatuses(current)].filter(
-      (status, idx, arr) => arr.indexOf(status) === idx,
-    );
-  }, [proj]);
 
   const canEditOperational =
     proj?.status !== 'completed' && proj?.status !== 'cancelled';
@@ -385,59 +370,24 @@ export function ProjectDetailShell({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {isAdmin ? (
-            <Select
-              value={proj.status}
-              disabled={
-                proj.status === 'completed' || proj.status === 'cancelled'
-              }
-              onValueChange={(value: ProjectStatus) => {
-                if (value === 'completed') {
-                  toast.warning(
-                    'Use “Mark Completed” so warranty cadence runs automatically.',
-                  );
-                  return;
-                }
-                updateProjectMutation.mutate({ id, status: value });
-              }}
-            >
-              <SelectTrigger className="w-[220px] rounded-2xl text-xs uppercase">
-                <SelectValue placeholder="Advance status · admin only" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusTransitions
-                  .filter((candidate) => candidate !== 'completed')
-                  .map((candidate) => (
-                    <SelectItem key={candidate} value={candidate}>
-                      {candidate.replace('_', ' ')}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          ) : null}
-
-          <Button
-            className="rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-10 text-xs font-bold uppercase shadow-[0_0_35px_-8px_rgb(110,231,183)] hover:brightness-110"
-            disabled={
-              !isAdmin ||
-              proj.status === 'completed' ||
-              proj.status === 'cancelled' ||
-              markCompleteMutation.isPending
-            }
-            onClick={() => {
-              markCompleteMutation.mutate(id);
-            }}
-          >
-            {markCompleteMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ClipboardCheck className="mr-2 h-4 w-4" />
-            )}
-            Mark completed
-          </Button>
-        </div>
+        <ProjectStateRail
+          currentStatus={proj.status}
+          isAdmin={isAdmin}
+          isPending={
+            updateProjectMutation.isPending || markCompleteMutation.isPending
+          }
+          onTransition={(status: ProjectStatus) => {
+            updateProjectMutation.mutate({ id, status });
+          }}
+          onMarkCompleted={() => {
+            markCompleteMutation.mutate(id);
+          }}
+        />
       </div>
+
+      {proj.status === 'completed' ? (
+        <CompletedProjectVouchers projectId={proj.id} />
+      ) : null}
 
       <ProjectTimeline project={proj} />
 
@@ -1058,6 +1008,151 @@ function ProjectOperationalNotes({
       >
         Save briefing
       </Button>
+    </div>
+  );
+}
+
+function CompletedProjectVouchers({
+  projectId,
+}: {
+  projectId: string;
+}): React.JSX.Element {
+  const { data: vouchers } = useProjectVouchers(projectId);
+  const generateVoucherMutation = useGenerateVoucher();
+
+  const [voucherType, setVoucherType] = React.useState<
+    'completion_certificate' | 'final_payment_voucher'
+  >('completion_certificate');
+  const [totalAmount, setTotalAmount] = React.useState('');
+  const [paidAmount, setPaidAmount] = React.useState('');
+
+  return (
+    <div className="bg-card border-border rounded-2xl border p-6">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
+            Project vouchers
+          </p>
+          <p className="text-muted-foreground text-[11px]">
+            Generate completion certificates and payment handover documents.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-border/50 mb-5 flex flex-wrap gap-3 border-b border-dashed pb-5">
+        <Button
+          variant={
+            voucherType === 'completion_certificate' ? 'default' : 'outline'
+          }
+          size="sm"
+          className="rounded-full text-[10px] font-bold uppercase"
+          onClick={() => {
+            setVoucherType('completion_certificate');
+          }}
+        >
+          Completion Certificate
+        </Button>
+        <Button
+          variant={
+            voucherType === 'final_payment_voucher' ? 'default' : 'outline'
+          }
+          size="sm"
+          className="rounded-full text-[10px] font-bold uppercase"
+          onClick={() => {
+            setVoucherType('final_payment_voucher');
+          }}
+        >
+          Final Payment Voucher
+        </Button>
+      </div>
+
+      <div className="mb-5 grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label className="text-[10px] tracking-wide uppercase">
+            Total amount (MMK)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            value={totalAmount}
+            onChange={(e) => {
+              setTotalAmount(e.target.value);
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] tracking-wide uppercase">
+            Paid amount (MMK)
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            step={1}
+            value={paidAmount}
+            onChange={(e) => {
+              setPaidAmount(e.target.value);
+            }}
+          />
+        </div>
+      </div>
+
+      <Button
+        className="rounded-full text-[10px] font-bold uppercase"
+        disabled={
+          generateVoucherMutation.isPending || !totalAmount || !paidAmount
+        }
+        onClick={() => {
+          generateVoucherMutation.mutate({
+            projectId,
+            voucherType,
+            totalAmount: Math.round(Number(totalAmount)),
+            paidAmount: Math.round(Number(paidAmount)),
+          });
+        }}
+      >
+        {generateVoucherMutation.isPending ? (
+          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+        ) : null}
+        Generate{' '}
+        {voucherType === 'completion_certificate' ? 'Certificate' : 'Voucher'}
+      </Button>
+
+      {vouchers && vouchers.length > 0 ? (
+        <div className="mt-6 space-y-3">
+          <p className="text-muted-foreground text-[10px] font-bold uppercase">
+            Issued vouchers
+          </p>
+          {vouchers.map((v) => (
+            <div
+              key={v.id}
+              className="border-border/70 bg-muted/25 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-5 py-3"
+            >
+              <div>
+                <p className="text-sm font-semibold">{v.voucherNumber}</p>
+                <p className="text-muted-foreground text-[10px] uppercase">
+                  {v.voucherType.replace('_', ' ')}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm">
+                  {formatMMK(Number(v.totalAmount))}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full text-[10px]"
+                  asChild
+                >
+                  <a href={`/vouchers/${v.id}/pdf`} target="_blank">
+                    Print
+                  </a>
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

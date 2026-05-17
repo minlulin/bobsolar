@@ -41,6 +41,7 @@ import {
   handleStateError,
 } from '@/lib/utils/error';
 import { notifyAllUsers } from '@/lib/notifications/broadcast';
+import { addDays } from 'date-fns';
 
 export type QuotationWithCustomer = Quotation & {
   customer: {
@@ -591,7 +592,9 @@ export async function duplicateQuotation(
                 taxAmount: original.taxAmount,
                 total: original.total,
                 notes: original.notes,
-                validUntil: original.validUntil,
+                validUntil: original.validUntil
+                  ? addDays(new Date(), 30)
+                  : null,
                 status: 'draft',
               })
               .returning();

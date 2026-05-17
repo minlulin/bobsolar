@@ -76,10 +76,10 @@ const getCachedSharedStats = unstable_cache(
     ] = await Promise.all([
       db
         .select({
-          totalRevenue: sql<string>`coalesce(sum(${projects.actualTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
+          totalRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
           activeProjects: sql<number>`cast(count(*) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')) as int)`,
-          thisMonthRevenue: sql<string>`coalesce(sum(${projects.actualTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${thisMonthStart} and ${projects.actualCompletion} <= ${thisMonthEnd}), 0)`,
-          prevMonthRevenue: sql<string>`coalesce(sum(${projects.actualTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${prevMonthStart} and ${projects.actualCompletion} <= ${prevMonthEnd}), 0)`,
+          thisMonthRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${thisMonthStart} and ${projects.actualCompletion} <= ${thisMonthEnd}), 0)`,
+          prevMonthRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${prevMonthStart} and ${projects.actualCompletion} <= ${prevMonthEnd}), 0)`,
         })
         .from(projects),
       db
@@ -197,7 +197,7 @@ export async function getDashboardPipeline(): Promise<
             activeProjectCount: sql<number>`cast(count(*) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')) as int)`,
             activeProjectValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')), 0)`,
             completedCount: sql<number>`cast(count(*) filter (where ${projects.status} = 'completed') as int)`,
-            completedValue: sql<string>`coalesce(sum(${projects.actualTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
+            completedValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
           })
           .from(projects),
       ]);

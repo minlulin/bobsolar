@@ -151,12 +151,12 @@ export default function LoginPage(): React.JSX.Element {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Username</Label>
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  autoComplete="email"
+                  type="text"
+                  placeholder="Enter your username"
+                  autoComplete="username"
                   {...register('email')}
                   className={errors.email ? 'border-destructive' : ''}
                 />

@@ -12,15 +12,15 @@ import { cn, formatMMK } from '@/lib/utils';
 function statusTone(status: ProjectListRow['status']): string {
   switch (status) {
     case 'planning':
-      return 'border-indigo-500/35 bg-indigo-500/10 text-indigo-200';
+      return 'border-indigo-500/35 bg-indigo-500/10 text-indigo-600 dark:text-indigo-200';
     case 'in_progress':
-      return 'border-emerald-500/35 bg-emerald-500/10 text-emerald-300';
+      return 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
     case 'on_hold':
-      return 'border-amber-500/35 bg-amber-500/10 text-amber-300';
+      return 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-300';
     case 'completed':
-      return 'border-border/70 bg-emerald-500/15 text-emerald-200';
+      return 'border-border/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-200';
     case 'cancelled':
-      return 'border-red-400/35 bg-red-500/15 text-red-200';
+      return 'border-red-400/35 bg-red-500/15 text-red-600 dark:text-red-200';
     default:
       return '';
   }
@@ -70,9 +70,10 @@ export function ProjectCard({
   );
 
   const warrantyLine = React.useMemo(() => {
-    if (project.warrantySummary === 'overdue') return '� Overdue alerts';
+    if (project.warrantySummary === undefined) return null;
+    if (project.warrantySummary === 'overdue') return '⚠ Overdue alerts';
     if (project.warrantySummary === 'due_soon') return '🟡 Due soon';
-    return '� All OK';
+    return '✅ All OK';
   }, [project.warrantySummary]);
 
   return (
@@ -140,13 +141,15 @@ export function ProjectCard({
               <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
                 Warranty signals
               </p>
-              {project.status === 'completed' ? (
+              {project.status === 'completed' && warrantyLine ? (
                 <p className="text-foreground text-xs font-semibold">
                   {warrantyLine}
                 </p>
               ) : (
                 <p className="text-muted-foreground text-[11px]">
-                  Alerts unlock after completion
+                  {project.status === 'completed'
+                    ? 'Warranty data unavailable'
+                    : 'Alerts unlock after completion'}
                 </p>
               )}
             </div>

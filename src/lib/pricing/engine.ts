@@ -32,9 +32,10 @@ export function calculateQuotation(
   globalDiscountPercentage: number = 0,
   taxPercentage: number = 0,
 ): PricingResult {
-  // 1. Keep precision during intermediate calculations.
+  // 1. Use rounded line-item totals so the grand total matches
+  //    the sum of displayed line items (avoids ±1 MMK drift).
   const subtotal = items.reduce(
-    (sum, item) => sum + calculateLineItemPrecise(item),
+    (sum, item) => sum + calculateLineItem(item),
     0,
   );
 

@@ -87,7 +87,7 @@ export function CompletedProjectsClient({
           <Loader2 className="text-solar h-10 w-10 animate-spin" />
         </div>
       ) : error ? (
-        <div className="border-destructive/40 rounded-3xl border p-14 text-center text-red-300">
+        <div className="border-destructive/40 text-destructive rounded-3xl border p-14 text-center">
           {error instanceof Error ? error.message : 'Historical grid offline'}
         </div>
       ) : items.length === 0 ? (

@@ -127,10 +127,11 @@ export default function WarrantyPage(): React.JSX.Element {
           className="grid gap-5 lg:grid-cols-2"
         >
           {alerts.map((a) => {
-            let dueTone = 'text-emerald-200';
+            let dueTone = 'text-emerald-700 dark:text-emerald-200';
             if (!a.isResolved && new Date(a.dueDate) < new Date())
-              dueTone = 'text-red-400';
-            else if (!a.isResolved) dueTone = 'text-amber-300';
+              dueTone = 'text-red-600 dark:text-red-400';
+            else if (!a.isResolved)
+              dueTone = 'text-amber-700 dark:text-amber-300';
 
             return (
               <div

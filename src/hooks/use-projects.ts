@@ -107,16 +107,41 @@ export function useUpdateProject(): ReturnType<
 
   return useMutation({
     mutationFn: updateProject,
-    onSuccess: async (res) => {
+    onMutate: async (raw) => {
+      const input = raw as { id: string; status?: string };
+      if (!input.status) return;
+      const queryKey = projectKeys.detail(input.id);
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData(queryKey);
+      if (previous) {
+        queryClient.setQueryData(queryKey, {
+          ...previous,
+          status: input.status,
+        });
+      }
+      return { previous, queryKey };
+    },
+    onSuccess: async (res, _vars, context) => {
       if (!res.success) {
+        if (context !== undefined) {
+          queryClient.setQueryData(context.queryKey, context.previous);
+        }
         toast.error(res.error);
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       toast.success('Project updated');
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      if (context !== undefined) {
+        queryClient.setQueryData(context.queryKey, context.previous);
+      }
       toast.error('Failed to update project');
+    },
+    onSettled: (_data, _error, _vars, context) => {
+      if (context !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: context.queryKey });
+      }
     },
   });
 }

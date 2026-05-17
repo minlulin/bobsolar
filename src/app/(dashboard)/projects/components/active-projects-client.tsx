@@ -85,7 +85,7 @@ export function ActiveProjectsClient({
       {isLoading ? (
         <ListGridSkeleton count={6} />
       ) : error ? (
-        <div className="border-destructive/40 rounded-3xl border p-14 text-center text-sm text-red-200">
+        <div className="border-destructive/40 text-destructive rounded-3xl border p-14 text-center text-sm">
           {error instanceof Error
             ? error.message
             : 'Could not synchronize projects'}

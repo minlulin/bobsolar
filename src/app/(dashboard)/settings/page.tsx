@@ -135,7 +135,7 @@ export default function SettingsPage(): React.JSX.Element {
     <div className="mx-auto space-y-10 pb-36">
       <div>
         <h1 className="font-heading text-3xl font-bold tracking-tighter">
-          Studio settings
+          Settings
         </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
           Configure brand identity, team access, and default behavior.
@@ -143,7 +143,7 @@ export default function SettingsPage(): React.JSX.Element {
       </div>
 
       <Tabs defaultValue="company" className="w-full">
-        <TabsList className="border-border bg-card mb-8 border">
+        <TabsList className="border-border bg-card mb-8 w-full justify-start border">
           <TabsTrigger value="company">Company Info</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
