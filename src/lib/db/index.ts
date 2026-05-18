@@ -8,7 +8,6 @@ import * as schema from "./schema";
 // serverExternalPackages can properly exclude 'ws' from the bundle, avoiding
 // cryptic native-addon failures like 'b.mask is not a function' on Vercel.
 if (typeof globalThis.WebSocket === "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ws = require("ws") as typeof import("ws") & {
     default?: typeof import("ws");
   };

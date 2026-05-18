@@ -20,6 +20,7 @@ import {
   type Project,
   type ProjectCost,
   type ProjectRemark,
+  paymentMethods,
   projectCosts,
   projectRemarks,
   projects,
@@ -33,6 +34,7 @@ import {
   assertFinanceSsotDrift,
   createBalancedJournalEntry,
   mapCostTypeToExpenseAccount,
+  mapPaymentMethodNameToAssetAccount,
 } from "@/lib/finance/ledger";
 import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
@@ -665,6 +667,18 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
         throw new Error("cost_insert_failed");
       }
 
+      const method = await tx.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.id, data.paymentMethodId),
+      });
+      if (!method) {
+        throw new Error("payment_method_not_found");
+      }
+
+      const assetAccount = mapPaymentMethodNameToAssetAccount(method.name);
+      if (!assetAccount) {
+        throw new Error(`unsupported_payment_method:${method.name}`);
+      }
+
       const expenseAccount = mapCostTypeToExpenseAccount(data.costType);
       const amountRounded = Math.round(data.amount);
       await createBalancedJournalEntry({
@@ -682,7 +696,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
             credit: 0,
           },
           {
-            accountCode: "cash_on_hand",
+            accountCode: assetAccount,
             debit: 0,
             credit: amountRounded,
           },

@@ -13,6 +13,7 @@ import {
   markAllNotificationsAsRead,
   runScheduledNotificationChecks,
 } from "@/actions/notification-actions";
+import { getPaymentMethods } from "@/actions/payment-actions";
 import {
   addProjectCost,
   addProjectRemark,
@@ -238,9 +239,14 @@ describeDb("Master workflow integration: DB + server actions", () => {
     );
     projectId = createdProject.id;
 
+    const methods = unwrap(await getPaymentMethods());
+    const defaultMethodId = methods[0]?.id;
+    expect(defaultMethodId).toBeTruthy();
+
     const costs = unwrap(
       await addProjectCost({
         projectId,
+        paymentMethodId: defaultMethodId ?? "",
         itemId: inventoryId,
         description: `${runTag} install labor`,
         amount: 100000,

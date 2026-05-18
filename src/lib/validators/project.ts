@@ -34,6 +34,7 @@ export const updateProjectSchema = z.object({
 export const addProjectCostSchema = z.object({
   projectId: z.uuid(),
   itemId: z.uuid().optional().nullable(),
+  paymentMethodId: z.uuid(),
   description: z.string().min(1).max(500),
   amount: z.number().int().min(0),
   costType: costTypeSchema,

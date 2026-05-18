@@ -60,7 +60,6 @@ NeonMCP.md
 /.gemini
 /.codex
 /.agents
-/.husky
 .env*.local
 /.playwright
 /.claude 

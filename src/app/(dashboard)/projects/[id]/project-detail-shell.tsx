@@ -38,6 +38,7 @@ import {
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { usePaymentMethods } from "@/hooks/use-payments";
 import {
   useAddProjectCost,
   useAddProjectRemark,
@@ -131,6 +132,7 @@ export function ProjectDetailShell({
 
   const updateProjectMutation = useUpdateProject();
   const addCostMutation = useAddProjectCost();
+  const { data: paymentMethods = [] } = usePaymentMethods();
   const deleteCostMutation = useDeleteProjectCost();
   const addRemarkMutation = useAddProjectRemark();
   const deleteRemarkMutation = useDeleteProjectRemark();
@@ -141,11 +143,13 @@ export function ProjectDetailShell({
   const [costFilter, setCostFilter] = React.useState<(typeof COST_FILTERS)[number]>("all");
 
   const [costForm, setCostForm] = React.useState<{
+    paymentMethodId: string;
     description: string;
     amount: string;
     costType: CostType;
     incurredDate: string;
   }>({
+    paymentMethodId: "",
     description: "",
     amount: "",
     costType: "material",
@@ -166,6 +170,13 @@ export function ProjectDetailShell({
   });
 
   const [busyAlertId, setBusyAlertId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (costForm.paymentMethodId.length > 0) return;
+    const firstMethodId = paymentMethods[0]?.id;
+    if (!firstMethodId) return;
+    setCostForm((prev) => ({ ...prev, paymentMethodId: firstMethodId }));
+  }, [costForm.paymentMethodId, paymentMethods]);
 
   const canEditOperational = proj?.status !== "completed" && proj?.status !== "cancelled";
 
@@ -229,6 +240,7 @@ export function ProjectDetailShell({
     ev.preventDefault();
     const validated = addProjectCostSchema.safeParse({
       projectId: p.id,
+      paymentMethodId: costForm.paymentMethodId,
       description: costForm.description.trim(),
       amount: Math.round(Number(costForm.amount.replace(/,/g, ""))),
       costType: costForm.costType,
@@ -247,6 +259,7 @@ export function ProjectDetailShell({
         }
         setCostOpen(false);
         setCostForm({
+          paymentMethodId: paymentMethods[0]?.id ?? "",
           description: "",
           amount: "",
           costType: "material",
@@ -483,6 +496,29 @@ export function ProjectDetailShell({
                     </SheetHeader>
 
                     <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label>Paid via</Label>
+                        <Select
+                          value={costForm.paymentMethodId}
+                          onValueChange={(v: string) => {
+                            setCostForm((s) => ({
+                              ...s,
+                              paymentMethodId: v,
+                            }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="payment source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paymentMethods.map((method) => (
+                              <SelectItem key={method.id} value={method.id}>
+                                {method.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="space-y-2">
                         <Label>Description</Label>
                         <Input

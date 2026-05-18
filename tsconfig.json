@@ -10,10 +10,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": true,
-
     // ── Interop Constraints ─────────────────────────────────────────────
     "esModuleInterop": true,
-
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true,
@@ -37,7 +35,6 @@
     // ── Completeness ────────────────────────────────────────────────────
     // PRAGMATIC STRICTNESS: third-party libs have unfixable errors
     "skipLibCheck": true,
-
     // ── JSX & Framework ─────────────────────────────────────────────────
     "jsx": "react-jsx",
     "incremental": true,
@@ -48,7 +45,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "allowJs": true
   },
   "include": [
     "next-env.d.ts",

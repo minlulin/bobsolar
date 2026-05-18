@@ -1,5 +1,3 @@
-import withBundleAnalyzerInit from "@next/bundle-analyzer";
-
 /**
  * Baseline security headers applied to every response.
  *
@@ -62,7 +60,7 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "@radix-ui/react-dialog", "date-fns"],
+    optimizePackageImports: ["lucide-react", "date-fns"],
   },
   async headers() {
     const isDev = process.env.NODE_ENV !== "production";
@@ -74,10 +72,6 @@ const nextConfig = {
     ];
   },
 };
-
-const withBundleAnalyzer = withBundleAnalyzerInit({
-  enabled: process.env.ANALYZE === "true",
-});
 
 // Conditionally apply Serwist only in production to avoid Turbopack conflict in dev.
 export default async function getNextConfig() {
@@ -92,5 +86,5 @@ export default async function getNextConfig() {
     });
     config = withSerwist(config);
   }
-  return withBundleAnalyzer(config);
+  return config;
 }
