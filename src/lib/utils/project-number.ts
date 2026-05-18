@@ -4,14 +4,12 @@
  */
 export function formatProjectNumber(sequence: number, year?: number): string {
   const y = String(year ?? new Date().getFullYear());
-  return `PJ-${y}-${sequence.toString().padStart(4, '0')}`;
+  return `PJ-${y}-${sequence.toString().padStart(4, "0")}`;
 }
 
-export function extractProjectSequence(
-  projectNumber: string | undefined,
-): number {
+export function extractProjectSequence(projectNumber: string | undefined): number {
   if (!projectNumber) return 0;
-  const parts = projectNumber.split('-');
+  const parts = projectNumber.split("-");
   if (parts.length < 3) return 0;
   const seq = parts[2];
   if (!seq) return 0;

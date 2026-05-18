@@ -1,7 +1,7 @@
-import { performance } from 'node:perf_hooks';
-import { db } from '@/lib/db';
-import { companySettings } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { performance } from "node:perf_hooks";
+import { eq, sql } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { companySettings } from "@/lib/db/schema";
 
 const PREFIX = `perf:settings:${Date.now()}:`;
 const ENTRY_COUNT = 24;

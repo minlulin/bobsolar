@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
-import { getSessionFromCookie } from '@/lib/auth/session';
+import { redirect } from "next/navigation";
+import { getSessionFromCookie } from "@/lib/auth/session";
 
 export default async function AuthLayout({
   children,
@@ -9,7 +9,7 @@ export default async function AuthLayout({
   const session = await getSessionFromCookie();
 
   if (session) {
-    redirect('/');
+    redirect("/");
   }
 
   return <div className="min-h-screen">{children}</div>;

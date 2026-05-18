@@ -1,21 +1,18 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 type FeatureErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
-export default function FeatureError({
-  error,
-  reset,
-}: FeatureErrorProps): React.JSX.Element {
+export default function FeatureError({ error, reset }: FeatureErrorProps): React.JSX.Element {
   useEffect(() => {
-    console.error('[Feature Error Boundary]', error);
+    console.error("[Feature Error Boundary]", error);
   }, [error]);
 
   return (
@@ -23,12 +20,9 @@ export default function FeatureError({
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
         <AlertCircle className="h-10 w-10 text-red-500" />
       </div>
-      <h2 className="text-foreground mb-2 text-2xl font-bold">
-        Something went wrong!
-      </h2>
+      <h2 className="text-foreground mb-2 text-2xl font-bold">Something went wrong!</h2>
       <p className="text-muted-foreground mb-8 max-w-md">
-        We hit a problem while loading this section. Try again, or return to
-        dashboard.
+        We hit a problem while loading this section. Try again, or return to dashboard.
       </p>
       <div className="flex gap-4">
         <Button
@@ -39,11 +33,7 @@ export default function FeatureError({
         >
           Try again
         </Button>
-        <Button
-          asChild
-          variant="outline"
-          className="border-border/70 hover:bg-muted/45"
-        >
+        <Button asChild variant="outline" className="border-border/70 hover:bg-muted/45">
           <Link href="/">Go to Dashboard</Link>
         </Button>
       </div>

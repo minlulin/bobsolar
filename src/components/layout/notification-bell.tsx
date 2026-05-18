@@ -1,37 +1,27 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { motion } from 'motion/react';
+import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle, Bell, Info, Loader2, PlayCircle, Plus } from "lucide-react";
+import { motion } from "motion/react";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Bell,
-  Loader2,
-  Info,
-  AlertTriangle,
-  PlayCircle,
-  Plus,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
+  useDeleteNotification,
+  useMarkAllNotificationsAsRead,
+  useMarkNotificationAsRead,
   useNotifications,
   useUnreadCount,
-  useMarkNotificationAsRead,
-  useMarkAllNotificationsAsRead,
-  useDeleteNotification,
-} from '@/hooks/use-notifications';
-import { formatDistanceToNow } from 'date-fns';
-import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import type { Notification } from '@/lib/db/schema';
-import { useNotificationStore } from '@/stores/notification-store';
+} from "@/hooks/use-notifications";
+import type { Notification } from "@/lib/db/schema";
+import { cn } from "@/lib/utils";
+import { useNotificationStore } from "@/stores/notification-store";
 
 function isSafeInternalLink(link: string): boolean {
-  if (!link.startsWith('/') || link.startsWith('//')) return false;
+  if (!link.startsWith("/") || link.startsWith("//")) return false;
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: Intentional security check for control chars in links
   if (/[\\\u0000-\u001F]/.test(link)) return false;
   if (/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(link)) return false;
   return true;
@@ -50,7 +40,7 @@ export function NotificationBell(): React.JSX.Element {
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
 
   React.useEffect(() => {
-    if (typeof unreadQuery.data === 'number') setUnreadCount(unreadQuery.data);
+    if (typeof unreadQuery.data === "number") setUnreadCount(unreadQuery.data);
   }, [unreadQuery.data, setUnreadCount]);
 
   const [pulseBadge, setPulseBadge] = React.useState(false);
@@ -67,7 +57,7 @@ export function NotificationBell(): React.JSX.Element {
     }
     prevUnread.current = unreadCount;
     return;
-  }, [unreadCount, prevUnread]);
+  }, [unreadCount]);
 
   const handleNotificationClick = (notification: Notification): void => {
     if (!notification.isRead) {
@@ -92,11 +82,11 @@ export function NotificationBell(): React.JSX.Element {
           {unreadCount > 0 && (
             <span
               className={cn(
-                'bg-destructive absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white',
-                pulseBadge ? 'animate-bounce' : '',
+                "bg-destructive absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white",
+                pulseBadge ? "animate-bounce" : "",
               )}
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
         </Button>
@@ -118,9 +108,7 @@ export function NotificationBell(): React.JSX.Element {
               disabled={markAllAsRead.isPending}
               className="text-muted-foreground hover:text-foreground h-8 px-2 text-xs"
             >
-              {markAllAsRead.isPending && (
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-              )}
+              {markAllAsRead.isPending && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
               Mark all
             </Button>
           )}
@@ -147,30 +135,26 @@ export function NotificationBell(): React.JSX.Element {
                     handleNotificationClick(notification);
                   }}
                   className={cn(
-                    'hover:bg-muted/50 relative flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors',
+                    "hover:bg-muted/50 relative flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors",
                     notification.isRead
-                      ? 'border-transparent bg-transparent'
-                      : 'border-border/50 bg-muted/20',
+                      ? "border-transparent bg-transparent"
+                      : "border-border/50 bg-muted/20",
                   )}
                 >
                   <div className="mt-0.5 shrink-0">
-                    {notification.type === 'info' && (
-                      <Info className="h-4 w-4 text-blue-500" />
-                    )}
-                    {notification.type === 'warning' && (
+                    {notification.type === "info" && <Info className="h-4 w-4 text-blue-500" />}
+                    {notification.type === "warning" && (
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                     )}
-                    {notification.type === 'action' && (
+                    {notification.type === "action" && (
                       <PlayCircle className="h-4 w-4 text-emerald-500" />
                     )}
                   </div>
                   <div className="flex-1 space-y-0.5">
                     <p
                       className={cn(
-                        'text-xs leading-none font-semibold',
-                        notification.isRead
-                          ? 'text-muted-foreground'
-                          : 'text-foreground',
+                        "text-xs leading-none font-semibold",
+                        notification.isRead ? "text-muted-foreground" : "text-foreground",
                       )}
                     >
                       {notification.title}

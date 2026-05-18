@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Inventory & Pricing',
+  title: "Inventory & Pricing",
 };
 
 export default function InventoryLayout({

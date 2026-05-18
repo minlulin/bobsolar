@@ -1,7 +1,9 @@
-'use client';
+"use client";
 
-import { User, LogOut, Settings } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { LogOut, Settings, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { logout } from "@/actions/auth-actions";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,9 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { logout } from '@/actions/auth-actions';
+} from "@/components/ui/dropdown-menu";
 
 export function UserNav({
   userName,
@@ -41,15 +41,13 @@ export function UserNav({
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm leading-none font-medium">{userName}</p>
-            <p className="text-muted-foreground text-xs leading-none capitalize">
-              {userRole}
-            </p>
+            <p className="text-muted-foreground text-xs leading-none capitalize">{userRole}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            router.push('/settings');
+            router.push("/settings");
           }}
         >
           <Settings className="mr-2 h-4 w-4" />

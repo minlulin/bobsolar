@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Check, ChevronsUpDown, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useQuery } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, User } from "lucide-react";
+import dynamic from "next/dynamic";
+import * as React from "react";
+import { searchCustomers } from "@/actions/customer-actions";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -11,40 +13,29 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { searchCustomers } from '@/actions/customer-actions';
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { useQuery } from '@tanstack/react-query';
-import { useDebounce } from '@/hooks/use-debounce';
-import dynamic from 'next/dynamic';
-import { type Customer } from '@/lib/db/schema';
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
+import type { Customer } from "@/lib/db/schema";
+import { cn } from "@/lib/utils";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 const CustomerDialog = dynamic(
-  () =>
-    import('@/components/customers/customer-dialog').then(
-      (mod) => mod.CustomerDialog,
-    ),
+  () => import("@/components/customers/customer-dialog").then((mod) => mod.CustomerDialog),
   { ssr: false },
 );
 
 export function CustomerSelector(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState('');
+  const [search, setSearch] = React.useState("");
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const debouncedSearch = useDebounce(search, 300);
 
-  const selectedCustomerId = useQuoteBuilderStore(
-    (state) => state.selectedCustomerId,
-  );
+  const selectedCustomerId = useQuoteBuilderStore((state) => state.selectedCustomerId);
   const setCustomer = useQuoteBuilderStore((state) => state.setCustomer);
 
   const { data: customers = [], isPending } = useQuery({
-    queryKey: ['customers', 'search', debouncedSearch],
+    queryKey: ["customers", "search", debouncedSearch],
     queryFn: async () => {
       if (!debouncedSearch && !selectedCustomerId) return [];
       const res = await searchCustomers(debouncedSearch);
@@ -58,7 +49,10 @@ export function CustomerSelector(): React.JSX.Element {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-muted-foreground ml-1 text-sm font-medium">
+        <label
+          htmlFor="customer-selector"
+          className="text-muted-foreground ml-1 text-sm font-medium"
+        >
           Customer
         </label>
         <button
@@ -74,6 +68,7 @@ export function CustomerSelector(): React.JSX.Element {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id="customer-selector"
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -82,18 +77,13 @@ export function CustomerSelector(): React.JSX.Element {
             <div className="flex items-center gap-2 overflow-hidden">
               <User className="h-4 w-4 shrink-0 text-amber-500" />
               <span className="truncate">
-                {selectedCustomer
-                  ? selectedCustomer.name
-                  : 'Select customer...'}
+                {selectedCustomer ? selectedCustomer.name : "Select customer..."}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          className="w-[--radix-popover-trigger-width] p-0"
-          align="start"
-        >
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search customers..."
@@ -103,8 +93,8 @@ export function CustomerSelector(): React.JSX.Element {
             <CommandList>
               <CommandEmpty>
                 {isPending
-                  ? 'Searching...'
-                  : 'No customer found. Add one, then come back and select.'}
+                  ? "Searching..."
+                  : "No customer found. Add one, then come back and select."}
               </CommandEmpty>
               <CommandGroup>
                 {customers.map((customer) => (
@@ -119,16 +109,12 @@ export function CustomerSelector(): React.JSX.Element {
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{customer.name}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {customer.phone}
-                      </span>
+                      <span className="text-muted-foreground text-xs">{customer.phone}</span>
                     </div>
                     <Check
                       className={cn(
-                        'ml-2 h-4 w-4',
-                        selectedCustomerId === customer.id
-                          ? 'opacity-100'
-                          : 'opacity-0',
+                        "ml-2 h-4 w-4",
+                        selectedCustomerId === customer.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                   </CommandItem>

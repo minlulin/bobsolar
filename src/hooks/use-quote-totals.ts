@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { calculateQuotation, type PricingResult } from '@/lib/pricing/engine';
+import { useMemo } from "react";
+import { calculateQuotation, type PricingResult } from "@/lib/pricing/engine";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 /**
  * Memoized derived selector for quotation totals.

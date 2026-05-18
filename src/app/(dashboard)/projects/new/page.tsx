@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Suspense } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import type { Customer, Quotation } from '@/lib/db/schema';
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import * as React from "react";
+import { Suspense } from "react";
 
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useConvertToProject } from "@/hooks/use-projects";
 
-import { useQuotation } from '@/hooks/use-quotations';
-import { useConvertToProject } from '@/hooks/use-projects';
+import { useQuotation } from "@/hooks/use-quotations";
+import type { Customer, Quotation } from "@/lib/db/schema";
 
 type QuotationDraft = Quotation & {
   customer: Customer;
@@ -22,9 +22,9 @@ type QuotationDraft = Quotation & {
 
 function defaultInstallationSite(quotation: QuotationDraft): string {
   const parts = [quotation.customer.address, quotation.customer.city]
-    .map((fragment) => (fragment ?? '').trim())
+    .map((fragment) => (fragment ?? "").trim())
     .filter(Boolean);
-  return parts.join(', ');
+  return parts.join(", ");
 }
 
 function QuotationConversionForm({
@@ -37,11 +37,9 @@ function QuotationConversionForm({
   const router = useRouter();
   const convertProject = useConvertToProject();
 
-  const [siteAddress, setSiteAddress] = React.useState(() =>
-    defaultInstallationSite(quotation),
-  );
-  const [systemSize, setSystemSize] = React.useState('');
-  const [notes, setNotes] = React.useState('');
+  const [siteAddress, setSiteAddress] = React.useState(() => defaultInstallationSite(quotation));
+  const [systemSize, setSystemSize] = React.useState("");
+  const [notes, setNotes] = React.useState("");
 
   React.useEffect(() => {
     if (quotation.project) {
@@ -88,11 +86,9 @@ function QuotationConversionForm({
           Initialize Project
         </h1>
         <p className="text-muted-foreground text-sm font-medium">
-          Transitioning client{' '}
-          <span className="text-primary font-bold">
-            {quotation.customer.name}
-          </span>{' '}
-          to technical planning phase.
+          Transitioning client{" "}
+          <span className="text-primary font-bold">{quotation.customer.name}</span> to technical
+          planning phase.
         </p>
       </div>
 
@@ -162,9 +158,7 @@ function QuotationConversionForm({
             disabled={convertProject.isPending || !siteAddress.trim()}
             type="submit"
           >
-            {convertProject.isPending ? (
-              <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-            ) : null}
+            {convertProject.isPending ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : null}
             Commence Project
           </Button>
         </div>
@@ -175,14 +169,9 @@ function QuotationConversionForm({
 
 function ConversionFlow(): React.JSX.Element | null {
   const searchParams = useSearchParams();
-  const quoteId = searchParams.get('quoteId');
+  const quoteId = searchParams.get("quoteId");
 
-  const {
-    data: quotation,
-    isFetching,
-    error,
-    isError,
-  } = useQuotation(quoteId ?? '');
+  const { data: quotation, isFetching, error, isError } = useQuotation(quoteId ?? "");
 
   if (!quoteId) {
     return (
@@ -193,8 +182,7 @@ function ConversionFlow(): React.JSX.Element | null {
           </div>
         </div>
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed font-medium">
-          Project initialization must be triggered from an accepted quotation
-          detail page.
+          Project initialization must be triggered from an accepted quotation detail page.
         </p>
         <Button
           asChild
@@ -221,9 +209,7 @@ function ConversionFlow(): React.JSX.Element | null {
     return (
       <div className="mx-auto max-w-2xl rounded-2xl border border-red-500/20 bg-red-500/5 p-10 text-center">
         <p className="mb-4 font-bold text-red-500">
-          {error instanceof Error
-            ? error.message
-            : 'System synchronization error.'}
+          {error instanceof Error ? error.message : "System synchronization error."}
         </p>
         <Button
           asChild
@@ -238,17 +224,15 @@ function ConversionFlow(): React.JSX.Element | null {
 
   if (!quotation) return null;
 
-  if (quotation.status !== 'accepted') {
+  if (quotation.status !== "accepted") {
     return (
       <div className="border-border bg-card mx-auto max-w-2xl rounded-2xl border p-12 text-center shadow-sm">
         <h3 className="text-primary mb-2 text-xl font-black tracking-tighter uppercase">
           Status Restricted
         </h3>
         <p className="text-muted-foreground mb-8 text-sm leading-relaxed font-medium">
-          This project gate only opens once the quotation status has been
-          finalized to{' '}
-          <span className="font-bold text-emerald-500 uppercase">Accepted</span>
-          .
+          This project gate only opens once the quotation status has been finalized to{" "}
+          <span className="font-bold text-emerald-500 uppercase">Accepted</span>.
         </p>
         <Button asChild className="bg-primary rounded-xl font-bold">
           <Link href={`/quotations/${quoteId}`}>Return to Details</Link>
@@ -257,13 +241,7 @@ function ConversionFlow(): React.JSX.Element | null {
     );
   }
 
-  return (
-    <QuotationConversionForm
-      key={quotation.id}
-      quoteId={quoteId}
-      quotation={quotation}
-    />
-  );
+  return <QuotationConversionForm key={quotation.id} quoteId={quoteId} quotation={quotation} />;
 }
 
 export default function ConvertProjectBlueprintPage(): React.JSX.Element {

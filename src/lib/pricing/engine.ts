@@ -34,10 +34,7 @@ export function calculateQuotation(
 ): PricingResult {
   // 1. Use rounded line-item totals so the grand total matches
   //    the sum of displayed line items (avoids ±1 MMK drift).
-  const subtotal = items.reduce(
-    (sum, item) => sum + calculateLineItem(item),
-    0,
-  );
+  const subtotal = items.reduce((sum, item) => sum + calculateLineItem(item), 0);
 
   // 2. Apply global discount and tax on precise values.
   const discountAmount = subtotal * (globalDiscountPercentage / 100);

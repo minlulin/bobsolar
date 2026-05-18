@@ -1,14 +1,10 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'motion/react';
-import { usePathname } from 'next/navigation';
-import { ReactNode } from 'react';
+import { AnimatePresence, motion } from "motion/react";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
-export function RouteTransition({
-  children,
-}: {
-  children: ReactNode;
-}): React.JSX.Element {
+export function RouteTransition({ children }: { children: ReactNode }): React.JSX.Element {
   const pathname = usePathname();
 
   return (
@@ -18,7 +14,7 @@ export function RouteTransition({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="h-full w-full"
       >
         {children}

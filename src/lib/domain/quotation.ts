@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { quotationStatusEnum } from '@/lib/db/schema';
+import { z } from "zod";
+import { quotationStatusEnum } from "@/lib/db/schema";
 
 export const QUOTATION_STATUSES = quotationStatusEnum.enumValues;
 export type QuotationStatus = (typeof quotationStatusEnum.enumValues)[number];
@@ -12,23 +12,20 @@ export function isQuotationStatus(status: string): status is QuotationStatus {
 
 /** UI label map for quotation statuses */
 export const QUOTATION_STATUS_LABELS: Record<QuotationStatus, string> = {
-  draft: 'Draft',
-  sent: 'Sent',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  expired: 'Expired',
+  draft: "Draft",
+  sent: "Sent",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  expired: "Expired",
 };
 
 /** Allowed status transitions for quotations */
-export const QUOTATION_STATUS_TRANSITIONS: Record<
-  QuotationStatus,
-  QuotationStatus[]
-> = {
-  draft: ['sent', 'draft'],
-  sent: ['accepted', 'rejected', 'expired', 'draft'],
-  accepted: ['draft', 'rejected'],
-  rejected: ['draft'],
-  expired: ['draft'],
+export const QUOTATION_STATUS_TRANSITIONS: Record<QuotationStatus, QuotationStatus[]> = {
+  draft: ["sent", "draft"],
+  sent: ["accepted", "rejected", "expired", "draft"],
+  accepted: ["draft", "rejected"],
+  rejected: ["draft"],
+  expired: ["draft"],
 };
 
 /** Check if a quotation status transition is valid */

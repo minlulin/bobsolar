@@ -2,20 +2,21 @@
  * Drops all tables and enum types from the public schema.
  * Used by db-reset.ts and db-factory-reset.ts.
  */
-import { neon } from '@neondatabase/serverless';
-import { config } from 'dotenv';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { neon } from "@neondatabase/serverless";
+import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, '..');
+const root = resolve(__dirname, "..");
 
-config({ path: resolve(root, '.env.local') });
+config({ path: resolve(root, ".env.local") });
 
 const databaseUrl = process.env.DATABASE_URL ?? process.env.TEST_DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error('❌ No DATABASE_URL or TEST_DATABASE_URL found in .env.local');
+  console.error("❌ No DATABASE_URL or TEST_DATABASE_URL found in .env.local");
   process.exit(1);
 }
 
@@ -44,10 +45,10 @@ async function main(): Promise<void> {
     END $$;
   `);
 
-  console.log('✓ All tables and enums dropped');
+  console.log("✓ All tables and enums dropped");
 }
 
 main().catch((err) => {
-  console.error('Drop failed:', err);
+  console.error("Drop failed:", err);
   process.exit(1);
 });

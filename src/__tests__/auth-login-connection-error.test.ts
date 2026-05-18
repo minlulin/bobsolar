@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock('@/lib/db', () => ({
+vi.mock("@/lib/db", () => ({
   db: {
     query: {
       users: { findFirst: vi.fn(() => Promise.resolve(null)) },
@@ -14,7 +14,7 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/auth/session', () => ({
+vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(() => Promise.resolve()),
   clearSessionCookies: vi.fn(),
   deleteSession: vi.fn(),
@@ -22,25 +22,25 @@ vi.mock('@/lib/auth/session', () => ({
   revokeAllUserSessions: vi.fn(() => Promise.resolve(0)),
 }));
 
-vi.mock('@/lib/auth/password', () => ({
+vi.mock("@/lib/auth/password", () => ({
   verifyPassword: vi.fn(() => Promise.resolve(false)),
 }));
 
-describe('Login resilience: DB connection errors', () => {
+describe("Login resilience: DB connection errors", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns error response for invalid credentials', async () => {
-    const { login } = await import('@/actions/auth-actions');
+  it("returns error response for invalid credentials", async () => {
+    const { login } = await import("@/actions/auth-actions");
     const result = await login({
-      email: 'nonexistent@example.com',
-      password: 'password123',
+      email: "nonexistent@example.com",
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe('Invalid credentials');
+      expect(result.error).toBe("Invalid credentials");
     }
   });
 });

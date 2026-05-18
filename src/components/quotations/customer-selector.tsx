@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, Search, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useQuery } from "@tanstack/react-query";
+import { Check, ChevronsUpDown, Search, User } from "lucide-react";
+import { useState } from "react";
+import { getCustomer } from "@/actions/customer-actions";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -11,16 +12,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { useSearchCustomers } from '@/hooks/use-customers';
-import { getCustomer } from '@/actions/customer-actions';
-import { type Customer } from '@/lib/db/schema';
-import { useDebounce } from '@/hooks/use-debounce';
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useSearchCustomers } from "@/hooks/use-customers";
+import { useDebounce } from "@/hooks/use-debounce";
+import type { Customer } from "@/lib/db/schema";
 
 interface CustomerSelectorProps {
   value: string;
@@ -34,16 +30,15 @@ export function CustomerSelector({
   onCustomerSelect,
 }: CustomerSelectorProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: customersData, isLoading } =
-    useSearchCustomers(debouncedSearch);
+  const { data: customersData, isLoading } = useSearchCustomers(debouncedSearch);
   const customers = customersData ?? [];
 
   const foundInSearch = customers.find((c) => c.id === value);
   const { data: customerById } = useQuery({
-    queryKey: ['customer', 'lookup', value],
+    queryKey: ["customer", "lookup", value],
     queryFn: async () => {
       const res = await getCustomer(value);
       if (!res.success) return null;
@@ -74,10 +69,7 @@ export function CustomerSelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
-        align="start"
-      >
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search customer by name or phone..."
@@ -115,13 +107,9 @@ export function CustomerSelector({
                 >
                   <div className="flex w-full items-center justify-between">
                     <span className="font-medium">{customer.name}</span>
-                    {value === customer.id && (
-                      <Check className="text-solar h-4 w-4" />
-                    )}
+                    {value === customer.id && <Check className="text-solar h-4 w-4" />}
                   </div>
-                  <span className="text-muted-foreground text-xs">
-                    {customer.phone}
-                  </span>
+                  <span className="text-muted-foreground text-xs">{customer.phone}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

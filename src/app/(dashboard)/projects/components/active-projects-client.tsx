@@ -1,28 +1,29 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
-import Link from 'next/link';
-import { useProjects } from '@/hooks/use-projects';
-import type { ProjectListFilter } from '@/lib/validators/project';
-import { ProjectCard } from '@/components/project/project-card';
-import { Button } from '@/components/ui/button';
-import type { InferSelectModel } from 'drizzle-orm';
-import { projects } from '@/lib/db/schema';
-import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
-import type { ProjectListRow } from '@/actions/project-actions';
+import type { InferSelectModel } from "drizzle-orm";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import type React from "react";
+import { useMemo, useState } from "react";
+import type { ProjectListRow } from "@/actions/project-actions";
+import { ProjectCard } from "@/components/project/project-card";
+import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
+import { Button } from "@/components/ui/button";
+import { useProjects } from "@/hooks/use-projects";
+import type { projects } from "@/lib/db/schema";
+import type { ProjectListFilter } from "@/lib/validators/project";
 
-type ProjectStatus = InferSelectModel<typeof projects>['status'];
+type ProjectStatus = InferSelectModel<typeof projects>["status"];
 
 const FILTER_GROUPS: Array<{
   id: string;
   label: string;
   status?: ProjectStatus;
 }> = [
-  { id: 'active', label: 'All Active' },
-  { id: 'planning', label: 'Planning', status: 'planning' },
-  { id: 'in_progress', label: 'Live sites', status: 'in_progress' },
-  { id: 'on_hold', label: 'Breather', status: 'on_hold' },
+  { id: "active", label: "All Active" },
+  { id: "planning", label: "Planning", status: "planning" },
+  { id: "in_progress", label: "Live sites", status: "in_progress" },
+  { id: "on_hold", label: "Breather", status: "on_hold" },
 ];
 
 interface ActiveProjectsClientProps {
@@ -35,23 +36,20 @@ interface ActiveProjectsClientProps {
 export function ActiveProjectsClient({
   initialData,
 }: ActiveProjectsClientProps): React.JSX.Element {
-  const [filter, setFilter] = useState<string>('active');
+  const [filter, setFilter] = useState<string>("active");
 
   const queryFilters = useMemo<Partial<ProjectListFilter>>(() => {
-    if (filter === 'active') return { scope: 'active' };
+    if (filter === "active") return { scope: "active" };
 
     const found = FILTER_GROUPS.find((pill) => pill.id === filter);
     return {
-      scope: 'active',
+      scope: "active",
       status: found?.status,
     };
   }, [filter]);
 
-  const isDefault = filter === 'active';
-  const { data, isLoading, error } = useProjects(
-    queryFilters,
-    isDefault ? initialData : undefined,
-  );
+  const isDefault = filter === "active";
+  const { data, isLoading, error } = useProjects(queryFilters, isDefault ? initialData : undefined);
   const items = data?.items ?? [];
 
   return (
@@ -69,8 +67,8 @@ export function ActiveProjectsClient({
               }}
               className={`relative rounded-full border px-6 py-2 text-[11px] font-semibold whitespace-nowrap uppercase transition ${
                 glow
-                  ? 'border-transparent bg-gradient-to-r from-orange-600/95 to-rose-900/95 text-white shadow-[0_0_24px_-6px_rgb(251,146,60)]'
-                  : 'text-muted-foreground border-border/70 hover:bg-muted/60 hover:text-foreground bg-transparent'
+                  ? "border-transparent bg-gradient-to-r from-orange-600/95 to-rose-900/95 text-white shadow-[0_0_24px_-6px_rgb(251,146,60)]"
+                  : "text-muted-foreground border-border/70 hover:bg-muted/60 hover:text-foreground bg-transparent"
               }`}
             >
               <span>{pill.label}</span>
@@ -86,20 +84,17 @@ export function ActiveProjectsClient({
         <ListGridSkeleton count={6} />
       ) : error ? (
         <div className="border-destructive/40 text-destructive rounded-3xl border p-14 text-center text-sm">
-          {error instanceof Error
-            ? error.message
-            : 'Could not synchronize projects'}
+          {error instanceof Error ? error.message : "Could not synchronize projects"}
         </div>
       ) : items.length === 0 ? (
         <div className="border-border/70 bg-muted/35 text-foreground rounded-[2rem] border-2 border-dashed py-36 text-center text-sm leading-relaxed shadow-inner">
-          No active installs right now{' '}
+          No active installs right now{" "}
           <span className="text-muted-foreground block pb-12">
             Accept a quotation → convert straight into commissioning.
           </span>
           <Button asChild variant="secondary" className="rounded-full">
             <Link href="/quotations">
-              Dive into quotations{' '}
-              <ExternalLink className="ml-2 inline h-4 w-4" />
+              Dive into quotations <ExternalLink className="ml-2 inline h-4 w-4" />
             </Link>
           </Button>
         </div>

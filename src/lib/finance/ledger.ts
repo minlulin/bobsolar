@@ -1,15 +1,15 @@
 import { inArray } from "drizzle-orm";
-import { type getDb } from "@/lib/db";
+import type { getDb } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
 import {
   COST_TYPES,
   type CostType,
-  LEDGER_ACCOUNT_CODES,
-  LEDGER_ACCOUNT_CODE_TYPE_MAP,
-  LEDGER_ACCOUNT_LABELS,
-  PAYMENT_METHOD_PRESETS,
   type JournalSourceType,
+  LEDGER_ACCOUNT_CODE_TYPE_MAP,
+  LEDGER_ACCOUNT_CODES,
+  LEDGER_ACCOUNT_LABELS,
   type LedgerAccountCode,
+  PAYMENT_METHOD_PRESETS,
 } from "@/lib/domain/enums";
 
 type DbClient = ReturnType<typeof getDb>;

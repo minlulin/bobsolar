@@ -1,22 +1,17 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
-  projectStatusSchema,
-  costTypeSchema,
-  remarkTypeSchema,
   alertTypeSchema,
-  type ProjectStatus,
   canTransitionProjectStatus,
-  permittedNextStatuses,
+  costTypeSchema,
   isProjectStatus,
-} from '@/lib/domain/enums';
+  type ProjectStatus,
+  permittedNextStatuses,
+  projectStatusSchema,
+  remarkTypeSchema,
+} from "@/lib/domain/enums";
 
 // Re-export for backwards compatibility
-export {
-  ProjectStatus,
-  canTransitionProjectStatus,
-  permittedNextStatuses,
-  isProjectStatus,
-};
+export { canTransitionProjectStatus, isProjectStatus, type ProjectStatus, permittedNextStatuses };
 
 export const convertToProjectSchema = z.object({
   quotationId: z.uuid(),
@@ -59,7 +54,7 @@ export const createWarrantyAlertSchema = z.object({
 });
 
 export const projectListFilterSchema = z.object({
-  scope: z.enum(['active', 'completed']).default('active'),
+  scope: z.enum(["active", "completed"]).default("active"),
   status: projectStatusSchema.optional(),
   search: z.string().optional().nullable(),
   year: z.coerce.number().int().min(2000).max(2100).optional().nullable(),
@@ -73,7 +68,5 @@ export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type AddProjectCostInput = z.infer<typeof addProjectCostSchema>;
 export type AddProjectRemarkInput = z.infer<typeof addProjectRemarkSchema>;
-export type CreateWarrantyAlertInput = z.infer<
-  typeof createWarrantyAlertSchema
->;
+export type CreateWarrantyAlertInput = z.infer<typeof createWarrantyAlertSchema>;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;

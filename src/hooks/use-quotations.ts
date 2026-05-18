@@ -1,31 +1,26 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
-  getQuotations,
-  getQuotation,
+  archiveQuotation,
   createQuotation,
-  updateQuotation,
-  updateQuotationStatus,
   deleteQuotation,
   duplicateQuotation,
-  archiveQuotation,
+  getQuotation,
+  getQuotations,
   restoreQuotation,
-} from '@/actions/quotation-actions';
-import {
-  type QuotationFilterInput,
-  type UpdateQuotation,
-} from '@/lib/validators/quotation';
-import { type QuotationStatus } from '@/lib/domain/enums';
-import { toast } from 'sonner';
-import { quotationKeys } from '@/lib/query-keys';
+  updateQuotation,
+  updateQuotationStatus,
+} from "@/actions/quotation-actions";
+import type { QuotationStatus } from "@/lib/domain/enums";
+import { quotationKeys } from "@/lib/query-keys";
+import type { QuotationFilterInput, UpdateQuotation } from "@/lib/validators/quotation";
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useQuotations(
   filters: QuotationFilterInput = {},
   initialData?: ActionData<Awaited<ReturnType<typeof getQuotations>>>,
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotations>>>>
-> {
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotations>>>>> {
   return useQuery({
     queryKey: quotationKeys.list(filters),
     queryFn: async () => {
@@ -40,9 +35,7 @@ export function useQuotations(
 
 export function useQuotation(
   id: string,
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotation>>>>
-> {
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getQuotation>>>>> {
   return useQuery({
     queryKey: quotationKeys.detail(id),
     queryFn: async () => {
@@ -72,13 +65,13 @@ export function useCreateQuotation(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(response.data.id),
         });
-        toast.success('Quotation created successfully');
+        toast.success("Quotation created successfully");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to create quotation');
+      toast.error("Failed to create quotation");
     },
   });
 }
@@ -101,13 +94,13 @@ export function useUpdateQuotationStatus(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(variables.id),
         });
-        toast.success('Status updated successfully');
+        toast.success("Status updated successfully");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to update status');
+      toast.error("Failed to update status");
     },
   });
 }
@@ -125,13 +118,13 @@ export function useDeleteQuotation(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(deletedId),
         });
-        toast.success('Quotation deleted successfully');
+        toast.success("Quotation deleted successfully");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to delete quotation');
+      toast.error("Failed to delete quotation");
     },
   });
 }
@@ -146,31 +139,26 @@ export function useUpdateQuotation(): ReturnType<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateQuotation }) =>
-      updateQuotation(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateQuotation }) => updateQuotation(id, data),
     onSuccess: async (response, variables) => {
       if (response.success) {
         await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(variables.id),
         });
-        toast.success('Quotation updated successfully');
+        toast.success("Quotation updated successfully");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to update quotation');
+      toast.error("Failed to update quotation");
     },
   });
 }
 
 export function useDuplicateQuotation(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof duplicateQuotation>>,
-    Error,
-    string
-  >
+  typeof useMutation<Awaited<ReturnType<typeof duplicateQuotation>>, Error, string>
 > {
   const queryClient = useQueryClient();
 
@@ -185,23 +173,19 @@ export function useDuplicateQuotation(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(response.data.id),
         });
-        toast.success('Quotation duplicated successfully');
+        toast.success("Quotation duplicated successfully");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to duplicate quotation');
+      toast.error("Failed to duplicate quotation");
     },
   });
 }
 
 export function useArchiveQuotation(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof archiveQuotation>>,
-    Error,
-    string
-  >
+  typeof useMutation<Awaited<ReturnType<typeof archiveQuotation>>, Error, string>
 > {
   const queryClient = useQueryClient();
 
@@ -213,23 +197,19 @@ export function useArchiveQuotation(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(id),
         });
-        toast.success('Quotation archived');
+        toast.success("Quotation archived");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to archive quotation');
+      toast.error("Failed to archive quotation");
     },
   });
 }
 
 export function useRestoreQuotation(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof restoreQuotation>>,
-    Error,
-    string
-  >
+  typeof useMutation<Awaited<ReturnType<typeof restoreQuotation>>, Error, string>
 > {
   const queryClient = useQueryClient();
 
@@ -241,13 +221,13 @@ export function useRestoreQuotation(): ReturnType<
         await queryClient.invalidateQueries({
           queryKey: quotationKeys.detail(id),
         });
-        toast.success('Quotation restored');
+        toast.success("Quotation restored");
       } else {
         toast.error(response.error);
       }
     },
     onError: () => {
-      toast.error('Failed to restore quotation');
+      toast.error("Failed to restore quotation");
     },
   });
 }

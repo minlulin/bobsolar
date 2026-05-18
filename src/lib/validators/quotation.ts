@@ -1,32 +1,25 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
-  quotationStatusSchema,
+  canTransitionQuotationStatus,
+  QUOTATION_STATUS_TRANSITIONS,
   type QuotationStatus,
-  QUOTATION_STATUS_TRANSITIONS,
-  canTransitionQuotationStatus,
-} from '@/lib/domain/enums';
+  quotationStatusSchema,
+} from "@/lib/domain/enums";
 
-export {
-  QuotationStatus,
-  QUOTATION_STATUS_TRANSITIONS,
-  canTransitionQuotationStatus,
-};
+export { canTransitionQuotationStatus, QUOTATION_STATUS_TRANSITIONS, type QuotationStatus };
 
 export const quotationItemSchema = z.object({
   itemId: z.uuid().optional().nullable(),
-  description: z.string().min(1, 'Description is required'),
-  quantity: z
-    .number()
-    .int('Quantity must be a whole number')
-    .positive('Quantity must be positive'),
-  unitPrice: z.number().nonnegative('Price cannot be negative'),
+  description: z.string().min(1, "Description is required"),
+  quantity: z.number().int("Quantity must be a whole number").positive("Quantity must be positive"),
+  unitPrice: z.number().nonnegative("Price cannot be negative"),
   // .optional() を完全に削除し、default(0) のみにすることで number 型を確定させる
   discountPercentage: z.number().min(0).max(100).default(0),
 });
 
 export const createQuotationSchema = z.object({
-  customerId: z.uuid('Customer is required'),
-  items: z.array(quotationItemSchema).min(1, 'At least one item is required'),
+  customerId: z.uuid("Customer is required"),
+  items: z.array(quotationItemSchema).min(1, "At least one item is required"),
   discountPercent: z.number().min(0).max(100).default(0),
   taxPercent: z.number().min(0).max(100).default(5),
   notes: z.string().optional().nullable(),

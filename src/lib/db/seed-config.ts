@@ -8,10 +8,8 @@ function readTrimmedEnv(name: string): string | undefined {
 }
 
 export function getSeedAdminCredentials(): SeedAdminCredentials {
-  const email =
-    readTrimmedEnv('SEED_ADMIN_EMAIL') ?? readTrimmedEnv('ADMIN_EMAIL');
-  const password =
-    readTrimmedEnv('SEED_ADMIN_PASSWORD') ?? readTrimmedEnv('ADMIN_PASSWORD');
+  const email = readTrimmedEnv("SEED_ADMIN_EMAIL") ?? readTrimmedEnv("ADMIN_EMAIL");
+  const password = readTrimmedEnv("SEED_ADMIN_PASSWORD") ?? readTrimmedEnv("ADMIN_PASSWORD");
 
   return { email, password };
 }

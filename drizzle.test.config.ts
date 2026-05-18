@@ -1,10 +1,10 @@
-import { defineConfig } from "drizzle-kit";
 import { config } from "dotenv";
+import { defineConfig } from "drizzle-kit";
 
 config({ path: ".env.local" });
 
-const directTestDatabaseUrl = process.env["TEST_DATABASE_URL_DIRECT"]?.trim();
-const fallbackTestDatabaseUrl = process.env["TEST_DATABASE_URL"]?.trim();
+const directTestDatabaseUrl = process.env.TEST_DATABASE_URL_DIRECT?.trim();
+const fallbackTestDatabaseUrl = process.env.TEST_DATABASE_URL?.trim();
 const testDatabaseUrl = directTestDatabaseUrl || fallbackTestDatabaseUrl;
 
 if (!testDatabaseUrl) {

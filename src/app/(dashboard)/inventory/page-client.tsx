@@ -1,25 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useInventoryItems } from '@/hooks/use-inventory';
-import dynamic from 'next/dynamic';
-import { InventoryCard } from '@/components/inventory/inventory-card';
+import dynamic from "next/dynamic";
+import { useState } from "react";
+import { InventoryCard } from "@/components/inventory/inventory-card";
+import { useInventoryItems } from "@/hooks/use-inventory";
 
 const InventoryDialog = dynamic(
-  () =>
-    import('@/components/inventory/inventory-dialog').then(
-      (mod) => mod.InventoryDialog,
-    ),
+  () => import("@/components/inventory/inventory-dialog").then((mod) => mod.InventoryDialog),
   { ssr: false },
 );
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Search, PackageSearch } from 'lucide-react';
-import { type InventoryItem, inventoryCategoryEnum } from '@/lib/db/schema';
-import { motion } from 'motion/react';
-import { staggerContainer } from '@/lib/motion';
-import { cn } from '@/lib/utils';
-import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
+
+import { PackageSearch, Plus, Search } from "lucide-react";
+import { motion } from "motion/react";
+import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { type InventoryItem, inventoryCategoryEnum } from "@/lib/db/schema";
+import { staggerContainer } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 type InventoryPageClientProps = {
   canEdit: boolean;
@@ -27,17 +25,15 @@ type InventoryPageClientProps = {
 
 type PaginatedItems = { items: InventoryItem[]; total: number };
 
-export function InventoryPageClient({
-  canEdit,
-}: InventoryPageClientProps): React.JSX.Element {
-  const [search, setSearch] = useState('');
+export function InventoryPageClient({ canEdit }: InventoryPageClientProps): React.JSX.Element {
+  const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   const { data: rawResponse, isLoading } = useInventoryItems({
     search,
-    category: category as InventoryItem['category'] | undefined,
+    category: category as InventoryItem["category"] | undefined,
     limit: 50,
   });
 
@@ -53,15 +49,13 @@ export function InventoryPageClient({
     setIsDialogOpen(true);
   };
 
-  const categories = ['all', ...inventoryCategoryEnum.enumValues];
+  const categories = ["all", ...inventoryCategoryEnum.enumValues];
 
   return (
     <div className="space-y-8 pb-20">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="font-heading text-3xl font-bold">
-            Inventory & Pricing
-          </h1>
+          <h1 className="font-heading text-3xl font-bold">Inventory & Pricing</h1>
           <p className="text-muted-foreground mt-1">
             Manage your solar components, prices, and stock levels.
           </p>
@@ -90,15 +84,16 @@ export function InventoryPageClient({
         <div className="scrollbar-hide flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
           {categories.map((cat) => (
             <button
+              type="button"
               key={cat}
               onClick={() => {
-                setCategory(cat === 'all' ? null : cat);
+                setCategory(cat === "all" ? null : cat);
               }}
               className={cn(
-                'rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all',
-                category === cat || (cat === 'all' && category === null)
-                  ? 'bg-solar border-transparent text-white'
-                  : 'bg-card/50 text-muted-foreground border-border hover:bg-card',
+                "rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-all",
+                category === cat || (cat === "all" && category === null)
+                  ? "bg-solar border-transparent text-white"
+                  : "bg-card/50 text-muted-foreground border-border hover:bg-card",
               )}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -117,12 +112,7 @@ export function InventoryPageClient({
           className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {response.items.map((item) => (
-            <InventoryCard
-              key={item.id}
-              item={item}
-              canEdit={canEdit}
-              onEdit={handleEdit}
-            />
+            <InventoryCard key={item.id} item={item} canEdit={canEdit} onEdit={handleEdit} />
           ))}
         </motion.div>
       ) : (
@@ -138,7 +128,7 @@ export function InventoryPageClient({
             variant="link"
             className="text-solar-amber mt-4"
             onClick={() => {
-              setSearch('');
+              setSearch("");
               setCategory(null);
             }}
           >
@@ -148,11 +138,7 @@ export function InventoryPageClient({
       )}
 
       {canEdit && isDialogOpen && (
-        <InventoryDialog
-          item={editingItem}
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-        />
+        <InventoryDialog item={editingItem} open={isDialogOpen} onOpenChange={setIsDialogOpen} />
       )}
     </div>
   );

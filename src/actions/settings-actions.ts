@@ -1,22 +1,18 @@
-'use server';
+"use server";
 
-import { randomBytes } from 'crypto';
-import { db } from '@/lib/db';
-import { companySettings, users, type User } from '@/lib/db/schema';
-import { requireAdmin, requireAuth } from '@/lib/auth/validate';
-import { eq, sql } from 'drizzle-orm';
-import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
-import { z } from 'zod';
-import {
-  errorResponse,
-  successResponse,
-  type ActionResponse,
-} from '@/lib/utils/action-response';
-import { hashPassword } from '@/lib/auth/password';
-import { revokeAllUserSessions } from '@/lib/auth/session';
-import { COMPANY_SETTING_KEYS } from '@/lib/domain/settings-keys';
-import { USER_CAP } from '@/lib/domain/policies';
-import { deleteCacheValue, setCacheValue } from '@/lib/cache';
+import { randomBytes } from "node:crypto";
+import { eq, sql } from "drizzle-orm";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { z } from "zod";
+import { hashPassword } from "@/lib/auth/password";
+import { revokeAllUserSessions } from "@/lib/auth/session";
+import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { deleteCacheValue, setCacheValue } from "@/lib/cache";
+import { db } from "@/lib/db";
+import { companySettings, type User, users } from "@/lib/db/schema";
+import { USER_CAP } from "@/lib/domain/policies";
+import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
+import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
@@ -38,7 +34,7 @@ const createUserSchema = z.object({
 
 function makeTempPassword(): string {
   // Use cryptographically secure random bytes (16 bytes = 32 hex chars)
-  return `Tmp#${randomBytes(16).toString('hex')}`;
+  return `Tmp#${randomBytes(16).toString("hex")}`;
 }
 
 const getCachedCompanySettingsRows = unstable_cache(
@@ -47,8 +43,8 @@ const getCachedCompanySettingsRows = unstable_cache(
       .select({ key: companySettings.key, value: companySettings.value })
       .from(companySettings);
   },
-  ['settings:company-rows'],
-  { tags: ['settings:company'], revalidate: 600 },
+  ["settings:company-rows"],
+  { tags: ["settings:company"], revalidate: 600 },
 );
 
 async function getCachedCompanySettingsMap(): Promise<Record<string, string>> {
@@ -58,9 +54,7 @@ async function getCachedCompanySettingsMap(): Promise<Record<string, string>> {
   return loaded;
 }
 
-export async function getCompanySettings(): Promise<
-  ActionResponse<Record<string, string>>
-> {
+export async function getCompanySettings(): Promise<ActionResponse<Record<string, string>>> {
   // Auth gate is intentionally outside `try/catch` so that `redirect()` thrown
   // by `requireAuth()` / `requireAdmin()` propagates to Next.js instead of
   // being caught and serialised as `{ success: false, error: "NEXT_REDIRECT" }`.
@@ -69,15 +63,11 @@ export async function getCompanySettings(): Promise<
     const map = await getCachedCompanySettingsMap();
     return successResponse(map);
   } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : 'Failed to load settings',
-    );
+    return errorResponse(error instanceof Error ? error.message : "Failed to load settings");
   }
 }
 
-export async function setCompanyLogoUrl(
-  raw: unknown,
-): Promise<ActionResponse<{ url: string }>> {
+export async function setCompanyLogoUrl(raw: unknown): Promise<ActionResponse<{ url: string }>> {
   await requireAdmin();
   try {
     const { url } = setLogoSchema.parse(raw);
@@ -89,21 +79,21 @@ export async function setCompanyLogoUrl(
         target: companySettings.key,
         set: { value: url, updatedAt: new Date() },
       });
-    await deleteCacheValue('settings:company');
-    await deleteCacheValue('settings:branding');
+    await deleteCacheValue("settings:company");
+    await deleteCacheValue("settings:branding");
 
-    revalidateTag('settings:company', 'default');
-    revalidatePath('/settings');
-    revalidatePath('/', 'layout');
+    revalidateTag("settings:company", "default");
+    revalidatePath("/settings");
+    revalidatePath("/", "layout");
 
     return successResponse({ url });
   } catch (error) {
     return errorResponse(
       error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? 'Invalid URL')
+        ? (error.issues[0]?.message ?? "Invalid URL")
         : error instanceof Error
           ? error.message
-          : 'Failed to save logo',
+          : "Failed to save logo",
     );
   }
 }
@@ -123,17 +113,15 @@ export async function updateCompanySettings(
           set: { value: sql`excluded.value`, updatedAt: new Date() },
         });
     }
-    await deleteCacheValue('settings:company');
-    await deleteCacheValue('settings:branding');
+    await deleteCacheValue("settings:company");
+    await deleteCacheValue("settings:branding");
 
-    revalidateTag('settings:company', 'default');
-    revalidatePath('/settings');
+    revalidateTag("settings:company", "default");
+    revalidatePath("/settings");
 
     return successResponse(null);
   } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : 'Failed to save settings',
-    );
+    return errorResponse(error instanceof Error ? error.message : "Failed to save settings");
   }
 }
 
@@ -148,13 +136,13 @@ export async function getPublicCompanyBranding(): Promise<
   try {
     const map = await getCachedCompanySettingsMap();
     return successResponse({
-      companyName: map[COMPANY_SETTING_KEYS.NAME] || 'BOB Solar',
+      companyName: map[COMPANY_SETTING_KEYS.NAME] || "BOB Solar",
       logoUrl: map[LOGO_KEY] || null,
     });
   } catch {
     // Keep login usable even when company settings storage is unavailable.
     return successResponse({
-      companyName: 'BOB Solar',
+      companyName: "BOB Solar",
       logoUrl: null,
     });
   }
@@ -168,22 +156,18 @@ export async function getSettingsUsers(): Promise<
     const me = await db.query.users.findFirst({
       where: eq(users.id, auth.userId),
     });
-    if (!me) return errorResponse('User not found');
+    if (!me) return errorResponse("User not found");
 
-    const isAdmin = auth.role === 'admin';
+    const isAdmin = auth.role === "admin";
     // Non-admin callers only see themselves; admins see the full roster.
     const userRows = isAdmin ? await db.query.users.findMany() : [me];
     return successResponse({ isAdmin, users: userRows, me });
   } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : 'Failed to load users',
-    );
+    return errorResponse(error instanceof Error ? error.message : "Failed to load users");
   }
 }
 
-export async function updateSettingsUser(
-  raw: unknown,
-): Promise<ActionResponse<null>> {
+export async function updateSettingsUser(raw: unknown): Promise<ActionResponse<null>> {
   await requireAdmin();
   try {
     const parsed = updateUserSchema.parse(raw);
@@ -191,25 +175,23 @@ export async function updateSettingsUser(
       .update(users)
       .set({ name: parsed.name, email: parsed.email })
       .where(eq(users.id, parsed.id));
-    await setCacheValue('settings:last-user-mutation', String(Date.now()), {
+    await setCacheValue("settings:last-user-mutation", String(Date.now()), {
       ttlSeconds: 300,
     });
-    revalidatePath('/settings');
+    revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {
     return errorResponse(
       error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? 'Validation failed')
+        ? (error.issues[0]?.message ?? "Validation failed")
         : error instanceof Error
           ? error.message
-          : 'Failed to update user',
+          : "Failed to update user",
     );
   }
 }
 
-export async function createSettingsUser(
-  raw: unknown,
-): Promise<ActionResponse<null>> {
+export async function createSettingsUser(raw: unknown): Promise<ActionResponse<null>> {
   await requireAdmin();
   try {
     const parsed = createUserSchema.parse(raw);
@@ -223,18 +205,18 @@ export async function createSettingsUser(
       email: parsed.email,
       passwordHash,
     });
-    await setCacheValue('settings:last-user-mutation', String(Date.now()), {
+    await setCacheValue("settings:last-user-mutation", String(Date.now()), {
       ttlSeconds: 300,
     });
-    revalidatePath('/settings');
+    revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {
     return errorResponse(
       error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? 'Validation failed')
+        ? (error.issues[0]?.message ?? "Validation failed")
         : error instanceof Error
           ? error.message
-          : 'Failed to create user',
+          : "Failed to create user",
     );
   }
 }
@@ -247,7 +229,7 @@ export async function resetSettingsUserPassword(
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
-    if (!user) return errorResponse('User not found');
+    if (!user) return errorResponse("User not found");
 
     const temporaryPassword = makeTempPassword();
     const passwordHash = await hashPassword(temporaryPassword);
@@ -258,8 +240,6 @@ export async function resetSettingsUserPassword(
 
     return successResponse({ temporaryPassword });
   } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : 'Failed to reset password',
-    );
+    return errorResponse(error instanceof Error ? error.message : "Failed to reset password");
   }
 }

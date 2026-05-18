@@ -1,11 +1,7 @@
-'use client';
+"use client";
 
-import type * as React from 'react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import type * as React from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type SunGaugeProps = {
   revenue: number;
@@ -20,13 +16,7 @@ export function SunGauge({
   pendingQuotes,
   overdueAlerts,
 }: SunGaugeProps): React.JSX.Element {
-  const max = Math.max(
-    revenue,
-    activeProjects,
-    pendingQuotes,
-    overdueAlerts,
-    1,
-  );
+  const max = Math.max(revenue, activeProjects, pendingQuotes, overdueAlerts, 1);
 
   return (
     <div className="border-border bg-card relative rounded-xl border p-6">
@@ -39,7 +29,7 @@ export function SunGauge({
           color="bg-amber-500"
           size={16 + (revenue / max) * 22}
           label="Revenue"
-          value={`${Math.round(revenue).toLocaleString('en-US')} MMK`}
+          value={`${Math.round(revenue).toLocaleString("en-US")} MMK`}
           shortLabel={`${Math.round(revenue / 1000000)}`}
         />
         <MetricDot
@@ -92,12 +82,8 @@ function MetricDot({
             {shortLabel}
           </div>
           <div className="min-w-0">
-            <p className="text-foreground truncate text-sm leading-tight font-medium">
-              {label}
-            </p>
-            <p className="text-muted-foreground truncate text-xs">
-              {shortLabel} items
-            </p>
+            <p className="text-foreground truncate text-sm leading-tight font-medium">{label}</p>
+            <p className="text-muted-foreground truncate text-xs">{shortLabel} items</p>
           </div>
         </div>
       </TooltipTrigger>

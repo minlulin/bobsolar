@@ -1,7 +1,7 @@
-import { cache } from 'react';
-import { redirect } from 'next/navigation';
-import { getSessionFromCookie, getUserRoleFromDb } from './session';
-import { userRoleSchema, type UserRole } from '@/lib/domain/enums';
+import { redirect } from "next/navigation";
+import { cache } from "react";
+import { type UserRole, userRoleSchema } from "@/lib/domain/enums";
+import { getSessionFromCookie, getUserRoleFromDb } from "./session";
 
 export interface AuthUser {
   userId: string;
@@ -33,15 +33,15 @@ const resolveCurrentAuth = cache(async (): Promise<AuthUser | null> => {
 export async function requireAuth(): Promise<AuthUser> {
   const auth = await resolveCurrentAuth();
   if (!auth) {
-    redirect('/login');
+    redirect("/login");
   }
   return auth;
 }
 
 export async function requireAdmin(): Promise<AuthUser> {
   const auth = await requireAuth();
-  if (auth.role !== 'admin') {
-    redirect('/');
+  if (auth.role !== "admin") {
+    redirect("/");
   }
   return auth;
 }

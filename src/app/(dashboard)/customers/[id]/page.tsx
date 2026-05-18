@@ -1,34 +1,31 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
+import { format } from "date-fns";
 import {
-  ChevronLeft,
-  Phone,
-  Mail,
-  MapPin,
   Calendar,
+  ChevronLeft,
+  Edit,
   FileText,
   Layout,
-  Edit,
   Loader2,
-} from 'lucide-react';
-import { useCustomer } from '@/hooks/use-customers';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { motion } from 'motion/react';
-import { format } from 'date-fns';
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
-import { QuotationCard } from '@/components/quotations/quotation-card';
-import { ProjectCard } from '@/components/project/project-card';
+  Mail,
+  MapPin,
+  Phone,
+} from "lucide-react";
+import { motion } from "motion/react";
+import dynamic from "next/dynamic";
+import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { ProjectCard } from "@/components/project/project-card";
+import { QuotationCard } from "@/components/quotations/quotation-card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCustomer } from "@/hooks/use-customers";
 
 const CustomerDialog = dynamic(
-  () =>
-    import('@/components/customers/customer-dialog').then(
-      (mod) => mod.CustomerDialog,
-    ),
+  () => import("@/components/customers/customer-dialog").then((mod) => mod.CustomerDialog),
   { ssr: false },
 );
 
@@ -54,7 +51,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
         <Button
           variant="link"
           onClick={() => {
-            router.push('/customers');
+            router.push("/customers");
           }}
           className="mt-4"
         >
@@ -66,9 +63,9 @@ export default function CustomerDetailPage(): React.JSX.Element {
 
   const getInitials = (name: string): string => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .substring(0, 2);
   };
@@ -80,7 +77,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
         variant="ghost"
         size="sm"
         onClick={() => {
-          router.push('/customers');
+          router.push("/customers");
         }}
         className="group text-muted-foreground hover:text-foreground -ml-2"
       >
@@ -165,9 +162,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
           >
             <Card className="border-border/60 bg-muted/45 md:col-span-2">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  General Information
-                </CardTitle>
+                <CardTitle className="text-lg font-semibold">General Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -176,16 +171,14 @@ export default function CustomerDetailPage(): React.JSX.Element {
                       Address
                     </span>
                     <p className="text-sm leading-relaxed">
-                      {customer.address || 'No address provided'}
+                      {customer.address || "No address provided"}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       City
                     </span>
-                    <p className="text-sm">
-                      {customer.city || 'Not specified'}
-                    </p>
+                    <p className="text-sm">{customer.city || "Not specified"}</p>
                   </div>
                 </div>
 
@@ -194,7 +187,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
                     Notes
                   </span>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {customer.notes || 'No notes added for this customer.'}
+                    {customer.notes || "No notes added for this customer."}
                   </p>
                 </div>
               </CardContent>
@@ -203,42 +196,30 @@ export default function CustomerDetailPage(): React.JSX.Element {
             <div className="space-y-6">
               <Card className="border-border/60 bg-muted/45">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">
-                    Customer Metrics
-                  </CardTitle>
+                  <CardTitle className="text-lg font-semibold">Customer Metrics</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Customer Since
-                    </span>
+                    <span className="text-muted-foreground">Customer Since</span>
                     <span className="flex items-center gap-1.5 font-medium">
                       <Calendar className="text-solar h-3.5 w-3.5" />
-                      {format(new Date(customer.createdAt), 'MMM d, yyyy')}
+                      {format(new Date(customer.createdAt), "MMM d, yyyy")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Total Quotes</span>
-                    <span className="font-medium">
-                      {customer.quotations.length}
-                    </span>
+                    <span className="font-medium">{customer.quotations.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Total Projects
-                    </span>
-                    <span className="font-medium">
-                      {customer.projects.length}
-                    </span>
+                    <span className="text-muted-foreground">Total Projects</span>
+                    <span className="font-medium">{customer.projects.length}</span>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-border/60 bg-muted/45">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">
-                    Quick Actions
-                  </CardTitle>
+                  <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-2">
                   <Button
@@ -284,16 +265,14 @@ export default function CustomerDetailPage(): React.JSX.Element {
                 <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
                   <FileText className="h-10 w-10 opacity-20" />
                 </div>
-                <h3 className="text-foreground mt-6 text-xl font-semibold">
-                  No quotations yet
-                </h3>
+                <h3 className="text-foreground mt-6 text-xl font-semibold">No quotations yet</h3>
                 <p className="text-muted-foreground mt-2 max-w-xs">
                   Create a solar quotation for this customer to get started.
                 </p>
                 <Button
                   className="bg-solar text-foreground mt-6"
                   onClick={() => {
-                    router.push('/quotations/new');
+                    router.push("/quotations/new");
                   }}
                 >
                   Create Quotation
@@ -331,12 +310,9 @@ export default function CustomerDetailPage(): React.JSX.Element {
                 <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
                   <Layout className="h-10 w-10 opacity-20" />
                 </div>
-                <h3 className="text-foreground mt-6 text-xl font-semibold">
-                  No active projects
-                </h3>
+                <h3 className="text-foreground mt-6 text-xl font-semibold">No active projects</h3>
                 <p className="text-muted-foreground mt-2 max-w-xs">
-                  Once a quotation is accepted, it can be converted into a
-                  project.
+                  Once a quotation is accepted, it can be converted into a project.
                 </p>
               </div>
             )}

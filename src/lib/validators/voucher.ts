@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { voucherTypeSchema } from '@/lib/domain/voucher';
+import { z } from "zod";
+import { voucherTypeSchema } from "@/lib/domain/voucher";
 
 export const generateVoucherSchema = z.object({
   projectId: z.uuid(),

@@ -1,54 +1,54 @@
 "use server";
 
-import { db } from "@/lib/db";
 import {
-  projects,
-  projectCosts,
-  projectRemarks,
-  quotations,
-  customers,
-  warrantyAlerts,
-  type Project,
-  type ProjectCost,
-  type ProjectRemark,
-  type WarrantyAlert,
-  type Customer,
-  type Quotation,
-} from "@/lib/db/schema";
-import { eq, and, asc, desc, sql, ilike, or, gte, lte, inArray, ne } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "@/lib/auth/validate";
-import {
+  addDays,
   addMonths,
   addYears,
-  addDays,
+  endOfDay,
   isBefore,
   startOfDay,
   startOfToday,
-  endOfDay,
 } from "date-fns";
-import { revalidatePath } from "next/cache";
-import { formatProjectNumber, extractProjectSequence } from "@/lib/utils/project-number";
-import {
-  convertToProjectSchema,
-  updateProjectSchema,
-  addProjectCostSchema,
-  addProjectRemarkSchema,
-  canTransitionProjectStatus,
-  createWarrantyAlertSchema,
-  isProjectStatus,
-  projectListFilterSchema,
-} from "@/lib/validators/project";
-import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
-import { successResponse, type ActionResponse } from "@/lib/utils/action-response";
-import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
-import { uuidSchema } from "@/lib/validators/common";
-import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
 import type { InferSelectModel } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { db } from "@/lib/db";
+import {
+  type Customer,
+  customers,
+  type Project,
+  type ProjectCost,
+  type ProjectRemark,
+  projectCosts,
+  projectRemarks,
+  projects,
+  type Quotation,
+  quotations,
+  type WarrantyAlert,
+  warrantyAlerts,
+} from "@/lib/db/schema";
+import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
 import {
   assertFinanceSsotDrift,
   createBalancedJournalEntry,
   mapCostTypeToExpenseAccount,
 } from "@/lib/finance/ledger";
+import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
+import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
+import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
+import { extractProjectSequence, formatProjectNumber } from "@/lib/utils/project-number";
+import { uuidSchema } from "@/lib/validators/common";
+import {
+  addProjectCostSchema,
+  addProjectRemarkSchema,
+  canTransitionProjectStatus,
+  convertToProjectSchema,
+  createWarrantyAlertSchema,
+  isProjectStatus,
+  projectListFilterSchema,
+  updateProjectSchema,
+} from "@/lib/validators/project";
 
 export type ProjectListRow = InferSelectModel<typeof projects> & {
   customerName: string | null;
@@ -177,7 +177,7 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
           const customer = quotation.customer;
           const defaultSite = [customer.address, customer.city].filter(Boolean).join(", ").trim();
 
-          const siteAddress = (data.siteAddress && data.siteAddress.trim()) || defaultSite || "—";
+          const siteAddress = data.siteAddress?.trim() || defaultSite || "—";
 
           const systemKwp =
             data.systemSizeKwp !== null && data.systemSizeKwp !== undefined
@@ -275,7 +275,7 @@ export async function getProjects(
           sql`exists (
               select 1 from ${customers} c
               where c.id = ${projects.customerId}
-              and c.name ilike ${"%" + search.trim() + "%"}
+              and c.name ilike ${`%${search.trim()}%`}
             )`,
         )
       : undefined;

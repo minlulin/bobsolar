@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
 
 export default function RootError({
   error,
@@ -13,7 +13,7 @@ export default function RootError({
   reset: () => void;
 }): React.JSX.Element {
   useEffect(() => {
-    console.error('[Root Error Boundary]', error);
+    console.error("[Root Error Boundary]", error);
   }, [error]);
 
   return (
@@ -25,8 +25,7 @@ export default function RootError({
         Something went wrong
       </h2>
       <p className="text-muted-foreground mb-8 max-w-md">
-        An unexpected error occurred. Please try again or return to the
-        dashboard.
+        An unexpected error occurred. Please try again or return to the dashboard.
       </p>
       <div className="flex gap-3">
         <Button

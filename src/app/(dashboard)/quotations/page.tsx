@@ -1,9 +1,9 @@
-import React from 'react';
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { getQuotations } from '@/actions/quotation-actions';
-import { QuotationsGridClient } from './components/quotations-grid-client';
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import type React from "react";
+import { getQuotations } from "@/actions/quotation-actions";
+import { Button } from "@/components/ui/button";
+import { QuotationsGridClient } from "./components/quotations-grid-client";
 
 export default async function QuotationsPage(): Promise<React.JSX.Element> {
   const res = await getQuotations({ page: 1, limit: 20 });
@@ -22,10 +22,7 @@ export default async function QuotationsPage(): Promise<React.JSX.Element> {
             Create and manage professional solar quotes for your clients.
           </p>
         </div>
-        <Button
-          asChild
-          className="bg-solar shadow-solar hover:bg-solar/90 text-foreground"
-        >
+        <Button asChild className="bg-solar shadow-solar hover:bg-solar/90 text-foreground">
           <Link href="/quotations/new">
             <Plus className="mr-2 h-4 w-4" />
             New Quote

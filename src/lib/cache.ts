@@ -1,6 +1,6 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-const CACHE_PREFIX = 'bobsolar';
+const CACHE_PREFIX = "bobsolar";
 const DEFAULT_TTL_SECONDS = 300;
 
 const kvEnvSchema = z.object({
@@ -13,12 +13,12 @@ function getKvEnv(): {
   token: string;
 } | null {
   const parsed = kvEnvSchema.safeParse({
-    KV_REST_API_URL: process.env['KV_REST_API_URL'],
-    KV_REST_API_TOKEN: process.env['KV_REST_API_TOKEN'],
+    KV_REST_API_URL: process.env["KV_REST_API_URL"],
+    KV_REST_API_TOKEN: process.env["KV_REST_API_TOKEN"],
   });
   if (!parsed.success) return null;
   return {
-    baseUrl: parsed.data.KV_REST_API_URL.replace(/\/$/, ''),
+    baseUrl: parsed.data.KV_REST_API_URL.replace(/\/$/, ""),
     token: parsed.data.KV_REST_API_TOKEN,
   };
 }
@@ -35,8 +35,7 @@ function buildKvUrl(baseUrl: string, ...segments: string[]): URL {
   const url = new URL(baseUrl);
   // Append each segment as a path component (already properly encoded)
   for (const segment of segments) {
-    url.pathname =
-      url.pathname.replace(/\/$/, '') + '/' + encodeURIComponent(segment);
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/${encodeURIComponent(segment)}`;
   }
   return url;
 }
@@ -48,11 +47,11 @@ async function kvCommand<T>(command: string[]): Promise<T | null> {
   const kvUrl = buildKvUrl(env.baseUrl, ...command);
 
   const response = await fetch(kvUrl, {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${env.token}`,
     },
-    cache: 'no-store',
+    cache: "no-store",
   });
 
   if (!response.ok) return null;
@@ -68,14 +67,11 @@ async function kvCommand<T>(command: string[]): Promise<T | null> {
   return parsed.data.result as T | null;
 }
 
-export async function getCacheValue<T>(
-  key: string,
-  schema: z.ZodType<T>,
-): Promise<T | null> {
-  const raw = await kvCommand<unknown>(['get', namespacedKey(key)]);
+export async function getCacheValue<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
+  const raw = await kvCommand<unknown>(["get", namespacedKey(key)]);
   if (raw === null) return null;
   const hydrated =
-    typeof raw === 'string'
+    typeof raw === "string"
       ? z
           .string()
           .transform((value) => {
@@ -98,16 +94,16 @@ export async function setCacheValue(
 ): Promise<void> {
   const ttlSeconds = options?.ttlSeconds ?? DEFAULT_TTL_SECONDS;
   await kvCommand<unknown>([
-    'set',
+    "set",
     namespacedKey(key),
     JSON.stringify(value),
-    'EX',
+    "EX",
     String(ttlSeconds),
   ]);
 }
 
 export async function deleteCacheValue(key: string): Promise<void> {
-  await kvCommand<unknown>(['del', namespacedKey(key)]);
+  await kvCommand<unknown>(["del", namespacedKey(key)]);
 }
 
 export async function getOrSetCacheValue<T>(

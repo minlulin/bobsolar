@@ -1,4 +1,4 @@
-import withBundleAnalyzerInit from '@next/bundle-analyzer';
+import withBundleAnalyzerInit from "@next/bundle-analyzer";
 
 /**
  * Baseline security headers applied to every response.
@@ -29,50 +29,46 @@ function buildCsp(isDev) {
     "connect-src 'self' https://*.public.blob.vercel-storage.com",
     "worker-src 'self' blob:",
     "manifest-src 'self'",
-  ].join('; ');
+  ].join("; ");
 }
 
 /** @param {boolean} isDev */
 function buildSecurityHeaders(isDev) {
   return [
-    { key: 'Content-Security-Policy', value: buildCsp(isDev) },
+    { key: "Content-Security-Policy", value: buildCsp(isDev) },
     {
-      key: 'Strict-Transport-Security',
-      value: 'max-age=63072000; includeSubDomains; preload',
+      key: "Strict-Transport-Security",
+      value: "max-age=63072000; includeSubDomains; preload",
     },
-    { key: 'X-Content-Type-Options', value: 'nosniff' },
-    { key: 'X-Frame-Options', value: 'DENY' },
-    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "X-Frame-Options", value: "DENY" },
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
-      key: 'Permissions-Policy',
-      value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+      key: "Permissions-Policy",
+      value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
     },
-    { key: 'X-DNS-Prefetch-Control', value: 'on' },
+    { key: "X-DNS-Prefetch-Control", value: "on" },
   ];
 }
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['localhost', '127.0.0.1', '*.127.0.0.1'],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "*.127.0.0.1"],
   // Prevent Next.js from bundling ws/pg native addons into serverless functions.
   // Vercel provides these at runtime; bundling causes native addon load failures
   // (e.g. 'b.mask is not a function' from bufferutil).
-  serverExternalPackages: ['ws', 'bufferutil', 'utf-8-validate'],
+  serverExternalPackages: ["ws", "bufferutil", "utf-8-validate"],
   images: {
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
   },
   experimental: {
-    optimizePackageImports: [
-      'lucide-react',
-      '@radix-ui/react-dialog',
-      'date-fns',
-    ],
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-dialog", "date-fns"],
   },
   async headers() {
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = process.env.NODE_ENV !== "production";
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: buildSecurityHeaders(isDev),
       },
     ];
@@ -80,19 +76,19 @@ const nextConfig = {
 };
 
 const withBundleAnalyzer = withBundleAnalyzerInit({
-  enabled: process.env.ANALYZE === 'true',
+  enabled: process.env.ANALYZE === "true",
 });
 
 // Conditionally apply Serwist only in production to avoid Turbopack conflict in dev.
 export default async function getNextConfig() {
   let config = nextConfig;
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     config = { ...config, turbopack: {} };
   } else {
-    const { default: withSerwistInit } = await import('@serwist/next');
+    const { default: withSerwistInit } = await import("@serwist/next");
     const withSerwist = withSerwistInit({
-      swSrc: 'src/sw.ts',
-      swDest: 'public/sw.js',
+      swSrc: "src/sw.ts",
+      swDest: "public/sw.js",
     });
     config = withSerwist(config);
   }

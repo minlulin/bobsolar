@@ -1,42 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/validate';
-import { uploadFileFromBufferOrBlob } from '@/lib/storage/blob';
-import { UPLOAD_MAX_SIZE_BYTES } from '@/lib/domain/policies';
+import { type NextRequest, NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/validate";
+import { UPLOAD_MAX_SIZE_BYTES } from "@/lib/domain/policies";
+import { uploadFileFromBufferOrBlob } from "@/lib/storage/blob";
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const origin = request.headers.get('origin');
-    const host = request.headers.get('host');
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("host");
     if (origin && host) {
       try {
         const originHost = new URL(origin).host;
         if (originHost !== host) {
-          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
       } catch {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
 
     if (!(await getCurrentUser())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const formData = await request.formData();
-    const entry = formData.get('file');
-    const folderEntry = formData.get('folder');
-    const folderRaw = typeof folderEntry === 'string' ? folderEntry : 'uploads';
-    const folder =
-      folderRaw.replace(/[^a-zA-Z0-9_/-]/g, '').replace(/^\/+|\/+$/g, '') ||
-      'uploads';
+    const entry = formData.get("file");
+    const folderEntry = formData.get("folder");
+    const folderRaw = typeof folderEntry === "string" ? folderEntry : "uploads";
+    const folder = folderRaw.replace(/[^a-zA-Z0-9_/-]/g, "").replace(/^\/+|\/+$/g, "") || "uploads";
 
     if (!(entry instanceof Blob)) {
-      return NextResponse.json(
-        { error: 'Missing file field' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing file field" }, { status: 400 });
     }
 
     const file = entry;
@@ -45,17 +40,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!ALLOWED_TYPES.includes(type)) {
       return NextResponse.json(
         {
-          error: 'Only jpeg, png, and webp images are allowed.',
+          error: "Only jpeg, png, and webp images are allowed.",
         },
         { status: 415 },
       );
     }
 
-    if (typeof file.size === 'number' && file.size > UPLOAD_MAX_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: 'File must be under 5MB.' },
-        { status: 413 },
-      );
+    if (typeof file.size === "number" && file.size > UPLOAD_MAX_SIZE_BYTES) {
+      return NextResponse.json({ error: "File must be under 5MB." }, { status: 413 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -63,19 +55,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const url = await uploadFileFromBufferOrBlob(buf, file.name, folder, type);
 
-    return NextResponse.json(
-      { url },
-      { status: 200, headers: { 'Cache-Control': 'no-store' } },
-    );
+    return NextResponse.json({ url }, { status: 200, headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     const message =
-      e instanceof Error && e.message.includes('BLOB_READ_WRITE_TOKEN')
-        ? 'File storage not configured.'
-        : 'Upload failed.';
-    console.error('[upload]', e);
+      e instanceof Error && e.message.includes("BLOB_READ_WRITE_TOKEN")
+        ? "File storage not configured."
+        : "Upload failed.";
+    console.error("[upload]", e);
     return NextResponse.json(
       { error: message },
-      { status: 500, headers: { 'Cache-Control': 'no-store' } },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

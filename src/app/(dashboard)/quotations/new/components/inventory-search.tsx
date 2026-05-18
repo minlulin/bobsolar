@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import * as React from "react";
+import { getInventoryItems } from "@/actions/inventory-actions";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,30 +12,23 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { getInventoryItems } from '@/actions/inventory-actions';
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { useQuery } from '@tanstack/react-query';
-import { useDebounce } from '@/hooks/use-debounce';
-import { formatMMK } from '@/lib/utils';
-import { inventoryKeys } from '@/lib/query-keys';
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useDebounce } from "@/hooks/use-debounce";
+import { inventoryKeys } from "@/lib/query-keys";
+import { formatMMK } from "@/lib/utils";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 export function InventorySearch(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState('');
+  const [search, setSearch] = React.useState("");
   const debouncedSearch = useDebounce(search, 300);
 
   const addItem = useQuoteBuilderStore((state) => state.addItem);
 
   const { data, isLoading } = useQuery({
     queryKey: inventoryKeys.search(debouncedSearch),
-    queryFn: () =>
-      getInventoryItems({ search: debouncedSearch, isActive: true }),
+    queryFn: () => getInventoryItems({ search: debouncedSearch, isActive: true }),
     enabled: open,
   });
 
@@ -59,9 +54,7 @@ export function InventorySearch(): React.JSX.Element {
               onValueChange={setSearch}
             />
             <CommandList className="max-h-[300px]">
-              <CommandEmpty>
-                {isLoading ? 'Searching...' : 'No items found.'}
-              </CommandEmpty>
+              <CommandEmpty>{isLoading ? "Searching..." : "No items found."}</CommandEmpty>
               <CommandGroup>
                 {inventoryItems.map((item) => (
                   <CommandItem
@@ -70,7 +63,7 @@ export function InventorySearch(): React.JSX.Element {
                     onSelect={() => {
                       addItem(item);
                       setOpen(false);
-                      setSearch('');
+                      setSearch("");
                     }}
                     className="flex flex-col items-start gap-1 p-3"
                   >
@@ -82,14 +75,9 @@ export function InventorySearch(): React.JSX.Element {
                     </div>
                     <div className="text-muted-foreground flex w-full items-center justify-between text-[10px] tracking-wider uppercase">
                       <span>
-                        {item.brand || 'No Brand'} •{' '}
-                        {item.modelNumber || 'No Model'}
+                        {item.brand || "No Brand"} • {item.modelNumber || "No Model"}
                       </span>
-                      <span
-                        className={
-                          item.stockQty > 0 ? 'text-blue-400' : 'text-red-400'
-                        }
-                      >
+                      <span className={item.stockQty > 0 ? "text-blue-400" : "text-red-400"}>
                         Stock: {item.stockQty} {item.unit}
                       </span>
                     </div>

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Type-safe company setting keys
@@ -7,24 +7,23 @@ import { z } from 'zod';
 
 export const COMPANY_SETTING_KEYS = {
   // Logo
-  LOGO_URL: 'company_logo_url',
+  LOGO_URL: "company_logo_url",
 
   // Company identity
-  NAME: 'company_name',
-  ADDRESS: 'company_address',
-  PHONE: 'company_phone',
-  EMAIL: 'company_email',
-  TAX_ID: 'company_tax_id',
+  NAME: "company_name",
+  ADDRESS: "company_address",
+  PHONE: "company_phone",
+  EMAIL: "company_email",
+  TAX_ID: "company_tax_id",
 
   // Banking details - stored as individual fields for structured data
-  BANK_NAME: 'company_bank_name',
-  BANK_ACCOUNT_NUMBER: 'company_bank_account_number',
-  BANK_ACCOUNT_HOLDER: 'company_bank_account_holder',
+  BANK_NAME: "company_bank_name",
+  BANK_ACCOUNT_NUMBER: "company_bank_account_number",
+  BANK_ACCOUNT_HOLDER: "company_bank_account_holder",
 } as const;
 
 /** Union type of all valid company setting keys */
-export type CompanySettingKey =
-  (typeof COMPANY_SETTING_KEYS)[keyof typeof COMPANY_SETTING_KEYS];
+export type CompanySettingKey = (typeof COMPANY_SETTING_KEYS)[keyof typeof COMPANY_SETTING_KEYS];
 
 /** Array of all company setting key values */
 export const COMPANY_SETTING_KEY_VALUES = Object.values(COMPANY_SETTING_KEYS);
@@ -44,23 +43,23 @@ export function formatBankDetails(settings: Record<string, string>): string {
   const accountHolder = settings[COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER];
 
   if (!bankName && !accountNumber && !accountHolder) {
-    return '';
+    return "";
   }
 
-  return `${bankName || 'Bank'} | A/C: ${accountNumber || '-'} | Name: ${accountHolder || '-'}`;
+  return `${bankName || "Bank"} | A/C: ${accountNumber || "-"} | Name: ${accountHolder || "-"}`;
 }
 
 /** Default values for company settings */
 export const COMPANY_SETTING_DEFAULTS: Record<CompanySettingKey, string> = {
-  [COMPANY_SETTING_KEYS.LOGO_URL]: '',
-  [COMPANY_SETTING_KEYS.NAME]: 'BOB Solar',
-  [COMPANY_SETTING_KEYS.ADDRESS]: '',
-  [COMPANY_SETTING_KEYS.PHONE]: '',
-  [COMPANY_SETTING_KEYS.EMAIL]: '',
-  [COMPANY_SETTING_KEYS.TAX_ID]: '',
-  [COMPANY_SETTING_KEYS.BANK_NAME]: '',
-  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: '',
-  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: '',
+  [COMPANY_SETTING_KEYS.LOGO_URL]: "",
+  [COMPANY_SETTING_KEYS.NAME]: "BOB Solar",
+  [COMPANY_SETTING_KEYS.ADDRESS]: "",
+  [COMPANY_SETTING_KEYS.PHONE]: "",
+  [COMPANY_SETTING_KEYS.EMAIL]: "",
+  [COMPANY_SETTING_KEYS.TAX_ID]: "",
+  [COMPANY_SETTING_KEYS.BANK_NAME]: "",
+  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: "",
+  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: "",
 };
 
 /** Get default value for a company setting key */

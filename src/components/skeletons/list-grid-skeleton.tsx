@@ -1,19 +1,18 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import type * as React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ListGridSkeletonProps {
   count?: number;
 }
 
-export function ListGridSkeleton({
-  count = 8,
-}: ListGridSkeletonProps): React.JSX.Element {
+export function ListGridSkeleton({ count = 8 }: ListGridSkeletonProps): React.JSX.Element {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, index) => (
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton has no stable identifier
           key={`skeleton-${index}`}
           className="bg-muted/40 border-border/60 rounded-2xl border p-5"
         >

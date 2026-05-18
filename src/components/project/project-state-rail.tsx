@@ -1,42 +1,39 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Loader2, ClipboardCheck, ArrowRight, XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { ArrowRight, ClipboardCheck, Loader2, XCircle } from "lucide-react";
+import * as React from "react";
+import { Button } from "@/components/ui/button";
 import {
-  permittedNextStatuses,
   PROJECT_STATUS_LABELS,
   type ProjectStatus,
-} from '@/lib/domain/enums';
+  permittedNextStatuses,
+} from "@/lib/domain/enums";
+import { cn } from "@/lib/utils";
 
-const STATE_META: Record<
-  ProjectStatus,
-  { index: number; color: string; icon: React.ReactNode }
-> = {
+const STATE_META: Record<ProjectStatus, { index: number; color: string; icon: React.ReactNode }> = {
   planning: {
     index: 0,
-    color: 'border-indigo-500/35 bg-indigo-500/10 text-indigo-200',
+    color: "border-indigo-500/35 bg-indigo-500/10 text-indigo-200",
     icon: null,
   },
   in_progress: {
     index: 1,
-    color: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-200',
+    color: "border-emerald-500/35 bg-emerald-500/10 text-emerald-200",
     icon: null,
   },
   on_hold: {
     index: 2,
-    color: 'border-amber-500/35 bg-amber-500/10 text-amber-300',
+    color: "border-amber-500/35 bg-amber-500/10 text-amber-300",
     icon: null,
   },
   completed: {
     index: 3,
-    color: 'border-border/70 bg-emerald-500/15 text-emerald-200',
+    color: "border-border/70 bg-emerald-500/15 text-emerald-200",
     icon: <ClipboardCheck className="h-3.5 w-3.5" />,
   },
   cancelled: {
     index: 4,
-    color: 'border-red-400/35 bg-red-600/25 text-red-100',
+    color: "border-red-400/35 bg-red-600/25 text-red-100",
     icon: <XCircle className="h-3.5 w-3.5" />,
   },
 };
@@ -56,13 +53,9 @@ export function ProjectStateRail({
   onTransition,
   onMarkCompleted,
 }: ProjectStateRailProps): React.JSX.Element {
-  const nextStates = React.useMemo(
-    () => permittedNextStatuses(currentStatus),
-    [currentStatus],
-  );
+  const nextStates = React.useMemo(() => permittedNextStatuses(currentStatus), [currentStatus]);
 
-  const isTerminal =
-    currentStatus === 'completed' || currentStatus === 'cancelled';
+  const isTerminal = currentStatus === "completed" || currentStatus === "cancelled";
 
   return (
     <div className="bg-card border-border rounded-2xl border p-5">
@@ -73,7 +66,7 @@ export function ProjectStateRail({
       <div className="flex flex-wrap items-center gap-3">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-bold uppercase',
+            "inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-bold uppercase",
             STATE_META[currentStatus].color,
           )}
         >
@@ -88,8 +81,8 @@ export function ProjectStateRail({
         ) : null}
 
         {nextStates.map((next) => {
-          const isCompletedAction = next === 'completed';
-          const isCancelledAction = next === 'cancelled';
+          const isCompletedAction = next === "completed";
+          const isCancelledAction = next === "cancelled";
           const canAct = isAdmin && !isPending;
 
           return (
@@ -106,14 +99,14 @@ export function ProjectStateRail({
                 }
               }}
               className={cn(
-                'rounded-full text-[10px] font-bold tracking-wide uppercase',
+                "rounded-full text-[10px] font-bold tracking-wide uppercase",
                 isCompletedAction &&
-                  'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20',
+                  "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20",
                 isCancelledAction &&
-                  'border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/20',
+                  "border-red-400/30 bg-red-500/10 text-red-300 hover:bg-red-500/20",
                 !isCompletedAction &&
                   !isCancelledAction &&
-                  'border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20',
+                  "border-indigo-500/30 bg-indigo-500/10 text-indigo-200 hover:bg-indigo-500/20",
               )}
             >
               {isPending ? (
@@ -129,14 +122,12 @@ export function ProjectStateRail({
 
       {isTerminal ? (
         <p className="text-muted-foreground mt-3 text-[11px]">
-          {currentStatus === 'completed'
-            ? 'Project handover complete. Generate vouchers below.'
-            : 'Project was cancelled. No further transitions available.'}
+          {currentStatus === "completed"
+            ? "Project handover complete. Generate vouchers below."
+            : "Project was cancelled. No further transitions available."}
         </p>
       ) : nextStates.length === 0 ? (
-        <p className="text-muted-foreground mt-3 text-[11px]">
-          No further transitions available.
-        </p>
+        <p className="text-muted-foreground mt-3 text-[11px]">No further transitions available.</p>
       ) : !isAdmin ? (
         <p className="text-muted-foreground mt-3 text-[11px] italic">
           Admin access required to advance project status.

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { changePassword } from '@/actions/auth-actions';
-import { toast } from 'sonner';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { toast } from "sonner";
+import { changePassword } from "@/actions/auth-actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function AccountTab(): React.JSX.Element {
   const [isPending, startTransition] = React.useTransition();
@@ -14,16 +14,16 @@ export function AccountTab(): React.JSX.Element {
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const newPassword = formData.get('newPassword') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
+    const newPassword = formData.get("newPassword") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
 
     if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error("New passwords do not match");
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
@@ -32,10 +32,10 @@ export function AccountTab(): React.JSX.Element {
       void (async (): Promise<void> => {
         const res = await changePassword(formData);
         if (res.success) {
-          toast.success('Password changed successfully');
+          toast.success("Password changed successfully");
           form.reset();
         } else {
-          toast.error(res.error || 'Failed to change password');
+          toast.error(res.error || "Failed to change password");
         }
       })();
     });
@@ -44,16 +44,11 @@ export function AccountTab(): React.JSX.Element {
   return (
     <div className="space-y-8">
       <div className="border-border bg-card max-w-2xl space-y-6 rounded-xl border p-6">
-        <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
-          Change Password
-        </Label>
+        <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">Change Password</Label>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <Label
-              htmlFor="currentPassword"
-              className="text-muted-foreground text-xs"
-            >
+            <Label htmlFor="currentPassword" className="text-muted-foreground text-xs">
               Current Password
             </Label>
             <Input
@@ -66,10 +61,7 @@ export function AccountTab(): React.JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <Label
-              htmlFor="newPassword"
-              className="text-muted-foreground text-xs"
-            >
+            <Label htmlFor="newPassword" className="text-muted-foreground text-xs">
               New Password
             </Label>
             <Input
@@ -83,10 +75,7 @@ export function AccountTab(): React.JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <Label
-              htmlFor="confirmPassword"
-              className="text-muted-foreground text-xs"
-            >
+            <Label htmlFor="confirmPassword" className="text-muted-foreground text-xs">
               Confirm New Password
             </Label>
             <Input

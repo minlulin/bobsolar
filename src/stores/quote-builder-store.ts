@@ -1,9 +1,5 @@
-import { create } from 'zustand';
-import {
-  type InventoryItem,
-  type Quotation,
-  type QuotationItem,
-} from '@/lib/db/schema';
+import { create } from "zustand";
+import type { InventoryItem, Quotation, QuotationItem } from "@/lib/db/schema";
 
 export interface QuoteBuilderItem {
   id?: string; // UUID from DB if existing
@@ -40,9 +36,7 @@ interface QuoteBuilderState {
   setNotes: (notes: string) => void;
   setValidUntil: (date: Date | null) => void;
   reset: () => void;
-  loadFromQuotation: (
-    quotation: Quotation & { items: QuotationItem[] },
-  ) => void;
+  loadFromQuotation: (quotation: Quotation & { items: QuotationItem[] }) => void;
 }
 
 const initialState = {
@@ -50,7 +44,7 @@ const initialState = {
   items: [],
   discountPercent: 0,
   taxPercent: 5, // Default tax 5% as per validators
-  notes: '',
+  notes: "",
   validUntil: null,
 };
 
@@ -63,9 +57,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
 
   addItem: (inventoryItem): void => {
     set((state) => {
-      const existingIndex = state.items.findIndex(
-        (item) => item.itemId === inventoryItem.id,
-      );
+      const existingIndex = state.items.findIndex((item) => item.itemId === inventoryItem.id);
 
       if (existingIndex >= 0) {
         const nextItems = [...state.items];
@@ -181,7 +173,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
       selectedCustomerId: quotation.customerId,
       discountPercent: Number(quotation.discountPercent),
       taxPercent: Number(quotation.taxPercent),
-      notes: quotation.notes || '',
+      notes: quotation.notes || "",
       validUntil: quotation.validUntil ? new Date(quotation.validUntil) : null,
       items: [...quotation.items]
         .sort((a, b) => a.sortOrder - b.sortOrder)

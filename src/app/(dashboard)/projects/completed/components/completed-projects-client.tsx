@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import { Loader2, Search as SearchIcon } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { useProjects } from '@/hooks/use-projects';
-import type { ProjectListFilter } from '@/lib/validators/project';
-import { ProjectCard } from '@/components/project/project-card';
-import type { ProjectListRow } from '@/actions/project-actions';
+import { Loader2, Search as SearchIcon } from "lucide-react";
+import type React from "react";
+import { useMemo, useState } from "react";
+import type { ProjectListRow } from "@/actions/project-actions";
+import { ProjectCard } from "@/components/project/project-card";
+import { Input } from "@/components/ui/input";
+import { useProjects } from "@/hooks/use-projects";
+import type { ProjectListFilter } from "@/lib/validators/project";
 
 interface CompletedProjectsClientProps {
   initialData: {
@@ -18,22 +19,22 @@ interface CompletedProjectsClientProps {
 export function CompletedProjectsClient({
   initialData,
 }: CompletedProjectsClientProps): React.JSX.Element {
-  const [search, setSearch] = useState('');
-  const [year, setYear] = useState<string>('');
+  const [search, setSearch] = useState("");
+  const [year, setYear] = useState<string>("");
   const currentYear = new Date().getFullYear();
 
   function normalizeYearInput(value: string): string {
     const trimmed = value.trim();
-    if (trimmed.length === 0) return '';
+    if (trimmed.length === 0) return "";
     const parsed = Number.parseInt(trimmed, 10);
-    if (!Number.isFinite(parsed)) return '';
+    if (!Number.isFinite(parsed)) return "";
     const clamped = Math.max(2000, Math.min(currentYear, parsed));
     return String(clamped);
   }
 
   const filters = useMemo<Partial<ProjectListFilter>>(() => {
     return {
-      scope: 'completed',
+      scope: "completed",
       search,
       year: year ? Number(year) : undefined,
       limit: 60,
@@ -42,10 +43,7 @@ export function CompletedProjectsClient({
   }, [search, year]);
 
   const isDefault = !search && !year;
-  const { data, isLoading, error } = useProjects(
-    filters,
-    isDefault ? initialData : undefined,
-  );
+  const { data, isLoading, error } = useProjects(filters, isDefault ? initialData : undefined);
 
   const items = data?.items ?? [];
 
@@ -64,10 +62,14 @@ export function CompletedProjectsClient({
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-muted-foreground text-[11px] font-semibold uppercase">
+          <label
+            htmlFor="completed-year-filter"
+            className="text-muted-foreground text-[11px] font-semibold uppercase"
+          >
             Completed year filter
           </label>
           <Input
+            id="completed-year-filter"
             className="bg-card/80 w-32 rounded-full"
             type="number"
             placeholder="YYYY"
@@ -88,7 +90,7 @@ export function CompletedProjectsClient({
         </div>
       ) : error ? (
         <div className="border-destructive/40 text-destructive rounded-3xl border p-14 text-center">
-          {error instanceof Error ? error.message : 'Historical grid offline'}
+          {error instanceof Error ? error.message : "Historical grid offline"}
         </div>
       ) : items.length === 0 ? (
         <div className="text-muted-foreground border-border/70 rounded-[2rem] border border-dashed py-36 text-center text-sm">

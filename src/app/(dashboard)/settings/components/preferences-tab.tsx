@@ -1,35 +1,35 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import * as React from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
-const PREF_KEY = 'bobsolar.preferences.v1';
+const PREF_KEY = "bobsolar.preferences.v1";
 
 type Preferences = {
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   defaultTaxPercent: string;
   defaultWarrantyMonths: string;
 };
 
 const defaults: Preferences = {
-  theme: 'system',
-  defaultTaxPercent: '5',
-  defaultWarrantyMonths: '12',
+  theme: "system",
+  defaultTaxPercent: "5",
+  defaultWarrantyMonths: "12",
 };
 
 export function PreferencesTab(): React.JSX.Element {
   const [prefs, setPrefs] = React.useState<Preferences>(() => {
-    if (typeof window === 'undefined') return defaults;
+    if (typeof window === "undefined") return defaults;
     const raw = window.localStorage.getItem(PREF_KEY);
     if (!raw) return defaults;
     try {
@@ -42,7 +42,7 @@ export function PreferencesTab(): React.JSX.Element {
 
   function savePreferences(): void {
     localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
-    toast.success('Preferences saved');
+    toast.success("Preferences saved");
   }
 
   return (
@@ -55,7 +55,7 @@ export function PreferencesTab(): React.JSX.Element {
           onValueChange={(value) => {
             setPrefs((p) => ({
               ...p,
-              theme: value as 'light' | 'dark' | 'system',
+              theme: value as "light" | "dark" | "system",
             }));
           }}
         >

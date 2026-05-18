@@ -1,5 +1,5 @@
 import { defaultCache } from "@serwist/next/worker";
-import { CacheFirst, ExpirationPlugin, Serwist, StaleWhileRevalidate, cacheNames } from "serwist";
+import { CacheFirst, cacheNames, ExpirationPlugin, Serwist, StaleWhileRevalidate } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: (string | { url: string; revision: string | null })[] | undefined;

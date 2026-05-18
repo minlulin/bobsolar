@@ -1,4 +1,4 @@
-import { Variants } from 'motion/react';
+import type { Variants } from "motion/react";
 
 export const fadeIn: Variants = {
   initial: { opacity: 0 },
@@ -8,7 +8,7 @@ export const fadeIn: Variants = {
 
 export const fadeUp: Variants = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
   exit: { opacity: 0, y: -20 },
 };
 
@@ -31,22 +31,22 @@ export const scaleIn: Variants = {
 };
 
 export const slideInRight: Variants = {
-  initial: { x: '100%' },
-  animate: { x: 0, transition: { duration: 0.3, ease: 'easeOut' } },
-  exit: { x: '100%' },
+  initial: { x: "100%" },
+  animate: { x: 0, transition: { duration: 0.3, ease: "easeOut" } },
+  exit: { x: "100%" },
 };
 
 export const glowPulse: Variants = {
   animate: {
     boxShadow: [
-      '0 0 0px 0px rgba(245, 158, 11, 0)',
-      '0 0 20px 5px rgba(245, 158, 11, 0.4)',
-      '0 0 0px 0px rgba(245, 158, 11, 0)',
+      "0 0 0px 0px rgba(245, 158, 11, 0)",
+      "0 0 20px 5px rgba(245, 158, 11, 0.4)",
+      "0 0 0px 0px rgba(245, 158, 11, 0)",
     ],
     transition: {
       duration: 2,
       repeat: Infinity,
-      ease: 'easeInOut',
+      ease: "easeInOut",
     },
   },
 };

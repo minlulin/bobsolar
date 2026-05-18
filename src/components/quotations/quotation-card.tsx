@@ -1,34 +1,16 @@
-'use client';
+"use client";
 
-import {
-  Calendar,
-  User,
-  MoreVertical,
-  Eye,
-  Trash2,
-  Archive,
-  ArchiveRestore,
-} from 'lucide-react';
-import { format } from 'date-fns';
-import { type QuotationWithCustomer } from '@/actions/quotation-actions';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn, formatMMK } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
+import { format } from "date-fns";
+import { Archive, ArchiveRestore, Calendar, Eye, MoreVertical, Trash2, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 import {
   archiveQuotation,
   deleteQuotation,
+  type QuotationWithCustomer,
   restoreQuotation,
-} from '@/actions/quotation-actions';
+} from "@/actions/quotation-actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,16 +21,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { STATUS_CONFIG } from '@/lib/constants';
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { STATUS_CONFIG } from "@/lib/constants";
+import { cn, formatMMK } from "@/lib/utils";
 
 interface QuotationCardProps {
   quotation: QuotationWithCustomer;
 }
 
-export function QuotationCard({
-  quotation,
-}: QuotationCardProps): React.JSX.Element {
+export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const config = STATUS_CONFIG[quotation.status];
@@ -60,9 +50,9 @@ export function QuotationCard({
       void (async (): Promise<void> => {
         const result = await deleteQuotation(quotation.id);
         if (result.success) {
-          toast.success('Draft deleted successfully');
+          toast.success("Draft deleted successfully");
         } else {
-          toast.error(result.error || 'Failed to delete draft');
+          toast.error(result.error || "Failed to delete draft");
         }
       })();
     });
@@ -74,9 +64,9 @@ export function QuotationCard({
       void (async (): Promise<void> => {
         const result = await archiveQuotation(quotation.id);
         if (result.success) {
-          toast.success('Quotation archived');
+          toast.success("Quotation archived");
         } else {
-          toast.error(result.error || 'Failed to archive quotation');
+          toast.error(result.error || "Failed to archive quotation");
         }
       })();
     });
@@ -88,9 +78,9 @@ export function QuotationCard({
       void (async (): Promise<void> => {
         const result = await restoreQuotation(quotation.id);
         if (result.success) {
-          toast.success('Quotation restored');
+          toast.success("Quotation restored");
         } else {
-          toast.error(result.error || 'Failed to restore quotation');
+          toast.error(result.error || "Failed to restore quotation");
         }
       })();
     });
@@ -111,12 +101,7 @@ export function QuotationCard({
                 <span className="text-solar text-xs font-bold tracking-wider uppercase">
                   {quotation.quoteNumber}
                 </span>
-                <Badge
-                  className={cn(
-                    'px-1.5 py-0 text-[10px] font-bold uppercase',
-                    config.color,
-                  )}
-                >
+                <Badge className={cn("px-1.5 py-0 text-[10px] font-bold uppercase", config.color)}>
                   <Icon className="mr-1 h-3 w-3" />
                   {config.label}
                 </Badge>
@@ -152,25 +137,19 @@ export function QuotationCard({
                   <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                {!quotation.isArchived && quotation.status === 'rejected' && (
-                  <DropdownMenuItem
-                    onClick={handleArchive}
-                    disabled={isPending}
-                  >
+                {!quotation.isArchived && quotation.status === "rejected" && (
+                  <DropdownMenuItem onClick={handleArchive} disabled={isPending}>
                     <Archive className="mr-2 h-4 w-4" />
-                    {isPending ? 'Archiving...' : 'Archive'}
+                    {isPending ? "Archiving..." : "Archive"}
                   </DropdownMenuItem>
                 )}
                 {quotation.isArchived && (
-                  <DropdownMenuItem
-                    onClick={handleRestore}
-                    disabled={isPending}
-                  >
+                  <DropdownMenuItem onClick={handleRestore} disabled={isPending}>
                     <ArchiveRestore className="mr-2 h-4 w-4" />
-                    {isPending ? 'Restoring...' : 'Restore'}
+                    {isPending ? "Restoring..." : "Restore"}
                   </DropdownMenuItem>
                 )}
-                {quotation.status === 'draft' && (
+                {quotation.status === "draft" && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem
@@ -181,23 +160,19 @@ export function QuotationCard({
                         disabled={isPending}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        {isPending ? 'Deleting...' : 'Delete Draft'}
+                        {isPending ? "Deleting..." : "Delete Draft"}
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Delete draft quotation?
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Delete draft quotation?</AlertDialogTitle>
                         <AlertDialogDescription>
                           This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>
-                          Delete Draft
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleDelete}>Delete Draft</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -208,9 +183,7 @@ export function QuotationCard({
 
           <div className="mt-6 flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">
-                Total Amount
-              </span>
+              <span className="text-muted-foreground text-sm">Total Amount</span>
               <span className="font-heading text-foreground font-bold">
                 {formatMMK(parseFloat(quotation.total))}
               </span>
@@ -219,11 +192,11 @@ export function QuotationCard({
             <div className="text-muted-foreground flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(quotation.createdAt), 'MMM d, yyyy')}
+                {format(new Date(quotation.createdAt), "MMM d, yyyy")}
               </div>
               <div className="flex items-center gap-1.5">
                 <User className="h-3 w-3" />
-                {quotation.createdBy.name || 'Sales Team'}
+                {quotation.createdBy.name || "Sales Team"}
               </div>
             </div>
           </div>

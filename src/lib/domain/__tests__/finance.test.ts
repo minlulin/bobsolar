@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  PAYMENT_METHOD_PRESETS,
-  PAYMENT_COLLECTION_STATUSES,
-  paymentMethodPresetSchema,
-  paymentCollectionStatusSchema,
+  JOURNAL_SOURCE_TYPES,
+  journalSourceTypeSchema,
+  LEDGER_ACCOUNT_CODE_TYPE_MAP,
   LEDGER_ACCOUNT_CODES,
   LEDGER_ACCOUNT_TYPES,
-  LEDGER_ACCOUNT_CODE_TYPE_MAP,
-  JOURNAL_SOURCE_TYPES,
   ledgerAccountCodeSchema,
   ledgerAccountTypeSchema,
-  journalSourceTypeSchema,
+  PAYMENT_COLLECTION_STATUSES,
+  PAYMENT_METHOD_PRESETS,
+  paymentCollectionStatusSchema,
+  paymentMethodPresetSchema,
 } from "@/lib/domain/enums";
 
 describe("finance ssot: payment methods", () => {

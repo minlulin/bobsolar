@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import * as React from 'react';
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
+import Link from "next/link";
+import * as React from "react";
 
 type PipelineStage = {
-  key: 'customers' | 'quotations' | 'projects' | 'completed';
+  key: "customers" | "quotations" | "projects" | "completed";
   label: string;
   count: number;
   value: number;
@@ -34,9 +34,7 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
 
   return (
     <div className="border-border bg-card relative rounded-xl border p-6 pb-12">
-      <h3 className="text-foreground mb-10 text-sm font-semibold tracking-wide">
-        Pipeline Flow
-      </h3>
+      <h3 className="text-foreground mb-10 text-sm font-semibold tracking-wide">Pipeline Flow</h3>
 
       <div className="relative z-10 flex w-full items-start justify-between px-4">
         {stages.map((stage, idx) => {
@@ -53,7 +51,7 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
                     className="group border-border bg-card hover:border-solar-amber relative flex h-12 w-12 items-center justify-center rounded-full border shadow-sm transition-all outline-none"
                   >
                     <span className="text-foreground group-hover:text-solar-amber z-10 text-sm font-bold transition-colors">
-                      {stage.count.toLocaleString('en-US')}
+                      {stage.count.toLocaleString("en-US")}
                     </span>
                     {/* Active pulse effect */}
                     {stage.count > 0 && (
@@ -69,12 +67,12 @@ export function EnergyFlow({ stages }: EnergyFlowProps): React.JSX.Element {
                         style={{ height: strokeW / 2 }}
                       >
                         <motion.div
-                          initial={{ x: '-100%' }}
-                          animate={{ x: '0%' }}
+                          initial={{ x: "-100%" }}
+                          animate={{ x: "0%" }}
                           transition={{
                             duration: 1.5,
                             repeat: Infinity,
-                            ease: 'linear',
+                            ease: "linear",
                           }}
                           className="via-solar-amber/30 h-full w-full bg-gradient-to-r from-transparent to-transparent"
                         />

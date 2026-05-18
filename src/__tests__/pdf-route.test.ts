@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ─── Helper: create mock quotation with plain objects ──────────────────
 // (Avoids importing from @/lib/db/schema which triggers drizzle-orm side effects)
@@ -53,31 +53,31 @@ interface MockQuotation {
 
 function mockCustomer(overrides: Partial<MockCustomer> = {}): MockCustomer {
   return {
-    id: 'c-1',
-    name: 'Test Customer',
-    email: 'customer@example.com',
-    phone: '09-123456789',
-    address: '123 Test St',
-    city: 'Yangon',
+    id: "c-1",
+    name: "Test Customer",
+    email: "customer@example.com",
+    phone: "09-123456789",
+    address: "123 Test St",
+    city: "Yangon",
     notes: null,
     isArchived: false,
     archivedAt: null,
-    createdAt: new Date('2026-05-01'),
-    updatedAt: new Date('2026-05-01'),
+    createdAt: new Date("2026-05-01"),
+    updatedAt: new Date("2026-05-01"),
     ...overrides,
   };
 }
 
 function mockItem(overrides: Partial<MockItem> = {}): MockItem {
   return {
-    id: 'item-1',
-    quotationId: 'q-1',
+    id: "item-1",
+    quotationId: "q-1",
     itemId: null,
-    description: 'Solar Panel 400W',
-    quantity: '10',
-    discountPercentage: '0',
-    unitPrice: '350000',
-    totalPrice: '3500000',
+    description: "Solar Panel 400W",
+    quantity: "10",
+    discountPercentage: "0",
+    unitPrice: "350000",
+    totalPrice: "3500000",
     sortOrder: 0,
     ...overrides,
   };
@@ -90,23 +90,23 @@ function mockQuotation(
   } = {},
 ): MockQuotation {
   return {
-    id: '00000000-0000-4000-8000-000000000001',
-    quoteNumber: 'QT-2026-0001',
-    customerId: 'c-1',
-    createdBy: 'user-1',
-    status: 'sent',
-    subtotal: '6150000',
-    discountPercent: '5',
-    discountAmount: '307500',
-    taxPercent: '10',
-    taxAmount: '584250',
-    total: '6426750',
-    notes: 'Test notes',
-    validUntil: new Date('2026-06-01'),
+    id: "00000000-0000-4000-8000-000000000001",
+    quoteNumber: "QT-2026-0001",
+    customerId: "c-1",
+    createdBy: "user-1",
+    status: "sent",
+    subtotal: "6150000",
+    discountPercent: "5",
+    discountAmount: "307500",
+    taxPercent: "10",
+    taxAmount: "584250",
+    total: "6426750",
+    notes: "Test notes",
+    validUntil: new Date("2026-06-01"),
     isArchived: false,
     archivedAt: null,
-    createdAt: new Date('2026-05-01'),
-    updatedAt: new Date('2026-05-01'),
+    createdAt: new Date("2026-05-01"),
+    updatedAt: new Date("2026-05-01"),
     items: [mockItem()],
     customer: mockCustomer(),
     ...overrides,
@@ -115,15 +115,15 @@ function mockQuotation(
 
 // ─── Test Suite 1: QuoteHtml produces valid HTML with correct content ────
 
-describe('Quotation HTML Print Template', () => {
-  it('renders full HTML document with doctype and lang attribute', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+describe("Quotation HTML Print Template", () => {
+  it("renders full HTML document with doctype and lang attribute", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation(),
       companyLogoUrl: null,
       companySettings: {
-        company_name: 'BOB Solar',
-        company_address: '123 Solar St',
+        company_name: "BOB Solar",
+        company_address: "123 Solar St",
       },
     });
 
@@ -136,15 +136,15 @@ describe('Quotation HTML Print Template', () => {
     expect(html).toMatch(/6,426,750/); // grand total formatted
   });
 
-  it('includes A4 print styles with @page rule', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("includes A4 print styles with @page rule", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
         items: [],
-        discountPercent: '0',
-        discountAmount: '0',
-        taxPercent: '0',
-        taxAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
     });
@@ -154,15 +154,15 @@ describe('Quotation HTML Print Template', () => {
     expect(html).toMatch(/@media print/);
   });
 
-  it('includes Burmese-supporting font fallback stack', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("includes Burmese-supporting font fallback stack", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
         items: [],
-        discountPercent: '0',
-        discountAmount: '0',
-        taxPercent: '0',
-        taxAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
     });
@@ -172,34 +172,34 @@ describe('Quotation HTML Print Template', () => {
     expect(html).toMatch(/-apple-system/);
   });
 
-  it('supports voucher type with correct title', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("supports voucher type with correct title", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
-        quoteNumber: 'VC-2026-0001',
+        quoteNumber: "VC-2026-0001",
         items: [],
-        discountPercent: '0',
-        discountAmount: '0',
-        taxPercent: '0',
-        taxAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
-      type: 'voucher',
+      type: "voucher",
     });
 
     expect(html).toMatch(/VOUCHER/);
     expect(html).toMatch(/Valid Until/);
   });
 
-  it('includes Save as PDF button with window.print()', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("includes Save as PDF button with window.print()", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
         items: [],
-        discountPercent: '0',
-        discountAmount: '0',
-        taxPercent: '0',
-        taxAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
     });
@@ -211,14 +211,14 @@ describe('Quotation HTML Print Template', () => {
     expect(html).toMatch(/print-area/);
   });
 
-  it('handles discount and tax display correctly', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("handles discount and tax display correctly", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
-        discountPercent: '10',
-        discountAmount: '615000',
-        taxPercent: '5',
-        taxAmount: '276750',
+        discountPercent: "10",
+        discountAmount: "615000",
+        taxPercent: "5",
+        taxAmount: "276750",
       }),
     });
 
@@ -228,15 +228,15 @@ describe('Quotation HTML Print Template', () => {
     expect(html).toMatch(/276,750/); // formatted tax amount
   });
 
-  it('omits discount section when discount is zero', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("omits discount section when discount is zero", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
-        discountPercent: '0',
-        discountAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
         items: [],
-        taxPercent: '0',
-        taxAmount: '0',
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
     });
@@ -244,18 +244,18 @@ describe('Quotation HTML Print Template', () => {
     expect(html).not.toMatch(/Discount/);
   });
 
-  it('renders company logo when URL is provided', async () => {
-    const { QuoteHtml } = await import('@/components/pdf/quote-html');
+  it("renders company logo when URL is provided", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
     const html = QuoteHtml({
       quotation: mockQuotation({
         items: [],
-        discountPercent: '0',
-        discountAmount: '0',
-        taxPercent: '0',
-        taxAmount: '0',
+        discountPercent: "0",
+        discountAmount: "0",
+        taxPercent: "0",
+        taxAmount: "0",
         notes: null,
       }),
-      companyLogoUrl: 'https://example.com/logo.png',
+      companyLogoUrl: "https://example.com/logo.png",
     });
 
     expect(html).toMatch(/logo-placeholder/);
@@ -264,28 +264,28 @@ describe('Quotation HTML Print Template', () => {
 
 // ─── Test Suite 2: Route handler serves HTML, handles errors gracefully ──
 
-vi.mock('@/lib/auth/validate', () => ({
-  getCurrentUser: vi.fn(() => Promise.resolve({ id: 'user-1', role: 'admin' })),
+vi.mock("@/lib/auth/validate", () => ({
+  getCurrentUser: vi.fn(() => Promise.resolve({ id: "user-1", role: "admin" })),
 }));
 
-vi.mock('@/lib/db', () => ({
+vi.mock("@/lib/db", () => ({
   db: {
     query: {
       quotations: {
         findFirst: vi.fn(() =>
           Promise.resolve({
-            id: '00000000-0000-4000-8000-000000000001',
-            quoteNumber: 'QT-2026-0001',
-            customerId: 'c-1',
-            createdBy: 'user-1',
-            status: 'sent',
-            subtotal: '6150000',
-            discountPercent: '5',
-            discountAmount: '307500',
-            taxPercent: '10',
-            taxAmount: '584250',
-            total: '6426750',
-            notes: 'Test notes',
+            id: "00000000-0000-4000-8000-000000000001",
+            quoteNumber: "QT-2026-0001",
+            customerId: "c-1",
+            createdBy: "user-1",
+            status: "sent",
+            subtotal: "6150000",
+            discountPercent: "5",
+            discountAmount: "307500",
+            taxPercent: "10",
+            taxAmount: "584250",
+            total: "6426750",
+            notes: "Test notes",
             validUntil: new Date(),
             isArchived: false,
             archivedAt: null,
@@ -297,8 +297,8 @@ vi.mock('@/lib/db', () => ({
       companySettings: {
         findMany: vi.fn(() =>
           Promise.resolve([
-            { key: 'company_name', value: 'BOB Solar' },
-            { key: 'company_address', value: '123 Solar St' },
+            { key: "company_name", value: "BOB Solar" },
+            { key: "company_address", value: "123 Solar St" },
           ]),
         ),
       },
@@ -306,31 +306,31 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/actions/settings-actions', () => ({
+vi.mock("@/actions/settings-actions", () => ({
   getCompanyLogoUrl: vi.fn(() => Promise.resolve(null)),
 }));
 
-describe('PDF route: HTML print page', () => {
+describe("PDF route: HTML print page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns text/html content type instead of application/pdf', async () => {
-    const fs = await import('fs');
+  it("returns text/html content type instead of application/pdf", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
-      'utf-8',
+      require.resolve("../../src/app/(dashboard)/quotations/[id]/pdf/route.ts"),
+      "utf-8",
     );
 
     expect(src).toMatch(/Content-Type.*text\/html/);
     expect(src).not.toMatch(/application\/pdf/);
   });
 
-  it('uses QuoteHtml component instead of @react-pdf/renderer', async () => {
-    const fs = await import('fs');
+  it("uses QuoteHtml component instead of @react-pdf/renderer", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
-      'utf-8',
+      require.resolve("../../src/app/(dashboard)/quotations/[id]/pdf/route.ts"),
+      "utf-8",
     );
 
     expect(src).toMatch(/QuoteHtml/);
@@ -339,33 +339,33 @@ describe('PDF route: HTML print page', () => {
     expect(src).not.toMatch(/pdfBuffer/);
   });
 
-  it('handles errors gracefully with catch block', async () => {
-    const fs = await import('fs');
+  it("handles errors gracefully with catch block", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
-      'utf-8',
+      require.resolve("../../src/app/(dashboard)/quotations/[id]/pdf/route.ts"),
+      "utf-8",
     );
 
     expect(src).toMatch(/catch\s*\(error\)/);
     expect(src).toMatch(/Failed to generate print page/);
   });
 
-  it('does NOT use Readable stream from Node.js', async () => {
-    const fs = await import('fs');
+  it("does NOT use Readable stream from Node.js", async () => {
+    const fs = await import("node:fs");
     const src = fs.readFileSync(
-      require.resolve('../../src/app/(dashboard)/quotations/[id]/pdf/route.ts'),
-      'utf-8',
+      require.resolve("../../src/app/(dashboard)/quotations/[id]/pdf/route.ts"),
+      "utf-8",
     );
 
     expect(src).not.toMatch(/import.*Readable/);
     expect(src).not.toMatch(/for await/);
   });
 
-  it('does NOT import from @react-pdf/renderer in html component', async () => {
-    const fs = await import('fs');
+  it("does NOT import from @react-pdf/renderer in html component", async () => {
+    const fs = await import("node:fs");
     const componentSrc = fs.readFileSync(
-      require.resolve('../../src/components/pdf/quote-html.tsx'),
-      'utf-8',
+      require.resolve("../../src/components/pdf/quote-html.tsx"),
+      "utf-8",
     );
 
     expect(componentSrc).not.toMatch(/@react-pdf/);
@@ -374,13 +374,10 @@ describe('PDF route: HTML print page', () => {
 
 // ─── Test Suite 3: next.config.mjs cleanup ────────────────────────────────
 
-describe('next.config.mjs cleanup', () => {
-  it('no longer lists @react-pdf/renderer in serverExternalPackages', async () => {
-    const fs = await import('fs');
-    const src = fs.readFileSync(
-      require.resolve('../../next.config.mjs'),
-      'utf-8',
-    );
+describe("next.config.mjs cleanup", () => {
+  it("no longer lists @react-pdf/renderer in serverExternalPackages", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync(require.resolve("../../next.config.mjs"), "utf-8");
 
     expect(src).not.toMatch(/@react-pdf\/renderer/);
   });

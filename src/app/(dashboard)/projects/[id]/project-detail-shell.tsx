@@ -1,24 +1,22 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, Loader2, Trash2, Plus } from 'lucide-react';
-import { motion } from 'motion/react';
-import { format, formatDistanceToNowStrict } from 'date-fns';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { format, formatDistanceToNowStrict } from "date-fns";
+import { ChevronLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { toast } from "sonner";
+import type { ProjectDetail } from "@/actions/project-actions";
 import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  reopenWarrantyAlert as reopenWarrantyAlertAction,
+  resolveWarrantyAlert as resolveWarrantyAlertAction,
+} from "@/actions/warranty-actions";
+import { ProjectStateRail } from "@/components/project/project-state-rail";
+import { ProjectTimeline } from "@/components/project/project-timeline";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,65 +24,61 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn, formatMMK } from '@/lib/utils';
-import { staggerContainer, staggerItem } from '@/lib/motion';
-import type { ProjectDetail } from '@/actions/project-actions';
-import { ProjectTimeline } from '@/components/project/project-timeline';
-import { ProjectStateRail } from '@/components/project/project-state-rail';
+} from "@/components/ui/select";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  useAddProjectCost,
+  useAddProjectRemark,
+  useCreateProjectWarrantyAlert,
+  useDeleteProjectCost,
+  useDeleteProjectRemark,
+  useMarkProjectCompleted,
   useProject,
   useUpdateProject,
-  useAddProjectCost,
-  useDeleteProjectCost,
-  useAddProjectRemark,
-  useMarkProjectCompleted,
-  useDeleteProjectRemark,
-  useCreateProjectWarrantyAlert,
-} from '@/hooks/use-projects';
-import { useProjectVouchers, useGenerateVoucher } from '@/hooks/use-vouchers';
+} from "@/hooks/use-projects";
+import { useGenerateVoucher, useProjectVouchers } from "@/hooks/use-vouchers";
 import {
-  resolveWarrantyAlert as resolveWarrantyAlertAction,
-  reopenWarrantyAlert as reopenWarrantyAlertAction,
-} from '@/actions/warranty-actions';
-import { toast } from 'sonner';
-import {
-  isProjectStatus,
-  type ProjectStatus,
-  addProjectCostSchema,
-  createWarrantyAlertSchema,
-} from '@/lib/validators/project';
-import {
-  type CostType,
-  type RemarkType,
   type AlertType,
   COST_FILTERS,
+  type CostType,
   REMARK_TYPE_ICONS,
-} from '@/lib/domain/enums';
+  type RemarkType,
+} from "@/lib/domain/enums";
+import { staggerContainer, staggerItem } from "@/lib/motion";
+import { cn, formatMMK } from "@/lib/utils";
+import {
+  addProjectCostSchema,
+  createWarrantyAlertSchema,
+  isProjectStatus,
+  type ProjectStatus,
+} from "@/lib/validators/project";
 
 function statusBadgeTone(status: ProjectStatus): string {
   switch (status) {
-    case 'planning':
-      return 'border-indigo-500/35 bg-indigo-500/10 text-indigo-200';
-    case 'in_progress':
-      return 'border-emerald-500/35 bg-emerald-500/10 text-emerald-200';
-    case 'on_hold':
-      return 'border-amber-500/35 bg-amber-500/10 text-amber-300';
-    case 'completed':
-      return 'border-border/70 bg-emerald-500/15 text-emerald-200';
-    case 'cancelled':
-      return 'border-red-400/35 bg-red-600/25 text-red-100';
+    case "planning":
+      return "border-indigo-500/35 bg-indigo-500/10 text-indigo-200";
+    case "in_progress":
+      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-200";
+    case "on_hold":
+      return "border-amber-500/35 bg-amber-500/10 text-amber-300";
+    case "completed":
+      return "border-border/70 bg-emerald-500/15 text-emerald-200";
+    case "cancelled":
+      return "border-red-400/35 bg-red-600/25 text-red-100";
     default:
-      return '';
+      return "";
   }
 }
 
@@ -109,10 +103,7 @@ function aggregateCosts(project: ProjectDetail): {
   return { buckets, total };
 }
 
-async function persistWarrantyCheckbox(
-  alertId: string,
-  resolved: boolean,
-): Promise<boolean> {
+async function persistWarrantyCheckbox(alertId: string, resolved: boolean): Promise<boolean> {
   const res = resolved
     ? await resolveWarrantyAlertAction(alertId)
     : await reopenWarrantyAlertAction(alertId);
@@ -147,8 +138,7 @@ export function ProjectDetailShell({
   const alertMutation = useCreateProjectWarrantyAlert();
 
   const [costOpen, setCostOpen] = React.useState(false);
-  const [costFilter, setCostFilter] =
-    React.useState<(typeof COST_FILTERS)[number]>('all');
+  const [costFilter, setCostFilter] = React.useState<(typeof COST_FILTERS)[number]>("all");
 
   const [costForm, setCostForm] = React.useState<{
     description: string;
@@ -156,33 +146,32 @@ export function ProjectDetailShell({
     costType: CostType;
     incurredDate: string;
   }>({
-    description: '',
-    amount: '',
-    costType: 'material',
-    incurredDate: format(new Date(), 'yyyy-MM-dd'),
+    description: "",
+    amount: "",
+    costType: "material",
+    incurredDate: format(new Date(), "yyyy-MM-dd"),
   });
 
-  const [remarkBody, setRemarkBody] = React.useState('');
-  const [remarkType, setRemarkType] = React.useState<RemarkType>('note');
+  const [remarkBody, setRemarkBody] = React.useState("");
+  const [remarkType, setRemarkType] = React.useState<RemarkType>("note");
 
   const [alertForm, setAlertForm] = React.useState<{
     alertType: AlertType;
     description: string;
     dueDate: string;
   }>({
-    alertType: 'warranty_expiry',
-    description: '',
-    dueDate: format(new Date(), 'yyyy-MM-dd'),
+    alertType: "warranty_expiry",
+    description: "",
+    dueDate: format(new Date(), "yyyy-MM-dd"),
   });
 
   const [busyAlertId, setBusyAlertId] = React.useState<string | null>(null);
 
-  const canEditOperational =
-    proj?.status !== 'completed' && proj?.status !== 'cancelled';
+  const canEditOperational = proj?.status !== "completed" && proj?.status !== "cancelled";
 
   const filteredCosts = React.useMemo(() => {
     if (!proj) return [];
-    if (costFilter === 'all') return proj.costs;
+    if (costFilter === "all") return proj.costs;
     return proj.costs.filter((cost) => cost.costType === costFilter);
   }, [proj, costFilter]);
 
@@ -228,13 +217,10 @@ export function ProjectDetailShell({
 
   const p = proj;
 
-  async function persistAlertToggle(
-    alertId: string,
-    resolved: boolean,
-  ): Promise<void> {
+  async function persistAlertToggle(alertId: string, resolved: boolean): Promise<void> {
     const ok = await persistWarrantyCheckbox(alertId, resolved);
     if (ok) {
-      toast.success(resolved ? 'Alert resolved' : 'Alert reopened');
+      toast.success(resolved ? "Alert resolved" : "Alert reopened");
       void refetch();
     }
   }
@@ -244,12 +230,12 @@ export function ProjectDetailShell({
     const validated = addProjectCostSchema.safeParse({
       projectId: p.id,
       description: costForm.description.trim(),
-      amount: Math.round(Number(costForm.amount.replace(/,/g, ''))),
+      amount: Math.round(Number(costForm.amount.replace(/,/g, ""))),
       costType: costForm.costType,
       incurredDate: new Date(costForm.incurredDate),
     });
     if (!validated.success) {
-      toast.error(validated.error.issues[0]?.message ?? 'Check cost fields');
+      toast.error(validated.error.issues[0]?.message ?? "Check cost fields");
       return;
     }
 
@@ -261,20 +247,20 @@ export function ProjectDetailShell({
         }
         setCostOpen(false);
         setCostForm({
-          description: '',
-          amount: '',
-          costType: 'material',
-          incurredDate: format(new Date(), 'yyyy-MM-dd'),
+          description: "",
+          amount: "",
+          costType: "material",
+          incurredDate: format(new Date(), "yyyy-MM-dd"),
         });
       },
     });
   }
 
   function normalizeCostAmountInput(value: string): string {
-    const cleaned = value.replace(/,/g, '').trim();
-    if (cleaned.length === 0) return '';
+    const cleaned = value.replace(/,/g, "").trim();
+    if (cleaned.length === 0) return "";
     const parsed = Number(cleaned);
-    if (!Number.isFinite(parsed) || parsed < 0) return '';
+    if (!Number.isFinite(parsed) || parsed < 0) return "";
     return String(Math.round(parsed));
   }
 
@@ -290,7 +276,7 @@ export function ProjectDetailShell({
       {
         onSuccess: (res) => {
           if (!res.success) toast.error(res.error);
-          else setRemarkBody('');
+          else setRemarkBody("");
         },
       },
     );
@@ -304,7 +290,7 @@ export function ProjectDetailShell({
       dueDate: new Date(alertForm.dueDate),
     });
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? 'Invalid alert payload');
+      toast.error(parsed.error.issues[0]?.message ?? "Invalid alert payload");
       return;
     }
 
@@ -312,7 +298,7 @@ export function ProjectDetailShell({
       onSuccess: (res) => {
         if (!res.success) toast.error(res.error);
       },
-      onError: () => toast.error('Failed to publish alert'),
+      onError: () => toast.error("Failed to publish alert"),
     });
   }
 
@@ -324,7 +310,7 @@ export function ProjectDetailShell({
             variant="ghost"
             size="sm"
             onClick={() => {
-              router.push('/projects');
+              router.push("/projects");
             }}
             className="rounded-full"
           >
@@ -337,13 +323,13 @@ export function ProjectDetailShell({
             </h1>
             <Badge
               className={cn(
-                'border text-[10px] uppercase',
+                "border text-[10px] uppercase",
                 isProjectStatus(proj.status)
                   ? statusBadgeTone(proj.status)
-                  : 'border-gray-500/35 bg-gray-500/10 text-gray-200',
+                  : "border-gray-500/35 bg-gray-500/10 text-gray-200",
               )}
             >
-              {proj.status.replace('_', ' ')}
+              {proj.status.replace("_", " ")}
             </Badge>
             <Badge variant="outline" className="text-[11px]">
               Capacity · {Number(proj.systemSizeKwp)} kWp
@@ -359,7 +345,7 @@ export function ProjectDetailShell({
           </p>
           {proj.quotation ? (
             <p className="text-muted-foreground text-xs tracking-[0.35em] uppercase">
-              Linked quote{' '}
+              Linked quote{" "}
               <Link
                 href={`/quotations/${proj.quotation.id}`}
                 className="text-solar hover:underline"
@@ -373,9 +359,7 @@ export function ProjectDetailShell({
         <ProjectStateRail
           currentStatus={proj.status}
           isAdmin={isAdmin}
-          isPending={
-            updateProjectMutation.isPending || markCompleteMutation.isPending
-          }
+          isPending={updateProjectMutation.isPending || markCompleteMutation.isPending}
           onTransition={(status: ProjectStatus) => {
             updateProjectMutation.mutate({ id, status });
           }}
@@ -385,15 +369,13 @@ export function ProjectDetailShell({
         />
       </div>
 
-      {proj.status === 'completed' ? (
-        <CompletedProjectVouchers projectId={proj.id} />
-      ) : null}
+      {proj.status === "completed" ? <CompletedProjectVouchers projectId={proj.id} /> : null}
 
       <ProjectTimeline project={proj} />
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="bg-muted/50 border-border/70 flex h-auto flex-wrap gap-3 rounded-[2rem] border p-3">
-          {['overview', 'costs', 'remarks', 'warranty'].map((item) => (
+          {["overview", "costs", "remarks", "warranty"].map((item) => (
             <TabsTrigger
               key={item}
               value={item}
@@ -407,36 +389,26 @@ export function ProjectDetailShell({
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { label: 'Quoted total', value: quoted },
-              { label: 'Actual spend', value: proj.actualTotalComputed },
+              { label: "Quoted total", value: quoted },
+              { label: "Actual spend", value: proj.actualTotalComputed },
               {
-                label: 'Variance vs quote',
+                label: "Variance vs quote",
                 value: proj.actualTotalComputed - quoted,
                 accent:
                   variancePct > 15
-                    ? 'text-red-400'
+                    ? "text-red-400"
                     : variancePct >= 10
-                      ? 'text-amber-300'
-                      : 'text-emerald-300',
+                      ? "text-amber-300"
+                      : "text-emerald-300",
               },
             ].map((card) => (
-              <div
-                key={card.label}
-                className="bg-card border-border rounded-3xl border px-7 py-6"
-              >
+              <div key={card.label} className="bg-card border-border rounded-3xl border px-7 py-6">
                 <p className="text-muted-foreground mb-2 text-[10px] font-bold uppercase">
                   {card.label}
                 </p>
-                <p
-                  className={cn(
-                    'font-mono text-3xl tracking-tighter',
-                    card.accent,
-                  )}
-                >
-                  {typeof card.value === 'number'
-                    ? formatMMK(card.value)
-                    : card.value}
-                  {card.label.includes('Variance') ? (
+                <p className={cn("font-mono text-3xl tracking-tighter", card.accent)}>
+                  {typeof card.value === "number" ? formatMMK(card.value) : card.value}
+                  {card.label.includes("Variance") ? (
                     <span className="text-muted-foreground ml-4 text-[12px]">
                       ({variancePct.toFixed(1)} %)
                     </span>
@@ -452,18 +424,14 @@ export function ProjectDetailShell({
                 <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
                   Site briefing
                 </h3>
-                <p className="text-foreground text-sm leading-relaxed">
-                  {proj.siteAddress}
-                </p>
+                <p className="text-foreground text-sm leading-relaxed">{proj.siteAddress}</p>
                 <p className="text-muted-foreground text-[11px]">
-                  Started ·{' '}
-                  {proj.startDate
-                    ? format(new Date(proj.startDate), 'MMM dd, yyyy')
-                    : 'TBD'}{' '}
-                  · Planned wrap{' '}
+                  Started ·{" "}
+                  {proj.startDate ? format(new Date(proj.startDate), "MMM dd, yyyy") : "TBD"} ·
+                  Planned wrap{" "}
                   {proj.targetCompletion
-                    ? format(new Date(proj.targetCompletion), 'MMM dd yyyy')
-                    : 'floating'}
+                    ? format(new Date(proj.targetCompletion), "MMM dd yyyy")
+                    : "floating"}
                 </p>
               </div>
             </motion.div>
@@ -486,11 +454,10 @@ export function ProjectDetailShell({
                 {COST_FILTERS.map((chip) => (
                   <Button
                     key={chip}
-                    variant={costFilter === chip ? 'secondary' : 'outline'}
+                    variant={costFilter === chip ? "secondary" : "outline"}
                     className={cn(
-                      'rounded-full text-[11px] tracking-wide uppercase',
-                      costFilter === chip &&
-                        'border-amber-500/50 bg-amber-500/10',
+                      "rounded-full text-[11px] tracking-wide uppercase",
+                      costFilter === chip && "border-amber-500/50 bg-amber-500/10",
                     )}
                     onClick={() => {
                       setCostFilter(chip);
@@ -569,9 +536,7 @@ export function ProjectDetailShell({
                             <SelectItem value="material">Materials</SelectItem>
                             <SelectItem value="labor">Labor</SelectItem>
                             <SelectItem value="transport">Logistics</SelectItem>
-                            <SelectItem value="misc">
-                              Everything else
-                            </SelectItem>
+                            <SelectItem value="misc">Everything else</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -618,27 +583,23 @@ export function ProjectDetailShell({
               Ledger composition
             </p>
             <div className="border-border/70 mb-14 flex h-7 overflow-hidden rounded-full border shadow-inner">
-              {(
-                Object.entries(costBuckets) as [
-                  keyof typeof costBuckets,
-                  number,
-                ][]
-              ).map(([key, value]) =>
-                costSumAgg > 0 ? (
-                  <div
-                    key={key}
-                    style={{
-                      width: `${(value / Math.max(costSumAgg, 1)) * 100}%`,
-                    }}
-                    className={cn(
-                      'transition-[width] duration-700',
-                      key === 'material' && 'bg-amber-400/95',
-                      key === 'labor' && 'bg-emerald-400/95',
-                      key === 'transport' && 'bg-indigo-500/85',
-                      key === 'misc' && 'bg-zinc-500/95',
-                    )}
-                  />
-                ) : null,
+              {(Object.entries(costBuckets) as [keyof typeof costBuckets, number][]).map(
+                ([key, value]) =>
+                  costSumAgg > 0 ? (
+                    <div
+                      key={key}
+                      style={{
+                        width: `${(value / Math.max(costSumAgg, 1)) * 100}%`,
+                      }}
+                      className={cn(
+                        "transition-[width] duration-700",
+                        key === "material" && "bg-amber-400/95",
+                        key === "labor" && "bg-emerald-400/95",
+                        key === "transport" && "bg-indigo-500/85",
+                        key === "misc" && "bg-zinc-500/95",
+                      )}
+                    />
+                  ) : null,
               )}
             </div>
 
@@ -647,23 +608,15 @@ export function ProjectDetailShell({
                 <motion.div key={cost.id} variants={staggerItem}>
                   <div className="bg-muted/35 border-border/70 flex gap-5 rounded-[1.75rem] border px-6 py-4 text-sm hover:border-emerald-300/65">
                     <div className="flex-1 space-y-1">
-                      <p className="text-base font-semibold">
-                        {cost.description}
-                      </p>
+                      <p className="text-base font-semibold">{cost.description}</p>
                       <p className="text-muted-foreground text-[11px]">
-                        Recorded{' '}
-                        {format(
-                          new Date(cost.incurredDate),
-                          'MMM dd yyyy · HH:mm',
-                        )}
+                        Recorded {format(new Date(cost.incurredDate), "MMM dd yyyy · HH:mm")}
                       </p>
                     </div>
                     <Badge className="h-fit text-[11px]" variant="outline">
                       {cost.costType}
                     </Badge>
-                    <p className="font-mono text-lg">
-                      {formatMMK(Number(cost.amount))}
-                    </p>
+                    <p className="font-mono text-lg">{formatMMK(Number(cost.amount))}</p>
                     {canEditOperational ? (
                       <Button
                         type="button"
@@ -683,32 +636,27 @@ export function ProjectDetailShell({
               ))}
               {filteredCosts.length === 0 ? (
                 <p className="text-muted-foreground text-center text-sm">
-                  Quiet ledger — tap “Add cost” for your first disbursement
-                  entry.
+                  Quiet ledger — tap “Add cost” for your first disbursement entry.
                 </p>
               ) : null}
             </div>
             <div className="text-muted-foreground mt-10 grid gap-4 text-[11px] uppercase md:grid-cols-3">
               <div>
-                Quoted{' '}
-                <div className="font-mono text-base text-emerald-200">
-                  {formatMMK(quoted)}
-                </div>
+                Quoted{" "}
+                <div className="font-mono text-base text-emerald-200">{formatMMK(quoted)}</div>
               </div>
               <div>
-                Actual{' '}
+                Actual{" "}
                 <div className="font-mono text-base text-emerald-200">
                   {formatMMK(proj.actualTotalComputed)}
                 </div>
               </div>
               <div>
-                Delta{' '}
+                Delta{" "}
                 <div
                   className={cn(
-                    'font-mono text-base',
-                    proj.actualTotalComputed <= quoted
-                      ? 'text-emerald-200'
-                      : 'text-rose-400',
+                    "font-mono text-base",
+                    proj.actualTotalComputed <= quoted ? "text-emerald-200" : "text-rose-400",
                   )}
                 >
                   {formatMMK(proj.actualTotalComputed - quoted)}
@@ -764,9 +712,7 @@ export function ProjectDetailShell({
               </Button>
             </form>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              Conversation thread is archived.
-            </p>
+            <p className="text-muted-foreground text-sm">Conversation thread is archived.</p>
           )}
 
           <ScrollArea className="bg-card border-border h-[520px] rounded-[2rem] border p-6">
@@ -782,21 +728,16 @@ export function ProjectDetailShell({
                 >
                   <div className="mb-3 flex justify-between gap-3 text-[11px] uppercase">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">
-                        {REMARK_TYPE_ICONS[remark.remarkType]}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className="text-[9px] uppercase"
-                      >
+                      <span className="text-lg">{REMARK_TYPE_ICONS[remark.remarkType]}</span>
+                      <Badge variant="secondary" className="text-[9px] uppercase">
                         {remark.remarkType}
                       </Badge>
                       <span className="text-muted-foreground font-semibold">
-                        {remark.author?.name ?? 'Team member'}
+                        {remark.author?.name ?? "Team member"}
                       </span>
                     </div>
                     <span className="text-muted-foreground">
-                      {format(new Date(remark.createdAt), 'MMM d yyyy · hh:mm')}
+                      {format(new Date(remark.createdAt), "MMM d yyyy · hh:mm")}
                     </span>
                   </div>
                   <p className="text-muted-foreground text-sm whitespace-pre-wrap">
@@ -850,15 +791,9 @@ export function ProjectDetailShell({
                       <SelectValue placeholder="Cue type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="warranty_expiry">
-                        Warranty expiry
-                      </SelectItem>
-                      <SelectItem value="maintenance_due">
-                        Preventive upkeep
-                      </SelectItem>
-                      <SelectItem value="follow_up">
-                        Client follow-through
-                      </SelectItem>
+                      <SelectItem value="warranty_expiry">Warranty expiry</SelectItem>
+                      <SelectItem value="maintenance_due">Preventive upkeep</SelectItem>
+                      <SelectItem value="follow_up">Client follow-through</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -913,24 +848,24 @@ export function ProjectDetailShell({
               <div
                 key={alert.id}
                 className={cn(
-                  'bg-card rounded-[1.75rem] border p-6',
+                  "bg-card rounded-[1.75rem] border p-6",
                   alert.isResolved
-                    ? 'border-border/50 opacity-65'
+                    ? "border-border/50 opacity-65"
                     : new Date(alert.dueDate) < new Date()
-                      ? 'border-red-400/65'
-                      : 'border-amber-500/65',
+                      ? "border-red-400/65"
+                      : "border-amber-500/65",
                 )}
               >
                 <div className="mb-4 flex justify-between gap-3">
                   <Badge variant="outline" className="text-[11px]">
-                    {alert.alertType.replace('_', ' ')}
+                    {alert.alertType.replace("_", " ")}
                   </Badge>
                   <Checkbox
                     id={`resolved-${alert.id}`}
                     checked={alert.isResolved}
                     disabled={busyAlertId === alert.id}
                     onCheckedChange={(val) => {
-                      if (val === 'indeterminate') return;
+                      if (val === "indeterminate") return;
                       void (async (): Promise<void> => {
                         setBusyAlertId(alert.id);
                         try {
@@ -943,13 +878,11 @@ export function ProjectDetailShell({
                   />
                 </div>
 
-                <p className="text-foreground text-sm font-medium">
-                  {alert.description}
-                </p>
+                <p className="text-foreground text-sm font-medium">{alert.description}</p>
                 <p className="text-muted-foreground mt-6 text-[12px]">
                   {!alert.isResolved ? (
                     <span className="font-semibold text-amber-200">
-                      Pulse ·{' '}
+                      Pulse ·{" "}
                       {formatDistanceToNowStrict(new Date(alert.dueDate), {
                         addSuffix: true,
                       })}
@@ -982,13 +915,11 @@ function ProjectOperationalNotes({
   initialNotes: string | null | undefined;
   onPersist: (draft: string) => void;
 }): React.JSX.Element {
-  const [draft, setDraft] = React.useState(() => initialNotes ?? '');
+  const [draft, setDraft] = React.useState(() => initialNotes ?? "");
 
   return (
     <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
-      <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
-        Operational notes
-      </h3>
+      <h3 className="text-muted-foreground text-[10px] font-bold uppercase">Operational notes</h3>
       <Textarea
         disabled={disabled}
         value={draft}
@@ -1012,19 +943,15 @@ function ProjectOperationalNotes({
   );
 }
 
-function CompletedProjectVouchers({
-  projectId,
-}: {
-  projectId: string;
-}): React.JSX.Element {
+function CompletedProjectVouchers({ projectId }: { projectId: string }): React.JSX.Element {
   const { data: vouchers } = useProjectVouchers(projectId);
   const generateVoucherMutation = useGenerateVoucher();
 
   const [voucherType, setVoucherType] = React.useState<
-    'completion_certificate' | 'final_payment_voucher'
-  >('completion_certificate');
-  const [totalAmount, setTotalAmount] = React.useState('');
-  const [paidAmount, setPaidAmount] = React.useState('');
+    "completion_certificate" | "final_payment_voucher"
+  >("completion_certificate");
+  const [totalAmount, setTotalAmount] = React.useState("");
+  const [paidAmount, setPaidAmount] = React.useState("");
 
   return (
     <div className="bg-card border-border rounded-2xl border p-6">
@@ -1041,25 +968,21 @@ function CompletedProjectVouchers({
 
       <div className="border-border/50 mb-5 flex flex-wrap gap-3 border-b border-dashed pb-5">
         <Button
-          variant={
-            voucherType === 'completion_certificate' ? 'default' : 'outline'
-          }
+          variant={voucherType === "completion_certificate" ? "default" : "outline"}
           size="sm"
           className="rounded-full text-[10px] font-bold uppercase"
           onClick={() => {
-            setVoucherType('completion_certificate');
+            setVoucherType("completion_certificate");
           }}
         >
           Completion Certificate
         </Button>
         <Button
-          variant={
-            voucherType === 'final_payment_voucher' ? 'default' : 'outline'
-          }
+          variant={voucherType === "final_payment_voucher" ? "default" : "outline"}
           size="sm"
           className="rounded-full text-[10px] font-bold uppercase"
           onClick={() => {
-            setVoucherType('final_payment_voucher');
+            setVoucherType("final_payment_voucher");
           }}
         >
           Final Payment Voucher
@@ -1068,9 +991,7 @@ function CompletedProjectVouchers({
 
       <div className="mb-5 grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label className="text-[10px] tracking-wide uppercase">
-            Total amount (MMK)
-          </Label>
+          <Label className="text-[10px] tracking-wide uppercase">Total amount (MMK)</Label>
           <Input
             type="number"
             min={0}
@@ -1082,9 +1003,7 @@ function CompletedProjectVouchers({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-[10px] tracking-wide uppercase">
-            Paid amount (MMK)
-          </Label>
+          <Label className="text-[10px] tracking-wide uppercase">Paid amount (MMK)</Label>
           <Input
             type="number"
             min={0}
@@ -1099,9 +1018,7 @@ function CompletedProjectVouchers({
 
       <Button
         className="rounded-full text-[10px] font-bold uppercase"
-        disabled={
-          generateVoucherMutation.isPending || !totalAmount || !paidAmount
-        }
+        disabled={generateVoucherMutation.isPending || !totalAmount || !paidAmount}
         onClick={() => {
           generateVoucherMutation.mutate({
             projectId,
@@ -1114,15 +1031,12 @@ function CompletedProjectVouchers({
         {generateVoucherMutation.isPending ? (
           <Loader2 className="mr-2 h-3 w-3 animate-spin" />
         ) : null}
-        Generate{' '}
-        {voucherType === 'completion_certificate' ? 'Certificate' : 'Voucher'}
+        Generate {voucherType === "completion_certificate" ? "Certificate" : "Voucher"}
       </Button>
 
       {vouchers && vouchers.length > 0 ? (
         <div className="mt-6 space-y-3">
-          <p className="text-muted-foreground text-[10px] font-bold uppercase">
-            Issued vouchers
-          </p>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase">Issued vouchers</p>
           {vouchers.map((v) => (
             <div
               key={v.id}
@@ -1131,20 +1045,13 @@ function CompletedProjectVouchers({
               <div>
                 <p className="text-sm font-semibold">{v.voucherNumber}</p>
                 <p className="text-muted-foreground text-[10px] uppercase">
-                  {v.voucherType.replace('_', ' ')}
+                  {v.voucherType.replace("_", " ")}
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-sm">
-                  {formatMMK(Number(v.totalAmount))}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full text-[10px]"
-                  asChild
-                >
-                  <a href={`/vouchers/${v.id}/pdf`} target="_blank">
+                <span className="font-mono text-sm">{formatMMK(Number(v.totalAmount))}</span>
+                <Button variant="outline" size="sm" className="rounded-full text-[10px]" asChild>
+                  <a href={`/vouchers/${v.id}/pdf`} target="_blank" rel="noopener">
                     Print
                   </a>
                 </Button>

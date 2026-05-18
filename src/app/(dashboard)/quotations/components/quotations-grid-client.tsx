@@ -1,25 +1,26 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import { Search, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QuotationCard } from '@/components/quotations/quotation-card';
-import { useQuotations } from '@/hooks/use-quotations';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { type QuotationStatus } from '@/lib/db/schema';
-import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
-import { useDebounce } from '@/hooks/use-debounce';
-import type { QuotationWithCustomer } from '@/actions/quotation-actions';
+import { FileText, Search } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type React from "react";
+import { useMemo, useState } from "react";
+import type { QuotationWithCustomer } from "@/actions/quotation-actions";
+import { QuotationCard } from "@/components/quotations/quotation-card";
+import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useQuotations } from "@/hooks/use-quotations";
+import type { QuotationStatus } from "@/lib/db/schema";
 
 const TABS: { id: string; label: string; status?: QuotationStatus }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Drafts', status: 'draft' },
-  { id: 'sent', label: 'Sent', status: 'sent' },
-  { id: 'accepted', label: 'Accepted', status: 'accepted' },
-  { id: 'rejected', label: 'Rejected', status: 'rejected' },
-  { id: 'archive', label: 'Archive' },
+  { id: "all", label: "All" },
+  { id: "draft", label: "Drafts", status: "draft" },
+  { id: "sent", label: "Sent", status: "sent" },
+  { id: "accepted", label: "Accepted", status: "accepted" },
+  { id: "rejected", label: "Rejected", status: "rejected" },
+  { id: "archive", label: "Archive" },
 ];
 
 interface QuotationsGridClientProps {
@@ -34,10 +35,10 @@ export function QuotationsGridClient({
 }: QuotationsGridClientProps): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<string>('all');
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<string>("all");
   const debouncedSearch = useDebounce(search, 300);
-  const page = Number(searchParams.get('page') ?? '1');
+  const page = Number(searchParams.get("page") ?? "1");
   const currentPage = Number.isNaN(page) || page < 1 ? 1 : page;
   const limit = 20;
 
@@ -45,14 +46,14 @@ export function QuotationsGridClient({
     const selectedTab = TABS.find((tab) => tab.id === status);
     return {
       search: debouncedSearch,
-      archived: status === 'archive' ? true : false,
+      archived: status === "archive",
       status: selectedTab?.status,
       page: currentPage,
       limit,
     };
   }, [currentPage, debouncedSearch, status]);
 
-  const isDefault = status === 'all' && !debouncedSearch && currentPage === 1;
+  const isDefault = status === "all" && !debouncedSearch && currentPage === 1;
   const { data: response, isLoading } = useQuotations(
     queryFilters,
     isDefault ? initialData : undefined,
@@ -65,7 +66,7 @@ export function QuotationsGridClient({
 
   const navigatePage = (nextPage: number): void => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('page', String(nextPage));
+    params.set("page", String(nextPage));
     router.push(`/quotations?${params.toString()}`);
   };
 
@@ -114,20 +115,18 @@ export function QuotationsGridClient({
           <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
             <FileText className="h-10 w-10 opacity-20" />
           </div>
-          <h3 className="text-foreground mt-6 text-xl font-semibold">
-            No quotations found
-          </h3>
+          <h3 className="text-foreground mt-6 text-xl font-semibold">No quotations found</h3>
           <p className="text-muted-foreground mt-2 max-w-xs">
-            {search || status !== 'all'
+            {search || status !== "all"
               ? "We couldn't find any quotations matching your filters."
-              : 'Start by creating your first solar quotation for a customer.'}
+              : "Start by creating your first solar quotation for a customer."}
           </p>
-          {!search && status === 'all' && (
+          {!search && status === "all" && (
             <Button
               variant="link"
               className="text-solar hover:text-solar/80 mt-4"
               onClick={() => {
-                router.push('/quotations/new');
+                router.push("/quotations/new");
               }}
             >
               Create your first quote

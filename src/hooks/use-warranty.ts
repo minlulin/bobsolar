@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   getWarrantyAlerts,
   getWarrantySummary,
-  resolveWarrantyAlert,
   reopenWarrantyAlert,
-} from '@/actions/warranty-actions';
-import type { WarrantyListFilter } from '@/lib/validators/warranty';
-import { toast } from 'sonner';
+  resolveWarrantyAlert,
+} from "@/actions/warranty-actions";
+import type { WarrantyListFilter } from "@/lib/validators/warranty";
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
@@ -14,7 +14,7 @@ export function useWarrantySummary(): ReturnType<
   typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>>
 > {
   return useQuery({
-    queryKey: ['warranty', 'summary'],
+    queryKey: ["warranty", "summary"],
     queryFn: async () => {
       const res = await getWarrantySummary();
       if (!res.success) throw new Error(res.error);
@@ -26,13 +26,11 @@ export function useWarrantySummary(): ReturnType<
 
 export function useWarrantyAlerts(
   filter: Partial<WarrantyListFilter> = {},
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantyAlerts>>>>
-> {
-  const tab = filter.tab ?? 'all';
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantyAlerts>>>>> {
+  const tab = filter.tab ?? "all";
 
   return useQuery({
-    queryKey: ['warranty', 'alerts', tab],
+    queryKey: ["warranty", "alerts", tab],
     queryFn: async () => {
       const res = await getWarrantyAlerts({ tab });
       if (!res.success) throw new Error(res.error);
@@ -56,13 +54,13 @@ export function useResolveWarrantyAlert(): ReturnType<
     onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        await queryClient.invalidateQueries({ queryKey: ['warranty'] });
-        await queryClient.invalidateQueries({ queryKey: ['projects'] });
-        toast.success('Alert resolved');
+        await queryClient.invalidateQueries({ queryKey: ["warranty"] });
+        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+        toast.success("Alert resolved");
       }
     },
     onError: () => {
-      toast.error('Could not resolve');
+      toast.error("Could not resolve");
     },
   });
 }
@@ -81,12 +79,12 @@ export function useReopenWarrantyAlert(): ReturnType<
     onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        await queryClient.invalidateQueries({ queryKey: ['warranty'] });
-        toast.success('Alert reopened');
+        await queryClient.invalidateQueries({ queryKey: ["warranty"] });
+        toast.success("Alert reopened");
       }
     },
     onError: () => {
-      toast.error('Could not reopen');
+      toast.error("Could not reopen");
     },
   });
 }

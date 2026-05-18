@@ -1,15 +1,12 @@
-'use client';
+"use client";
 
-import { Reorder, useDragControls } from 'motion/react';
-import * as React from 'react';
-import { GripVertical, Trash2, Hash } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  useQuoteBuilderStore,
-  type QuoteBuilderItem,
-} from '@/stores/quote-builder-store';
-import { formatMMK } from '@/lib/utils';
+import { GripVertical, Hash, Trash2 } from "lucide-react";
+import { Reorder, useDragControls } from "motion/react";
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { formatMMK } from "@/lib/utils";
+import { type QuoteBuilderItem, useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 export function QuoteItems(): React.JSX.Element {
   const items = useQuoteBuilderStore((state) => state.items);
@@ -21,9 +18,7 @@ export function QuoteItems(): React.JSX.Element {
         <div className="bg-muted/45 mb-4 flex h-12 w-12 items-center justify-center rounded-full">
           <Hash className="text-muted-foreground h-6 w-6" />
         </div>
-        <p className="text-muted-foreground text-sm font-medium">
-          No items added yet
-        </p>
+        <p className="text-muted-foreground text-sm font-medium">No items added yet</p>
         <p className="text-muted-foreground/60 mt-1 text-xs">
           Search and add items to start building your quote
         </p>
@@ -43,54 +38,28 @@ export function QuoteItems(): React.JSX.Element {
         <div></div>
       </div>
 
-      <Reorder.Group
-        axis="y"
-        values={items}
-        onReorder={setItems}
-        className="space-y-2"
-      >
+      <Reorder.Group axis="y" values={items} onReorder={setItems} className="space-y-2">
         {items.map((item, index) => (
-          <ItemRow
-            key={item.id ?? `${item.itemId ?? 'item'}-${index}`}
-            item={item}
-            index={index}
-          />
+          <ItemRow key={item.id ?? `${item.itemId ?? "item"}-${index}`} item={item} index={index} />
         ))}
       </Reorder.Group>
     </div>
   );
 }
 
-function ItemRow({
-  item,
-  index,
-}: {
-  item: QuoteBuilderItem;
-  index: number;
-}): React.JSX.Element {
-  const updateItemQuantity = useQuoteBuilderStore(
-    (state) => state.updateItemQuantity,
-  );
-  const updateItemPrice = useQuoteBuilderStore(
-    (state) => state.updateItemPrice,
-  );
+function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }): React.JSX.Element {
+  const updateItemQuantity = useQuoteBuilderStore((state) => state.updateItemQuantity);
+  const updateItemPrice = useQuoteBuilderStore((state) => state.updateItemPrice);
   const removeItem = useQuoteBuilderStore((state) => state.removeItem);
-  const updateItemDescription = useQuoteBuilderStore(
-    (state) => state.updateItemDescription,
-  );
+  const updateItemDescription = useQuoteBuilderStore((state) => state.updateItemDescription);
 
   const controls = useDragControls();
-  const [quantityInput, setQuantityInput] = React.useState<string>(
-    String(item.quantity),
-  );
+  const [quantityInput, setQuantityInput] = React.useState<string>(String(item.quantity));
   const [isQuantityEditing, setIsQuantityEditing] = React.useState(false);
-  const [unitPriceInput, setUnitPriceInput] = React.useState<string>(
-    String(item.unitPrice),
-  );
+  const [unitPriceInput, setUnitPriceInput] = React.useState<string>(String(item.unitPrice));
   const [isUnitPriceEditing, setIsUnitPriceEditing] = React.useState(false);
 
-  const total =
-    item.quantity * item.unitPrice * (1 - item.discountPercentage / 100);
+  const total = item.quantity * item.unitPrice * (1 - item.discountPercentage / 100);
 
   return (
     <Reorder.Item
@@ -141,9 +110,7 @@ function ItemRow({
           }}
           onBlur={() => {
             const parsed = Number.parseInt(quantityInput, 10);
-            const normalized = Number.isFinite(parsed)
-              ? Math.max(1, parsed)
-              : 1;
+            const normalized = Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
             setIsQuantityEditing(false);
             updateItemQuantity(index, normalized);
           }}
@@ -167,9 +134,7 @@ function ItemRow({
             }}
             onBlur={() => {
               const parsed = Number.parseInt(unitPriceInput, 10);
-              const normalized = Number.isFinite(parsed)
-                ? Math.max(0, parsed)
-                : 0;
+              const normalized = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
               setIsUnitPriceEditing(false);
               updateItemPrice(index, normalized);
             }}
@@ -178,9 +143,7 @@ function ItemRow({
         </div>
       </div>
 
-      <div className="text-right font-mono text-sm font-bold">
-        {formatMMK(total)}
-      </div>
+      <div className="text-right font-mono text-sm font-bold">{formatMMK(total)}</div>
 
       <div className="flex justify-center">
         <Button

@@ -1,11 +1,11 @@
-import { db } from '@/lib/db';
-import { users, notifications } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { notifications, users } from "@/lib/db/schema";
 
 export type BroadcastNotificationInput = {
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'action';
+  type: "info" | "warning" | "action";
   link?: string | null;
   dedupeKey?: string;
 };
@@ -37,9 +37,7 @@ async function insertNotifications(
   await insert;
 }
 
-export async function notifyAllUsers(
-  payload: BroadcastNotificationInput,
-): Promise<void> {
+export async function notifyAllUsers(payload: BroadcastNotificationInput): Promise<void> {
   const allUsers = await db.select({ id: users.id }).from(users);
   if (allUsers.length === 0) return;
 
@@ -49,13 +47,8 @@ export async function notifyAllUsers(
   );
 }
 
-export async function notifyAdminUsers(
-  payload: BroadcastNotificationInput,
-): Promise<void> {
-  const admins = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.role, 'admin'));
+export async function notifyAdminUsers(payload: BroadcastNotificationInput): Promise<void> {
+  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
   if (admins.length === 0) return;
 
   await insertNotifications(

@@ -1,26 +1,26 @@
 "use server";
 
+import { startOfMonth } from "date-fns";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
-  projectPayments,
-  paymentMethods,
-  projects,
-  projectCosts,
-  type ProjectPayment,
   type PaymentMethod,
+  type ProjectPayment,
+  paymentMethods,
+  projectCosts,
+  projectPayments,
+  projects,
 } from "@/lib/db/schema";
-import { eq, desc, sql, and, gte } from "drizzle-orm";
-import { requireAuth } from "@/lib/auth/validate";
-import { recordPaymentSchema } from "@/lib/validators/payment";
 import {
   assertFinanceSsotDrift,
   createBalancedJournalEntry,
   mapPaymentMethodNameToAssetAccount,
 } from "@/lib/finance/ledger";
-import { successResponse, type ActionResponse } from "@/lib/utils/action-response";
+import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
-import { revalidatePath } from "next/cache";
-import { startOfMonth } from "date-fns";
+import { recordPaymentSchema } from "@/lib/validators/payment";
 
 export async function recordPayment(raw: unknown): Promise<ActionResponse<ProjectPayment>> {
   try {

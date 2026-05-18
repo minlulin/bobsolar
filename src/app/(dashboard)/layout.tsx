@@ -1,17 +1,17 @@
-import * as React from 'react';
-import Image from 'next/image';
-import { requireAuth } from '@/lib/auth/validate';
-import { NavOrbit } from '@/components/layout/nav-orbit';
-import { CommandBar } from '@/components/layout/command-bar';
-import { NotificationBell } from '@/components/layout/notification-bell';
-import { ThemeToggle } from '@/components/shared/theme-toggle';
-import { RouteTransition } from '@/components/shared/route-transition';
-import { UserNav } from '@/components/layout/user-nav';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq } from "drizzle-orm";
+import Image from "next/image";
+import type * as React from "react";
+import { CommandBar } from "@/components/layout/command-bar";
+import { NavOrbit } from "@/components/layout/nav-orbit";
+import { NotificationBell } from "@/components/layout/notification-bell";
+import { UserNav } from "@/components/layout/user-nav";
+import { RouteTransition } from "@/components/shared/route-transition";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { requireAuth } from "@/lib/auth/validate";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
   children,
@@ -28,8 +28,8 @@ export default async function DashboardLayout({
     },
   });
 
-  const userName = user?.name || 'User';
-  const userRole = user?.role || 'user';
+  const userName = user?.name || "User";
+  const userRole = user?.role || "user";
 
   return (
     <div className="bg-background relative min-h-screen">
@@ -73,10 +73,7 @@ export default async function DashboardLayout({
       </header>
 
       {/* Main Content */}
-      <main
-        id="main-content"
-        className="container mx-auto max-w-7xl px-4 py-8 pb-32"
-      >
+      <main id="main-content" className="container mx-auto max-w-7xl px-4 py-8 pb-32">
         <RouteTransition>{children}</RouteTransition>
       </main>
 

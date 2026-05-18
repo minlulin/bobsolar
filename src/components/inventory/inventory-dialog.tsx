@@ -1,32 +1,23 @@
-﻿'use client';
+﻿"use client";
 
-import { useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  type InventoryCategory,
-  type InventoryItem,
-  inventoryCategoryEnum,
-  inventoryUnitEnum,
-  type InventoryItem as DBInventoryItem,
-} from '@/lib/db/schema';
-import {
-  createInventoryItemSchema,
-  type CreateInventoryItem,
-} from '@/lib/validators/inventory';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import {
   deriveInventoryName,
   extractSpecErrorMessage,
   formatNumericInputValue,
   parseNumericInput,
-} from '@/components/inventory/inventory-form-utils';
+} from "@/components/inventory/inventory-form-utils";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -34,21 +25,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
+import { useCreateInventoryItem, useUpdateInventoryItem } from "@/hooks/use-inventory";
 import {
-  useCreateInventoryItem,
-  useUpdateInventoryItem,
-} from '@/hooks/use-inventory';
-import { Loader2 } from 'lucide-react';
+  type InventoryItem as DBInventoryItem,
+  type InventoryCategory,
+  type InventoryItem,
+  inventoryCategoryEnum,
+  inventoryUnitEnum,
+} from "@/lib/db/schema";
+import { type CreateInventoryItem, createInventoryItemSchema } from "@/lib/validators/inventory";
 
 interface InventoryDialogProps {
   item?: InventoryItem | null;
@@ -57,30 +51,30 @@ interface InventoryDialogProps {
 }
 
 const defaultSpecificationsByCategory: Record<InventoryCategory, unknown> = {
-  panel: { brandModel: '', cellType: 'n_type', wattageW: 0, warranty: '' },
+  panel: { brandModel: "", cellType: "n_type", wattageW: 0, warranty: "" },
   inverter: {
-    brandModel: '',
-    systemType: 'hybrid',
-    ratedPower: '',
-    phase: 'single_phase',
-    maxPvInput: '',
-    warranty: '',
+    brandModel: "",
+    systemType: "hybrid",
+    ratedPower: "",
+    phase: "single_phase",
+    maxPvInput: "",
+    warranty: "",
   },
   battery: {
-    brandModel: '',
-    chemistryType: 'lifepo4',
+    brandModel: "",
+    chemistryType: "lifepo4",
     voltageV: 0,
     capacityAh: 0,
-    warranty: '',
+    warranty: "",
   },
-  mounting: { type: '' },
-  cable: { cableType: 'dc_cable', sizeCrossSection: '', unitOfMeasurement: '' },
-  accessory: { type: '', ratingAmpere: 0, voltageRating: '' },
+  mounting: { type: "" },
+  cable: { cableType: "dc_cable", sizeCrossSection: "", unitOfMeasurement: "" },
+  accessory: { type: "", ratingAmpere: 0, voltageRating: "" },
   labor: null,
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+  typeof value === "object" && value !== null;
 
 const getDefaultSpecifications = (category: InventoryCategory): unknown => {
   const value = defaultSpecificationsByCategory[category];
@@ -89,24 +83,17 @@ const getDefaultSpecifications = (category: InventoryCategory): unknown => {
 
 const getText = (record: Record<string, unknown>, key: string): string => {
   const value = record[key];
-  return typeof value === 'string' ? value : '';
+  return typeof value === "string" ? value : "";
 };
 
-const getSelectValue = (
-  record: Record<string, unknown>,
-  key: string,
-  fallback: string,
-): string => {
+const getSelectValue = (record: Record<string, unknown>, key: string, fallback: string): string => {
   const value = record[key];
-  return typeof value === 'string' ? value : fallback;
+  return typeof value === "string" ? value : fallback;
 };
 
-const getNumberInputValue = (
-  record: Record<string, unknown>,
-  key: string,
-): string => {
+const getNumberInputValue = (record: Record<string, unknown>, key: string): string => {
   const value = record[key];
-  return typeof value === 'number'
+  return typeof value === "number"
     ? formatNumericInputValue(value)
     : formatNumericInputValue(undefined);
 };
@@ -220,7 +207,7 @@ function renderSpecificationFields(
   currentSpecs: Record<string, unknown>,
   setSpecValue: SpecSetter,
 ): React.JSX.Element {
-  if (category === 'panel') {
+  if (category === "panel") {
     return (
       <>
         <SpecTextInput
@@ -238,8 +225,8 @@ function renderSpecificationFields(
           fallback="n_type"
           onSet={setSpecValue}
           options={[
-            { value: 'n_type', label: 'N-Type' },
-            { value: 'p_type', label: 'P-Type' },
+            { value: "n_type", label: "N-Type" },
+            { value: "p_type", label: "P-Type" },
           ]}
         />
         <SpecNumberInput
@@ -260,7 +247,7 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === 'inverter') {
+  if (category === "inverter") {
     return (
       <>
         <SpecTextInput
@@ -278,9 +265,9 @@ function renderSpecificationFields(
           fallback="hybrid"
           onSet={setSpecValue}
           options={[
-            { value: 'hybrid', label: 'Hybrid' },
-            { value: 'off_grid', label: 'Off Grid' },
-            { value: 'on_grid', label: 'On Grid' },
+            { value: "hybrid", label: "Hybrid" },
+            { value: "off_grid", label: "Off Grid" },
+            { value: "on_grid", label: "On Grid" },
           ]}
         />
         <SpecTextInput
@@ -298,8 +285,8 @@ function renderSpecificationFields(
           fallback="single_phase"
           onSet={setSpecValue}
           options={[
-            { value: 'single_phase', label: 'Single Phase' },
-            { value: 'three_phase', label: 'Three Phase' },
+            { value: "single_phase", label: "Single Phase" },
+            { value: "three_phase", label: "Three Phase" },
           ]}
         />
         <SpecTextInput
@@ -320,7 +307,7 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === 'battery') {
+  if (category === "battery") {
     return (
       <>
         <SpecTextInput
@@ -338,9 +325,9 @@ function renderSpecificationFields(
           fallback="lifepo4"
           onSet={setSpecValue}
           options={[
-            { value: 'lifepo4', label: 'LiFePO4' },
-            { value: 'gel', label: 'GEL' },
-            { value: 'lead_acid', label: 'Lead Acid' },
+            { value: "lifepo4", label: "LiFePO4" },
+            { value: "gel", label: "GEL" },
+            { value: "lead_acid", label: "Lead Acid" },
           ]}
         />
         <SpecNumberInput
@@ -369,7 +356,7 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === 'mounting') {
+  if (category === "mounting") {
     return (
       <SpecTextInput
         label="Mounting Type"
@@ -382,7 +369,7 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === 'cable') {
+  if (category === "cable") {
     return (
       <>
         <SpecSelectInput
@@ -393,9 +380,9 @@ function renderSpecificationFields(
           fallback="dc_cable"
           onSet={setSpecValue}
           options={[
-            { value: 'dc_cable', label: 'DC Cable' },
-            { value: 'ac_cable', label: 'AC Cable' },
-            { value: 'earth_wire', label: 'Earth Wire' },
+            { value: "dc_cable", label: "DC Cable" },
+            { value: "ac_cable", label: "AC Cable" },
+            { value: "earth_wire", label: "Earth Wire" },
           ]}
         />
         <SpecTextInput
@@ -417,7 +404,7 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === 'accessory') {
+  if (category === "accessory") {
     return (
       <>
         <SpecTextInput
@@ -459,34 +446,31 @@ export function InventoryDialog({
   onOpenChange,
 }: InventoryDialogProps): React.JSX.Element {
   const isEdit = !!item;
-  const { mutate: createItem, isPending: isCreating } =
-    useCreateInventoryItem();
-  const { mutate: updateItem, isPending: isUpdating } =
-    useUpdateInventoryItem();
+  const { mutate: createItem, isPending: isCreating } = useCreateInventoryItem();
+  const { mutate: updateItem, isPending: isUpdating } = useUpdateInventoryItem();
 
   const form = useForm<CreateInventoryItem>({
     resolver: zodResolver(createInventoryItemSchema),
     defaultValues: {
-      name: '',
-      category: inventoryCategoryEnum
-        .enumValues[0] as DBInventoryItem['category'],
-      unit: inventoryUnitEnum.enumValues[0] as DBInventoryItem['unit'],
+      name: "",
+      category: inventoryCategoryEnum.enumValues[0] as DBInventoryItem["category"],
+      unit: inventoryUnitEnum.enumValues[0] as DBInventoryItem["unit"],
       unitPrice: 0,
       stockQty: 0,
-      brand: '',
-      modelNumber: '',
-      specifications: getDefaultSpecifications('panel'),
+      brand: "",
+      modelNumber: "",
+      specifications: getDefaultSpecifications("panel"),
       isActive: true,
     },
   });
 
   const selectedCategory = useWatch({
     control: form.control,
-    name: 'category',
+    name: "category",
   });
   const selectedSpecs = useWatch({
     control: form.control,
-    name: 'specifications',
+    name: "specifications",
   });
 
   useEffect(() => {
@@ -497,37 +481,32 @@ export function InventoryDialog({
         unit: item.unit,
         unitPrice: Number(item.unitPrice),
         stockQty: item.stockQty,
-        brand: item.brand || '',
-        modelNumber: item.modelNumber || '',
-        specifications:
-          item.specifications ?? getDefaultSpecifications(item.category),
+        brand: item.brand || "",
+        modelNumber: item.modelNumber || "",
+        specifications: item.specifications ?? getDefaultSpecifications(item.category),
         isActive: item.isActive,
       });
       return;
     }
 
     form.reset({
-      name: '',
-      category: 'panel',
-      unit: 'pcs',
+      name: "",
+      category: "panel",
+      unit: "pcs",
       unitPrice: 0,
       stockQty: 0,
-      brand: '',
-      modelNumber: '',
-      specifications: getDefaultSpecifications('panel'),
+      brand: "",
+      modelNumber: "",
+      specifications: getDefaultSpecifications("panel"),
       isActive: true,
     });
-  }, [item, form, open]);
+  }, [item, form]);
 
   useEffect(() => {
-    const currentName = form.getValues('name');
-    const derivedName = deriveInventoryName(
-      selectedCategory,
-      selectedSpecs,
-      currentName,
-    );
+    const currentName = form.getValues("name");
+    const derivedName = deriveInventoryName(selectedCategory, selectedSpecs, currentName);
     if (derivedName !== currentName) {
-      form.setValue('name', derivedName, {
+      form.setValue("name", derivedName, {
         shouldDirty: false,
         shouldValidate: false,
       });
@@ -569,14 +548,11 @@ export function InventoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[620px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Item" : "Add New Item"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
-            className="space-y-4 py-4"
-          >
+          <form onSubmit={(e) => void form.handleSubmit(onSubmit)(e)} className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -585,17 +561,13 @@ export function InventoryDialog({
                   <FormItem>
                     <FormLabel>Category</FormLabel>
                     <Select
-                      onValueChange={(value: DBInventoryItem['category']) => {
+                      onValueChange={(value: DBInventoryItem["category"]) => {
                         field.onChange(value);
-                        form.setValue(
-                          'specifications',
-                          getDefaultSpecifications(value),
-                          {
-                            shouldDirty: true,
-                            shouldValidate: false,
-                          },
-                        );
-                        form.clearErrors('specifications');
+                        form.setValue("specifications", getDefaultSpecifications(value), {
+                          shouldDirty: true,
+                          shouldValidate: false,
+                        });
+                        form.clearErrors("specifications");
                       }}
                       value={field.value}
                     >
@@ -649,9 +621,7 @@ export function InventoryDialog({
               render={({ field }) => {
                 const currentSpecs = isRecord(field.value) ? field.value : {};
                 const setSpecValue = (key: string, value: unknown): void => {
-                  const nextSpecs = isRecord(field.value)
-                    ? { ...field.value }
-                    : {};
+                  const nextSpecs = isRecord(field.value) ? { ...field.value } : {};
                   nextSpecs[key] = value;
                   field.onChange(nextSpecs);
                 };
@@ -661,11 +631,7 @@ export function InventoryDialog({
                     <FormLabel>Technical Specifications</FormLabel>
                     <FormControl>
                       <div className="grid grid-cols-1 gap-3 rounded-lg border p-3 md:grid-cols-2">
-                        {renderSpecificationFields(
-                          selectedCategory,
-                          currentSpecs,
-                          setSpecValue,
-                        )}
+                        {renderSpecificationFields(selectedCategory, currentSpecs, setSpecValue)}
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -686,9 +652,7 @@ export function InventoryDialog({
                         type="number"
                         value={formatNumericInputValue(field.value)}
                         onChange={(e) => {
-                          field.onChange(
-                            parseNumericInput(e.target.value) ?? 0,
-                          );
+                          field.onChange(parseNumericInput(e.target.value) ?? 0);
                         }}
                       />
                     </FormControl>
@@ -709,9 +673,7 @@ export function InventoryDialog({
                         value={formatNumericInputValue(field.value)}
                         onChange={(e) => {
                           const parsed = parseNumericInput(e.target.value);
-                          field.onChange(
-                            parsed !== undefined ? Math.trunc(parsed) : 0,
-                          );
+                          field.onChange(parsed !== undefined ? Math.trunc(parsed) : 0);
                         }}
                       />
                     </FormControl>
@@ -721,11 +683,10 @@ export function InventoryDialog({
               />
             </div>
 
-            {['panel', 'inverter', 'battery'].includes(selectedCategory) ? (
+            {["panel", "inverter", "battery"].includes(selectedCategory) ? (
               <p className="text-muted-foreground text-sm">
-                Use the category-specific Brand/Model field in the technical
-                specifications section instead of the generic Brand and Model
-                fields.
+                Use the category-specific Brand/Model field in the technical specifications section
+                instead of the generic Brand and Model fields.
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-4">
@@ -739,7 +700,7 @@ export function InventoryDialog({
                         <Input
                           placeholder="e.g. Jinko Solar"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -757,7 +718,7 @@ export function InventoryDialog({
                         <Input
                           placeholder="e.g. JKM550M-72HL4"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -768,13 +729,9 @@ export function InventoryDialog({
             )}
 
             <DialogFooter className="pt-4">
-              {extractSpecErrorMessage(
-                form.formState.errors.specifications,
-              ) && (
+              {extractSpecErrorMessage(form.formState.errors.specifications) && (
                 <p className="text-destructive w-full text-xs">
-                  {extractSpecErrorMessage(
-                    form.formState.errors.specifications,
-                  )}
+                  {extractSpecErrorMessage(form.formState.errors.specifications)}
                 </p>
               )}
               <Button
@@ -786,13 +743,9 @@ export function InventoryDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="bg-solar text-white"
-              >
+              <Button type="submit" disabled={isLoading} className="bg-solar text-white">
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEdit ? 'Save Changes' : 'Create Item'}
+                {isEdit ? "Save Changes" : "Create Item"}
               </Button>
             </DialogFooter>
           </form>

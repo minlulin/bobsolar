@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useFinanceSummary } from '@/hooks/use-payments';
-import { formatMMK, cn } from '@/lib/utils';
-import { AlertTriangle } from 'lucide-react';
-import Link from 'next/link';
+import { AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import type * as React from "react";
+import { useFinanceSummary } from "@/hooks/use-payments";
+import { cn, formatMMK } from "@/lib/utils";
 
 export function FinanceSummary(): React.JSX.Element {
   const { data, isPending } = useFinanceSummary();
@@ -53,17 +53,13 @@ export function FinanceSummary(): React.JSX.Element {
             </p>
             <p
               className={cn(
-                'font-mono text-lg font-bold',
+                "font-mono text-lg font-bold",
                 (data?.totalIncoming ?? 0) - (data?.totalOutgoing ?? 0) >= 0
-                  ? 'text-emerald-400'
-                  : 'text-rose-400',
+                  ? "text-emerald-400"
+                  : "text-rose-400",
               )}
             >
-              {formatMMK(
-                Math.abs(
-                  (data?.totalIncoming ?? 0) - (data?.totalOutgoing ?? 0),
-                ),
-              )}
+              {formatMMK(Math.abs((data?.totalIncoming ?? 0) - (data?.totalOutgoing ?? 0)))}
             </p>
           </div>
         </div>
@@ -79,23 +75,17 @@ export function FinanceSummary(): React.JSX.Element {
                   key={m.month}
                   className="bg-muted/20 flex items-center justify-between rounded-lg px-3 py-2"
                 >
-                  <span className="text-muted-foreground text-[11px] font-semibold">
-                    {m.month}
-                  </span>
+                  <span className="text-muted-foreground text-[11px] font-semibold">{m.month}</span>
                   <div className="flex items-center gap-4 text-[10px]">
-                    <span className="font-mono text-emerald-400">
-                      +{formatMMK(m.incoming)}
-                    </span>
-                    <span className="font-mono text-rose-400">
-                      -{formatMMK(m.outgoing)}
-                    </span>
+                    <span className="font-mono text-emerald-400">+{formatMMK(m.incoming)}</span>
+                    <span className="font-mono text-rose-400">-{formatMMK(m.outgoing)}</span>
                     <span
                       className={cn(
-                        'font-mono font-bold',
-                        m.net >= 0 ? 'text-emerald-300' : 'text-rose-300',
+                        "font-mono font-bold",
+                        m.net >= 0 ? "text-emerald-300" : "text-rose-300",
                       )}
                     >
-                      {m.net >= 0 ? '+' : ''}
+                      {m.net >= 0 ? "+" : ""}
                       {formatMMK(m.net)}
                     </span>
                   </div>
@@ -114,8 +104,7 @@ export function FinanceSummary(): React.JSX.Element {
             <div>
               <p className="text-sm font-bold text-amber-200">
                 {data?.unpaidCompleted} completed project
-                {data?.unpaidCompleted === 1 ? '' : 's'} with outstanding
-                balance
+                {data?.unpaidCompleted === 1 ? "" : "s"} with outstanding balance
               </p>
               <p className="text-muted-foreground text-xs">
                 Review payment status on completed projects.

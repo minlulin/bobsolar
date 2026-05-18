@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
-import { getQuotation } from '@/actions/quotation-actions';
-import { QuoteDetailView } from './components/quote-detail-view';
-import { QuoteEditorWrapper } from './components/quote-editor-wrapper';
+import { notFound } from "next/navigation";
+import { getQuotation } from "@/actions/quotation-actions";
+import { QuoteDetailView } from "./components/quote-detail-view";
+import { QuoteEditorWrapper } from "./components/quote-editor-wrapper";
 
 interface QuotationPageProps {
   params: Promise<{ id: string }>;
@@ -20,7 +20,7 @@ export default async function QuotationPage({
   const quotation = res.data;
 
   // If status is 'draft', we show the editor
-  if (quotation.status === 'draft') {
+  if (quotation.status === "draft") {
     return <QuoteEditorWrapper quotation={quotation} />;
   }
 

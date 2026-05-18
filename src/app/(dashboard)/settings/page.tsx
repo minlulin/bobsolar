@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 import {
   getCompanySettings,
@@ -14,15 +14,15 @@ import {
   updateCompanySettings,
 } from "@/actions/settings-actions";
 import { FileUpload } from "@/components/shared/file-upload";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AccountTab } from "./components/account-tab";
-import { UserManagementTab } from "./components/user-management-tab";
-import { PreferencesTab } from "./components/preferences-tab";
+import { Textarea } from "@/components/ui/textarea";
 import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
+import { AccountTab } from "./components/account-tab";
+import { PreferencesTab } from "./components/preferences-tab";
+import { UserManagementTab } from "./components/user-management-tab";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 

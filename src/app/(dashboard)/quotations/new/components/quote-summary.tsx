@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { useQuoteTotals } from '@/hooks/use-quote-totals';
-import { formatMMK } from '@/lib/utils';
-import { Calendar as CalendarIcon, Percent } from 'lucide-react';
+import { Calendar as CalendarIcon, Percent } from "lucide-react";
+import * as React from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useQuoteTotals } from "@/hooks/use-quote-totals";
+import { formatMMK } from "@/lib/utils";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 export function QuoteSummary(): React.JSX.Element {
   const {
@@ -20,9 +20,7 @@ export function QuoteSummary(): React.JSX.Element {
     setValidUntil,
   } = useQuoteBuilderStore();
   const totals = useQuoteTotals();
-  const [discountInput, setDiscountInput] = React.useState<string>(
-    String(discountPercent),
-  );
+  const [discountInput, setDiscountInput] = React.useState<string>(String(discountPercent));
   const [taxInput, setTaxInput] = React.useState<string>(String(taxPercent));
   const [isDiscountEditing, setIsDiscountEditing] = React.useState(false);
   const [isTaxEditing, setIsTaxEditing] = React.useState(false);
@@ -32,10 +30,14 @@ export function QuoteSummary(): React.JSX.Element {
       {/* Left: Notes and Expiry */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="text-muted-foreground ml-1 text-sm font-medium">
+          <label
+            htmlFor="additional-notes"
+            className="text-muted-foreground ml-1 text-sm font-medium"
+          >
             Additional Notes
           </label>
           <Textarea
+            id="additional-notes"
             value={notes}
             onChange={(e) => {
               setNotes(e.target.value);
@@ -46,14 +48,15 @@ export function QuoteSummary(): React.JSX.Element {
         </div>
 
         <div className="space-y-2">
-          <label className="text-muted-foreground ml-1 text-sm font-medium">
+          <label htmlFor="valid-until" className="text-muted-foreground ml-1 text-sm font-medium">
             Valid Until
           </label>
           <div className="relative">
             <CalendarIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
+              id="valid-until"
               type="date"
-              value={validUntil ? validUntil.toISOString().split('T')[0] : ''}
+              value={validUntil ? validUntil.toISOString().split("T")[0] : ""}
               onChange={(e) => {
                 setValidUntil(e.target.value ? new Date(e.target.value) : null);
               }}
@@ -68,9 +71,7 @@ export function QuoteSummary(): React.JSX.Element {
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span className="font-mono font-bold">
-              {formatMMK(totals.subtotal)}
-            </span>
+            <span className="font-mono font-bold">{formatMMK(totals.subtotal)}</span>
           </div>
 
           <div className="flex items-center justify-between text-sm">
@@ -80,9 +81,7 @@ export function QuoteSummary(): React.JSX.Element {
                 <Percent className="text-muted-foreground absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2" />
                 <Input
                   type="number"
-                  value={
-                    isDiscountEditing ? discountInput : String(discountPercent)
-                  }
+                  value={isDiscountEditing ? discountInput : String(discountPercent)}
                   onFocus={() => {
                     setIsDiscountEditing(true);
                     setDiscountInput(String(discountPercent));
@@ -109,9 +108,7 @@ export function QuoteSummary(): React.JSX.Element {
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">
-                Tax (Commercial Tax)
-              </span>
+              <span className="text-muted-foreground">Tax (Commercial Tax)</span>
               <div className="relative w-16">
                 <Percent className="text-muted-foreground absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2" />
                 <Input

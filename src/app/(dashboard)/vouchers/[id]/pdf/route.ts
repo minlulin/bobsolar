@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/validate';
-import { uuidSchema } from '@/lib/validators/common';
-import { VoucherHtml } from '@/components/pdf/voucher-html';
+import { type NextRequest, NextResponse } from "next/server";
+import { VoucherHtml } from "@/components/pdf/voucher-html";
+import { getCurrentUser } from "@/lib/auth/validate";
+import { db } from "@/lib/db";
+import { uuidSchema } from "@/lib/validators/common";
 
 export async function GET(
   _request: NextRequest,
@@ -10,7 +10,7 @@ export async function GET(
 ): Promise<Response> {
   try {
     if (!(await getCurrentUser())) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
@@ -29,22 +29,17 @@ export async function GET(
     });
 
     if (!voucher) {
-      return NextResponse.json({ error: 'Voucher not found' }, { status: 404 });
+      return NextResponse.json({ error: "Voucher not found" }, { status: 404 });
     }
 
     const settingsRows = await db.query.companySettings.findMany();
-    const companySettings = settingsRows.reduce<Record<string, string>>(
-      (acc, row) => {
-        acc[row.key] = row.value;
-        return acc;
-      },
-      {},
-    );
+    const companySettings = settingsRows.reduce<Record<string, string>>((acc, row) => {
+      acc[row.key] = row.value;
+      return acc;
+    }, {});
 
     const customer = voucher.project.customer;
-    const customerAddress = [customer.address, customer.city]
-      .filter(Boolean)
-      .join(', ');
+    const customerAddress = [customer.address, customer.city].filter(Boolean).join(", ");
 
     const html = VoucherHtml({
       voucher: {
@@ -59,15 +54,12 @@ export async function GET(
     return new NextResponse(html, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache',
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-cache",
       },
     });
   } catch (error) {
-    console.error('Voucher print page generation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate print page' },
-      { status: 500 },
-    );
+    console.error("Voucher print page generation error:", error);
+    return NextResponse.json({ error: "Failed to generate print page" }, { status: 500 });
   }
 }

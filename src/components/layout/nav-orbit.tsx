@@ -1,19 +1,14 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
-import type { MotionValue } from 'motion/react';
-import { Home, ClipboardList, Zap, Package, Users } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import type { LucideIcon } from "lucide-react";
+import { ClipboardList, Home, Package, Users, Zap } from "lucide-react";
+import type { MotionValue } from "motion/react";
+import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 // --- Premium Physics Configuration ---
 // Insanely responsive spring: snaps without aggressive bounce
@@ -24,11 +19,11 @@ const dockSpringConfig = {
 };
 
 const navItems = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Quotations', href: '/quotations', icon: ClipboardList },
-  { name: 'Projects', href: '/projects', icon: Zap },
-  { name: 'Inventory', href: '/inventory', icon: Package },
+  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Customers", href: "/customers", icon: Users },
+  { name: "Quotations", href: "/quotations", icon: ClipboardList },
+  { name: "Projects", href: "/projects", icon: Zap },
+  { name: "Inventory", href: "/inventory", icon: Package },
 ];
 
 function NavIcon({
@@ -64,20 +59,16 @@ function NavIcon({
   return (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <Link
-          href={item.href}
-          prefetch={true}
-          className="group relative outline-none"
-        >
+        <Link href={item.href} prefetch={true} className="group relative outline-none">
           <motion.div
             ref={iconRef}
             style={{ scale, y: translateY }}
             className={cn(
-              'relative flex items-center justify-center rounded-xl transition-colors duration-300',
-              'h-10 w-10', // Base size (40px)
+              "relative flex items-center justify-center rounded-xl transition-colors duration-300",
+              "h-10 w-10", // Base size (40px)
               isActive
-                ? 'text-[var(--color-solar-amber)]'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+                ? "text-[var(--color-solar-amber)]"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
             )}
           >
             <Icon
@@ -90,7 +81,7 @@ function NavIcon({
               <motion.div
                 layoutId="nav-orbit-indicator"
                 className="absolute -bottom-2 h-1.5 w-1.5 rounded-full bg-[var(--color-solar-amber)] shadow-[0_0_8px_rgba(var(--color-solar-amber),0.8)]"
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
           </motion.div>
@@ -117,10 +108,10 @@ export function NavOrbit(): React.JSX.Element {
           {/* Base Plate with Premium Glassmorphism */}
           <motion.div
             className={cn(
-              'flex items-end gap-3 rounded-2xl px-4 py-3',
-              'premium-glass border border-white/10 shadow-2xl',
+              "flex items-end gap-3 rounded-2xl px-4 py-3",
+              "premium-glass border border-white/10 shadow-2xl",
               // Add a subtle reflection beneath the dock
-              'after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-white/5 after:blur-md',
+              "after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-white/5 after:blur-md",
             )}
             onMouseMove={(e) => {
               mouseX.set(e.pageX);
@@ -131,7 +122,7 @@ export function NavOrbit(): React.JSX.Element {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{
-              type: 'spring',
+              type: "spring",
               stiffness: 300,
               damping: 25,
               mass: 0.5,

@@ -1,26 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
-  recordPayment,
-  getProjectPayments,
-  getPaymentMethods,
   getFinanceSummary,
-} from '@/actions/payment-actions';
-import { toast } from 'sonner';
-import { projectKeys } from '@/lib/query-keys';
+  getPaymentMethods,
+  getProjectPayments,
+  recordPayment,
+} from "@/actions/payment-actions";
+import { projectKeys } from "@/lib/query-keys";
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export const financeKeys = {
-  all: ['finance'] as const,
+  all: ["finance"] as const,
 };
 
 export function useProjectPayments(
   projectId: string,
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjectPayments>>>>
-> {
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjectPayments>>>>> {
   return useQuery({
-    queryKey: [...projectKeys.detail(projectId), 'payments'],
+    queryKey: [...projectKeys.detail(projectId), "payments"],
     queryFn: async () => {
       const res = await getProjectPayments(projectId);
       if (!res.success) throw new Error(res.error);
@@ -35,7 +33,7 @@ export function usePaymentMethods(): ReturnType<
   typeof useQuery<ActionData<Awaited<ReturnType<typeof getPaymentMethods>>>>
 > {
   return useQuery({
-    queryKey: [...financeKeys.all, 'methods'],
+    queryKey: [...financeKeys.all, "methods"],
     queryFn: async () => {
       const res = await getPaymentMethods();
       if (!res.success) throw new Error(res.error);
@@ -63,14 +61,14 @@ export function useRecordPayment(): ReturnType<
       }
       const input = vars as { projectId: string };
       await queryClient.invalidateQueries({
-        queryKey: [...projectKeys.detail(input.projectId), 'payments'],
+        queryKey: [...projectKeys.detail(input.projectId), "payments"],
       });
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       await queryClient.invalidateQueries({ queryKey: financeKeys.all });
-      toast.success('Payment recorded');
+      toast.success("Payment recorded");
     },
     onError: () => {
-      toast.error('Failed to record payment');
+      toast.error("Failed to record payment");
     },
   });
 }

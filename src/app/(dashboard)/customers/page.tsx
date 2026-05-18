@@ -1,27 +1,25 @@
-'use client';
+"use client";
 
-import { useOptimistic, useState } from 'react';
-import { Search, Users, UserPlus } from 'lucide-react';
-import { type Customer } from '@/lib/db/schema';
-import { motion } from 'motion/react';
-import { staggerContainer } from '@/lib/motion';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import dynamic from 'next/dynamic';
-import { CustomerCard } from '@/components/customers/customer-card';
+import { Search, UserPlus, Users } from "lucide-react";
+import { motion } from "motion/react";
+import dynamic from "next/dynamic";
+import { useOptimistic, useState } from "react";
+import { CustomerCard } from "@/components/customers/customer-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { Customer } from "@/lib/db/schema";
+import { staggerContainer } from "@/lib/motion";
 
 const CustomerDialog = dynamic(
-  () =>
-    import('@/components/customers/customer-dialog').then(
-      (mod) => mod.CustomerDialog,
-    ),
+  () => import("@/components/customers/customer-dialog").then((mod) => mod.CustomerDialog),
   { ssr: false },
 );
-import { useCustomers } from '@/hooks/use-customers';
-import { ListGridSkeleton } from '@/components/skeletons/list-grid-skeleton';
+
+import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
+import { useCustomers } from "@/hooks/use-customers";
 
 export default function CustomersPage(): React.JSX.Element {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
@@ -43,8 +41,7 @@ export default function CustomersPage(): React.JSX.Element {
   const customers = response?.items ?? [];
   const [optimisticCustomers, removeOptimisticCustomer] = useOptimistic(
     customers,
-    (state: Customer[], removedId: string) =>
-      state.filter((customer) => customer.id !== removedId),
+    (state: Customer[], removedId: string) => state.filter((customer) => customer.id !== removedId),
   );
 
   return (
@@ -107,9 +104,7 @@ export default function CustomersPage(): React.JSX.Element {
           <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
             <Users className="h-10 w-10 opacity-20" />
           </div>
-          <h3 className="text-foreground mt-6 text-xl font-semibold">
-            No customers found
-          </h3>
+          <h3 className="text-foreground mt-6 text-xl font-semibold">No customers found</h3>
           <p className="text-muted-foreground mt-2 max-w-xs">
             {search
               ? "We couldn't find any customers matching your search criteria."
@@ -129,11 +124,7 @@ export default function CustomersPage(): React.JSX.Element {
 
       {/* Dialogs */}
       {dialogOpen && (
-        <CustomerDialog
-          customer={editingCustomer}
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-        />
+        <CustomerDialog customer={editingCustomer} open={dialogOpen} onOpenChange={setDialogOpen} />
       )}
     </div>
   );

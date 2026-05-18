@@ -1,31 +1,27 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import type { ReactNode } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { motion, type Variants } from 'motion/react';
-import { ArrowRight, Plus, UserPlus, Wrench } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from "date-fns";
+import { ArrowRight, Plus, UserPlus, Wrench } from "lucide-react";
+import { motion, type Variants } from "motion/react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { dashboardStatMeta } from "@/app/(dashboard)/dashboard-stat-meta";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   useDashboardPipeline,
   useDashboardStats,
   useRecentActivity,
   useUpcomingAlerts,
-} from '@/hooks/use-dashboard';
-import { cn, formatMMK } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { dashboardStatMeta } from '@/app/(dashboard)/dashboard-stat-meta';
+} from "@/hooks/use-dashboard";
+import { cn, formatMMK } from "@/lib/utils";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
 }
 
 const container = {
@@ -37,7 +33,7 @@ const container = {
       staggerChildren: 0.07,
       delayChildren: 0.04,
       duration: 0.2,
-      ease: 'easeOut',
+      ease: "easeOut",
     },
   },
 } satisfies Variants;
@@ -47,30 +43,23 @@ const item = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.2, ease: 'easeOut' },
+    transition: { duration: 0.2, ease: "easeOut" },
   },
 } satisfies Variants;
 
-const SunGauge = dynamic(
-  () => import('@/components/dashboard/sun-gauge').then((m) => m.SunGauge),
-  { ssr: false },
-);
+const SunGauge = dynamic(() => import("@/components/dashboard/sun-gauge").then((m) => m.SunGauge), {
+  ssr: false,
+});
 const EnergyFlow = dynamic(
-  () => import('@/components/dashboard/energy-flow').then((m) => m.EnergyFlow),
+  () => import("@/components/dashboard/energy-flow").then((m) => m.EnergyFlow),
   { ssr: false },
 );
 const ActivityStream = dynamic(
-  () =>
-    import('@/components/dashboard/activity-stream').then(
-      (m) => m.ActivityStream,
-    ),
+  () => import("@/components/dashboard/activity-stream").then((m) => m.ActivityStream),
   { ssr: false },
 );
 const FinanceSummary = dynamic(
-  () =>
-    import('@/components/dashboard/finance-summary').then(
-      (m) => m.FinanceSummary,
-    ),
+  () => import("@/components/dashboard/finance-summary").then((m) => m.FinanceSummary),
   { ssr: false },
 );
 
@@ -102,12 +91,11 @@ export default function DashboardPage(): React.JSX.Element {
             System Snapshot
           </p>
           <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-            {getGreeting()},{' '}
-            <span className="text-primary">{stats?.userName ?? 'User'}</span>.
+            {getGreeting()}, <span className="text-primary">{stats?.userName ?? "User"}</span>.
           </h1>
           <p className="text-muted-foreground max-w-xl text-sm leading-relaxed">
-            Your solar operations are running optimally. Here is your immersive
-            command center overview for today.
+            Your solar operations are running optimally. Here is your immersive command center
+            overview for today.
           </p>
         </div>
         <div className="bg-secondary/50 border-border flex items-center gap-3 self-start rounded-full border px-4 py-2 text-xs font-medium sm:self-center">
@@ -199,10 +187,7 @@ export default function DashboardPage(): React.JSX.Element {
       {/* Activity & Alerts — Bottom Bento Row */}
       <motion.div variants={item} className="col-span-12 lg:col-span-8">
         <SectionCard title="Live Activity Stream">
-          <ActivityStream
-            items={activities}
-            isPending={activityQuery.isPending}
-          />
+          <ActivityStream items={activities} isPending={activityQuery.isPending} />
           <div className="mt-6 flex justify-center">
             <Link
               href="/projects"
@@ -225,9 +210,7 @@ export default function DashboardPage(): React.JSX.Element {
             )}
             {!alertsQuery.isPending && alerts.length === 0 && (
               <div className="flex h-32 flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground text-sm">
-                  All clear. No urgent signals.
-                </p>
+                <p className="text-muted-foreground text-sm">All clear. No urgent signals.</p>
               </div>
             )}
             {alerts.slice(0, 4).map((alert) => (
@@ -239,16 +222,14 @@ export default function DashboardPage(): React.JSX.Element {
                 <div className="flex items-start gap-3">
                   <div
                     className={cn(
-                      'mt-1 flex h-2 w-2 shrink-0 rounded-full',
+                      "mt-1 flex h-2 w-2 shrink-0 rounded-full",
                       alert.isOverdue
-                        ? 'bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.5)]'
-                        : 'bg-amber-500',
+                        ? "bg-destructive shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                        : "bg-amber-500",
                     )}
                   />
                   <div>
-                    <p className="text-sm font-bold tracking-tight">
-                      {alert.projectNumber}
-                    </p>
+                    <p className="text-sm font-bold tracking-tight">{alert.projectNumber}</p>
                     <p className="text-muted-foreground line-clamp-1 text-xs">
                       {alert.description}
                     </p>
@@ -316,7 +297,7 @@ function StatCard({
         <div className="border-border bg-card group hover:border-primary/30 relative flex flex-col justify-between overflow-hidden rounded-2xl border p-6 shadow-sm transition-all">
           <div
             className={cn(
-              'absolute top-0 right-0 -mt-8 -mr-8 h-24 w-24 rounded-full opacity-10 blur-3xl',
+              "absolute top-0 right-0 -mt-8 -mr-8 h-24 w-24 rounded-full opacity-10 blur-3xl",
               tone,
             )}
           />
@@ -333,7 +314,7 @@ function StatCard({
             </p>
           </div>
           <div className="mt-4 flex items-center gap-2">
-            <span className={cn('h-1.5 w-1.5 rounded-full', tone)} />
+            <span className={cn("h-1.5 w-1.5 rounded-full", tone)} />
             <p className="text-muted-foreground text-xs font-medium">{hint}</p>
           </div>
         </div>
@@ -359,18 +340,17 @@ function QuickAction({
   return (
     <Button
       asChild
-      variant={primary ? 'default' : 'outline'}
+      variant={primary ? "default" : "outline"}
       className={cn(
-        'h-12 w-full justify-start gap-3 rounded-xl px-4 font-bold transition-all',
-        !primary &&
-          'bg-muted/30 hover:bg-muted/50 border-border border shadow-none',
+        "h-12 w-full justify-start gap-3 rounded-xl px-4 font-bold transition-all",
+        !primary && "bg-muted/30 hover:bg-muted/50 border-border border shadow-none",
       )}
     >
       <Link href={href}>
         <span
           className={cn(
-            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-            primary ? 'bg-white/20' : 'bg-muted shadow-inner',
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+            primary ? "bg-white/20" : "bg-muted shadow-inner",
           )}
         >
           {icon}

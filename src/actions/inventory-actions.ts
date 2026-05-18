@@ -1,28 +1,24 @@
-'use server';
+"use server";
 
-import { db } from '@/lib/db';
-import { inventoryItems, type InventoryItem } from '@/lib/db/schema';
+import { and, asc, count, eq, ilike, or, sql } from "drizzle-orm";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { z } from "zod";
+import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { deleteCacheValue } from "@/lib/cache";
+import { db } from "@/lib/db";
+import { type InventoryItem, inventoryItems } from "@/lib/db/schema";
+import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
+import { handleActionError } from "@/lib/utils/error";
+import { uuidSchema } from "@/lib/validators/common";
 import {
   createInventoryItemSchema,
-  updateInventoryItemPayloadSchema,
   inventoryFilterSchema,
-} from '@/lib/validators/inventory';
-import { requireAuth, requireAdmin } from '@/lib/auth/validate';
-import { eq, and, ilike, or, asc, sql, count } from 'drizzle-orm';
-import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
-import { z } from 'zod';
-import {
-  errorResponse,
-  successResponse,
-  type ActionResponse,
-} from '@/lib/utils/action-response';
-import { handleActionError } from '@/lib/utils/error';
-import { uuidSchema } from '@/lib/validators/common';
-import { deleteCacheValue } from '@/lib/cache';
+  updateInventoryItemPayloadSchema,
+} from "@/lib/validators/inventory";
 
 const getCachedInventoryPage = unstable_cache(
   async (
-    category: InventoryItem['category'] | null | undefined,
+    category: InventoryItem["category"] | null | undefined,
     search: string | null | undefined,
     isActive: boolean | null,
     page: number,
@@ -48,16 +44,13 @@ const getCachedInventoryPage = unstable_cache(
       offset,
     });
 
-    const totals = await db
-      .select({ total: count() })
-      .from(inventoryItems)
-      .where(where);
+    const totals = await db.select({ total: count() }).from(inventoryItems).where(where);
     const total = totals[0]?.total ?? 0;
 
     return { items, total };
   },
-  ['inventory:list-page'],
-  { tags: ['inventory:list'], revalidate: 300 },
+  ["inventory:list-page"],
+  { tags: ["inventory:list"], revalidate: 300 },
 );
 
 export async function getInventoryItems(
@@ -69,27 +62,15 @@ export async function getInventoryItems(
     const filters = inventoryFilterSchema.parse(rawFilters);
     const { category, search, isActive = true, page, limit } = filters;
 
-    const data = await getCachedInventoryPage(
-      category,
-      search,
-      isActive,
-      page,
-      limit,
-    );
+    const data = await getCachedInventoryPage(category, search, isActive, page, limit);
 
     return successResponse(data);
   } catch (error) {
-    return handleActionError(
-      error,
-      'getInventoryItems',
-      'Failed to fetch inventory items',
-    );
+    return handleActionError(error, "getInventoryItems", "Failed to fetch inventory items");
   }
 }
 
-export async function getInventoryItem(
-  id: string,
-): Promise<ActionResponse<InventoryItem>> {
+export async function getInventoryItem(id: string): Promise<ActionResponse<InventoryItem>> {
   try {
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
@@ -99,22 +80,16 @@ export async function getInventoryItem(
     });
 
     if (!item) {
-      return errorResponse('Item not found');
+      return errorResponse("Item not found");
     }
 
     return successResponse(item);
   } catch (error) {
-    return handleActionError(
-      error,
-      'getInventoryItem',
-      'Failed to fetch inventory item',
-    );
+    return handleActionError(error, "getInventoryItem", "Failed to fetch inventory item");
   }
 }
 
-export async function createInventoryItem(
-  raw: unknown,
-): Promise<ActionResponse<InventoryItem>> {
+export async function createInventoryItem(raw: unknown): Promise<ActionResponse<InventoryItem>> {
   try {
     await requireAdmin();
 
@@ -129,19 +104,15 @@ export async function createInventoryItem(
       .returning();
 
     if (!item) {
-      return errorResponse('Failed to create inventory item');
+      return errorResponse("Failed to create inventory item");
     }
-    await deleteCacheValue('inventory:categories');
+    await deleteCacheValue("inventory:categories");
 
-    revalidateTag('inventory:list', 'default');
-    revalidatePath('/inventory');
+    revalidateTag("inventory:list", "default");
+    revalidatePath("/inventory");
     return successResponse(item);
   } catch (error) {
-    return handleActionError(
-      error,
-      'createInventoryItem',
-      'Failed to create inventory item',
-    );
+    return handleActionError(error, "createInventoryItem", "Failed to create inventory item");
   }
 }
 
@@ -154,7 +125,7 @@ export async function updateInventoryItem(
     const validatedId = uuidSchema.parse(id);
 
     const validated = updateInventoryItemPayloadSchema.parse({
-      ...(typeof raw === 'object' && raw !== null ? raw : {}),
+      ...(typeof raw === "object" && raw !== null ? raw : {}),
       id: validatedId,
     });
 
@@ -165,34 +136,26 @@ export async function updateInventoryItem(
       .update(inventoryItems)
       .set({
         ...updateData,
-        unitPrice: updateData.unitPrice
-          ? updateData.unitPrice.toString()
-          : undefined,
+        unitPrice: updateData.unitPrice ? updateData.unitPrice.toString() : undefined,
         updatedAt: new Date(),
       })
       .where(eq(inventoryItems.id, validatedId))
       .returning();
 
     if (!item) {
-      return errorResponse('Item not found or failed to update');
+      return errorResponse("Item not found or failed to update");
     }
-    await deleteCacheValue('inventory:categories');
+    await deleteCacheValue("inventory:categories");
 
-    revalidateTag('inventory:list', 'default');
-    revalidatePath('/inventory');
+    revalidateTag("inventory:list", "default");
+    revalidatePath("/inventory");
     return successResponse(item);
   } catch (error) {
-    return handleActionError(
-      error,
-      'updateInventoryItem',
-      'Failed to update inventory item',
-    );
+    return handleActionError(error, "updateInventoryItem", "Failed to update inventory item");
   }
 }
 
-export async function deleteInventoryItem(
-  id: string,
-): Promise<ActionResponse<null>> {
+export async function deleteInventoryItem(id: string): Promise<ActionResponse<null>> {
   try {
     await requireAdmin();
     const validatedId = uuidSchema.parse(id);
@@ -201,30 +164,24 @@ export async function deleteInventoryItem(
       .update(inventoryItems)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(inventoryItems.id, validatedId));
-    await deleteCacheValue('inventory:categories');
+    await deleteCacheValue("inventory:categories");
 
-    revalidateTag('inventory:list', 'default');
-    revalidatePath('/inventory');
+    revalidateTag("inventory:list", "default");
+    revalidatePath("/inventory");
     return successResponse(null);
   } catch (error) {
-    return handleActionError(
-      error,
-      'deleteInventoryItem',
-      'Failed to delete inventory item',
-    );
+    return handleActionError(error, "deleteInventoryItem", "Failed to delete inventory item");
   }
 }
 
 const bulkUpdateSchema = z.array(
   z.object({
     id: z.uuid(),
-    unitPrice: z.number().min(0, 'Unit price must be positive'),
+    unitPrice: z.number().min(0, "Unit price must be positive"),
   }),
 );
 
-export async function bulkUpdatePrices(
-  rawUpdates: unknown,
-): Promise<ActionResponse<null>> {
+export async function bulkUpdatePrices(rawUpdates: unknown): Promise<ActionResponse<null>> {
   try {
     await requireAdmin();
 
@@ -241,17 +198,13 @@ export async function bulkUpdatePrices(
           .where(eq(inventoryItems.id, update.id));
       }
     });
-    await deleteCacheValue('inventory:categories');
+    await deleteCacheValue("inventory:categories");
 
-    revalidateTag('inventory:list', 'default');
-    revalidatePath('/inventory');
+    revalidateTag("inventory:list", "default");
+    revalidatePath("/inventory");
     return successResponse(null);
   } catch (error) {
-    return handleActionError(
-      error,
-      'bulkUpdatePrices',
-      'Failed to bulk update prices',
-    );
+    return handleActionError(error, "bulkUpdatePrices", "Failed to bulk update prices");
   }
 }
 
@@ -266,8 +219,8 @@ const getCachedInventoryCategories = unstable_cache(
       .where(eq(inventoryItems.isActive, true))
       .groupBy(inventoryItems.category);
   },
-  ['inventory:categories-list'],
-  { tags: ['inventory:list'], revalidate: 600 },
+  ["inventory:categories-list"],
+  { tags: ["inventory:list"], revalidate: 600 },
 );
 
 export async function getInventoryCategories(): Promise<
@@ -278,10 +231,6 @@ export async function getInventoryCategories(): Promise<
     const results = await getCachedInventoryCategories();
     return successResponse(results);
   } catch (error) {
-    return handleActionError(
-      error,
-      'getInventoryCategories',
-      'Failed to fetch categories',
-    );
+    return handleActionError(error, "getInventoryCategories", "Failed to fetch categories");
   }
 }

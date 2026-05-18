@@ -1,23 +1,18 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 
 import {
-  getInventoryItems,
-  getInventoryItem,
-  createInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
   bulkUpdatePrices,
-} from '@/actions/inventory-actions';
-import {
-  type InventoryFilter,
-  type CreateInventoryItem,
-} from '@/lib/validators/inventory';
-import { inventoryKeys } from '@/lib/query-keys';
-import { createMutationHook } from '@/hooks/mutation-factory';
+  createInventoryItem,
+  deleteInventoryItem,
+  getInventoryItem,
+  getInventoryItems,
+  updateInventoryItem,
+} from "@/actions/inventory-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
+import { inventoryKeys } from "@/lib/query-keys";
+import type { CreateInventoryItem, InventoryFilter } from "@/lib/validators/inventory";
 
-export function useInventoryItems(
-  filters: InventoryFilter = {},
-): UseQueryResult {
+export function useInventoryItems(filters: InventoryFilter = {}): UseQueryResult {
   return useQuery({
     queryKey: inventoryKeys.list(filters),
     queryFn: async () => {
@@ -45,29 +40,28 @@ export function useInventoryItem(id: string): UseQueryResult {
 export const useCreateInventoryItem = createMutationHook({
   mutationFn: (data: CreateInventoryItem) => createInventoryItem(data),
   invalidateKeys: [inventoryKeys.all],
-  successMessage: 'Item created successfully',
-  errorMessage: 'Failed to create item',
+  successMessage: "Item created successfully",
+  errorMessage: "Failed to create item",
 });
 
 export const useUpdateInventoryItem = createMutationHook({
   mutationFn: (args: { id: string; data: Partial<CreateInventoryItem> }) =>
     updateInventoryItem(args.id, args.data),
   invalidateKeys: [inventoryKeys.all],
-  successMessage: 'Item updated successfully',
-  errorMessage: 'Failed to update item',
+  successMessage: "Item updated successfully",
+  errorMessage: "Failed to update item",
 });
 
 export const useDeleteInventoryItem = createMutationHook({
   mutationFn: (id: string) => deleteInventoryItem(id),
   invalidateKeys: [inventoryKeys.all],
-  successMessage: 'Item deleted successfully',
-  errorMessage: 'Failed to delete item',
+  successMessage: "Item deleted successfully",
+  errorMessage: "Failed to delete item",
 });
 
 export const useBulkUpdatePrices = createMutationHook({
-  mutationFn: (items: Array<{ id: string; unitPrice: number }>) =>
-    bulkUpdatePrices(items),
+  mutationFn: (items: Array<{ id: string; unitPrice: number }>) => bulkUpdatePrices(items),
   invalidateKeys: [inventoryKeys.all],
-  successMessage: 'Prices updated successfully',
-  errorMessage: 'Failed to update prices',
+  successMessage: "Prices updated successfully",
+  errorMessage: "Failed to update prices",
 });

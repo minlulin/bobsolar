@@ -1,9 +1,6 @@
-import { formatMMK } from '@/lib/utils';
-import { format } from 'date-fns';
-import {
-  COMPANY_SETTING_KEYS,
-  COMPANY_SETTING_DEFAULTS,
-} from '@/lib/domain/settings-keys';
+import { format } from "date-fns";
+import { COMPANY_SETTING_DEFAULTS, COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
+import { formatMMK } from "@/lib/utils";
 
 interface QuoteHtmlCustomer {
   id: string;
@@ -42,13 +39,13 @@ interface QuoteHtmlProps {
   quotation: QuoteHtmlInput;
   companyLogoUrl?: string | null;
   companySettings?: Record<string, string>;
-  type?: 'quotation' | 'voucher';
+  type?: "quotation" | "voucher";
 }
 
 export function QuoteHtml({
   quotation,
   companySettings = {},
-  type = 'quotation',
+  type = "quotation",
 }: QuoteHtmlProps): string {
   const { customer, items } = quotation;
 
@@ -65,7 +62,7 @@ export function QuoteHtml({
     companySettings[COMPANY_SETTING_KEYS.EMAIL] ||
     COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.EMAIL];
 
-  const title = type === 'voucher' ? 'VOUCHER' : 'QUOTATION';
+  const title = type === "voucher" ? "VOUCHER" : "QUOTATION";
 
   const itemsHtml = items
     .map(
@@ -79,7 +76,7 @@ export function QuoteHtml({
         <td class="cell cell-total">${formatMMK(Number(item.totalPrice))}</td>
       </tr>`,
     )
-    .join('\n          ');
+    .join("\n          ");
 
   const discountHtml =
     Number(quotation.discountPercent) > 0
@@ -88,7 +85,7 @@ export function QuoteHtml({
             <span class="totals-label">Incentive Applied (${quotation.discountPercent}%)</span>
             <span class="totals-value discount">-${formatMMK(Number(quotation.discountAmount))}</span>
           </div>`
-      : '';
+      : "";
 
   const taxHtml =
     Number(quotation.taxPercent) > 0
@@ -97,16 +94,16 @@ export function QuoteHtml({
             <span class="totals-label">Commercial Tax (${quotation.taxPercent}%)</span>
             <span class="totals-value">+${formatMMK(Number(quotation.taxAmount))}</span>
           </div>`
-      : '';
+      : "";
 
   const notesHtml =
-    quotation.notes && type === 'quotation'
+    quotation.notes && type === "quotation"
       ? `
         <div class="notes-section">
           <div class="notes-title">Terms & Technical Conditions</div>
           <p class="notes-content">${quotation.notes}</p>
         </div>`
-      : '';
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -252,7 +249,7 @@ export function QuoteHtml({
       <div class="doc-info">
         <div class="doc-type">${title}</div>
         <div class="doc-id">${quotation.quoteNumber}</div>
-        <div class="doc-date">${format(new Date(quotation.createdAt), 'MMMM dd, yyyy')}</div>
+        <div class="doc-date">${format(new Date(quotation.createdAt), "MMMM dd, yyyy")}</div>
       </div>
     </div>
 
@@ -261,14 +258,14 @@ export function QuoteHtml({
         <div class="section-label">Prepared For</div>
         <div class="client-name">${customer.name}</div>
         <div class="client-meta">
-          ${customer.phone} ${customer.email ? `• ${customer.email}` : ''}<br/>
-          ${customer.address}${customer.city ? `, ${customer.city}` : ''}
+          ${customer.phone} ${customer.email ? `• ${customer.email}` : ""}<br/>
+          ${customer.address}${customer.city ? `, ${customer.city}` : ""}
         </div>
       </div>
       <div>
         <div class="section-label">Validity & Terms</div>
         <div class="client-meta">
-          <strong>Valid Until:</strong> ${quotation.validUntil ? format(new Date(quotation.validUntil), 'MMM dd, yyyy') : 'N/A'}<br/>
+          <strong>Valid Until:</strong> ${quotation.validUntil ? format(new Date(quotation.validUntil), "MMM dd, yyyy") : "N/A"}<br/>
           <strong>Project Ref:</strong> ${quotation.quoteNumber}<br/>
           <strong>Currency:</strong> Myanmar Kyat (MMK)
         </div>

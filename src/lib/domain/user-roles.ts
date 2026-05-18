@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { userRoleEnum } from '@/lib/db/schema';
+import { z } from "zod";
+import { userRoleEnum } from "@/lib/db/schema";
 
 export const USER_ROLES = userRoleEnum.enumValues;
 export type UserRole = (typeof userRoleEnum.enumValues)[number];

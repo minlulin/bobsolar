@@ -1,28 +1,19 @@
-'use server';
+"use server";
 
-import { db } from '@/lib/db';
-import {
-  customers,
-  type Customer,
-  type Quotation,
-  type Project,
-} from '@/lib/db/schema';
+import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireAuth } from "@/lib/auth/validate";
+import { db } from "@/lib/db";
+import { type Customer, customers, type Project, type Quotation } from "@/lib/db/schema";
+import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
+import { handleActionError } from "@/lib/utils/error";
+import { uuidSchema } from "@/lib/validators/common";
 import {
   createCustomerSchema,
-  updateCustomerSchema,
   customerFilterSchema,
-} from '@/lib/validators/customer';
-import { requireAuth } from '@/lib/auth/validate';
-import { eq, ilike, or, desc, and, count } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import {
-  errorResponse,
-  successResponse,
-  type ActionResponse,
-} from '@/lib/utils/action-response';
-import { handleActionError } from '@/lib/utils/error';
-import { uuidSchema } from '@/lib/validators/common';
+  updateCustomerSchema,
+} from "@/lib/validators/customer";
 
 const deleteCustomerInputSchema = z.object({
   id: uuidSchema,
@@ -66,25 +57,16 @@ export async function getCustomers(
       offset,
     });
 
-    const totals = await db
-      .select({ total: count() })
-      .from(customers)
-      .where(where);
+    const totals = await db.select({ total: count() }).from(customers).where(where);
     const total = totals[0]?.total ?? 0;
 
     return successResponse({ items, total });
   } catch (error) {
-    return handleActionError(
-      error,
-      'getCustomers',
-      'Failed to fetch customers',
-    );
+    return handleActionError(error, "getCustomers", "Failed to fetch customers");
   }
 }
 
-export async function getCustomer(
-  id: string,
-): Promise<ActionResponse<CustomerWithHistory>> {
+export async function getCustomer(id: string): Promise<ActionResponse<CustomerWithHistory>> {
   try {
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
@@ -115,18 +97,16 @@ export async function getCustomer(
     });
 
     if (!item) {
-      return errorResponse('Customer not found');
+      return errorResponse("Customer not found");
     }
 
     return successResponse(item);
   } catch (error) {
-    return handleActionError(error, 'getCustomer', 'Failed to fetch customer');
+    return handleActionError(error, "getCustomer", "Failed to fetch customer");
   }
 }
 
-export async function createCustomer(
-  raw: unknown,
-): Promise<ActionResponse<Customer>> {
+export async function createCustomer(raw: unknown): Promise<ActionResponse<Customer>> {
   try {
     await requireAuth(); // Any authenticated user can create a customer
 
@@ -141,30 +121,23 @@ export async function createCustomer(
       .returning();
 
     if (!item) {
-      return errorResponse('Failed to create customer');
+      return errorResponse("Failed to create customer");
     }
 
-    revalidatePath('/customers');
+    revalidatePath("/customers");
     return successResponse(item);
   } catch (error) {
-    return handleActionError(
-      error,
-      'createCustomer',
-      'Failed to create customer',
-    );
+    return handleActionError(error, "createCustomer", "Failed to create customer");
   }
 }
 
-export async function updateCustomer(
-  id: string,
-  raw: unknown,
-): Promise<ActionResponse<Customer>> {
+export async function updateCustomer(id: string, raw: unknown): Promise<ActionResponse<Customer>> {
   try {
     await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
     const validated = updateCustomerSchema.parse({
-      ...(typeof raw === 'object' && raw !== null ? raw : {}),
+      ...(typeof raw === "object" && raw !== null ? raw : {}),
       id: validatedId,
     });
 
@@ -182,23 +155,17 @@ export async function updateCustomer(
       .returning();
 
     if (!item) {
-      return errorResponse('Customer not found or failed to update');
+      return errorResponse("Customer not found or failed to update");
     }
 
-    revalidatePath('/customers');
+    revalidatePath("/customers");
     return successResponse(item);
   } catch (error) {
-    return handleActionError(
-      error,
-      'updateCustomer',
-      'Failed to update customer',
-    );
+    return handleActionError(error, "updateCustomer", "Failed to update customer");
   }
 }
 
-export async function deleteCustomer(
-  id: string,
-): Promise<ActionResponse<null>> {
+export async function deleteCustomer(id: string): Promise<ActionResponse<null>> {
   try {
     await requireAuth();
     const { id: validatedId } = deleteCustomerInputSchema.parse({ id });
@@ -212,40 +179,27 @@ export async function deleteCustomer(
       })
       .where(eq(customers.id, validatedId));
 
-    revalidatePath('/customers');
+    revalidatePath("/customers");
     return successResponse(null);
   } catch (error) {
-    return handleActionError(
-      error,
-      'deleteCustomer',
-      'Failed to archive customer',
-    );
+    return handleActionError(error, "deleteCustomer", "Failed to archive customer");
   }
 }
 
-export async function searchCustomers(
-  query: string,
-): Promise<ActionResponse<Customer[]>> {
+export async function searchCustomers(query: string): Promise<ActionResponse<Customer[]>> {
   try {
     await requireAuth();
 
     const items = await db.query.customers.findMany({
       where: and(
         eq(customers.isArchived, false),
-        or(
-          ilike(customers.name, `%${query}%`),
-          ilike(customers.phone, `%${query}%`),
-        ),
+        or(ilike(customers.name, `%${query}%`), ilike(customers.phone, `%${query}%`)),
       ),
       limit: 10,
     });
 
     return successResponse(items);
   } catch (error) {
-    return handleActionError(
-      error,
-      'searchCustomers',
-      'Failed to search customers',
-    );
+    return handleActionError(error, "searchCustomers", "Failed to search customers");
   }
 }

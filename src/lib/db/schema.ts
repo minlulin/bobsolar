@@ -1,19 +1,19 @@
+import { type InferInsertModel, type InferSelectModel, relations, sql } from "drizzle-orm";
 import {
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  decimal,
-  integer,
   boolean,
+  check,
+  decimal,
+  index,
+  integer,
   jsonb,
   pgEnum,
-  index,
+  pgTable,
+  text,
+  timestamp,
   unique,
   uniqueIndex,
-  check,
+  uuid,
 } from "drizzle-orm/pg-core";
-import { relations, sql, type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 
 // --- Enums ---
 

@@ -1,4 +1,4 @@
-import { SkeletonCard } from '@/components/shared/skeleton-card';
+import { SkeletonCard } from "@/components/shared/skeleton-card";
 
 export default function FeatureLoading(): React.JSX.Element {
   return (

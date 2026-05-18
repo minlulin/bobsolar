@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { calculateLineItem, calculateQuotation, type LineItem } from './engine';
-import { formatMMK } from '@/lib/utils';
+import { describe, expect, it } from "vitest";
+import { formatMMK } from "@/lib/utils";
+import { calculateLineItem, calculateQuotation, type LineItem } from "./engine";
 
-describe('calculateLineItem', () => {
-  it('calculates basic line item', () => {
+describe("calculateLineItem", () => {
+  it("calculates basic line item", () => {
     const item: LineItem = { quantity: 2, unitPrice: 1000 };
     expect(calculateLineItem(item)).toBe(2000);
   });
 
-  it('calculates with discount', () => {
+  it("calculates with discount", () => {
     const item: LineItem = {
       quantity: 2,
       unitPrice: 1000,
@@ -17,19 +17,19 @@ describe('calculateLineItem', () => {
     expect(calculateLineItem(item)).toBe(1800);
   });
 
-  it('handles zero quantity', () => {
+  it("handles zero quantity", () => {
     const item: LineItem = { quantity: 0, unitPrice: 1000 };
     expect(calculateLineItem(item)).toBe(0);
   });
 
-  it('handles zero price', () => {
+  it("handles zero price", () => {
     const item: LineItem = { quantity: 5, unitPrice: 0 };
     expect(calculateLineItem(item)).toBe(0);
   });
 });
 
-describe('calculateQuotation', () => {
-  it('calculates basic quotation', () => {
+describe("calculateQuotation", () => {
+  it("calculates basic quotation", () => {
     const items: LineItem[] = [
       { quantity: 1, unitPrice: 1000 },
       { quantity: 2, unitPrice: 500 },
@@ -41,7 +41,7 @@ describe('calculateQuotation', () => {
     expect(result.total).toBe(2000);
   });
 
-  it('calculates with discount', () => {
+  it("calculates with discount", () => {
     const items: LineItem[] = [{ quantity: 1, unitPrice: 1000 }];
     const result = calculateQuotation(items, 10, 0);
     expect(result.subtotal).toBe(1000);
@@ -49,7 +49,7 @@ describe('calculateQuotation', () => {
     expect(result.total).toBe(900);
   });
 
-  it('calculates with tax', () => {
+  it("calculates with tax", () => {
     const items: LineItem[] = [{ quantity: 1, unitPrice: 1000 }];
     const result = calculateQuotation(items, 0, 10);
     expect(result.subtotal).toBe(1000);
@@ -57,7 +57,7 @@ describe('calculateQuotation', () => {
     expect(result.total).toBe(1100);
   });
 
-  it('calculates with discount and tax', () => {
+  it("calculates with discount and tax", () => {
     const items: LineItem[] = [{ quantity: 1, unitPrice: 1000 }];
     const result = calculateQuotation(items, 20, 10);
     expect(result.subtotal).toBe(1000);
@@ -66,7 +66,7 @@ describe('calculateQuotation', () => {
     expect(result.total).toBe(880);
   });
 
-  it('handles zero items', () => {
+  it("handles zero items", () => {
     const items: LineItem[] = [];
     const result = calculateQuotation(items, 10, 10);
     expect(result.subtotal).toBe(0);
@@ -75,7 +75,7 @@ describe('calculateQuotation', () => {
     expect(result.total).toBe(0);
   });
 
-  it('handles large numbers (millions of MMK)', () => {
+  it("handles large numbers (millions of MMK)", () => {
     const items: LineItem[] = [{ quantity: 100, unitPrice: 15000000 }];
     const result = calculateQuotation(items, 5, 5);
     expect(result.subtotal).toBe(1500000000);
@@ -85,16 +85,16 @@ describe('calculateQuotation', () => {
   });
 });
 
-describe('formatMMK', () => {
-  it('formats basic amount', () => {
-    expect(formatMMK(1500000)).toBe('1,500,000 MMK');
+describe("formatMMK", () => {
+  it("formats basic amount", () => {
+    expect(formatMMK(1500000)).toBe("1,500,000 MMK");
   });
 
-  it('formats zero', () => {
-    expect(formatMMK(0)).toBe('0 MMK');
+  it("formats zero", () => {
+    expect(formatMMK(0)).toBe("0 MMK");
   });
 
-  it('formats small amount', () => {
-    expect(formatMMK(100)).toBe('100 MMK');
+  it("formats small amount", () => {
+    expect(formatMMK(100)).toBe("100 MMK");
   });
 });

@@ -1,16 +1,8 @@
-import {
-  quotationFilterSchema,
-  type QuotationFilterInput,
-} from '@/lib/validators/quotation';
-import {
-  inventoryFilterSchema,
-  type InventoryFilter,
-} from '@/lib/validators/inventory';
+import { type InventoryFilter, inventoryFilterSchema } from "@/lib/validators/inventory";
+import { type QuotationFilterInput, quotationFilterSchema } from "@/lib/validators/quotation";
 
-function normalizeOptionalString(
-  value: string | null | undefined,
-): string | null {
-  const trimmed = value?.trim() ?? '';
+function normalizeOptionalString(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : null;
 }
 
@@ -42,31 +34,30 @@ export function normalizeInventoryFilters(
 }
 
 export const quotationKeys = {
-  all: ['quotations'] as const,
+  all: ["quotations"] as const,
   list: (filters: QuotationFilterInput = {}) =>
-    [...quotationKeys.all, 'list', normalizeQuotationFilters(filters)] as const,
-  detail: (id: string) => [...quotationKeys.all, 'detail', id] as const,
+    [...quotationKeys.all, "list", normalizeQuotationFilters(filters)] as const,
+  detail: (id: string) => [...quotationKeys.all, "detail", id] as const,
 };
 
 export const inventoryKeys = {
-  all: ['inventory'] as const,
+  all: ["inventory"] as const,
   list: (filters: InventoryFilter = {}) =>
-    [...inventoryKeys.all, 'list', normalizeInventoryFilters(filters)] as const,
-  detail: (id: string) => [...inventoryKeys.all, 'detail', id] as const,
-  search: (search: string) => [...inventoryKeys.all, 'search', search] as const,
+    [...inventoryKeys.all, "list", normalizeInventoryFilters(filters)] as const,
+  detail: (id: string) => [...inventoryKeys.all, "detail", id] as const,
+  search: (search: string) => [...inventoryKeys.all, "search", search] as const,
 };
 
 export const projectKeys = {
-  all: ['projects'] as const,
-  list: (filters: Record<string, unknown>) =>
-    [...projectKeys.all, 'list', filters] as const,
-  detail: (id: string) => [...projectKeys.all, 'detail', id] as const,
+  all: ["projects"] as const,
+  list: (filters: Record<string, unknown>) => [...projectKeys.all, "list", filters] as const,
+  detail: (id: string) => [...projectKeys.all, "detail", id] as const,
 };
 
 export const dashboardKeys = {
-  all: ['dashboard'] as const,
+  all: ["dashboard"] as const,
 };
 
 export const warrantyKeys = {
-  all: ['warranty'] as const,
+  all: ["warranty"] as const,
 };

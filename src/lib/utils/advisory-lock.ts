@@ -1,4 +1,4 @@
-import { type SQL, sql } from 'drizzle-orm';
+import { type SQL, sql } from "drizzle-orm";
 
 type AdvisoryLockDb = {
   execute(query: SQL): Promise<{ rows: Record<string, unknown>[] }>;
@@ -45,9 +45,7 @@ export class AdvisoryLock {
   async release(): Promise<void> {
     if (this.acquired) {
       try {
-        await this.db.execute(
-          sql`SELECT pg_advisory_unlock(${this.key}::int8)`,
-        );
+        await this.db.execute(sql`SELECT pg_advisory_unlock(${this.key}::int8)`);
       } catch {
         // Lock auto-releases on connection close — safe to ignore
       }

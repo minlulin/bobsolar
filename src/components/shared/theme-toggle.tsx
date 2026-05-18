@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { Moon, Sun } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { useAppTheme } from '@/components/providers';
+import { Moon, Sun } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useAppTheme } from "@/components/providers";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
 export function ThemeToggle(): React.JSX.Element {
   const { theme, setTheme, mounted } = useAppTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
 
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={() => {
-        setTheme(isDark ? 'light' : 'dark');
+        setTheme(isDark ? "light" : "dark");
       }}
       className="relative h-10 w-10 rounded-full"
     >

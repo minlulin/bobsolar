@@ -1,36 +1,22 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useTransition } from 'react';
-import { toast } from 'sonner';
-import {
-  ChevronLeft,
-  Download,
-  Copy,
-  ExternalLink,
-  MapPin,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  type Quotation,
-  type QuotationItem,
-  type Customer,
-} from '@/lib/db/schema';
-import {
-  updateQuotationStatus,
-  duplicateQuotation,
-} from '@/actions/quotation-actions';
-import { formatMMK } from '@/lib/utils';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import dynamic from 'next/dynamic';
+import { format } from "date-fns";
+import { ChevronLeft, Copy, Download, ExternalLink, MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useTransition } from "react";
+import { toast } from "sonner";
+import { duplicateQuotation, updateQuotationStatus } from "@/actions/quotation-actions";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { Customer, Quotation, QuotationItem } from "@/lib/db/schema";
+import { cn, formatMMK } from "@/lib/utils";
 
 const QuotePreview = dynamic(
   () =>
-    import('@/app/(dashboard)/quotations/new/components/quote-preview').then(
+    import("@/app/(dashboard)/quotations/new/components/quote-preview").then(
       (mod) => mod.QuotePreview,
     ),
   {
@@ -45,9 +31,10 @@ const QuotePreview = dynamic(
     ),
   },
 );
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { STATUS_CONFIG } from '@/lib/constants';
-import { showLinkedToast } from '@/components/shared/toast-link';
+
+import { showLinkedToast } from "@/components/shared/toast-link";
+import { STATUS_CONFIG } from "@/lib/constants";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 interface QuoteDetailViewProps {
   quotation: Quotation & {
@@ -57,29 +44,25 @@ interface QuoteDetailViewProps {
   };
 }
 
-export function QuoteDetailView({
-  quotation,
-}: QuoteDetailViewProps): React.JSX.Element {
+export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticStatus, setOptimisticStatus] = React.useOptimistic<
-    Quotation['status'],
-    Quotation['status']
+    Quotation["status"],
+    Quotation["status"]
   >(quotation.status, (_prev, next) => next);
-  const loadFromQuotation = useQuoteBuilderStore(
-    (state) => state.loadFromQuotation,
-  );
+  const loadFromQuotation = useQuoteBuilderStore((state) => state.loadFromQuotation);
 
-  const handleStatusChange = (newStatus: Quotation['status']): void => {
+  const handleStatusChange = (newStatus: Quotation["status"]): void => {
     setOptimisticStatus(newStatus);
     startTransition(async () => {
       const res = await updateQuotationStatus(quotation.id, newStatus);
       if (res.success) {
         showLinkedToast({
           title: `Status updated to ${newStatus}`,
-          description: 'The sales pipeline has been updated.',
+          description: "The sales pipeline has been updated.",
           href: `/quotations/${quotation.id}`,
-          variant: 'success',
+          variant: "success",
         });
         router.refresh();
       } else {
@@ -93,7 +76,7 @@ export function QuoteDetailView({
     startTransition(async () => {
       const res = await duplicateQuotation(quotation.id);
       if (res.success) {
-        toast.success('Quotation duplicated as draft');
+        toast.success("Quotation duplicated as draft");
         router.push(`/quotations/${res.data.id}`);
       } else {
         toast.error(res.error);
@@ -118,7 +101,7 @@ export function QuoteDetailView({
             variant="secondary"
             size="icon"
             onClick={() => {
-              router.push('/quotations');
+              router.push("/quotations");
             }}
             className="bg-muted/30 border-border h-12 w-12 rounded-xl border shadow-none"
           >
@@ -131,7 +114,7 @@ export function QuoteDetailView({
               </h1>
               <Badge
                 className={cn(
-                  'rounded-lg px-2 py-1 text-[10px] font-bold tracking-widest uppercase',
+                  "rounded-lg px-2 py-1 text-[10px] font-bold tracking-widest uppercase",
                   config.color,
                 )}
               >
@@ -140,17 +123,16 @@ export function QuoteDetailView({
               </Badge>
             </div>
             <p className="text-muted-foreground text-sm font-medium">
-              Documented by System on{' '}
-              {format(new Date(quotation.createdAt), 'MMMM dd, yyyy')}
+              Documented by System on {format(new Date(quotation.createdAt), "MMMM dd, yyyy")}
             </p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {status === 'sent' && (
+          {status === "sent" && (
             <Button
               onClick={() => {
-                handleStatusChange('accepted');
+                handleStatusChange("accepted");
               }}
               disabled={isPending}
               className="h-12 rounded-xl bg-emerald-600 px-6 font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700"
@@ -159,7 +141,7 @@ export function QuoteDetailView({
             </Button>
           )}
 
-          {status === 'accepted' && !quotation.project && (
+          {status === "accepted" && !quotation.project && (
             <Button
               className="bg-accent hover:bg-accent/90 shadow-accent/20 h-12 rounded-xl px-6 font-bold text-white shadow-lg"
               onClick={() => {
@@ -171,7 +153,7 @@ export function QuoteDetailView({
             </Button>
           )}
 
-          {status === 'accepted' && quotation.project && (
+          {status === "accepted" && quotation.project && (
             <Button
               asChild
               variant="secondary"
@@ -188,7 +170,7 @@ export function QuoteDetailView({
             variant="outline"
             className="border-border bg-muted/20 h-12 rounded-xl border px-4 font-bold"
             onClick={() => {
-              window.open(`/quotations/${quotation.id}/pdf`, '_blank');
+              window.open(`/quotations/${quotation.id}/pdf`, "_blank");
             }}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -219,19 +201,15 @@ export function QuoteDetailView({
               <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                 Full Name
               </p>
-              <p className="text-primary text-xl font-bold">
-                {quotation.customer.name}
-              </p>
+              <p className="text-primary text-xl font-bold">{quotation.customer.name}</p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                 Contact Line
               </p>
-              <p className="text-primary text-lg font-bold">
-                {quotation.customer.phone}
-              </p>
+              <p className="text-primary text-lg font-bold">{quotation.customer.phone}</p>
               <p className="text-muted-foreground text-xs">
-                {quotation.customer.email || 'No email provided'}
+                {quotation.customer.email || "No email provided"}
               </p>
             </div>
             <div className="border-border/50 col-span-full space-y-1 border-t pt-4">
@@ -267,13 +245,8 @@ export function QuoteDetailView({
               </thead>
               <tbody className="divide-border/30 divide-y">
                 {quotation.items.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-primary/[0.02] transition-colors"
-                  >
-                    <td className="text-primary px-8 py-5 font-bold">
-                      {item.description}
-                    </td>
+                  <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors">
+                    <td className="text-primary px-8 py-5 font-bold">{item.description}</td>
                     <td className="text-muted-foreground px-4 py-5 text-center font-mono font-medium">
                       {item.quantity}
                     </td>
@@ -301,12 +274,8 @@ export function QuoteDetailView({
               </div>
               {Number(quotation.discountAmount) > 0 && (
                 <div className="flex justify-between text-xs font-bold text-red-500">
-                  <span className="tracking-wider uppercase">
-                    Incentive Applied
-                  </span>
-                  <span className="font-mono">
-                    -{formatMMK(Number(quotation.discountAmount))}
-                  </span>
+                  <span className="tracking-wider uppercase">Incentive Applied</span>
+                  <span className="font-mono">-{formatMMK(Number(quotation.discountAmount))}</span>
                 </div>
               )}
               <div className="border-primary/20 flex items-center justify-between border-t pt-4">

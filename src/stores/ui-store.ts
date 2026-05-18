@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface UIState {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   toggleTheme: () => void;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
@@ -13,9 +13,9 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
-      theme: 'dark',
+      theme: "dark",
       toggleTheme: (): void => {
-        set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' }));
+        set((state) => ({ theme: state.theme === "light" ? "dark" : "light" }));
       },
       sidebarOpen: false,
       setSidebarOpen: (open: boolean): void => {
@@ -27,7 +27,7 @@ export const useUIStore = create<UIState>()(
       },
     }),
     {
-      name: 'bob-solar-ui',
+      name: "bob-solar-ui",
     },
   ),
 );

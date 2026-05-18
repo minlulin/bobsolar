@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { FileQuestion } from 'lucide-react';
+import { FileQuestion } from "lucide-react";
+import Link from "next/link";
 
 export default function NotFound(): React.JSX.Element {
   return (
@@ -7,12 +7,9 @@ export default function NotFound(): React.JSX.Element {
       <div className="border-border/70 bg-muted/45 mb-6 flex h-24 w-24 items-center justify-center rounded-full border">
         <FileQuestion className="text-muted-foreground h-12 w-12" />
       </div>
-      <h2 className="text-foreground mb-2 text-3xl font-bold tracking-tight">
-        Page not found
-      </h2>
+      <h2 className="text-foreground mb-2 text-3xl font-bold tracking-tight">Page not found</h2>
       <p className="text-muted-foreground mb-8 max-w-md">
-        We couldn&apos;t find the page you&apos;re looking for. It might have
-        been moved or deleted.
+        We couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
       </p>
       <Link
         href="/"

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { Toaster as Sonner, type ToasterProps } from 'sonner';
 import {
   CircleCheckIcon,
   InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
   Loader2Icon,
-} from 'lucide-react';
-import { useAppTheme } from '@/components/providers';
+  OctagonXIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useAppTheme } from "@/components/providers";
 
 const Toaster = ({ ...props }: ToasterProps): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -26,15 +26,15 @@ const Toaster = ({ ...props }: ToasterProps): React.ReactElement => {
       }}
       style={
         {
-          '--normal-bg': 'var(--popover)',
-          '--normal-text': 'var(--popover-foreground)',
-          '--normal-border': 'var(--border)',
-          '--border-radius': 'var(--radius)',
+          "--normal-bg": "var(--popover)",
+          "--normal-text": "var(--popover-foreground)",
+          "--normal-border": "var(--border)",
+          "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: 'cn-toast',
+          toast: "cn-toast",
         },
       }}
       {...props}

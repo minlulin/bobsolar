@@ -1,6 +1,6 @@
-import { formatMMK } from '@/lib/utils';
-import { format } from 'date-fns';
-import type { ProjectVoucher } from '@/lib/db/schema';
+import { format } from "date-fns";
+import type { ProjectVoucher } from "@/lib/db/schema";
+import { formatMMK } from "@/lib/utils";
 
 interface VoucherHtmlInput {
   voucher: ProjectVoucher & { projectNumber: string; customerName: string };
@@ -13,15 +13,15 @@ export function VoucherHtml({
   customerAddress,
   companySettings = {},
 }: VoucherHtmlInput): string {
-  const companyName = companySettings['company_name'] ?? 'BOB Solar';
-  const companyAddress = companySettings['company_address'] ?? '';
-  const companyPhone = companySettings['company_phone'] ?? '';
-  const companyEmail = companySettings['company_email'] ?? '';
+  const companyName = companySettings["company_name"] ?? "BOB Solar";
+  const companyAddress = companySettings["company_address"] ?? "";
+  const companyPhone = companySettings["company_phone"] ?? "";
+  const companyEmail = companySettings["company_email"] ?? "";
 
   const title =
-    voucher.voucherType === 'completion_certificate'
-      ? 'Completion Certificate'
-      : 'Final Payment Voucher';
+    voucher.voucherType === "completion_certificate"
+      ? "Completion Certificate"
+      : "Final Payment Voucher";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -135,7 +135,7 @@ export function VoucherHtml({
       <div class="doc-info">
         <div class="doc-type">${title}</div>
         <div class="doc-id">${voucher.voucherNumber}</div>
-        <div class="doc-date">Issued ${format(new Date(voucher.issuedAt), 'MMMM dd, yyyy')}</div>
+        <div class="doc-date">Issued ${format(new Date(voucher.issuedAt), "MMMM dd, yyyy")}</div>
       </div>
     </div>
 
@@ -145,7 +145,7 @@ export function VoucherHtml({
         <div class="client-name">${voucher.customerName}</div>
         <div class="client-meta">
           Project ${voucher.projectNumber}
-          ${customerAddress ? `<br/>${customerAddress}` : ''}
+          ${customerAddress ? `<br/>${customerAddress}` : ""}
         </div>
       </div>
       <div>
@@ -170,7 +170,7 @@ export function VoucherHtml({
         </tr>
         <tr>
           <td>Outstanding Balance</td>
-          <td style="color: ${Number(voucher.balanceAmount) > 0 ? '#D97706' : '#059669'}; font-size: 14px;">
+          <td style="color: ${Number(voucher.balanceAmount) > 0 ? "#D97706" : "#059669"}; font-size: 14px;">
             ${formatMMK(Number(voucher.balanceAmount))}
           </td>
         </tr>
@@ -184,7 +184,7 @@ export function VoucherHtml({
       <div class="notes-title">Remarks</div>
       <p class="notes-content">${voucher.notes}</p>
     </div>`
-        : ''
+        : ""
     }
 
     <div class="signature-section">

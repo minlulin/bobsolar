@@ -1,7 +1,7 @@
-import { config as loadEnvFile } from 'dotenv';
-import { neonConfig, Pool } from '@neondatabase/serverless';
-import { readMigrationFiles } from 'drizzle-orm/migrator';
-import ws from 'ws';
+import { neonConfig, Pool } from "@neondatabase/serverless";
+import { config as loadEnvFile } from "dotenv";
+import { readMigrationFiles } from "drizzle-orm/migrator";
+import ws from "ws";
 
 type MigrationRow = {
   id: number;
@@ -10,18 +10,18 @@ type MigrationRow = {
 };
 
 async function main(): Promise<void> {
-  loadEnvFile({ path: '.env.local' });
+  loadEnvFile({ path: ".env.local" });
   neonConfig.webSocketConstructor = ws;
 
-  const databaseUrl = process.env['DATABASE_URL']?.trim();
+  const databaseUrl = process.env["DATABASE_URL"]?.trim();
   if (!databaseUrl) {
-    throw new Error('DATABASE_URL is not set in .env.local');
+    throw new Error("DATABASE_URL is not set in .env.local");
   }
 
   const pool = new Pool({ connectionString: databaseUrl });
 
   try {
-    await pool.query('CREATE SCHEMA IF NOT EXISTS drizzle');
+    await pool.query("CREATE SCHEMA IF NOT EXISTS drizzle");
     await pool.query(`
       CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
         id SERIAL PRIMARY KEY,
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
     `);
 
     const existingResult = await pool.query<MigrationRow>(
-      'SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC, id DESC',
+      "SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC, id DESC",
     );
 
     if (existingResult.rowCount !== 0) {
@@ -42,31 +42,31 @@ async function main(): Promise<void> {
     }
 
     const migrationFiles = readMigrationFiles({
-      migrationsFolder: 'drizzle/migrations',
+      migrationsFolder: "drizzle/migrations",
     });
     if (migrationFiles.length === 0) {
-      console.log('No local migration files found; nothing to baseline.');
+      console.log("No local migration files found; nothing to baseline.");
       return;
     }
 
-    await pool.query('BEGIN');
+    await pool.query("BEGIN");
     for (const migration of migrationFiles) {
       await pool.query(
-        'INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)',
+        "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
         [migration.hash, String(migration.folderMillis)],
       );
     }
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
 
     console.log(
       `Inserted ${migrationFiles.length} migration record(s) into drizzle.__drizzle_migrations.`,
     );
   } catch (error: unknown) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     if (error instanceof Error) {
       throw new Error(`Failed to baseline migrations: ${error.message}`);
     }
-    throw new Error('Failed to baseline migrations due to an unknown error.');
+    throw new Error("Failed to baseline migrations due to an unknown error.");
   } finally {
     await pool.end();
   }

@@ -1,10 +1,10 @@
-import { del, put } from '@vercel/blob';
-import { randomUUID } from 'crypto';
+import { randomUUID } from "node:crypto";
+import { del, put } from "@vercel/blob";
 
 function requireToken(): string {
-  const token = process.env['BLOB_READ_WRITE_TOKEN'];
+  const token = process.env["BLOB_READ_WRITE_TOKEN"];
   if (!token) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured');
+    throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
   }
   return token;
 }
@@ -19,11 +19,11 @@ export async function uploadFileFromBufferOrBlob(
   contentType: string | undefined,
 ): Promise<string> {
   const token = requireToken();
-  const safeName = filename.replace(/[^\w.\-]/g, '_');
-  const pathname = `${folder.replace(/^\//, '')}/${randomUUID()}-${safeName}`;
+  const safeName = filename.replace(/[^\w.-]/g, "_");
+  const pathname = `${folder.replace(/^\//, "")}/${randomUUID()}-${safeName}`;
 
   const options: Parameters<typeof put>[2] = {
-    access: 'public',
+    access: "public",
     token,
     cacheControlMaxAge: 60 * 60 * 24 * 30,
     ...(contentType ? { contentType } : {}),

@@ -1,35 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
-  getProjects,
-  getProject,
-  convertQuotationToProject,
-  updateProject,
   addProjectCost,
-  deleteProjectCost,
   addProjectRemark,
-  deleteProjectRemark,
-  markProjectCompleted,
+  convertQuotationToProject,
   createWarrantyAlertForProject,
-} from '@/actions/project-actions';
-import type { ProjectListFilter } from '@/lib/validators/project';
-import { toast } from 'sonner';
-import {
-  dashboardKeys,
-  projectKeys,
-  quotationKeys,
-  warrantyKeys,
-} from '@/lib/query-keys';
+  deleteProjectCost,
+  deleteProjectRemark,
+  getProject,
+  getProjects,
+  markProjectCompleted,
+  updateProject,
+} from "@/actions/project-actions";
+import { dashboardKeys, projectKeys, quotationKeys, warrantyKeys } from "@/lib/query-keys";
+import type { ProjectListFilter } from "@/lib/validators/project";
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useProjects(
   filters: Partial<ProjectListFilter> = {},
   initialData?: ActionData<Awaited<ReturnType<typeof getProjects>>>,
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>
-> {
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>> {
   const full: ProjectListFilter = {
-    scope: filters.scope ?? 'active',
+    scope: filters.scope ?? "active",
     status: filters.status,
     search: filters.search,
     year: filters.year ?? null,
@@ -53,9 +46,7 @@ export function useProjects(
 
 export function useProject(
   id: string,
-): ReturnType<
-  typeof useQuery<ActionData<Awaited<ReturnType<typeof getProject>>>>
-> {
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProject>>>>> {
   return useQuery({
     queryKey: projectKeys.detail(id),
     queryFn: async () => {
@@ -91,7 +82,7 @@ export function useConvertToProject(): ReturnType<
       }
     },
     onError: () => {
-      toast.error('Failed to create project');
+      toast.error("Failed to create project");
     },
   });
 }
@@ -130,13 +121,13 @@ export function useUpdateProject(): ReturnType<
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success('Project updated');
+      toast.success("Project updated");
     },
     onError: (_err, _vars, context) => {
       if (context !== undefined) {
         queryClient.setQueryData(context.queryKey, context.previous);
       }
-      toast.error('Failed to update project');
+      toast.error("Failed to update project");
     },
     onSettled: (_data, _error, _vars, context) => {
       if (context !== undefined) {
@@ -163,10 +154,10 @@ export function useAddProjectCost(): ReturnType<
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success('Cost recorded');
+      toast.success("Cost recorded");
     },
     onError: () => {
-      toast.error('Failed to add cost');
+      toast.error("Failed to add cost");
     },
   });
 }
@@ -188,10 +179,10 @@ export function useDeleteProjectCost(): ReturnType<
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success('Cost removed');
+      toast.success("Cost removed");
     },
     onError: () => {
-      toast.error('Failed to remove cost');
+      toast.error("Failed to remove cost");
     },
   });
 }
@@ -213,10 +204,10 @@ export function useDeleteProjectRemark(): ReturnType<
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success('Remark removed');
+      toast.success("Remark removed");
     },
     onError: () => {
-      toast.error('Could not delete remark');
+      toast.error("Could not delete remark");
     },
   });
 }
@@ -238,10 +229,10 @@ export function useAddProjectRemark(): ReturnType<
         return;
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success('Posted');
+      toast.success("Posted");
     },
     onError: () => {
-      toast.error('Failed to post remark');
+      toast.error("Failed to post remark");
     },
   });
 }
@@ -264,10 +255,10 @@ export function useMarkProjectCompleted(): ReturnType<
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-      toast.success('Project marked complete');
+      toast.success("Project marked complete");
     },
     onError: () => {
-      toast.error('Could not complete project');
+      toast.error("Could not complete project");
     },
   });
 }
@@ -290,10 +281,10 @@ export function useCreateProjectWarrantyAlert(): ReturnType<
       }
       await queryClient.invalidateQueries({ queryKey: projectKeys.all });
       await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-      toast.success('Alert added');
+      toast.success("Alert added");
     },
     onError: () => {
-      toast.error('Failed to add alert');
+      toast.error("Failed to add alert");
     },
   });
 }

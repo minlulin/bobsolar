@@ -1,13 +1,10 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Image from 'next/image';
-import { Upload, Loader2, ImageIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import {
-  UPLOAD_MAX_SIZE_BYTES,
-  UPLOAD_MAX_SIZE_MB,
-} from '@/lib/domain/policies';
+import { ImageIcon, Loader2, Upload } from "lucide-react";
+import Image from "next/image";
+import * as React from "react";
+import { UPLOAD_MAX_SIZE_BYTES, UPLOAD_MAX_SIZE_MB } from "@/lib/domain/policies";
+import { cn } from "@/lib/utils";
 
 export interface FileUploadProps {
   folder: string;
@@ -31,9 +28,9 @@ export function FileUpload({
     async (file: File): Promise<void> => {
       setErr(null);
 
-      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      const allowed = ["image/jpeg", "image/png", "image/webp"];
       if (!allowed.includes(file.type)) {
-        setErr('JPEG, PNG, or WebP only.');
+        setErr("JPEG, PNG, or WebP only.");
         return;
       }
       if (file.size > UPLOAD_MAX_SIZE_BYTES) {
@@ -47,17 +44,17 @@ export function FileUpload({
 
       try {
         const fd = new FormData();
-        fd.set('file', file);
-        fd.set('folder', folder);
+        fd.set("file", file);
+        fd.set("folder", folder);
 
-        const res = await fetch('/api/upload', {
-          method: 'POST',
+        const res = await fetch("/api/upload", {
+          method: "POST",
           body: fd,
         });
 
         const body = (await res.json()) as { url?: string; error?: string };
         if (!res.ok || !body.url) {
-          throw new Error(body.error || 'Upload failed');
+          throw new Error(body.error || "Upload failed");
         }
 
         URL.revokeObjectURL(localUrl);
@@ -67,7 +64,7 @@ export function FileUpload({
       } catch (e) {
         URL.revokeObjectURL(localUrl);
         setPreview(null);
-        setErr(e instanceof Error ? e.message : 'Upload failed');
+        setErr(e instanceof Error ? e.message : "Upload failed");
       } finally {
         setBusy(false);
       }
@@ -76,9 +73,9 @@ export function FileUpload({
   );
 
   return (
-    <div className={cn('space-y-3', className)}>
-      <div
-        role="presentation"
+    <div className={cn("space-y-3", className)}>
+      <button
+        type="button"
         onDragOver={(ev) => {
           ev.preventDefault();
         }}
@@ -88,8 +85,8 @@ export function FileUpload({
           if (f) void submit(f);
         }}
         className={cn(
-          'border-border flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition hover:border-[hsl(var(--solar))/0.55]',
-          disabled && 'pointer-events-none opacity-50',
+          "border-border flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition hover:border-[hsl(var(--solar))/0.55]",
+          disabled && "pointer-events-none opacity-50",
         )}
         onClick={() => inputRef.current?.click()}
       >
@@ -117,7 +114,7 @@ export function FileUpload({
             Uploading…
           </div>
         )}
-      </div>
+      </button>
 
       {preview && !busy ? (
         <div className="border-border bg-muted/30 flex justify-center rounded-2xl border p-6">

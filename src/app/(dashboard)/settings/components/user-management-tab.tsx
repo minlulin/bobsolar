@@ -1,17 +1,15 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useQuery } from "@tanstack/react-query";
+import * as React from "react";
+import { toast } from "sonner";
 import {
   createSettingsUser,
   getSettingsUsers,
   resetSettingsUserPassword,
   updateSettingsUser,
-} from '@/actions/settings-actions';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/actions/settings-actions";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +17,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { USER_CAP } from '@/lib/domain/policies';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { USER_CAP } from "@/lib/domain/policies";
 
 type EditableUser = {
   id: string;
@@ -30,7 +30,7 @@ type EditableUser = {
 
 export function UserManagementTab(): React.JSX.Element {
   const usersQuery = useQuery({
-    queryKey: ['settings', 'users'],
+    queryKey: ["settings", "users"],
     queryFn: async () => {
       const res = await getSettingsUsers();
       if (!res.success) throw new Error(res.error);
@@ -42,9 +42,9 @@ export function UserManagementTab(): React.JSX.Element {
   const [editing, setEditing] = React.useState<EditableUser | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [newUser, setNewUser] = React.useState({
-    name: '',
-    email: '',
-    password: '',
+    name: "",
+    email: "",
+    password: "",
   });
 
   const users = usersQuery.data?.users ?? [];
@@ -54,7 +54,7 @@ export function UserManagementTab(): React.JSX.Element {
     if (!editing) return;
     const res = await updateSettingsUser(editing);
     if (res.success) {
-      toast.success('User updated');
+      toast.success("User updated");
       setEditing(null);
       void usersQuery.refetch();
     } else {
@@ -65,9 +65,9 @@ export function UserManagementTab(): React.JSX.Element {
   async function handleCreate(): Promise<void> {
     const res = await createSettingsUser(newUser);
     if (res.success) {
-      toast.success('User created');
+      toast.success("User created");
       setCreating(false);
-      setNewUser({ name: '', email: '', password: '' });
+      setNewUser({ name: "", email: "", password: "" });
       void usersQuery.refetch();
     } else {
       toast.error(res.error);
@@ -168,9 +168,7 @@ export function UserManagementTab(): React.JSX.Element {
                 <Input
                   value={editing.name}
                   onChange={(e) => {
-                    setEditing((prev) =>
-                      prev ? { ...prev, name: e.target.value } : prev,
-                    );
+                    setEditing((prev) => (prev ? { ...prev, name: e.target.value } : prev));
                   }}
                 />
               </div>
@@ -179,9 +177,7 @@ export function UserManagementTab(): React.JSX.Element {
                 <Input
                   value={editing.email}
                   onChange={(e) => {
-                    setEditing((prev) =>
-                      prev ? { ...prev, email: e.target.value } : prev,
-                    );
+                    setEditing((prev) => (prev ? { ...prev, email: e.target.value } : prev));
                   }}
                 />
               </div>

@@ -1,15 +1,15 @@
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import {
-  getCustomers,
-  getCustomer,
   createCustomer,
-  updateCustomer,
   deleteCustomer,
+  getCustomer,
+  getCustomers,
   searchCustomers,
-} from '@/actions/customer-actions';
-import type { CustomerFilter, CreateCustomer } from '@/lib/validators/customer';
-import { createMutationHook } from '@/hooks/mutation-factory';
-import type { Customer, Quotation, Project } from '@/lib/db/schema';
+  updateCustomer,
+} from "@/actions/customer-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
+import type { Customer, Project, Quotation } from "@/lib/db/schema";
+import type { CreateCustomer, CustomerFilter } from "@/lib/validators/customer";
 
 type PaginatedCustomers = { items: Customer[]; total: number };
 
@@ -23,11 +23,9 @@ export type CustomerWithHistory = Customer & {
   })[];
 };
 
-export function useCustomers(
-  filters: CustomerFilter = {},
-): UseQueryResult<PaginatedCustomers> {
+export function useCustomers(filters: CustomerFilter = {}): UseQueryResult<PaginatedCustomers> {
   return useQuery<PaginatedCustomers>({
-    queryKey: ['customers', filters],
+    queryKey: ["customers", filters],
     queryFn: async () => {
       const res = await getCustomers(filters);
       if (!res.success) throw new Error(res.error);
@@ -39,7 +37,7 @@ export function useCustomers(
 
 export function useCustomer(id: string): UseQueryResult<CustomerWithHistory> {
   return useQuery<CustomerWithHistory>({
-    queryKey: ['customers', id],
+    queryKey: ["customers", id],
     queryFn: async () => {
       const res = await getCustomer(id);
       if (!res.success) throw new Error(res.error);
@@ -52,7 +50,7 @@ export function useCustomer(id: string): UseQueryResult<CustomerWithHistory> {
 
 export function useSearchCustomers(query: string): UseQueryResult<Customer[]> {
   return useQuery<Customer[]>({
-    queryKey: ['customers', 'search', query],
+    queryKey: ["customers", "search", query],
     queryFn: async () => {
       const res = await searchCustomers(query);
       if (!res.success) throw new Error(res.error);
@@ -65,22 +63,22 @@ export function useSearchCustomers(query: string): UseQueryResult<Customer[]> {
 
 export const useCreateCustomer = createMutationHook({
   mutationFn: (data: CreateCustomer) => createCustomer(data),
-  invalidateKeys: [['customers']],
-  successMessage: 'Customer added successfully',
-  errorMessage: 'Failed to add customer',
+  invalidateKeys: [["customers"]],
+  successMessage: "Customer added successfully",
+  errorMessage: "Failed to add customer",
 });
 
 export const useUpdateCustomer = createMutationHook({
   mutationFn: (args: { id: string; data: Partial<CreateCustomer> }) =>
     updateCustomer(args.id, args.data),
-  invalidateKeys: [['customers']],
-  successMessage: 'Customer updated successfully',
-  errorMessage: 'Failed to update customer',
+  invalidateKeys: [["customers"]],
+  successMessage: "Customer updated successfully",
+  errorMessage: "Failed to update customer",
 });
 
 export const useDeleteCustomer = createMutationHook({
   mutationFn: (id: string) => deleteCustomer(id),
-  invalidateKeys: [['customers']],
-  successMessage: 'Customer deleted successfully',
-  errorMessage: 'Failed to delete customer',
+  invalidateKeys: [["customers"]],
+  successMessage: "Customer deleted successfully",
+  errorMessage: "Failed to delete customer",
 });

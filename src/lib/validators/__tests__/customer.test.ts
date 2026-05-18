@@ -1,78 +1,75 @@
-import { describe, it, expect } from 'vitest';
-import {
-  createCustomerSchema,
-  customerFilterSchema,
-} from '@/lib/validators/customer';
+import { describe, expect, it } from "vitest";
+import { createCustomerSchema, customerFilterSchema } from "@/lib/validators/customer";
 
-describe('createCustomerSchema', () => {
-  it('accepts valid customer', () => {
+describe("createCustomerSchema", () => {
+  it("accepts valid customer", () => {
     const result = createCustomerSchema.safeParse({
-      name: 'John Doe',
-      phone: '09-123456789',
-      email: 'john@example.com',
-      address: '123 Solar Street',
-      city: 'Yangon',
+      name: "John Doe",
+      phone: "09-123456789",
+      email: "john@example.com",
+      address: "123 Solar Street",
+      city: "Yangon",
     });
     expect(result.success).toBe(true);
   });
 
-  it('accepts minimal customer (name + phone only)', () => {
+  it("accepts minimal customer (name + phone only)", () => {
     const result = createCustomerSchema.safeParse({
-      name: 'John Doe',
-      phone: '09-123456789',
+      name: "John Doe",
+      phone: "09-123456789",
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects empty name', () => {
+  it("rejects empty name", () => {
     const result = createCustomerSchema.safeParse({
-      name: '',
-      phone: '09-123456789',
+      name: "",
+      phone: "09-123456789",
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects invalid email', () => {
+  it("rejects invalid email", () => {
     const result = createCustomerSchema.safeParse({
-      name: 'John',
-      phone: '09-123456789',
-      email: 'not-an-email',
+      name: "John",
+      phone: "09-123456789",
+      email: "not-an-email",
     });
     expect(result.success).toBe(false);
   });
 
-  it('rejects phone too short', () => {
+  it("rejects phone too short", () => {
     const result = createCustomerSchema.safeParse({
-      name: 'John',
-      phone: '1234',
+      name: "John",
+      phone: "1234",
     });
     expect(result.success).toBe(false);
   });
 
-  it('accepts empty string email as valid', () => {
+  it("accepts empty string email as valid", () => {
     const result = createCustomerSchema.safeParse({
-      name: 'John',
-      phone: '09-123456789',
-      email: '',
+      name: "John",
+      phone: "09-123456789",
+      email: "",
     });
     expect(result.success).toBe(true);
   });
 });
 
-describe('customerFilterSchema', () => {
-  it('provides defaults for empty input', () => {
+describe("customerFilterSchema", () => {
+  it("provides defaults for empty input", () => {
     const result = customerFilterSchema.parse({});
     expect(result.page).toBe(1);
     expect(result.limit).toBe(20);
   });
 
-  it('coerces string numbers', () => {
-    const result = customerFilterSchema.parse({ page: '2', limit: '10' });
+  it("coerces string numbers", () => {
+    const result = customerFilterSchema.parse({ page: "2", limit: "10" });
     expect(result.page).toBe(2);
     expect(result.limit).toBe(10);
   });
 
-  it('rejects limit > 50', () => {
+  it("rejects limit > 50", () => {
     const result = customerFilterSchema.safeParse({ limit: 100 });
     expect(result.success).toBe(false);
   });

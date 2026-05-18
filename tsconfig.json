@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     // ── Language & Environment ──────────────────────────────────────────
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "target": "ES2025",
+    "lib": ["ES2025", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     // ── Emit ────────────────────────────────────────────────────────────
@@ -10,24 +10,21 @@
     "declarationMap": true,
     "sourceMap": true,
     "noEmit": true,
-    "removeComments": false,
-    "importHelpers": true,
+
     // ── Interop Constraints ─────────────────────────────────────────────
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
     // ── Strict Flags — ALL ENABLED ──────────────────────────────────────
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "useUnknownInCatchVariables": true,
-    "alwaysStrict": true,
+    // ── Strict Mode (all covered by `strict: true`) ────────────────────
+    // `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`,
+    // `strictBindCallApply`, `strictPropertyInitialization`,
+    // `noImplicitThis`, `useUnknownInCatchVariables`, `alwaysStrict`
     // ── Additional Safety Checks ────────────────────────────────────────
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -36,13 +33,11 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    "allowUnusedLabels": false,
-    "allowUnreachableCode": false,
     "exactOptionalPropertyTypes": true,
     // ── Completeness ────────────────────────────────────────────────────
     // PRAGMATIC STRICTNESS: third-party libs have unfixable errors
     "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
+
     // ── JSX & Framework ─────────────────────────────────────────────────
     "jsx": "react-jsx",
     "incremental": true,
@@ -53,8 +48,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "allowJs": true
+    }
   },
   "include": [
     "next-env.d.ts",

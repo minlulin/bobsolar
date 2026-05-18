@@ -1,27 +1,19 @@
-'use client';
+"use client";
 
-import {
-  Phone,
-  Mail,
-  MapPin,
-  MoreVertical,
-  Edit,
-  Trash2,
-  FileText,
-} from 'lucide-react';
-import Link from 'next/link';
-import { motion } from 'motion/react';
-import { type Customer } from '@/lib/db/schema';
-import { useDeleteCustomer } from '@/hooks/use-customers';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Edit, FileText, Mail, MapPin, MoreVertical, Phone, Trash2 } from "lucide-react";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+} from "@/components/ui/dropdown-menu";
+import { useDeleteCustomer } from "@/hooks/use-customers";
+import type { Customer } from "@/lib/db/schema";
 
 interface CustomerCardProps {
   customer: Customer;
@@ -29,18 +21,14 @@ interface CustomerCardProps {
   onDelete?: (id: string) => void;
 }
 
-export function CustomerCard({
-  customer,
-  onEdit,
-  onDelete,
-}: CustomerCardProps): React.JSX.Element {
+export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps): React.JSX.Element {
   const { mutate: deleteCustomer } = useDeleteCustomer();
 
   const getInitials = (name: string): string => {
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
       .substring(0, 2);
   };
@@ -97,9 +85,7 @@ export function CustomerCard({
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={() => {
-                    if (
-                      confirm('Are you sure you want to delete this customer?')
-                    ) {
+                    if (confirm("Are you sure you want to delete this customer?")) {
                       onDelete?.(customer.id);
                       deleteCustomer(customer.id);
                     }
@@ -129,7 +115,7 @@ export function CustomerCard({
                 </div>
                 <span className="line-clamp-2">
                   {customer.address}
-                  {customer.city ? `, ${customer.city}` : ''}
+                  {customer.city ? `, ${customer.city}` : ""}
                 </span>
               </div>
             )}

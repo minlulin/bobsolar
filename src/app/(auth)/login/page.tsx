@@ -1,35 +1,28 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'motion/react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-
-import { loginSchema, type LoginInput } from '@/lib/validators/auth';
-import { login } from '@/actions/auth-actions';
-import { getPublicCompanyBranding } from '@/actions/settings-actions';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { motion } from "motion/react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { login } from "@/actions/auth-actions";
+import { getPublicCompanyBranding } from "@/actions/settings-actions";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { type LoginInput, loginSchema } from "@/lib/validators/auth";
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const brandingQuery = useQuery({
-    queryKey: ['public', 'branding'],
+    queryKey: ["public", "branding"],
     queryFn: async () => {
       const res = await getPublicCompanyBranding();
       if (!res.success) throw new Error(res.error);
@@ -45,8 +38,8 @@ export default function LoginPage(): React.JSX.Element {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
@@ -57,22 +50,22 @@ export default function LoginPage(): React.JSX.Element {
       if (!result.success) {
         toast.error(result.error);
       } else {
-        router.push('/');
+        router.push("/");
       }
     } catch (err) {
-      console.error('[login]', err);
+      console.error("[login]", err);
       const message =
-        process.env.NODE_ENV === 'development' && err instanceof Error
+        process.env.NODE_ENV === "development" && err instanceof Error
           ? err.message
-          : 'An unexpected error occurred';
+          : "An unexpected error occurred";
       toast.error(message);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const logoSrc = brandingQuery.data?.logoUrl || '/icons/logo.png';
-  const companyName = brandingQuery.data?.companyName || 'BOB Solar';
+  const logoSrc = brandingQuery.data?.logoUrl || "/icons/logo.png";
+  const companyName = brandingQuery.data?.companyName || "BOB Solar";
 
   return (
     <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12">
@@ -87,7 +80,7 @@ export default function LoginPage(): React.JSX.Element {
           transition={{
             duration: 8,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: "easeInOut",
           }}
           className="absolute -top-[10%] -left-[10%] h-[40%] w-[40%] rounded-full bg-amber-500/10 blur-[100px]"
         />
@@ -99,7 +92,7 @@ export default function LoginPage(): React.JSX.Element {
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: "easeInOut",
             delay: 1,
           }}
           className="absolute -right-[10%] -bottom-[10%] h-[40%] w-[40%] rounded-full bg-emerald-500/10 blur-[100px]"
@@ -130,7 +123,7 @@ export default function LoginPage(): React.JSX.Element {
                   transition={{
                     duration: 20,
                     repeat: Infinity,
-                    ease: 'linear',
+                    ease: "linear",
                   }}
                   className="absolute inset-0 rounded-2xl border-2 border-white/20"
                 />
@@ -157,14 +150,10 @@ export default function LoginPage(): React.JSX.Element {
                   type="text"
                   placeholder="Enter your username"
                   autoComplete="username"
-                  {...register('email')}
-                  className={errors.email ? 'border-destructive' : ''}
+                  {...register("email")}
+                  className={errors.email ? "border-destructive" : ""}
                 />
-                {errors.email && (
-                  <p className="text-destructive text-xs">
-                    {errors.email.message}
-                  </p>
-                )}
+                {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -173,34 +162,24 @@ export default function LoginPage(): React.JSX.Element {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    {...register('password')}
-                    className={
-                      errors.password ? 'border-destructive pr-10' : 'pr-10'
-                    }
+                    {...register("password")}
+                    className={errors.password ? "border-destructive pr-10" : "pr-10"}
                   />
                   <button
                     type="button"
-                    aria-label={
-                      showPassword ? 'Hide password' : 'Show password'
-                    }
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                     onClick={() => {
                       setShowPassword((prev) => !prev);
                     }}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-destructive text-xs">
-                    {errors.password.message}
-                  </p>
+                  <p className="text-destructive text-xs">{errors.password.message}</p>
                 )}
               </div>
               <Button
@@ -208,11 +187,7 @@ export default function LoginPage(): React.JSX.Element {
                 disabled={isLoading}
                 className="bg-solar shadow-solar h-11 w-full text-base font-medium text-white transition-all hover:opacity-90 active:scale-95"
               >
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  'Sign In'
-                )}
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
               </Button>
             </form>
           </CardContent>

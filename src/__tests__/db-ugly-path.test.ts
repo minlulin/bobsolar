@@ -1,37 +1,37 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { db } from '@/lib/db';
-import { users, customers, quotations } from '@/lib/db/schema';
-import { count, eq } from 'drizzle-orm';
-import { randomUUID } from 'crypto';
-import { createQuotation } from '@/actions/quotation-actions';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { randomUUID } from "node:crypto";
+import { neonConfig, Pool } from "@neondatabase/serverless";
+import { count, eq } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import ws from "ws";
+import { createQuotation } from "@/actions/quotation-actions";
+import { db } from "@/lib/db";
+import { customers, quotations, users } from "@/lib/db/schema";
 
-const databaseUrl = process.env['DATABASE_URL'] ?? '';
+const databaseUrl = process.env["DATABASE_URL"] ?? "";
 const hasTestDb = databaseUrl.length > 0;
-const runDbTests = process.env['RUN_DB_TESTS'] === '1';
+const runDbTests = process.env["RUN_DB_TESTS"] === "1";
 const describeDb = hasTestDb && runDbTests ? describe : describe.skip;
 
 let authUserId: string | null = null;
 let insertedCustomerId: string | null = null;
 let createdUserId: string | null = null;
 
-vi.mock('@/lib/auth/validate', () => ({
+vi.mock("@/lib/auth/validate", () => ({
   requireAuth: async (): Promise<{
     userId: string;
-    role: 'admin' | 'staff';
+    role: "admin" | "staff";
   }> => {
-    if (!authUserId) throw new Error('Auth user not initialized');
+    if (!authUserId) throw new Error("Auth user not initialized");
     return await Promise.resolve({
       userId: authUserId,
-      role: 'admin' as const,
+      role: "admin" as const,
     });
   },
-  requireAdmin: async (): Promise<{ userId: string; role: 'admin' }> => {
-    if (!authUserId) throw new Error('Auth user not initialized');
+  requireAdmin: async (): Promise<{ userId: string; role: "admin" }> => {
+    if (!authUserId) throw new Error("Auth user not initialized");
     return await Promise.resolve({
       userId: authUserId,
-      role: 'admin' as const,
+      role: "admin" as const,
     });
   },
 }));
@@ -43,10 +43,10 @@ async function getQuotationCount(): Promise<number> {
   return rows[0]?.total ?? 0;
 }
 
-describeDb('DB ugly paths: constraint failures', () => {
+describeDb("DB ugly paths: constraint failures", () => {
   beforeAll(async () => {
     try {
-      await db.execute('select 1');
+      await db.execute("select 1");
     } catch (error) {
       throw new Error(
         `Cannot connect to test database via DATABASE_URL (mapped from TEST_DATABASE_URL in vitest). ${String(error)}`,
@@ -66,9 +66,9 @@ describeDb('DB ugly paths: constraint failures', () => {
       .insert(users)
       .values({
         email,
-        passwordHash: 'test_hash',
-        name: 'Ugly Path User',
-        role: 'admin',
+        passwordHash: "test_hash",
+        name: "Ugly Path User",
+        role: "admin",
       })
       .returning({ id: users.id });
 
@@ -76,7 +76,7 @@ describeDb('DB ugly paths: constraint failures', () => {
     createdUserId = authUserId;
     if (!authUserId) {
       throw new Error(
-        'Failed to initialize auth user for DB tests. Verify TEST_DATABASE_URL and migrations.',
+        "Failed to initialize auth user for DB tests. Verify TEST_DATABASE_URL and migrations.",
       );
     }
   });
@@ -94,7 +94,7 @@ describeDb('DB ugly paths: constraint failures', () => {
     }
   });
 
-  it('createQuotation fails when customerId does not exist', async () => {
+  it("createQuotation fails when customerId does not exist", async () => {
     const initialQuotes = await getQuotationCount();
     const nonExistentCustomerId = randomUUID();
 
@@ -103,7 +103,7 @@ describeDb('DB ugly paths: constraint failures', () => {
       items: [
         {
           itemId: null,
-          description: 'Solar panel test',
+          description: "Solar panel test",
           quantity: 1,
           unitPrice: 350000,
           discountPercentage: 0,
@@ -116,32 +116,30 @@ describeDb('DB ugly paths: constraint failures', () => {
     });
 
     expect(result.success).toBe(false);
-    if (result.success) throw new Error('Expected createQuotation to fail');
+    if (result.success) throw new Error("Expected createQuotation to fail");
     const msg = result.error.toLowerCase();
     expect(
-      msg.includes('failed query') ||
-        msg.includes('foreign key') ||
-        msg.includes('23503'),
+      msg.includes("failed query") || msg.includes("foreign key") || msg.includes("23503"),
     ).toBe(true);
 
     const afterQuotes = await getQuotationCount();
     expect(afterQuotes).toBe(initialQuotes);
   });
 
-  it('createQuotation fails when itemId does not exist', async () => {
+  it("createQuotation fails when itemId does not exist", async () => {
     const initialQuotes = await getQuotationCount();
 
     const pool = new Pool({
-      connectionString: process.env['DATABASE_URL'] ?? '',
+      connectionString: process.env["DATABASE_URL"] ?? "",
     });
     const insertRes = await pool.query<{ id: string }>(
-      'insert into customers (name, phone) values ($1, $2) returning id',
-      ['Customer for ugly path', '09-123456789'],
+      "insert into customers (name, phone) values ($1, $2) returning id",
+      ["Customer for ugly path", "09-123456789"],
     );
     insertedCustomerId = insertRes.rows[0]?.id ?? null;
     await pool.end();
 
-    if (!insertedCustomerId) throw new Error('Failed to create test customer');
+    if (!insertedCustomerId) throw new Error("Failed to create test customer");
 
     const nonExistentItemId = randomUUID();
     const result = await createQuotation({
@@ -149,7 +147,7 @@ describeDb('DB ugly paths: constraint failures', () => {
       items: [
         {
           itemId: nonExistentItemId,
-          description: 'Non-existent inventory item test',
+          description: "Non-existent inventory item test",
           quantity: 1,
           unitPrice: 100000,
           discountPercentage: 0,
@@ -162,12 +160,10 @@ describeDb('DB ugly paths: constraint failures', () => {
     });
 
     expect(result.success).toBe(false);
-    if (result.success) throw new Error('Expected createQuotation to fail');
+    if (result.success) throw new Error("Expected createQuotation to fail");
     const msg = result.error.toLowerCase();
     expect(
-      msg.includes('failed query') ||
-        msg.includes('foreign key') ||
-        msg.includes('23503'),
+      msg.includes("failed query") || msg.includes("foreign key") || msg.includes("23503"),
     ).toBe(true);
 
     const afterQuotes = await getQuotationCount();

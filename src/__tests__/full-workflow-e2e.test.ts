@@ -10,47 +10,36 @@
  * validators, and utility functions.
  */
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
 import {
-  calculateLineItem,
-  calculateQuotation,
-  type LineItem,
-} from '@/lib/pricing/engine';
-import { formatMMK } from '@/lib/utils';
-import {
-  canTransitionQuotationStatus,
-  canTransitionProjectStatus,
   ALERT_TYPES,
-} from '@/lib/domain/enums';
-import { loginSchema } from '@/lib/validators/auth';
-import {
-  createCustomerSchema,
-  customerFilterSchema,
-} from '@/lib/validators/customer';
-import { createQuotationSchema } from '@/lib/validators/quotation';
-import { uuidSchema } from '@/lib/validators/common';
+  canTransitionProjectStatus,
+  canTransitionQuotationStatus,
+} from "@/lib/domain/enums";
+import { calculateLineItem, calculateQuotation, type LineItem } from "@/lib/pricing/engine";
+import { formatMMK } from "@/lib/utils";
+import { loginSchema } from "@/lib/validators/auth";
+import { uuidSchema } from "@/lib/validators/common";
+import { createCustomerSchema, customerFilterSchema } from "@/lib/validators/customer";
+import { createQuotationSchema } from "@/lib/validators/quotation";
 
 // =============================================================================
 // Phase 1: Authentication Logic
 // =============================================================================
 
-describe('Phase 1: Authentication Logic', () => {
-  it('loginSchema rejects empty username or password', () => {
-    expect(
-      loginSchema.safeParse({ email: '', password: 'password123' }).success,
-    ).toBe(false);
-    expect(
-      loginSchema.safeParse({ email: 'admin', password: '' }).success,
-    ).toBe(false);
+describe("Phase 1: Authentication Logic", () => {
+  it("loginSchema rejects empty username or password", () => {
+    expect(loginSchema.safeParse({ email: "", password: "password123" }).success).toBe(false);
+    expect(loginSchema.safeParse({ email: "admin", password: "" }).success).toBe(false);
   });
 
-  it('loginSchema accepts valid credentials', () => {
+  it("loginSchema accepts valid credentials", () => {
     expect(
       loginSchema.safeParse({
-        email: 'test@example.com',
-        password: 'password123',
+        email: "test@example.com",
+        password: "password123",
       }).success,
     ).toBe(true);
   });
@@ -60,16 +49,16 @@ describe('Phase 1: Authentication Logic', () => {
 // Phase 3: Inventory Management (PRICING ENGINE)
 // =============================================================================
 
-describe('Phase 3: Inventory & Pricing Engine', () => {
+describe("Phase 3: Inventory & Pricing Engine", () => {
   const panelItem: LineItem = { quantity: 10, unitPrice: 350000 };
   const inverterItem: LineItem = { quantity: 1, unitPrice: 850000 };
   const batteryItem: LineItem = { quantity: 4, unitPrice: 450000 };
 
-  it('calculates line item without discount', () => {
+  it("calculates line item without discount", () => {
     expect(calculateLineItem(panelItem)).toBe(3_500_000);
   });
 
-  it('calculates line item with discount', () => {
+  it("calculates line item with discount", () => {
     const item: LineItem = {
       quantity: 10,
       unitPrice: 350000,
@@ -78,7 +67,7 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
     expect(calculateLineItem(item)).toBe(3_150_000);
   });
 
-  it('calculates quotation with multiple items, discount, and tax', () => {
+  it("calculates quotation with multiple items, discount, and tax", () => {
     const items: LineItem[] = [panelItem, inverterItem, batteryItem];
     const result = calculateQuotation(items, 5, 10);
 
@@ -88,7 +77,7 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
     expect(result.total).toBe(6_426_750);
   });
 
-  it('handles bulk pricing with millions of MMK', () => {
+  it("handles bulk pricing with millions of MMK", () => {
     const items: LineItem[] = [
       { quantity: 100, unitPrice: 15_000_000 },
       { quantity: 25, unitPrice: 8_500_000 },
@@ -96,8 +85,7 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
     ];
     const result = calculateQuotation(items, 10, 5);
 
-    const expectedSubtotal =
-      100 * 15_000_000 + 25 * 8_500_000 + 200 * 4_500_000;
+    const expectedSubtotal = 100 * 15_000_000 + 25 * 8_500_000 + 200 * 4_500_000;
     expect(result.subtotal).toBe(expectedSubtotal);
 
     const expectedDiscount = Math.round((expectedSubtotal * 10) / 100);
@@ -110,10 +98,10 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
     expect(result.total).toBe(expectedAfterDiscount + expectedTax);
   });
 
-  it('formats MMK currency correctly', () => {
-    expect(formatMMK(6_150_000)).toBe('6,150,000 MMK');
-    expect(formatMMK(0)).toBe('0 MMK');
-    expect(formatMMK(1_000_000_000)).toBe('1,000,000,000 MMK');
+  it("formats MMK currency correctly", () => {
+    expect(formatMMK(6_150_000)).toBe("6,150,000 MMK");
+    expect(formatMMK(0)).toBe("0 MMK");
+    expect(formatMMK(1_000_000_000)).toBe("1,000,000,000 MMK");
   });
 });
 
@@ -121,23 +109,19 @@ describe('Phase 3: Inventory & Pricing Engine', () => {
 // Phase 4: Customer Validation
 // =============================================================================
 
-describe('Phase 4: Customer Validation', () => {
-  it('validates required fields', () => {
+describe("Phase 4: Customer Validation", () => {
+  it("validates required fields", () => {
     expect(
       createCustomerSchema.safeParse({
-        name: 'Customer A',
-        phone: '09-123456789',
+        name: "Customer A",
+        phone: "09-123456789",
       }).success,
     ).toBe(true);
-    expect(
-      createCustomerSchema.safeParse({ phone: '09-123456789' }).success,
-    ).toBe(false);
-    expect(createCustomerSchema.safeParse({ name: 'Customer A' }).success).toBe(
-      false,
-    );
+    expect(createCustomerSchema.safeParse({ phone: "09-123456789" }).success).toBe(false);
+    expect(createCustomerSchema.safeParse({ name: "Customer A" }).success).toBe(false);
   });
 
-  it('validates customer filter defaults', () => {
+  it("validates customer filter defaults", () => {
     const parsed = customerFilterSchema.parse({});
     expect(parsed.page).toBe(1);
     expect(parsed.limit).toBe(20);
@@ -148,13 +132,11 @@ describe('Phase 4: Customer Validation', () => {
 // Phase 5: Quotation Lifecycle
 // =============================================================================
 
-describe('Phase 5: Quotation Lifecycle', () => {
-  it('validates quotation creation input', () => {
+describe("Phase 5: Quotation Lifecycle", () => {
+  it("validates quotation creation input", () => {
     const valid = createQuotationSchema.safeParse({
-      customerId: '550e8400-e29b-41d4-a716-446655440000',
-      items: [
-        { description: 'Solar Panel 400W', quantity: 2, unitPrice: 350000 },
-      ],
+      customerId: "550e8400-e29b-41d4-a716-446655440000",
+      items: [{ description: "Solar Panel 400W", quantity: 2, unitPrice: 350000 }],
       discountPercent: 5,
       taxPercent: 10,
     });
@@ -163,20 +145,20 @@ describe('Phase 5: Quotation Lifecycle', () => {
     expect(valid.data?.taxPercent).toBe(10);
   });
 
-  it('validates status transitions', () => {
-    expect(canTransitionQuotationStatus('draft', 'sent')).toBe(true);
-    expect(canTransitionQuotationStatus('sent', 'accepted')).toBe(true);
-    expect(canTransitionQuotationStatus('draft', 'accepted')).toBe(false);
-    expect(canTransitionQuotationStatus('sent', 'draft')).toBe(true);
-    expect(canTransitionQuotationStatus('accepted', 'sent')).toBe(false);
-    expect(canTransitionQuotationStatus('rejected', 'draft')).toBe(true);
+  it("validates status transitions", () => {
+    expect(canTransitionQuotationStatus("draft", "sent")).toBe(true);
+    expect(canTransitionQuotationStatus("sent", "accepted")).toBe(true);
+    expect(canTransitionQuotationStatus("draft", "accepted")).toBe(false);
+    expect(canTransitionQuotationStatus("sent", "draft")).toBe(true);
+    expect(canTransitionQuotationStatus("accepted", "sent")).toBe(false);
+    expect(canTransitionQuotationStatus("rejected", "draft")).toBe(true);
   });
 
-  it('validates quote number format', () => {
+  it("validates quote number format", () => {
     const pattern = /^QT-2026-\d{4}$/;
-    expect(pattern.test('QT-2026-0001')).toBe(true);
-    expect(pattern.test('QT-2026-9999')).toBe(true);
-    expect(pattern.test('INVALID')).toBe(false);
+    expect(pattern.test("QT-2026-0001")).toBe(true);
+    expect(pattern.test("QT-2026-9999")).toBe(true);
+    expect(pattern.test("INVALID")).toBe(false);
   });
 });
 
@@ -184,12 +166,12 @@ describe('Phase 5: Quotation Lifecycle', () => {
 // Phase 6: Quote → Project Conversion
 // =============================================================================
 
-describe('Phase 6: Quote → Project Conversion', () => {
-  it('validates project number format', () => {
+describe("Phase 6: Quote → Project Conversion", () => {
+  it("validates project number format", () => {
     const pattern = /^PJ-2026-\d{4}$/;
-    expect(pattern.test('PJ-2026-0001')).toBe(true);
-    expect(pattern.test('PJ-2026-9999')).toBe(true);
-    expect(pattern.test('PJ-2025-0001')).toBe(false);
+    expect(pattern.test("PJ-2026-0001")).toBe(true);
+    expect(pattern.test("PJ-2026-9999")).toBe(true);
+    expect(pattern.test("PJ-2025-0001")).toBe(false);
   });
 });
 
@@ -197,16 +179,16 @@ describe('Phase 6: Quote → Project Conversion', () => {
 // Phase 7: Project Lifecycle
 // =============================================================================
 
-describe('Phase 7: Project Lifecycle', () => {
-  it('validates project status transitions', () => {
-    expect(canTransitionProjectStatus('planning', 'in_progress')).toBe(true);
-    expect(canTransitionProjectStatus('in_progress', 'on_hold')).toBe(true);
-    expect(canTransitionProjectStatus('on_hold', 'in_progress')).toBe(true);
-    expect(canTransitionProjectStatus('in_progress', 'completed')).toBe(true);
-    expect(canTransitionProjectStatus('completed', 'in_progress')).toBe(false);
-    expect(canTransitionProjectStatus('completed', 'planning')).toBe(false);
-    expect(canTransitionProjectStatus('cancelled', 'planning')).toBe(true);
-    expect(canTransitionProjectStatus('planning', 'completed')).toBe(true);
+describe("Phase 7: Project Lifecycle", () => {
+  it("validates project status transitions", () => {
+    expect(canTransitionProjectStatus("planning", "in_progress")).toBe(true);
+    expect(canTransitionProjectStatus("in_progress", "on_hold")).toBe(true);
+    expect(canTransitionProjectStatus("on_hold", "in_progress")).toBe(true);
+    expect(canTransitionProjectStatus("in_progress", "completed")).toBe(true);
+    expect(canTransitionProjectStatus("completed", "in_progress")).toBe(false);
+    expect(canTransitionProjectStatus("completed", "planning")).toBe(false);
+    expect(canTransitionProjectStatus("cancelled", "planning")).toBe(true);
+    expect(canTransitionProjectStatus("planning", "completed")).toBe(true);
   });
 });
 
@@ -214,14 +196,14 @@ describe('Phase 7: Project Lifecycle', () => {
 // Phase 8: Warranty & Policies
 // =============================================================================
 
-describe('Phase 8: Warranty & Business Policies', () => {
-  it('validates warranty alert types', () => {
-    expect(ALERT_TYPES).toContain('warranty_expiry');
-    expect(ALERT_TYPES).toContain('maintenance_due');
-    expect(ALERT_TYPES).toContain('follow_up');
+describe("Phase 8: Warranty & Business Policies", () => {
+  it("validates warranty alert types", () => {
+    expect(ALERT_TYPES).toContain("warranty_expiry");
+    expect(ALERT_TYPES).toContain("maintenance_due");
+    expect(ALERT_TYPES).toContain("follow_up");
   });
 
-  it('validates integer math in pricing engine', () => {
+  it("validates integer math in pricing engine", () => {
     const result = calculateQuotation(
       [
         { quantity: 3, unitPrice: 100000 },
@@ -237,9 +219,7 @@ describe('Phase 8: Warranty & Business Policies', () => {
     expect(Number.isInteger(result.total)).toBe(true);
 
     // Total = subtotal - discount + tax
-    expect(result.total).toBe(
-      result.subtotal - result.discountAmount + result.taxAmount,
-    );
+    expect(result.total).toBe(result.subtotal - result.discountAmount + result.taxAmount);
   });
 });
 
@@ -247,14 +227,9 @@ describe('Phase 8: Warranty & Business Policies', () => {
 // Phase 9: Dashboard Metrics
 // =============================================================================
 
-describe('Phase 9: Dashboard Metrics', () => {
-  it('calculates conversion rate correctly', () => {
-    const calc = (
-      accepted: number,
-      rejected: number,
-      expired: number,
-      sent: number,
-    ): number => {
+describe("Phase 9: Dashboard Metrics", () => {
+  it("calculates conversion rate correctly", () => {
+    const calc = (accepted: number, rejected: number, expired: number, sent: number): number => {
       const denominator = accepted + rejected + expired + sent;
       return denominator === 0 ? 0 : Math.round((accepted / denominator) * 100);
     };
@@ -270,13 +245,11 @@ describe('Phase 9: Dashboard Metrics', () => {
 // Phase 10: Security
 // =============================================================================
 
-describe('Phase 10: Security', () => {
-  it('validates UUID inputs', () => {
-    expect(
-      uuidSchema.safeParse('550e8400-e29b-41d4-a716-446655440000').success,
-    ).toBe(true);
-    expect(uuidSchema.safeParse('not-a-uuid').success).toBe(false);
-    expect(uuidSchema.safeParse('').success).toBe(false);
+describe("Phase 10: Security", () => {
+  it("validates UUID inputs", () => {
+    expect(uuidSchema.safeParse("550e8400-e29b-41d4-a716-446655440000").success).toBe(true);
+    expect(uuidSchema.safeParse("not-a-uuid").success).toBe(false);
+    expect(uuidSchema.safeParse("").success).toBe(false);
     expect(uuidSchema.safeParse(null).success).toBe(false);
   });
 });
@@ -285,14 +258,11 @@ describe('Phase 10: Security', () => {
 // Phase 11: Build Checks
 // =============================================================================
 
-describe('Phase 11: Build & Deployment Checks', () => {
-  it('no floating point in pricing engine calculations', () => {
-    const engineSrc = readFileSync(
-      resolve(process.cwd(), 'src/lib/pricing/engine.ts'),
-      'utf-8',
-    );
+describe("Phase 11: Build & Deployment Checks", () => {
+  it("no floating point in pricing engine calculations", () => {
+    const engineSrc = readFileSync(resolve(process.cwd(), "src/lib/pricing/engine.ts"), "utf-8");
     const roundMatches = (engineSrc.match(/Math\.round/g) || []).length;
     expect(roundMatches).toBeGreaterThanOrEqual(3);
-    expect(engineSrc.includes('.toFixed(')).toBe(false);
+    expect(engineSrc.includes(".toFixed(")).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getIronSession, type SessionOptions } from 'iron-session';
+import { getIronSession, type SessionOptions } from "iron-session";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * Edge proxy (formerly Next.js middleware): rejects requests to protected
@@ -11,12 +11,12 @@ import { getIronSession, type SessionOptions } from 'iron-session';
  * data.
  */
 
-const SESSION_COOKIE_NAME = 'bobsolar_session';
+const SESSION_COOKIE_NAME = "bobsolar_session";
 
 type EdgeSession = { sid?: string };
 
 function getProxySessionConfig(): SessionOptions | null {
-  const secret = process.env['SESSION_SECRET'];
+  const secret = process.env["SESSION_SECRET"];
   if (!secret || secret.trim().length < 32) {
     return null;
   }
@@ -25,9 +25,9 @@ function getProxySessionConfig(): SessionOptions | null {
     password: secret,
     cookieOptions: {
       httpOnly: true,
-      secure: process.env['NODE_ENV'] === 'production',
-      sameSite: 'lax',
-      path: '/',
+      secure: process.env["NODE_ENV"] === "production",
+      sameSite: "lax",
+      path: "/",
     },
   };
 }
@@ -43,7 +43,7 @@ async function hasValidSession(request: NextRequest): Promise<boolean> {
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl;
-  const isApiRoute = pathname.startsWith('/api/');
+  const isApiRoute = pathname.startsWith("/api/");
   const isAuthed = await hasValidSession(request);
 
   if (isAuthed) {
@@ -51,14 +51,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (isApiRoute) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const loginUrl = request.nextUrl.clone();
-  loginUrl.pathname = '/login';
-  loginUrl.search = '';
-  if (pathname && pathname !== '/') {
-    loginUrl.searchParams.set('redirect', `${pathname}${search}`);
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  if (pathname && pathname !== "/") {
+    loginUrl.searchParams.set("redirect", `${pathname}${search}`);
   }
   return NextResponse.redirect(loginUrl);
 }
@@ -72,6 +72,6 @@ export const config = {
      * - public assets we explicitly allow
      * - service worker + manifest + favicon
      */
-    '/((?!login|_next/static|_next/image|_next/data|api/auth|icons/|manifest.webmanifest|sw.js|favicon.ico|robots.txt).*)',
+    "/((?!login|_next/static|_next/image|_next/data|api/auth|icons/|manifest.webmanifest|sw.js|favicon.ico|robots.txt).*)",
   ],
 };

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import type * as React from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { motion, type Variants } from 'motion/react';
-import { AlertTriangle, FileText, FolderKanban, Users } from 'lucide-react';
+import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle, FileText, FolderKanban, Users } from "lucide-react";
+import { motion, type Variants } from "motion/react";
+import Link from "next/link";
+import type * as React from "react";
 
 type ActivityItem = {
-  type: 'quotation' | 'project' | 'customer' | 'alert';
+  type: "quotation" | "project" | "customer" | "alert";
   description: string;
   timestamp: Date;
   link: string;
@@ -24,7 +24,7 @@ const streamItem = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 210, damping: 24 },
+    transition: { type: "spring", stiffness: 210, damping: 24 },
   },
 } satisfies Variants;
 
@@ -89,29 +89,27 @@ export function ActivityStream({
   );
 }
 
-function leftBorderClass(
-  type: 'quotation' | 'project' | 'customer' | 'alert',
-): string {
-  if (type === 'quotation') return 'border-l-indigo-400';
-  if (type === 'project') return 'border-l-emerald-400';
-  if (type === 'customer') return 'border-l-sky-400';
-  return 'border-l-amber-400';
+function leftBorderClass(type: "quotation" | "project" | "customer" | "alert"): string {
+  if (type === "quotation") return "border-l-indigo-400";
+  if (type === "project") return "border-l-emerald-400";
+  if (type === "customer") return "border-l-sky-400";
+  return "border-l-amber-400";
 }
 
 function ActivityIcon({
   type,
 }: {
-  type: 'quotation' | 'project' | 'customer' | 'alert';
+  type: "quotation" | "project" | "customer" | "alert";
 }): React.JSX.Element {
-  const className = 'mt-0.5 h-4 w-4';
+  const className = "mt-0.5 h-4 w-4";
 
-  if (type === 'quotation') {
+  if (type === "quotation") {
     return <FileText className={`${className} text-indigo-400`} />;
   }
-  if (type === 'project') {
+  if (type === "project") {
     return <FolderKanban className={`${className} text-emerald-400`} />;
   }
-  if (type === 'customer') {
+  if (type === "customer") {
     return <Users className={`${className} text-sky-400`} />;
   }
 

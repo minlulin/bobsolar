@@ -1,31 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { type InventoryCategory, type InventoryItem } from '@/lib/db/schema';
-import { formatMMK, cn } from '@/lib/utils';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
-  Edit,
-  Trash2,
+  Battery,
   Box,
   Cpu,
-  Battery,
+  Edit,
   Layers,
-  Zap,
-  Wrench,
-  User,
   Loader2,
   type LucideIcon,
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import {
-  useUpdateInventoryItem,
-  useDeleteInventoryItem,
-} from '@/hooks/use-inventory';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+  Trash2,
+  User,
+  Wrench,
+  Zap,
+} from "lucide-react";
+import { motion } from "motion/react";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,8 +26,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { STOCK_WARNING_THRESHOLDS } from '@/lib/constants';
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useDeleteInventoryItem, useUpdateInventoryItem } from "@/hooks/use-inventory";
+import { STOCK_WARNING_THRESHOLDS } from "@/lib/constants";
+import type { InventoryCategory, InventoryItem } from "@/lib/db/schema";
+import { cn, formatMMK } from "@/lib/utils";
 
 interface InventoryCardProps {
   item: InventoryItem;
@@ -56,34 +53,34 @@ const categoryIcons: Record<InventoryCategory, LucideIcon> = {
 };
 
 const categoryLabels: Record<InventoryCategory, string> = {
-  panel: 'Panel',
-  inverter: 'Inverter',
-  battery: 'Battery',
-  mounting: 'Mounting',
-  cable: 'Cable',
-  accessory: 'Accessory',
-  labor: 'Labor',
+  panel: "Panel",
+  inverter: "Inverter",
+  battery: "Battery",
+  mounting: "Mounting",
+  cable: "Cable",
+  accessory: "Accessory",
+  labor: "Labor",
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+  typeof value === "object" && value !== null;
 
 const stringifySpec = (value: unknown): string | null =>
-  typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 
 const numberSpec = (value: unknown): number | null =>
-  typeof value === 'number' && Number.isFinite(value) ? value : null;
+  typeof value === "number" && Number.isFinite(value) ? value : null;
 
 function getSpecBrandModel(item: InventoryItem): string | null {
   if (!isRecord(item.specifications)) return null;
-  return stringifySpec(item.specifications['brandModel']);
+  return stringifySpec(item.specifications["brandModel"]);
 }
 
 function getItemLabel(item: InventoryItem): string | null {
   const brand = stringifySpec(item.brand);
   const modelNumber = stringifySpec(item.modelNumber);
   if (brand || modelNumber) {
-    return `${brand ?? ''}${brand && modelNumber ? ' - ' : ''}${modelNumber ?? ''}`.trim();
+    return `${brand ?? ""}${brand && modelNumber ? " - " : ""}${modelNumber ?? ""}`.trim();
   }
   return getSpecBrandModel(item);
 }
@@ -93,65 +90,60 @@ function getSpecSummary(item: InventoryItem): string | null {
   const specs = item.specifications;
 
   switch (item.category) {
-    case 'panel': {
-      const wattage = numberSpec(specs['wattageW']);
-      const cellType = stringifySpec(specs['cellType']);
-      const brandModel = stringifySpec(specs['brandModel']);
+    case "panel": {
+      const wattage = numberSpec(specs["wattageW"]);
+      const cellType = stringifySpec(specs["cellType"]);
+      const brandModel = stringifySpec(specs["brandModel"]);
       if (wattage === null || cellType === null || brandModel === null) {
         return null;
       }
-      return `${wattage}W - ${cellType.replace('_', '-')} - ${brandModel}`;
+      return `${wattage}W - ${cellType.replace("_", "-")} - ${brandModel}`;
     }
-    case 'battery': {
-      const voltageV = numberSpec(specs['voltageV']);
-      const capacityAh = numberSpec(specs['capacityAh']);
-      const chemistryType = stringifySpec(specs['chemistryType']);
+    case "battery": {
+      const voltageV = numberSpec(specs["voltageV"]);
+      const capacityAh = numberSpec(specs["capacityAh"]);
+      const chemistryType = stringifySpec(specs["chemistryType"]);
       if (voltageV === null || capacityAh === null || chemistryType === null) {
         return null;
       }
       return `${voltageV}V - ${capacityAh}Ah - ${chemistryType.toUpperCase()}`;
     }
-    case 'accessory': {
-      const type = stringifySpec(specs['type']);
-      const ratingAmpere = numberSpec(specs['ratingAmpere']);
-      const voltageRating = stringifySpec(specs['voltageRating']);
+    case "accessory": {
+      const type = stringifySpec(specs["type"]);
+      const ratingAmpere = numberSpec(specs["ratingAmpere"]);
+      const voltageRating = stringifySpec(specs["voltageRating"]);
       if (type === null || ratingAmpere === null || voltageRating === null) {
         return null;
       }
       return `${type} - ${ratingAmpere}A - ${voltageRating}`;
     }
-    case 'inverter': {
-      const systemType = stringifySpec(specs['systemType']);
-      const ratedPower = stringifySpec(specs['ratedPower']);
-      const phase = stringifySpec(specs['phase']);
+    case "inverter": {
+      const systemType = stringifySpec(specs["systemType"]);
+      const ratedPower = stringifySpec(specs["ratedPower"]);
+      const phase = stringifySpec(specs["phase"]);
       if (systemType === null || ratedPower === null || phase === null) {
         return null;
       }
-      return `${ratedPower} - ${systemType.replace('_', '-')} - ${phase.replace('_', '-')}`;
+      return `${ratedPower} - ${systemType.replace("_", "-")} - ${phase.replace("_", "-")}`;
     }
-    case 'mounting':
-      return stringifySpec(specs['type']);
-    case 'cable': {
-      const cableType = stringifySpec(specs['cableType']);
-      const sizeCrossSection = stringifySpec(specs['sizeCrossSection']);
+    case "mounting":
+      return stringifySpec(specs["type"]);
+    case "cable": {
+      const cableType = stringifySpec(specs["cableType"]);
+      const sizeCrossSection = stringifySpec(specs["sizeCrossSection"]);
       if (cableType === null || sizeCrossSection === null) return null;
-      return `${cableType.replace('_', ' ')} - ${sizeCrossSection}`;
+      return `${cableType.replace("_", " ")} - ${sizeCrossSection}`;
     }
-    case 'labor':
+    case "labor":
       return null;
     default:
       return null;
   }
 }
 
-export function InventoryCard({
-  item,
-  canEdit,
-  onEdit,
-}: InventoryCardProps): React.JSX.Element {
+export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps): React.JSX.Element {
   const Icon = categoryIcons[item.category];
-  const { mutate: updateItem, isPending: isUpdating } =
-    useUpdateInventoryItem();
+  const { mutate: updateItem, isPending: isUpdating } = useUpdateInventoryItem();
   const { mutate: deleteItem } = useDeleteInventoryItem();
 
   const [isEditingPrice, setIsEditingPrice] = useState(false);
@@ -162,16 +154,15 @@ export function InventoryCard({
 
   const getStockColor = (qty: number): string => {
     const threshold = STOCK_WARNING_THRESHOLDS[item.category];
-    if (qty === 0) return 'bg-red-500/10 text-red-500 border-red-500/20';
-    if (qty <= threshold)
-      return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-    return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    if (qty === 0) return "bg-red-500/10 text-red-500 border-red-500/20";
+    if (qty <= threshold) return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
   };
 
   const handlePriceSave = (): void => {
     const val = parseFloat(price);
-    if (isNaN(val) || val < 0) {
-      toast.error('Invalid unit price');
+    if (Number.isNaN(val) || val < 0) {
+      toast.error("Invalid unit price");
       setPrice(item.unitPrice);
       setIsEditingPrice(false);
       return;
@@ -184,8 +175,8 @@ export function InventoryCard({
 
   const handleStockSave = (): void => {
     const val = parseInt(stock, 10);
-    if (isNaN(val) || val < 0) {
-      toast.error('Invalid stock quantity');
+    if (Number.isNaN(val) || val < 0) {
+      toast.error("Invalid stock quantity");
       setStock(String(item.stockQty));
       setIsEditingStock(false);
       return;
@@ -235,8 +226,7 @@ export function InventoryCard({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone and will permanently remove{' '}
-                      {item.name}.
+                      This action cannot be undone and will permanently remove {item.name}.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -264,13 +254,9 @@ export function InventoryCard({
               <h3 className="font-heading mb-1 truncate text-lg leading-none font-semibold">
                 {item.name}
               </h3>
-              <p className="text-muted-foreground truncate text-sm">
-                {getItemLabel(item) ?? ''}
-              </p>
+              <p className="text-muted-foreground truncate text-sm">{getItemLabel(item) ?? ""}</p>
               {specSummary && (
-                <p className="text-muted-foreground mt-1 truncate text-xs">
-                  {specSummary}
-                </p>
+                <p className="text-muted-foreground mt-1 truncate text-xs">{specSummary}</p>
               )}
             </div>
           </div>
@@ -290,7 +276,7 @@ export function InventoryCard({
                       }}
                       onBlur={handlePriceSave}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handlePriceSave();
+                        if (e.key === "Enter") handlePriceSave();
                       }}
                     />
                     {isUpdating && (
@@ -299,12 +285,13 @@ export function InventoryCard({
                   </div>
                 ) : (
                   <button
+                    type="button"
                     onClick={() => {
                       if (canEdit) setIsEditingPrice(true);
                     }}
                     className={cn(
-                      'hover:text-solar-amber font-mono text-lg font-bold transition-colors',
-                      canEdit && 'cursor-pointer',
+                      "hover:text-solar-amber font-mono text-lg font-bold transition-colors",
+                      canEdit && "cursor-pointer",
                     )}
                   >
                     {formatMMK(item.unitPrice)}
@@ -328,7 +315,7 @@ export function InventoryCard({
                       }}
                       onBlur={handleStockSave}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleStockSave();
+                        if (e.key === "Enter") handleStockSave();
                       }}
                     />
                     {isUpdating && (
@@ -339,9 +326,9 @@ export function InventoryCard({
                   <Badge
                     variant="outline"
                     className={cn(
-                      'px-2 py-0.5 font-mono text-xs tracking-wider uppercase',
+                      "px-2 py-0.5 font-mono text-xs tracking-wider uppercase",
                       getStockColor(item.stockQty),
-                      canEdit && 'cursor-pointer',
+                      canEdit && "cursor-pointer",
                     )}
                     onClick={() => {
                       if (canEdit) setIsEditingStock(true);

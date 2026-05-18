@@ -1,21 +1,23 @@
-'use client';
+"use client";
 
-import * as React from 'react';
 import {
-  Search,
-  Plus,
-  LayoutDashboard,
   FileText,
-  Zap,
-  Package,
-  Users,
-  Moon,
-  Sun,
   Laptop,
-  ShieldCheck,
+  LayoutDashboard,
+  Moon,
+  Package,
+  Plus,
+  Search,
   Settings,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
+  ShieldCheck,
+  Sun,
+  Users,
+  Zap,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { useAppTheme } from "@/components/providers";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandDialog,
@@ -26,9 +28,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from '@/components/ui/command';
-import { Button } from '@/components/ui/button';
-import { useAppTheme } from '@/components/providers';
+} from "@/components/ui/command";
 
 export function CommandBar(): React.JSX.Element {
   const [open, setOpen] = React.useState(false);
@@ -37,15 +37,15 @@ export function CommandBar(): React.JSX.Element {
 
   React.useEffect(() => {
     const down = (event: KeyboardEvent): void => {
-      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
         setOpen((prev) => !prev);
       }
     };
 
-    document.addEventListener('keydown', down);
+    document.addEventListener("keydown", down);
     return (): void => {
-      document.removeEventListener('keydown', down);
+      document.removeEventListener("keydown", down);
     };
   }, []);
 
@@ -65,9 +65,7 @@ export function CommandBar(): React.JSX.Element {
         }}
       >
         <Search className="h-4 w-4 xl:mr-2" />
-        <span className="hidden text-sm xl:inline-flex">
-          Search or command...
-        </span>
+        <span className="hidden text-sm xl:inline-flex">Search or command...</span>
         <kbd className="bg-muted/80 border-border/70 pointer-events-none absolute top-2 right-2 hidden h-6 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none xl:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
@@ -83,7 +81,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/quotations/new');
+                    router.push("/quotations/new");
                   });
                 }}
               >
@@ -94,7 +92,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/customers/new');
+                    router.push("/customers/new");
                   });
                 }}
               >
@@ -104,7 +102,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/projects/new');
+                    router.push("/projects/new");
                   });
                 }}
               >
@@ -119,7 +117,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/');
+                    router.push("/");
                   });
                 }}
               >
@@ -129,7 +127,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/quotations');
+                    router.push("/quotations");
                   });
                 }}
               >
@@ -139,7 +137,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/projects');
+                    router.push("/projects");
                   });
                 }}
               >
@@ -149,7 +147,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/inventory');
+                    router.push("/inventory");
                   });
                 }}
               >
@@ -159,7 +157,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/customers');
+                    router.push("/customers");
                   });
                 }}
               >
@@ -169,7 +167,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/warranty');
+                    router.push("/warranty");
                   });
                 }}
               >
@@ -179,7 +177,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    router.push('/settings');
+                    router.push("/settings");
                   });
                 }}
               >
@@ -194,7 +192,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    setTheme('light');
+                    setTheme("light");
                   });
                 }}
               >
@@ -204,7 +202,7 @@ export function CommandBar(): React.JSX.Element {
               <CommandItem
                 onSelect={() => {
                   runCommand(() => {
-                    setTheme('dark');
+                    setTheme("dark");
                   });
                 }}
               >
@@ -215,9 +213,7 @@ export function CommandBar(): React.JSX.Element {
                 onSelect={() => {
                   runCommand(() => {
                     setTheme(
-                      window.matchMedia('(prefers-color-scheme: dark)').matches
-                        ? 'dark'
-                        : 'light',
+                      window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light",
                     );
                   });
                 }}

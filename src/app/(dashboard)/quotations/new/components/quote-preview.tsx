@@ -1,27 +1,21 @@
-'use client';
+"use client";
 
-import { useQuoteBuilderStore } from '@/stores/quote-builder-store';
-import { useQuoteTotals } from '@/hooks/use-quote-totals';
-import { formatMMK } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
-import { getCustomer } from '@/actions/customer-actions';
-import { format } from 'date-fns';
-import { FileText, MapPin, Phone } from 'lucide-react';
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { FileText, MapPin, Phone } from "lucide-react";
+import { getCustomer } from "@/actions/customer-actions";
+import { useQuoteTotals } from "@/hooks/use-quote-totals";
+import { formatMMK } from "@/lib/utils";
+import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 export function QuotePreview(): React.JSX.Element {
-  const {
-    selectedCustomerId,
-    items,
-    discountPercent,
-    taxPercent,
-    notes,
-    validUntil,
-  } = useQuoteBuilderStore();
+  const { selectedCustomerId, items, discountPercent, taxPercent, notes, validUntil } =
+    useQuoteBuilderStore();
   const totals = useQuoteTotals();
 
   const { data: customerRes } = useQuery({
-    queryKey: ['customers', selectedCustomerId],
-    queryFn: () => getCustomer(selectedCustomerId || ''),
+    queryKey: ["customers", selectedCustomerId],
+    queryFn: () => getCustomer(selectedCustomerId || ""),
     enabled: !!selectedCustomerId,
   });
 
@@ -66,7 +60,7 @@ export function QuotePreview(): React.JSX.Element {
             <div className="flex flex-col gap-0.5">
               <p className="text-primary font-bold">QT-2026-####</p>
               <p className="text-muted-foreground font-medium">
-                {format(new Date(), 'MMMM dd, yyyy')}
+                {format(new Date(), "MMMM dd, yyyy")}
               </p>
             </div>
           </div>
@@ -79,19 +73,15 @@ export function QuotePreview(): React.JSX.Element {
               Project For
             </h4>
             <div className="space-y-1">
-              <p className="text-primary text-sm font-black">
-                {customer?.name || '---'}
-              </p>
+              <p className="text-primary text-sm font-black">{customer?.name || "---"}</p>
               <div className="text-muted-foreground flex items-center gap-1.5 font-medium">
                 <Phone className="text-accent h-2.5 w-2.5" />
-                <span>{customer?.phone || '---'}</span>
+                <span>{customer?.phone || "---"}</span>
               </div>
               <div className="text-muted-foreground flex items-start gap-1.5 font-medium">
                 <MapPin className="text-accent mt-0.5 h-2.5 w-2.5" />
                 <span className="max-w-[150px]">
-                  {customer?.address
-                    ? `${customer.address}, ${customer.city}`
-                    : '---'}
+                  {customer?.address ? `${customer.address}, ${customer.city}` : "---"}
                 </span>
               </div>
             </div>
@@ -104,8 +94,7 @@ export function QuotePreview(): React.JSX.Element {
             <div className="space-y-1">
               <p className="text-[9px] font-bold uppercase">Validity Period</p>
               <p className="text-muted-foreground font-medium">
-                Valid Until{' '}
-                {validUntil ? format(validUntil, 'MMM dd, yyyy') : '---'}
+                Valid Until {validUntil ? format(validUntil, "MMM dd, yyyy") : "---"}
               </p>
               <div className="bg-accent/10 text-accent mt-2 inline-block px-2 py-0.5 text-[7px] font-bold uppercase">
                 Solar Infrastructure Proposal
@@ -136,12 +125,8 @@ export function QuotePreview(): React.JSX.Element {
             <tbody className="divide-y divide-zinc-100">
               {items.map((item, i) => (
                 <tr key={item.id ?? item.itemId ?? `${item.description}-${i}`}>
-                  <td className="text-primary py-4 font-bold">
-                    {item.description}
-                  </td>
-                  <td className="py-4 text-center font-medium text-zinc-500">
-                    {item.quantity}
-                  </td>
+                  <td className="text-primary py-4 font-bold">{item.description}</td>
+                  <td className="py-4 text-center font-medium text-zinc-500">{item.quantity}</td>
                   <td className="py-4 text-right font-medium text-zinc-500">
                     {formatMMK(item.unitPrice)}
                   </td>
@@ -152,10 +137,7 @@ export function QuotePreview(): React.JSX.Element {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className="py-16 text-center font-medium text-zinc-300 italic"
-                  >
+                  <td colSpan={4} className="py-16 text-center font-medium text-zinc-300 italic">
                     Select inventory items to generate proposal lines
                   </td>
                 </tr>
@@ -171,18 +153,14 @@ export function QuotePreview(): React.JSX.Element {
               <span className="text-muted-foreground text-[7px] font-bold tracking-widest uppercase">
                 Subtotal
               </span>
-              <span className="text-primary font-bold">
-                {formatMMK(totals.subtotal)}
-              </span>
+              <span className="text-primary font-bold">{formatMMK(totals.subtotal)}</span>
             </div>
             {totals.discountAmount > 0 && (
               <div className="flex items-center justify-between text-red-600">
                 <span className="text-[7px] font-bold tracking-widest uppercase">
                   Incentive ({discountPercent}%)
                 </span>
-                <span className="font-bold">
-                  -{formatMMK(totals.discountAmount)}
-                </span>
+                <span className="font-bold">-{formatMMK(totals.discountAmount)}</span>
               </div>
             )}
             {totals.taxAmount > 0 && (
@@ -190,9 +168,7 @@ export function QuotePreview(): React.JSX.Element {
                 <span className="text-[7px] font-bold tracking-widest uppercase">
                   Taxation ({taxPercent}%)
                 </span>
-                <span className="font-bold">
-                  +{formatMMK(totals.taxAmount)}
-                </span>
+                <span className="font-bold">+{formatMMK(totals.taxAmount)}</span>
               </div>
             )}
             <div className="border-primary border-t-2 pt-3">
@@ -219,7 +195,7 @@ export function QuotePreview(): React.JSX.Element {
             </p>
             <p className="text-muted-foreground max-w-[280px] text-[7px] leading-relaxed font-medium">
               {notes ||
-                'This quotation is subject to technical site survey. Hardware availability is confirmed upon acceptance. 50% downpayment required for project initiation.'}
+                "This quotation is subject to technical site survey. Hardware availability is confirmed upon acceptance. 50% downpayment required for project initiation."}
             </p>
           </div>
           <div className="space-y-4 text-right">

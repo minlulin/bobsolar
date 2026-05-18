@@ -11,16 +11,16 @@
  */
 
 import "./load-env-local";
-import { db } from "./index";
-import { users, companySettings, paymentMethods, ledgerAccounts } from "./schema";
 import { hashPassword } from "@/lib/auth/password";
 import {
-  LEDGER_ACCOUNT_CODES,
   LEDGER_ACCOUNT_CODE_TYPE_MAP,
+  LEDGER_ACCOUNT_CODES,
   LEDGER_ACCOUNT_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_METHOD_PRESETS,
 } from "@/lib/domain/enums";
+import { db } from "./index";
+import { companySettings, ledgerAccounts, paymentMethods, users } from "./schema";
 
 async function main(): Promise<void> {
   console.log("Seeding factory bootstrap data...");
