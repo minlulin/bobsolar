@@ -3,7 +3,7 @@
 import { endOfDay, parseISO, startOfDay } from "date-fns";
 import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth/validate";
+import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts, projects, users } from "@/lib/db/schema";
 import { JOURNAL_SOURCE_TYPES, LEDGER_ACCOUNT_CODES } from "@/lib/domain/enums";
@@ -56,7 +56,7 @@ export async function getLedgerEntries(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<LedgerPage>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const filters = ledgerFilterSchema.parse(rawFilters);
     const { dateFrom, dateTo, accountCode, projectId, sourceType, page, limit } = filters;
@@ -205,7 +205,7 @@ export async function getAccountBalances(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<AccountBalanceRow[]>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const filters = ledgerFilterSchema.parse(rawFilters);
     const { dateFrom, dateTo } = filters;
@@ -260,7 +260,7 @@ export async function getLedgerProjects(): Promise<
   ActionResponse<{ id: string; projectNumber: string }[]>
 > {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const rows = await db
       .select({

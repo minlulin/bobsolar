@@ -6,10 +6,12 @@ type DashboardStats = ActionData<Awaited<ReturnType<typeof getDashboardStats>>>;
 type DashboardPipeline = ActionData<Awaited<ReturnType<typeof getDashboardPipeline>>>;
 type RecentActivity = ActionData<Awaited<ReturnType<typeof getRecentActivity>>>;
 type UpcomingAlerts = ActionData<Awaited<ReturnType<typeof getUpcomingAlerts>>>;
+type FinanceQuickView = ActionData<Awaited<ReturnType<typeof getFinanceQuickView>>>;
 
 import {
   getDashboardPipeline,
   getDashboardStats,
+  getFinanceQuickView,
   getRecentActivity,
   getUpcomingAlerts,
 } from "@/actions/dashboard-actions";
@@ -56,6 +58,18 @@ export function useUpcomingAlerts(limit = 5): UseQueryResult<NonNullable<Upcomin
     queryKey: ["dashboard", "alerts", limit],
     queryFn: async () => {
       const res = await getUpcomingAlerts(limit);
+      if (!res.success) throw new Error(res.error);
+      return res.data;
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useFinanceQuickView(): UseQueryResult<NonNullable<FinanceQuickView>> {
+  return useQuery({
+    queryKey: ["dashboard", "finance-quick-view"],
+    queryFn: async () => {
+      const res = await getFinanceQuickView();
       if (!res.success) throw new Error(res.error);
       return res.data;
     },

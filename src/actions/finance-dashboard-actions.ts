@@ -3,7 +3,7 @@
 import { endOfDay, format, parseISO, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth/validate";
+import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   customers,
@@ -14,6 +14,7 @@ import {
   projectPayments,
   projects,
 } from "@/lib/db/schema";
+import { recordFinanceDashboardLatency, recordJournalPostFailure } from "@/lib/finance/metrics";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
@@ -38,8 +39,9 @@ export interface FinanceSummaryCard {
 export async function getFinanceSummary(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<FinanceSummaryCard>> {
+  const start = performance.now();
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -134,6 +136,7 @@ export async function getFinanceSummary(
     );
     const bankBalance = Math.round(balanceMap.get("bank_account") ?? 0);
 
+    recordFinanceDashboardLatency(Math.round(performance.now() - start));
     return successResponse({
       totalIncome,
       totalExpense,
@@ -144,6 +147,7 @@ export async function getFinanceSummary(
       bankBalance,
     });
   } catch (error) {
+    recordJournalPostFailure(error instanceof Error ? error.message : String(error));
     return handleActionError(error, "getFinanceSummary", "Failed to fetch finance summary");
   }
 }
@@ -158,7 +162,7 @@ export async function getMonthlyTrend(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<MonthlyTrendRow[]>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -248,7 +252,7 @@ export async function getExpenseBreakdown(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<ExpenseBreakdownRow[]>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -328,7 +332,7 @@ export interface ReceivableRiskProject {
 
 export async function getReceivableRiskData(): Promise<ActionResponse<ReceivableRiskProject[]>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const rows = await db
       .select({
@@ -411,7 +415,7 @@ export interface DataConsistencyCheck {
 
 export async function getDataConsistencyCheck(): Promise<ActionResponse<DataConsistencyCheck>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
 
     const [journalIncomeRow] = await db
       .select({

@@ -1,20 +1,25 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Plus, UserPlus, Wrench } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CreditCard,
+  DollarSign,
+  LayoutDashboard,
+  Plus,
+  TrendingDown,
+  TrendingUp,
+  UserPlus,
+  Wallet,
+} from "lucide-react";
 import { motion, type Variants } from "motion/react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { dashboardStatMeta } from "@/app/(dashboard)/dashboard-stat-meta";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  useDashboardPipeline,
-  useDashboardStats,
-  useRecentActivity,
-  useUpcomingAlerts,
-} from "@/hooks/use-dashboard";
+import { useDashboardStats, useFinanceQuickView, useUpcomingAlerts } from "@/hooks/use-dashboard";
 import { cn, formatMMK } from "@/lib/utils";
 
 function getGreeting(): string {
@@ -47,32 +52,14 @@ const item = {
   },
 } satisfies Variants;
 
-const SunGauge = dynamic(() => import("@/components/dashboard/sun-gauge").then((m) => m.SunGauge), {
-  ssr: false,
-});
-const EnergyFlow = dynamic(
-  () => import("@/components/dashboard/energy-flow").then((m) => m.EnergyFlow),
-  { ssr: false },
-);
-const ActivityStream = dynamic(
-  () => import("@/components/dashboard/activity-stream").then((m) => m.ActivityStream),
-  { ssr: false },
-);
-const FinanceSummary = dynamic(
-  () => import("@/components/dashboard/finance-summary").then((m) => m.FinanceSummary),
-  { ssr: false },
-);
-
 export default function DashboardPage(): React.JSX.Element {
   const statsQuery = useDashboardStats();
-  const pipelineQuery = useDashboardPipeline();
-  const activityQuery = useRecentActivity();
   const alertsQuery = useUpcomingAlerts();
+  const financeQuery = useFinanceQuickView();
 
   const stats = statsQuery.data;
-  const pipeline = pipelineQuery.data?.stages ?? [];
-  const activities = activityQuery.data ?? [];
   const alerts = alertsQuery.data ?? [];
+  const finance = financeQuery.data;
 
   return (
     <motion.div
@@ -94,8 +81,7 @@ export default function DashboardPage(): React.JSX.Element {
             {getGreeting()}, <span className="text-primary">{stats?.userName ?? "User"}</span>.
           </h1>
           <p className="text-muted-foreground max-w-xl text-sm leading-relaxed">
-            Your solar operations are running optimally. Here is your immersive command center
-            overview for today.
+            Your solar operations are running optimally. Here is your overview for today.
           </p>
         </div>
         <div className="bg-secondary/50 border-border flex items-center gap-3 self-start rounded-full border px-4 py-2 text-xs font-medium sm:self-center">
@@ -158,47 +144,86 @@ export default function DashboardPage(): React.JSX.Element {
               icon={<UserPlus className="h-4 w-4" />}
             />
             <QuickAction
-              href="/inventory"
-              label="Manage Inventory"
-              icon={<Wrench className="h-4 w-4" />}
+              href="/projects"
+              label="View Projects"
+              icon={<ArrowRight className="h-4 w-4" />}
             />
           </div>
         </SectionCard>
       </motion.div>
 
-      {/* Visualizations — Immersive Bento Row */}
-      <motion.div variants={item} className="col-span-12 lg:col-span-7">
-        <SectionCard title="Energy Flow Dynamics">
-          <EnergyFlow stages={pipeline} />
-        </SectionCard>
-      </motion.div>
-
-      <motion.div variants={item} className="col-span-12 lg:col-span-5">
-        <SectionCard title="Revenue Distribution">
-          <SunGauge
-            revenue={stats?.totalRevenue ?? 0}
-            activeProjects={stats?.activeProjectsCount ?? 0}
-            pendingQuotes={stats?.pendingQuotationsCount ?? 0}
-            overdueAlerts={stats?.overdueAlertsCount ?? 0}
-          />
-        </SectionCard>
-      </motion.div>
-
-      {/* Activity & Alerts — Bottom Bento Row */}
+      {/* Finance Quick View — Today cash-in/out, Month net, Receivables */}
       <motion.div variants={item} className="col-span-12 lg:col-span-8">
-        <SectionCard title="Live Activity Stream">
-          <ActivityStream items={activities} isPending={activityQuery.isPending} />
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/projects"
-              className="bg-secondary/50 hover:bg-secondary border-border inline-flex items-center gap-2 rounded-full border px-6 py-2 text-xs font-medium transition-all"
-            >
-              View Full Audit Log <ArrowRight className="h-3 w-3" />
-            </Link>
+        <SectionCard title="Finance Quick View">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Today Cash In */}
+            <MiniStatCard
+              label="Today Cash In"
+              value={finance?.todayCashIn ?? 0}
+              icon={TrendingUp}
+              color="text-emerald-600"
+              bgIcon="bg-emerald-50"
+              isPending={financeQuery.isPending}
+            />
+
+            {/* Today Cash Out */}
+            <MiniStatCard
+              label="Today Cash Out"
+              value={finance?.todayCashOut ?? 0}
+              icon={TrendingDown}
+              color="text-rose-600"
+              bgIcon="bg-rose-50"
+              isPending={financeQuery.isPending}
+            />
+
+            {/* Month Net Movement */}
+            <MiniStatCard
+              label="Month Net"
+              value={finance?.monthNetMovement ?? 0}
+              icon={DollarSign}
+              color={(finance?.monthNetMovement ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"}
+              bgIcon={(finance?.monthNetMovement ?? 0) >= 0 ? "bg-emerald-50" : "bg-rose-50"}
+              isPending={financeQuery.isPending}
+              showSign
+            />
+          </div>
+
+          {/* Outstanding Receivables Row */}
+          <div className="border-border mt-4 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-amber-50 p-2">
+                  <Wallet className="text-amber-600 h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Outstanding Receivables</p>
+                  {financeQuery.isPending ? (
+                    <div className="bg-muted mt-0.5 h-5 w-24 animate-pulse rounded" />
+                  ) : (
+                    <p className="text-foreground text-sm font-semibold tabular-nums">
+                      {finance?.outstandingReceivableAmount
+                        ? formatMMK(finance.outstandingReceivableAmount)
+                        : "0 MMK"}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                {financeQuery.isPending ? (
+                  <div className="bg-muted h-5 w-12 animate-pulse rounded" />
+                ) : (
+                  <p className="text-muted-foreground text-xs tabular-nums">
+                    {finance?.outstandingReceivableCount ?? 0} project
+                    {finance?.outstandingReceivableCount !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </SectionCard>
       </motion.div>
 
+      {/* Priority Signals */}
       <motion.div variants={item} className="col-span-12 lg:col-span-4">
         <SectionCard title="Priority Signals">
           <div className="space-y-3">
@@ -252,8 +277,30 @@ export default function DashboardPage(): React.JSX.Element {
         </SectionCard>
       </motion.div>
 
-      <motion.div variants={item} className="col-span-12 lg:col-span-4">
-        <FinanceSummary />
+      {/* Quick Links Row */}
+      <motion.div variants={item} className="col-span-12">
+        <SectionCard title="Quick Access">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <QuickLinkCard
+              href="/finance/ledger"
+              icon={<BookOpen className="h-5 w-5" />}
+              title="Master Ledger"
+              description="View all journal entries and accounting records"
+            />
+            <QuickLinkCard
+              href="/finance"
+              icon={<LayoutDashboard className="h-5 w-5" />}
+              title="Finance Dashboard"
+              description="Financial overview with trends and analysis"
+            />
+            <QuickLinkCard
+              href="/projects"
+              icon={<CreditCard className="h-5 w-5" />}
+              title="Project Payments"
+              description="Record payments and manage project costs"
+            />
+          </div>
+        </SectionCard>
       </motion.div>
     </motion.div>
   );
@@ -326,6 +373,45 @@ function StatCard({
   );
 }
 
+function MiniStatCard({
+  label,
+  value,
+  icon: Icon,
+  color,
+  bgIcon,
+  isPending,
+  showSign,
+}: {
+  label: string;
+  value: number;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgIcon: string;
+  isPending: boolean;
+  showSign?: boolean;
+}): React.JSX.Element {
+  const displayValue = Math.abs(value);
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className={cn("rounded-lg p-2", bgIcon)}>
+        <Icon className={cn("h-4 w-4", color)} />
+      </div>
+      <div>
+        <p className="text-muted-foreground text-xs">{label}</p>
+        {isPending ? (
+          <div className="bg-muted mt-0.5 h-5 w-20 animate-pulse rounded" />
+        ) : (
+          <p className={cn("text-sm font-semibold tabular-nums", color)}>
+            {showSign && value >= 0 ? "+" : showSign && value < 0 ? "-" : ""}
+            {formatMMK(displayValue)}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function QuickAction({
   href,
   label,
@@ -358,5 +444,33 @@ function QuickAction({
         <span className="text-sm">{label}</span>
       </Link>
     </Button>
+  );
+}
+
+function QuickLinkCard({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
+}): React.JSX.Element {
+  return (
+    <Link
+      href={href}
+      className="border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 group flex items-start gap-4 rounded-xl border p-5 transition-all"
+    >
+      <div className="text-muted-foreground group-hover:text-primary mt-0.5 transition-colors">
+        {icon}
+      </div>
+      <div>
+        <p className="text-foreground text-sm font-semibold">{title}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
+      </div>
+      <ArrowRight className="text-muted-foreground group-hover:text-primary ml-auto h-4 w-4 shrink-0 transition-colors" />
+    </Link>
   );
 }

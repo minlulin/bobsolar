@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, ClipboardList, Home, Package, Users, Zap } from "lucide-react";
+import { BookOpen, ClipboardList, Home, Package, Users, Wallet, Zap } from "lucide-react";
 import type { MotionValue } from "motion/react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
@@ -24,6 +24,7 @@ const navItems = [
   { name: "Quotations", href: "/quotations", icon: ClipboardList },
   { name: "Projects", href: "/projects", icon: Zap },
   { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Finance", href: "/finance", icon: Wallet },
   { name: "Ledger", href: "/finance/ledger", icon: BookOpen },
 ];
 

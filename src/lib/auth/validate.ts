@@ -46,6 +46,14 @@ export async function requireAdmin(): Promise<AuthUser> {
   return auth;
 }
 
+export async function requireFinanceAccess(): Promise<AuthUser> {
+  const auth = await requireAuth();
+  if (auth.role !== "admin") {
+    redirect("/");
+  }
+  return auth;
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   return resolveCurrentAuth();
 }

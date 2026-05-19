@@ -1,11 +1,19 @@
 "use server";
 
 import { endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
-import { and, asc, count, desc, eq, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
-import { customers, projects, quotations, users, warrantyAlerts } from "@/lib/db/schema";
+import {
+  customers,
+  journalEntries,
+  journalLines,
+  projects,
+  quotations,
+  users,
+  warrantyAlerts,
+} from "@/lib/db/schema";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
@@ -43,6 +51,14 @@ export type UpcomingAlertItem = {
   dueDate: Date;
   alertType: "warranty_expiry" | "maintenance_due" | "follow_up";
   isOverdue: boolean;
+};
+
+export type FinanceQuickView = {
+  todayCashIn: number;
+  todayCashOut: number;
+  monthNetMovement: number;
+  outstandingReceivableCount: number;
+  outstandingReceivableAmount: number;
 };
 
 function toInt(value: unknown): number {
@@ -320,5 +336,103 @@ export async function getUpcomingAlerts(limit = 5): Promise<ActionResponse<Upcom
     return successResponse(items);
   } catch (error) {
     return handleActionError(error, "getUpcomingAlerts", "Failed to fetch upcoming alerts");
+  }
+}
+
+const getCachedFinanceQuickView = unstable_cache(
+  async () => {
+    const today = startOfDay(new Date());
+    const monthStart = startOfMonth(new Date());
+
+    const [[todayCashInRow], [todayCashOutRow], [monthIncomeRow], [monthExpenseRow], [arRow]] =
+      await Promise.all([
+        db
+          .select({
+            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+          })
+          .from(journalEntries)
+          .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .where(
+            and(
+              gte(journalEntries.entryDate, today),
+              eq(journalEntries.sourceType, "project_payment"),
+              eq(journalEntries.isReversed, false),
+            ),
+          ),
+        db
+          .select({
+            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+          })
+          .from(journalEntries)
+          .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .where(
+            and(
+              gte(journalEntries.entryDate, today),
+              eq(journalEntries.sourceType, "project_expense"),
+              eq(journalEntries.isReversed, false),
+            ),
+          ),
+        db
+          .select({
+            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+          })
+          .from(journalEntries)
+          .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .where(
+            and(
+              gte(journalEntries.entryDate, monthStart),
+              eq(journalEntries.sourceType, "project_payment"),
+              eq(journalEntries.isReversed, false),
+            ),
+          ),
+        db
+          .select({
+            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+          })
+          .from(journalEntries)
+          .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .where(
+            and(
+              gte(journalEntries.entryDate, monthStart),
+              eq(journalEntries.sourceType, "project_expense"),
+              eq(journalEntries.isReversed, false),
+            ),
+          ),
+        db
+          .select({
+            count: sql<number>`cast(count(*) as int)`.as("count"),
+            amount: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric), 0)`.as("amount"),
+          })
+          .from(projects)
+          .where(eq(projects.status, "completed")),
+      ]);
+
+    return {
+      todayCashIn: Math.round(Number(todayCashInRow?.sum ?? 0)),
+      todayCashOut: Math.round(Number(todayCashOutRow?.sum ?? 0)),
+      monthIncome: Math.round(Number(monthIncomeRow?.sum ?? 0)),
+      monthExpense: Math.round(Number(monthExpenseRow?.sum ?? 0)),
+      arCount: Math.round(Number(arRow?.count ?? 0)),
+      arAmount: Math.round(Number(arRow?.amount ?? 0)),
+    };
+  },
+  ["dashboard:finance-quick-view"],
+  { tags: ["dashboard:finance"], revalidate: 60 },
+);
+
+export async function getFinanceQuickView(): Promise<ActionResponse<FinanceQuickView>> {
+  try {
+    await requireAuth();
+    const cached = await getCachedFinanceQuickView();
+
+    return successResponse({
+      todayCashIn: cached.todayCashIn,
+      todayCashOut: cached.todayCashOut,
+      monthNetMovement: cached.monthIncome - cached.monthExpense,
+      outstandingReceivableCount: cached.arCount,
+      outstandingReceivableAmount: cached.arAmount,
+    });
+  } catch (error) {
+    return handleActionError(error, "getFinanceQuickView", "Failed to fetch finance quick view");
   }
 }
