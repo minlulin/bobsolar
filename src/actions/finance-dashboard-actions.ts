@@ -84,6 +84,7 @@ export async function getFinanceSummary(
             "labor_expense",
             "transport_expense",
             "misc_expense",
+            "general_expense",
           ]),
         ),
       );
@@ -208,6 +209,7 @@ export async function getMonthlyTrend(
             "labor_expense",
             "transport_expense",
             "misc_expense",
+            "general_expense",
           ]),
         ),
       )
@@ -265,6 +267,7 @@ export async function getExpenseBreakdown(
       labor_expense: "Labor",
       transport_expense: "Logistics",
       misc_expense: "Miscellaneous",
+      general_expense: "General",
     };
 
     const rows = await db
@@ -286,6 +289,7 @@ export async function getExpenseBreakdown(
             "labor_expense",
             "transport_expense",
             "misc_expense",
+            "general_expense",
           ]),
         ),
       )

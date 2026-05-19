@@ -51,7 +51,7 @@ export const BUDGET_VARIANCE_THRESHOLD = 1.1;
 // =============================================================================
 
 /** Maximum number of users allowed in the system */
-export const USER_CAP = 4;
+export const USER_CAP = 3;
 
 // =============================================================================
 // API LIMITS

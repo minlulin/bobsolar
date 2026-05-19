@@ -204,6 +204,7 @@ export async function createSettingsUser(raw: unknown): Promise<ActionResponse<n
       name: parsed.name,
       email: parsed.email,
       passwordHash,
+      role: "admin",
     });
     await setCacheValue("settings:last-user-mutation", String(Date.now()), {
       ttlSeconds: 300,

@@ -11,10 +11,14 @@ import {
   revokeAllUserSessions,
 } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { authRateLimits, users } from "@/lib/db/schema";
 import { userRoleSchema } from "@/lib/domain/enums";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { type LoginInput, loginSchema } from "@/lib/validators/auth";
+
+const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 5;
+const AUTH_LOCK_MS = 15 * 60 * 1000;
 
 export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   const result = loginSchema.safeParse(data);
@@ -23,7 +27,19 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
     return errorResponse("Invalid input");
   }
 
-  const { email, password } = result.data;
+  const { password } = result.data;
+  const email = result.data.email.trim().toLowerCase();
+  const rateKey = `login:${email}`;
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - AUTH_ATTEMPT_WINDOW_MS);
+
+  const limitRow = await db.query.authRateLimits.findFirst({
+    where: eq(authRateLimits.key, rateKey),
+  });
+
+  if (limitRow?.lockedUntil && limitRow.lockedUntil > now) {
+    return errorResponse("Too many login attempts. Please wait before retrying.");
+  }
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
@@ -36,7 +52,36 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   const isValid = await verifyPassword(password, hashToVerify);
 
   if (!user || !isValid) {
+    const isWindowExpired = !limitRow || limitRow.lastAttemptAt < windowStart;
+    const attempts = isWindowExpired ? 1 : limitRow.attempts + 1;
+    const lockedUntil = attempts >= AUTH_MAX_ATTEMPTS ? new Date(now.getTime() + AUTH_LOCK_MS) : null;
+
+    if (limitRow) {
+      await db
+        .update(authRateLimits)
+        .set({
+          attempts,
+          lockedUntil,
+          lastAttemptAt: now,
+          updatedAt: now,
+        })
+        .where(eq(authRateLimits.key, rateKey));
+    } else {
+      await db.insert(authRateLimits).values({
+        key: rateKey,
+        attempts: 1,
+        lockedUntil: null,
+        lastAttemptAt: now,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     return errorResponse("Invalid credentials");
+  }
+
+  if (limitRow) {
+    await db.delete(authRateLimits).where(eq(authRateLimits.key, rateKey));
   }
 
   try {

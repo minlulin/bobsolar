@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import * as React from "react";
+import type { WarrantyAlertRow } from "@/actions/warranty-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,13 +26,45 @@ const FILTER_TABS: Array<{ id: WarrantyListFilter["tab"]; label: string }> = [
   { id: "all", label: "Everything" },
 ];
 
+interface GroupedProjectAlerts {
+  projectId: string;
+  projectNumber: string;
+  customerName: string;
+  alerts: WarrantyAlertRow[];
+}
+
 export default function WarrantyPage(): React.JSX.Element {
   const [tab, setTab] = React.useState<WarrantyListFilter["tab"]>("all");
+  const [expandedProjectId, setExpandedProjectId] = React.useState<string | null>(null);
 
   const { data: summary, error: summaryError } = useWarrantySummary();
   const { data: alerts, isFetching, error: alertError } = useWarrantyAlerts({ tab });
   const resolveMutation = useResolveWarrantyAlert();
   const reopenMutation = useReopenWarrantyAlert();
+
+  const groupedAlerts = React.useMemo<GroupedProjectAlerts[]>(() => {
+    const groups = new Map<string, GroupedProjectAlerts>();
+
+    for (const alert of alerts ?? []) {
+      const group = groups.get(alert.projectId);
+      if (group) {
+        group.alerts.push(alert);
+        continue;
+      }
+
+      groups.set(alert.projectId, {
+        projectId: alert.projectId,
+        projectNumber: alert.projectNumber,
+        customerName: alert.customerName,
+        alerts: [alert],
+      });
+    }
+
+    return Array.from(groups.values()).map((group) => {
+      group.alerts.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      return group;
+    });
+  }, [alerts]);
 
   return (
     <div className="space-y-10 pb-32">
@@ -54,25 +87,25 @@ export default function WarrantyPage(): React.JSX.Element {
           className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
         >
           <StatCard
-            emoji="🔴"
+            emoji="Overdue"
             label="Overdue"
             count={summary.overdue}
             tint="border-red-500/40 bg-red-500/15"
           />
           <StatCard
-            emoji="🟡"
+            emoji="Due"
             label="Due within 30d"
             count={summary.dueSoon}
             tint="border-amber-400/35 bg-amber-500/10"
           />
           <StatCard
-            emoji="🟢"
+            emoji="Healthy"
             label="Healthy horizon"
             count={summary.upcoming}
             tint="border-emerald-500/35 bg-emerald-500/10"
           />
           <StatCard
-            emoji="📋"
+            emoji="Open"
             label="Active open"
             count={summary.active}
             tint="border-border/70 bg-muted/55"
@@ -91,6 +124,7 @@ export default function WarrantyPage(): React.JSX.Element {
             }`}
             onClick={() => {
               setTab(t.id);
+              setExpandedProjectId(null);
             }}
           >
             {t.label}
@@ -107,9 +141,9 @@ export default function WarrantyPage(): React.JSX.Element {
         <div className="flex min-h-[40vh] items-center justify-center">
           <Loader2 className="text-solar h-10 w-10 animate-spin" />
         </div>
-      ) : !alerts?.length ? (
+      ) : !groupedAlerts.length ? (
         <div className="border-border text-muted-foreground rounded-3xl border border-dashed py-24 text-center text-sm">
-          Nothing echoes in this wavelength — widen the prism.
+          No warranty alerts in this filter.
         </div>
       ) : (
         <motion.div
@@ -117,73 +151,123 @@ export default function WarrantyPage(): React.JSX.Element {
           animate="animate"
           className="grid gap-5 lg:grid-cols-2"
         >
-          {alerts.map((a) => {
-            let dueTone = "text-emerald-700 dark:text-emerald-200";
-            if (!a.isResolved && new Date(a.dueDate) < new Date())
-              dueTone = "text-red-600 dark:text-red-400";
-            else if (!a.isResolved) dueTone = "text-amber-700 dark:text-amber-300";
+          {groupedAlerts.map((group) => {
+            const isExpanded = expandedProjectId === group.projectId;
+            const unresolvedCount = group.alerts.filter((a) => !a.isResolved).length;
+            const resolvedCount = group.alerts.length - unresolvedCount;
 
             return (
               <div
-                key={a.id}
-                className="border-border bg-card flex flex-col gap-6 rounded-xl border p-6"
+                key={group.projectId}
+                className="border-border bg-card flex flex-col gap-4 rounded-xl border p-6"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <Badge className="text-[10px] uppercase" variant="outline">
-                      {a.alertType.replace("_", " ")}
-                    </Badge>
                     <Link
-                      href={`/projects/${a.projectId}`}
-                      className="text-muted-foreground hover:text-foreground mt-2 block text-[11px] font-semibold tracking-wide underline-offset-2 hover:underline"
+                      href={`/projects/${group.projectId}`}
+                      className="text-muted-foreground hover:text-foreground block text-[11px] font-semibold tracking-wide underline-offset-2 hover:underline"
                     >
-                      {a.projectNumber} · <span>{a.customerName}</span>
+                      {group.projectNumber} · <span>{group.customerName}</span>
                     </Link>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge className="text-[10px] uppercase" variant="outline">
+                        {group.alerts.length} item{group.alerts.length !== 1 ? "s" : ""}
+                      </Badge>
+                      <Badge className="text-[10px] uppercase" variant="outline">
+                        open {unresolvedCount}
+                      </Badge>
+                      {resolvedCount > 0 ? (
+                        <Badge className="text-[10px] uppercase" variant="outline">
+                          closed {resolvedCount}
+                        </Badge>
+                      ) : null}
+                    </div>
                   </div>
 
-                  {!a.isResolved ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full text-[11px]"
-                      disabled={resolveMutation.isPending}
-                      onClick={() => {
-                        resolveMutation.mutate(a.id);
-                      }}
-                    >
-                      Resolve
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full text-[11px]"
-                      disabled={reopenMutation.isPending}
-                      onClick={() => {
-                        reopenMutation.mutate(a.id);
-                      }}
-                    >
-                      Reopen
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full text-[11px]"
+                    onClick={() => {
+                      setExpandedProjectId((prev) => (prev === group.projectId ? null : group.projectId));
+                    }}
+                  >
+                    {isExpanded ? "Hide details" : "Show details"}
+                    <ChevronDown
+                      className={cn("ml-2 h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")}
+                    />
+                  </Button>
                 </div>
 
-                <p className="text-foreground text-sm leading-relaxed">{a.description}</p>
+                {isExpanded ? (
+                  <div className="space-y-3">
+                    {group.alerts.map((alert) => {
+                      let dueTone = "text-emerald-700 dark:text-emerald-200";
+                      if (!alert.isResolved && new Date(alert.dueDate) < new Date()) {
+                        dueTone = "text-red-600 dark:text-red-400";
+                      } else if (!alert.isResolved) {
+                        dueTone = "text-amber-700 dark:text-amber-300";
+                      }
 
-                <p className={cn("text-[12px] font-semibold uppercase", dueTone)}>
-                  {!a.isResolved ? (
-                    <>
-                      {format(new Date(a.dueDate), "MMM d yyyy")} ·{" "}
-                      <span>
-                        {formatDistanceToNowStrict(new Date(a.dueDate), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </>
-                  ) : (
-                    <>Closed · logged</>
-                  )}
-                </p>
+                      return (
+                        <div
+                          key={alert.id}
+                          className="border-border/60 bg-muted/20 rounded-lg border p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <Badge className="text-[10px] uppercase" variant="outline">
+                              {alert.alertType.replace("_", " ")}
+                            </Badge>
+                            {!alert.isResolved ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full text-[11px]"
+                                disabled={resolveMutation.isPending}
+                                onClick={() => {
+                                  resolveMutation.mutate(alert.id);
+                                }}
+                              >
+                                Resolve
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full text-[11px]"
+                                disabled={reopenMutation.isPending}
+                                onClick={() => {
+                                  reopenMutation.mutate(alert.id);
+                                }}
+                              >
+                                Reopen
+                              </Button>
+                            )}
+                          </div>
+
+                          <p className="text-foreground mt-2 text-sm leading-relaxed">
+                            {alert.description}
+                          </p>
+
+                          <p className={cn("mt-2 text-[12px] font-semibold uppercase", dueTone)}>
+                            {!alert.isResolved ? (
+                              <>
+                                {format(new Date(alert.dueDate), "MMM d yyyy")} ·{" "}
+                                <span>
+                                  {formatDistanceToNowStrict(new Date(alert.dueDate), {
+                                    addSuffix: true,
+                                  })}
+                                </span>
+                              </>
+                            ) : (
+                              <>Closed · logged</>
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -206,7 +290,7 @@ function StatCard({
 }): React.JSX.Element {
   return (
     <div className={cn("rounded-[1.5rem] border px-8 py-6 text-center", tint)}>
-      <p className="text-5xl">{emoji}</p>
+      <p className="text-2xl font-semibold">{emoji}</p>
       <p className="text-muted-foreground mt-4 text-[11px] font-bold tracking-[0.3em] uppercase">
         {label}
       </p>

@@ -48,8 +48,8 @@ export function useRecentActivity(limit = 10): UseQueryResult<NonNullable<Recent
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 30 * 1000,
-    refetchInterval: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
   });
 }
 

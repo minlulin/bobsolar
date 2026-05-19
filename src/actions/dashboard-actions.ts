@@ -9,6 +9,7 @@ import {
   customers,
   journalEntries,
   journalLines,
+  projectPayments,
   projects,
   quotations,
   users,
@@ -400,8 +401,25 @@ const getCachedFinanceQuickView = unstable_cache(
           ),
         db
           .select({
-            count: sql<number>`cast(count(*) as int)`.as("count"),
-            amount: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric), 0)`.as("amount"),
+            count: sql<number>`cast(
+              count(*) filter (
+                where (
+                  cast(${projects.quotedTotal} as numeric) - coalesce((
+                    select sum(cast(${projectPayments.amount} as numeric))
+                    from ${projectPayments}
+                    where ${projectPayments.projectId} = ${projects.id}
+                  ), 0)
+                ) > 0
+              ) as int
+            )`.as("count"),
+            amount: sql<string>`coalesce(sum(greatest(
+              cast(${projects.quotedTotal} as numeric) - coalesce((
+                select sum(cast(${projectPayments.amount} as numeric))
+                from ${projectPayments}
+                where ${projectPayments.projectId} = ${projects.id}
+              ), 0),
+              0
+            )), 0)`.as("amount"),
           })
           .from(projects)
           .where(eq(projects.status, "completed")),

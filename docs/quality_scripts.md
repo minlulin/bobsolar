@@ -5,7 +5,7 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 ## Core Quality Gates
 
 - `pnpm green:code`  
-  Runs code-only gate: typecheck, Oxlint, Biome check, and non-DB tests.
+  Runs code-only gate: typecheck, Biome check, and non-DB tests.
 
 - `pnpm green:db`  
   Runs DB gate on test database via `pnpm test:db`.
@@ -32,7 +32,7 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 ## Lint / Format Commands
 
 - `pnpm lint`  
-  Runs Oxlint (`--deny-warnings`) for fast rule enforcement.
+  Runs Biome lint rules.
 
 - `pnpm biome:check`  
   Runs Biome lint + formatting diagnostics.
