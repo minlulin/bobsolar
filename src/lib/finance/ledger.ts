@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { getDb } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
 import {
@@ -176,4 +176,119 @@ export async function createBalancedJournalEntry(
 
   await input.tx.insert(journalLines).values(lineValues);
   return { entryId: entry.id };
+}
+
+export async function getJournalEntryWithLines(
+  tx: DbTransaction,
+  entryId: string,
+): Promise<{
+  id: string;
+  sourceType: JournalSourceType;
+  sourceId: string | null;
+  memo: string | null;
+  createdBy: string;
+  entryDate: Date;
+  lines: {
+    id: string;
+    accountId: string;
+    accountCode: LedgerAccountCode;
+    debit: number;
+    credit: number;
+    memo: string | null;
+  }[];
+} | null> {
+  const entry = await tx.query.journalEntries.findFirst({
+    where: eq(journalEntries.id, entryId),
+    with: {
+      lines: {
+        with: {
+          account: {
+            columns: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!entry) return null;
+
+  return {
+    id: entry.id,
+    sourceType: entry.sourceType,
+    sourceId: entry.sourceId,
+    memo: entry.memo,
+    createdBy: entry.createdBy,
+    entryDate: entry.entryDate,
+    lines: entry.lines.map((line) => ({
+      id: line.id,
+      accountId: line.accountId,
+      accountCode: line.account.code as LedgerAccountCode,
+      debit: Math.round(Number(line.debit)),
+      credit: Math.round(Number(line.credit)),
+      memo: line.memo,
+    })),
+  };
+}
+
+export async function reverseJournalEntry(input: {
+  tx: DbTransaction;
+  originalEntryId: string;
+  memo?: string | null;
+  createdBy: string;
+}): Promise<{ entryId: string }> {
+  const original = await getJournalEntryWithLines(input.tx, input.originalEntryId);
+  if (!original) {
+    throw new Error("Original journal entry not found.");
+  }
+
+  const reversedLines = original.lines.map((line) => ({
+    accountCode: line.accountCode,
+    debit: line.credit,
+    credit: line.debit,
+    memo: line.memo ? `Reversal: ${line.memo}` : "Reversal",
+  }));
+
+  const reversalMemo =
+    input.memo ?? `Reversal of ${original.sourceType} entry (${original.id.slice(0, 8)}...)`;
+
+  const result = await createBalancedJournalEntry({
+    tx: input.tx,
+    entryDate: new Date(),
+    memo: reversalMemo,
+    sourceType: "manual_adjustment",
+    sourceId: original.id,
+    createdBy: input.createdBy,
+    lines: reversedLines,
+  });
+
+  await input.tx
+    .update(journalEntries)
+    .set({
+      isReversed: true,
+      reversedBy: input.createdBy,
+    })
+    .where(eq(journalEntries.id, input.originalEntryId));
+
+  return result;
+}
+
+export async function assertJournalEntryNotReversed(
+  tx: DbTransaction,
+  entryId: string,
+): Promise<void> {
+  const entry = await tx.query.journalEntries.findFirst({
+    where: eq(journalEntries.id, entryId),
+    columns: { isReversed: true },
+  });
+
+  if (entry?.isReversed) {
+    throw new Error("Journal entry has already been reversed.");
+  }
+}
+
+export function assertJournalImmutability(operation: "update" | "delete"): never {
+  throw new Error(`Journal entries are immutable. Use reversal flow instead of ${operation}.`);
 }

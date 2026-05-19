@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, Home, Package, Users, Zap } from "lucide-react";
+import { BookOpen, ClipboardList, Home, Package, Users, Zap } from "lucide-react";
 import type { MotionValue } from "motion/react";
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Link from "next/link";
@@ -24,6 +24,7 @@ const navItems = [
   { name: "Quotations", href: "/quotations", icon: ClipboardList },
   { name: "Projects", href: "/projects", icon: Zap },
   { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Ledger", href: "/finance/ledger", icon: BookOpen },
 ];
 
 function NavIcon({
@@ -129,14 +130,13 @@ export function NavOrbit(): React.JSX.Element {
               delay: 0.1,
             }}
           >
-            {navItems.map((item) => (
-              <NavIcon
-                key={item.name}
-                item={item}
-                isActive={pathname === item.href}
-                mouseX={mouseX}
-              />
-            ))}
+            {navItems.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return <NavIcon key={item.name} item={item} isActive={isActive} mouseX={mouseX} />;
+            })}
           </motion.div>
         </div>
       </TooltipProvider>

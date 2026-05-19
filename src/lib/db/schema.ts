@@ -434,11 +434,14 @@ export const journalEntries = pgTable(
       .references(() => users.id)
       .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    isReversed: boolean("is_reversed").default(false).notNull(),
+    reversedBy: uuid("reversed_by").references(() => users.id),
   },
   (table) => [
     index("journal_entries_entry_date_idx").on(table.entryDate),
     index("journal_entries_source_idx").on(table.sourceType, table.sourceId),
     index("journal_entries_created_by_idx").on(table.createdBy),
+    index("journal_entries_is_reversed_idx").on(table.isReversed),
   ],
 );
 

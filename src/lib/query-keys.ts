@@ -1,3 +1,4 @@
+import type { LedgerFilter } from "@/actions/ledger-actions";
 import { type InventoryFilter, inventoryFilterSchema } from "@/lib/validators/inventory";
 import { type QuotationFilterInput, quotationFilterSchema } from "@/lib/validators/quotation";
 
@@ -33,6 +34,18 @@ export function normalizeInventoryFilters(
   };
 }
 
+export function normalizeLedgerFilters(filters: LedgerFilter = {}): LedgerFilter {
+  return {
+    dateFrom: filters.dateFrom ?? undefined,
+    dateTo: filters.dateTo ?? undefined,
+    accountCode: filters.accountCode ?? undefined,
+    projectId: filters.projectId ?? undefined,
+    sourceType: filters.sourceType ?? undefined,
+    page: filters.page ?? 1,
+    limit: filters.limit ?? 50,
+  };
+}
+
 export const quotationKeys = {
   all: ["quotations"] as const,
   list: (filters: QuotationFilterInput = {}) =>
@@ -60,4 +73,13 @@ export const dashboardKeys = {
 
 export const warrantyKeys = {
   all: ["warranty"] as const,
+};
+
+export const ledgerKeys = {
+  all: ["ledger"] as const,
+  entries: (filters: LedgerFilter = {}) =>
+    [...ledgerKeys.all, "entries", normalizeLedgerFilters(filters)] as const,
+  balances: (filters: LedgerFilter = {}) =>
+    [...ledgerKeys.all, "balances", normalizeLedgerFilters(filters)] as const,
+  projects: () => [...ledgerKeys.all, "projects"] as const,
 };

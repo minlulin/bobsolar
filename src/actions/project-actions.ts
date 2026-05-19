@@ -17,6 +17,7 @@ import { db } from "@/lib/db";
 import {
   type Customer,
   customers,
+  journalEntries,
   type Project,
   type ProjectCost,
   type ProjectRemark,
@@ -32,9 +33,11 @@ import {
 import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
 import {
   assertFinanceSsotDrift,
+  assertJournalEntryNotReversed,
   createBalancedJournalEntry,
   mapCostTypeToExpenseAccount,
   mapPaymentMethodNameToAssetAccount,
+  reverseJournalEntry,
 } from "@/lib/finance/ledger";
 import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
@@ -738,7 +741,27 @@ export async function deleteProjectCost(
     });
     if (!cost) return handleNotFoundError("Cost record", validatedCostId);
 
-    await db.delete(projectCosts).where(eq(projectCosts.id, validatedCostId));
+    await db.transaction(async (tx) => {
+      const journalEntry = await tx.query.journalEntries.findFirst({
+        where: and(
+          eq(journalEntries.sourceType, "project_expense"),
+          eq(journalEntries.sourceId, validatedCostId),
+        ),
+      });
+
+      if (journalEntry) {
+        await assertJournalEntryNotReversed(tx, journalEntry.id);
+        const auth = await requireAuth();
+        await reverseJournalEntry({
+          tx,
+          originalEntryId: journalEntry.id,
+          createdBy: auth.userId,
+        });
+      }
+
+      await tx.delete(projectCosts).where(eq(projectCosts.id, validatedCostId));
+    });
+
     await persistActualTotal(cost.projectId);
 
     revalidatePath(`/projects/${cost.projectId}`);

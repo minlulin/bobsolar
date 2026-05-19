@@ -1,15 +1,17 @@
 "use server";
 
 import { startOfMonth } from "date-fns";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
+  journalEntries,
+  journalLines,
+  ledgerAccounts,
   type PaymentMethod,
   type ProjectPayment,
   paymentMethods,
-  projectCosts,
   projectPayments,
   projects,
 } from "@/lib/db/schema";
@@ -155,37 +157,36 @@ export async function getFinanceSummary(): Promise<
     const sixMonthsAgo = startOfMonth(new Date());
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
 
-    const payments = await db
+    const journalRows = await db
       .select({
-        amount: projectPayments.amount,
-        paymentDate: projectPayments.paymentDate,
+        entryDate: journalEntries.entryDate,
+        sourceType: journalEntries.sourceType,
+        debit: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("debit"),
+        credit: sql<string>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("credit"),
       })
-      .from(projectPayments)
-      .where(gte(projectPayments.paymentDate, sixMonthsAgo))
-      .orderBy(desc(projectPayments.paymentDate));
-
-    const costs = await db
-      .select({
-        amount: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("amount"),
-        month: sql<string>`date_trunc('month', incurred_date)::date`.as("month"),
-      })
-      .from(projectCosts)
-      .where(gte(projectCosts.incurredDate, sixMonthsAgo))
-      .groupBy(sql`date_trunc('month', incurred_date)`);
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+      .where(
+        and(
+          gte(journalEntries.entryDate, sixMonthsAgo),
+          inArray(journalEntries.sourceType, ["project_payment", "project_expense"]),
+          eq(journalEntries.isReversed, false),
+        ),
+      )
+      .groupBy(journalEntries.id, journalEntries.entryDate, journalEntries.sourceType)
+      .orderBy(desc(journalEntries.entryDate));
 
     const monthlyMap = new Map<string, { incoming: number; outgoing: number }>();
 
-    for (const p of payments) {
-      const m = formatMonthKey(p.paymentDate);
+    for (const row of journalRows) {
+      const m = formatMonthKey(row.entryDate);
       const entry = monthlyMap.get(m) ?? { incoming: 0, outgoing: 0 };
-      entry.incoming += Math.round(Number(p.amount));
-      monthlyMap.set(m, entry);
-    }
-
-    for (const c of costs) {
-      const m = formatMonthKey(c.month);
-      const entry = monthlyMap.get(m) ?? { incoming: 0, outgoing: 0 };
-      entry.outgoing += Math.round(Number(c.amount));
+      if (row.sourceType === "project_payment") {
+        entry.incoming += Math.round(Number(row.debit));
+      } else if (row.sourceType === "project_expense") {
+        entry.outgoing += Math.round(Number(row.debit));
+      }
       monthlyMap.set(m, entry);
     }
 
@@ -203,17 +204,25 @@ export async function getFinanceSummary(): Promise<
       });
     }
 
-    const [totalPayments] = await db
+    const [totalIncomingRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as("sum"),
+        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
       })
-      .from(projectPayments);
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .where(
+        and(eq(journalEntries.sourceType, "project_payment"), eq(journalEntries.isReversed, false)),
+      );
 
-    const [totalCosts] = await db
+    const [totalOutgoingRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("sum"),
+        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
       })
-      .from(projectCosts);
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .where(
+        and(eq(journalEntries.sourceType, "project_expense"), eq(journalEntries.isReversed, false)),
+      );
 
     const unpaidCompletedRows = await db
       .select({ count: sql<number>`cast(count(*) as int)` })
@@ -231,8 +240,8 @@ export async function getFinanceSummary(): Promise<
 
     return successResponse({
       monthly,
-      totalIncoming: Math.round(totalPayments?.sum ?? 0),
-      totalOutgoing: Math.round(totalCosts?.sum ?? 0),
+      totalIncoming: Math.round(totalIncomingRow?.sum ?? 0),
+      totalOutgoing: Math.round(totalOutgoingRow?.sum ?? 0),
       unpaidCompleted: unpaidCompletedRows[0]?.count ?? 0,
     });
   } catch (error) {
