@@ -26,13 +26,18 @@ const STATE_META: Record<ProjectStatus, { index: number; color: string; icon: Re
     color: "border-amber-500/35 bg-amber-500/10 text-amber-300",
     icon: null,
   },
-  completed: {
+  installation_completed: {
     index: 3,
+    color: "border-cyan-500/35 bg-cyan-500/10 text-cyan-200",
+    icon: <ClipboardCheck className="h-3.5 w-3.5" />,
+  },
+  completed: {
+    index: 4,
     color: "border-border/70 bg-emerald-500/15 text-emerald-200",
     icon: <ClipboardCheck className="h-3.5 w-3.5" />,
   },
   cancelled: {
-    index: 4,
+    index: 5,
     color: "border-red-400/35 bg-red-600/25 text-red-100",
     icon: <XCircle className="h-3.5 w-3.5" />,
   },

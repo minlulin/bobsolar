@@ -54,7 +54,8 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   if (!user || !isValid) {
     const isWindowExpired = !limitRow || limitRow.lastAttemptAt < windowStart;
     const attempts = isWindowExpired ? 1 : limitRow.attempts + 1;
-    const lockedUntil = attempts >= AUTH_MAX_ATTEMPTS ? new Date(now.getTime() + AUTH_LOCK_MS) : null;
+    const lockedUntil =
+      attempts >= AUTH_MAX_ATTEMPTS ? new Date(now.getTime() + AUTH_LOCK_MS) : null;
 
     if (limitRow) {
       await db

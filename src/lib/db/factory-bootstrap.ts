@@ -2,7 +2,6 @@
  * Factory Bootstrap: Minimal clean data for handoff.
  *
  * Seeds only:
- * - 1 admin user
  * - Default company settings
  * - Default payment methods
  * - Master ledger accounts
@@ -11,7 +10,6 @@
  */
 
 import "./load-env-local";
-import { hashPassword } from "@/lib/auth/password";
 import {
   LEDGER_ACCOUNT_CODE_TYPE_MAP,
   LEDGER_ACCOUNT_CODES,
@@ -20,21 +18,10 @@ import {
   PAYMENT_METHOD_PRESETS,
 } from "@/lib/domain/enums";
 import { db } from "./index";
-import { companySettings, ledgerAccounts, paymentMethods, users } from "./schema";
+import { companySettings, ledgerAccounts, paymentMethods } from "./schema";
 
 async function main(): Promise<void> {
   console.log("Seeding factory bootstrap data...");
-
-  const passwordHash = await hashPassword("admin123");
-
-  await db.insert(users).values({
-    email: "admin@bobsolar.com",
-    passwordHash,
-    name: "Admin",
-    role: "admin",
-  });
-
-  console.log("Admin user created");
 
   const settings: { key: string; value: string }[] = [
     { key: "company_name", value: "BOB Solar" },

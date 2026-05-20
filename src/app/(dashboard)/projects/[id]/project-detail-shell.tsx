@@ -38,10 +38,12 @@ import {
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { usePaymentMethods } from "@/hooks/use-payments";
+import { useInventoryItems } from "@/hooks/use-inventory";
+import { usePaymentMethods, useProjectPayments, useRecordPayment } from "@/hooks/use-payments";
 import {
   useAddProjectCost,
   useAddProjectRemark,
+  useConsumeProjectInventory,
   useCreateProjectWarrantyAlert,
   useDeleteProjectCost,
   useDeleteProjectRemark,
@@ -61,6 +63,7 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import { cn, formatMMK } from "@/lib/utils";
 import {
   addProjectCostSchema,
+  consumeProjectInventorySchema,
   createWarrantyAlertSchema,
   isProjectStatus,
   type ProjectStatus,
@@ -74,6 +77,8 @@ function statusBadgeTone(status: ProjectStatus): string {
       return "border-emerald-500/35 bg-emerald-500/10 text-emerald-200";
     case "on_hold":
       return "border-amber-500/35 bg-amber-500/10 text-amber-300";
+    case "installation_completed":
+      return "border-cyan-500/35 bg-cyan-500/10 text-cyan-200";
     case "completed":
       return "border-border/70 bg-emerald-500/15 text-emerald-200";
     case "cancelled":
@@ -132,7 +137,14 @@ export function ProjectDetailShell({
 
   const updateProjectMutation = useUpdateProject();
   const addCostMutation = useAddProjectCost();
+  const consumeInventoryMutation = useConsumeProjectInventory();
   const { data: paymentMethods = [] } = usePaymentMethods();
+  const { data: paymentRows = [] } = useProjectPayments(id);
+  const recordPaymentMutation = useRecordPayment();
+  const { data: inventoryList } = useInventoryItems({ isActive: true });
+  const inventoryOptions =
+    (inventoryList as { items?: Array<{ id: string; name: string; stockQty: number }> } | undefined)
+      ?.items ?? [];
   const deleteCostMutation = useDeleteProjectCost();
   const addRemarkMutation = useAddProjectRemark();
   const deleteRemarkMutation = useDeleteProjectRemark();
@@ -141,6 +153,7 @@ export function ProjectDetailShell({
 
   const [costOpen, setCostOpen] = React.useState(false);
   const [costFilter, setCostFilter] = React.useState<(typeof COST_FILTERS)[number]>("all");
+  const [consumeOpen, setConsumeOpen] = React.useState(false);
 
   const [costForm, setCostForm] = React.useState<{
     paymentMethodId: string;
@@ -153,6 +166,20 @@ export function ProjectDetailShell({
     description: "",
     amount: "",
     costType: "material",
+    incurredDate: format(new Date(), "yyyy-MM-dd"),
+  });
+
+  const [consumeForm, setConsumeForm] = React.useState<{
+    inventoryItemId: string;
+    paymentMethodId: string;
+    quantity: string;
+    description: string;
+    incurredDate: string;
+  }>({
+    inventoryItemId: "",
+    paymentMethodId: "",
+    quantity: "1",
+    description: "",
     incurredDate: format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -170,6 +197,21 @@ export function ProjectDetailShell({
   });
 
   const [busyAlertId, setBusyAlertId] = React.useState<string | null>(null);
+  const [paymentForm, setPaymentForm] = React.useState<{
+    paymentType: "advance" | "final";
+    amount: string;
+    paymentMethodId: string;
+    paymentDate: string;
+    reference: string;
+    notes: string;
+  }>({
+    paymentType: "advance",
+    amount: "",
+    paymentMethodId: "",
+    paymentDate: format(new Date(), "yyyy-MM-dd"),
+    reference: "",
+    notes: "",
+  });
 
   React.useEffect(() => {
     if (costForm.paymentMethodId.length > 0) return;
@@ -178,7 +220,29 @@ export function ProjectDetailShell({
     setCostForm((prev) => ({ ...prev, paymentMethodId: firstMethodId }));
   }, [costForm.paymentMethodId, paymentMethods]);
 
-  const canEditOperational = proj?.status !== "completed" && proj?.status !== "cancelled";
+  React.useEffect(() => {
+    const firstMethodId = paymentMethods[0]?.id ?? "";
+    const firstInventoryId = inventoryOptions[0]?.id ?? "";
+    setConsumeForm((prev) => ({
+      ...prev,
+      paymentMethodId: prev.paymentMethodId || firstMethodId,
+      inventoryItemId: prev.inventoryItemId || firstInventoryId,
+    }));
+  }, [inventoryOptions, paymentMethods]);
+
+  React.useEffect(() => {
+    const firstMethodId = paymentMethods[0]?.id;
+    if (!firstMethodId) return;
+    setPaymentForm((prev) => ({
+      ...prev,
+      paymentMethodId: prev.paymentMethodId || firstMethodId,
+    }));
+  }, [paymentMethods]);
+
+  const canEditOperational =
+    proj?.status !== "installation_completed" &&
+    proj?.status !== "completed" &&
+    proj?.status !== "cancelled";
 
   const filteredCosts = React.useMemo(() => {
     if (!proj) return [];
@@ -267,6 +331,81 @@ export function ProjectDetailShell({
         });
       },
     });
+  }
+
+  function handleSubmitConsume(ev: React.SyntheticEvent): void {
+    ev.preventDefault();
+    const validated = consumeProjectInventorySchema.safeParse({
+      projectId: p.id,
+      inventoryItemId: consumeForm.inventoryItemId,
+      paymentMethodId: consumeForm.paymentMethodId,
+      quantity: Math.round(Number(consumeForm.quantity)),
+      description: consumeForm.description.trim(),
+      incurredDate: new Date(consumeForm.incurredDate),
+    });
+    if (!validated.success) {
+      toast.error(validated.error.issues[0]?.message ?? "Check consume fields");
+      return;
+    }
+
+    consumeInventoryMutation.mutate(validated.data, {
+      onSuccess: (res) => {
+        if (!res.success) {
+          toast.error(res.error);
+          return;
+        }
+        setConsumeOpen(false);
+        setConsumeForm((prev) => ({
+          ...prev,
+          quantity: "1",
+          description: "",
+          incurredDate: format(new Date(), "yyyy-MM-dd"),
+        }));
+      },
+    });
+  }
+
+  function handleSubmitPayment(ev: React.SyntheticEvent): void {
+    ev.preventDefault();
+    const amount = Math.round(Number(paymentForm.amount.replace(/,/g, "")));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Payment amount must be greater than zero.");
+      return;
+    }
+
+    if (paymentForm.paymentMethodId.length === 0) {
+      toast.error("Select a payment method.");
+      return;
+    }
+
+    recordPaymentMutation.mutate(
+      {
+        projectId: p.id,
+        paymentType: paymentForm.paymentType,
+        amount,
+        paymentMethodId: paymentForm.paymentMethodId,
+        paymentDate: new Date(paymentForm.paymentDate),
+        reference: paymentForm.reference.trim() || null,
+        notes: paymentForm.notes.trim() || null,
+      },
+      {
+        onSuccess: (res) => {
+          if (!res.success) {
+            toast.error(res.error);
+            return;
+          }
+          setPaymentForm((prev) => ({
+            ...prev,
+            amount: "",
+            reference: "",
+            notes: "",
+            paymentType: "final",
+            paymentDate: format(new Date(), "yyyy-MM-dd"),
+          }));
+          void refetch();
+        },
+      },
+    );
   }
 
   function normalizeCostAmountInput(value: string): string {
@@ -431,6 +570,157 @@ export function ProjectDetailShell({
             ))}
           </div>
 
+          {proj.status === "completed" ? (
+            <div className="bg-card border-border rounded-3xl border p-7">
+              <p className="text-muted-foreground mb-5 text-[10px] font-bold uppercase">
+                Completed project profitability
+              </p>
+              <div className="grid gap-4 md:grid-cols-5">
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Quoted revenue</p>
+                  <p className="font-mono text-base">
+                    {formatMMK(proj.profitability.quotedRevenue)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Received payment</p>
+                  <p className="font-mono text-base">
+                    {formatMMK(proj.profitability.receivedPayment)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Inventory consumed</p>
+                  <p className="font-mono text-base">
+                    {formatMMK(proj.profitability.inventoryConsumedCost)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Additional costs</p>
+                  <p className="font-mono text-base">
+                    {formatMMK(proj.profitability.additionalCosts)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Net profit</p>
+                  <p
+                    className={cn(
+                      "font-mono text-base",
+                      proj.profitability.netProfit >= 0 ? "text-emerald-300" : "text-rose-400",
+                    )}
+                  >
+                    {formatMMK(proj.profitability.netProfit)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="bg-card border-border rounded-3xl border p-7">
+            <p className="text-muted-foreground mb-5 text-[10px] font-bold uppercase">
+              Payment receive
+            </p>
+            <div className="mb-5 grid gap-4 md:grid-cols-4">
+              <div>
+                <p className="text-muted-foreground text-[10px] uppercase">Quoted</p>
+                <p className="font-mono text-base">{formatMMK(proj.profitability.quotedRevenue)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-[10px] uppercase">Received</p>
+                <p className="font-mono text-base">
+                  {formatMMK(proj.profitability.receivedPayment)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-[10px] uppercase">Outstanding</p>
+                <p className="font-mono text-base text-amber-300">
+                  {formatMMK(proj.profitability.outstandingReceivable)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-[10px] uppercase">Records</p>
+                <p className="font-mono text-base">{paymentRows.length}</p>
+              </div>
+            </div>
+            <form className="grid gap-3 md:grid-cols-6" onSubmit={handleSubmitPayment}>
+              <Select
+                value={paymentForm.paymentType}
+                onValueChange={(v: "advance" | "final") => {
+                  setPaymentForm((prev) => ({ ...prev, paymentType: v }));
+                }}
+              >
+                <SelectTrigger className="md:col-span-1">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="advance">Advance</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                className="md:col-span-1"
+                placeholder="Amount (MMK)"
+                value={paymentForm.amount}
+                onChange={(e) => {
+                  setPaymentForm((prev) => ({
+                    ...prev,
+                    amount: normalizeCostAmountInput(e.target.value),
+                  }));
+                }}
+              />
+              <Select
+                value={paymentForm.paymentMethodId}
+                onValueChange={(v) => {
+                  setPaymentForm((prev) => ({ ...prev, paymentMethodId: v }));
+                }}
+              >
+                <SelectTrigger className="md:col-span-1">
+                  <SelectValue placeholder="Wallet type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map((pm) => (
+                    <SelectItem key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                className="md:col-span-1"
+                type="date"
+                value={paymentForm.paymentDate}
+                onChange={(e) => {
+                  setPaymentForm((prev) => ({ ...prev, paymentDate: e.target.value }));
+                }}
+              />
+              <Input
+                className="md:col-span-1"
+                placeholder="Reference"
+                value={paymentForm.reference}
+                onChange={(e) => {
+                  setPaymentForm((prev) => ({ ...prev, reference: e.target.value }));
+                }}
+              />
+              <Button
+                className="md:col-span-1"
+                type="submit"
+                disabled={recordPaymentMutation.isPending || proj.status === "cancelled"}
+              >
+                {recordPaymentMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Receive
+              </Button>
+              <Textarea
+                className="md:col-span-6"
+                placeholder="Payment note"
+                value={paymentForm.notes}
+                onChange={(e) => {
+                  setPaymentForm((prev) => ({ ...prev, notes: e.target.value }));
+                }}
+              />
+            </form>
+          </div>
+
           <div className="grid gap-6 lg:grid-cols-2">
             <motion.div variants={staggerContainer} animate="animate">
               <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
@@ -480,14 +770,123 @@ export function ProjectDetailShell({
                   </Button>
                 ))}
               </div>
-              <Button
-                className="rounded-full"
-                onClick={() => {
-                  setCostOpen(true);
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add cost
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => {
+                    setConsumeOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Consume inventory
+                </Button>
+                <Button
+                  className="rounded-full"
+                  onClick={() => {
+                    setCostOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add cost
+                </Button>
+              </div>
+              <Sheet open={consumeOpen} onOpenChange={setConsumeOpen}>
+                <SheetContent className="sm:max-w-md">
+                  <form onSubmit={handleSubmitConsume} className="space-y-8">
+                    <SheetHeader>
+                      <SheetTitle>Consume inventory to project</SheetTitle>
+                    </SheetHeader>
+
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <Label>Inventory item</Label>
+                        <Select
+                          value={consumeForm.inventoryItemId}
+                          onValueChange={(v: string) => {
+                            setConsumeForm((s) => ({ ...s, inventoryItemId: v }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select inventory item" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {inventoryOptions.map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name} · Stock {item.stockQty}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Quantity</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={1}
+                          required
+                          value={consumeForm.quantity}
+                          onChange={(e) => {
+                            setConsumeForm((s) => ({ ...s, quantity: e.target.value }));
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Paid via</Label>
+                        <Select
+                          value={consumeForm.paymentMethodId}
+                          onValueChange={(v: string) => {
+                            setConsumeForm((s) => ({ ...s, paymentMethodId: v }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Payment source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paymentMethods.map((method) => (
+                              <SelectItem key={method.id} value={method.id}>
+                                {method.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Input
+                          required
+                          value={consumeForm.description}
+                          onChange={(e) => {
+                            setConsumeForm((s) => ({ ...s, description: e.target.value }));
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Incurred date</Label>
+                        <Input
+                          type="date"
+                          required
+                          value={consumeForm.incurredDate}
+                          onChange={(e) => {
+                            setConsumeForm((s) => ({ ...s, incurredDate: e.target.value }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <SheetFooter>
+                      <Button
+                        type="submit"
+                        className="w-full rounded-2xl"
+                        disabled={consumeInventoryMutation.isPending}
+                      >
+                        {consumeInventoryMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Consume inventory
+                      </Button>
+                    </SheetFooter>
+                  </form>
+                </SheetContent>
+              </Sheet>
               <Sheet open={costOpen} onOpenChange={setCostOpen}>
                 <SheetContent className="sm:max-w-md">
                   <form onSubmit={handleSubmitCost} className="space-y-8">

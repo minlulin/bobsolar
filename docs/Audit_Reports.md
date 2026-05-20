@@ -90,3 +90,64 @@ Evidence:
 
 3. Finance SSoT doc consistency sweep:
 - `docs/finance_system_ProgressLog.md` should be updated to reflect final chosen RBAC behavior and current implementation boundaries.
+
+---
+
+Date: 2026-05-20
+
+## Remediation Applied (This Turn)
+
+### 1) RBAC policy lock: finance-sensitive actions are admin-only
+Evidence now:
+- `src/actions/project-actions.ts`
+  - `addProjectCost()` now requires `requireFinanceAccess()`.
+  - `deleteProjectCost()` now requires `requireFinanceAccess()`.
+  - New `consumeProjectInventory()` requires `requireFinanceAccess()`.
+
+### 2) One-time role cleanup script (idempotent)
+Evidence now:
+- Added `scripts/promote-staff-admin.ts`.
+- Added package script: `pnpm db:promote-staff-admin`.
+- Script behavior:
+  - promotes all `users.role='staff'` to `admin`
+  - logs promoted rows
+  - safe to rerun (idempotent when no staff remains).
+
+### 3) Auth lockout test coverage completed
+Evidence now:
+- Added `src/__tests__/auth-login-lockout.test.ts`:
+  - lock after max failed attempts
+  - block during lock window
+  - clear lock row on successful login.
+
+### 4) Inventory -> Project Expense flow (separate explicit action)
+Evidence now:
+- Added validator: `consumeProjectInventorySchema` in `src/lib/validators/project.ts`.
+- Added action: `consumeProjectInventory()` in `src/actions/project-actions.ts`.
+- Added UI action in project detail:
+  - "Consume inventory" sheet in `src/app/(dashboard)/projects/[id]/project-detail-shell.tsx`.
+- Behavior:
+  - validates project + inventory + quantity
+  - blocks insufficient stock
+  - decrements `inventory_items.stock_qty`
+  - creates `project_costs` row
+  - posts balanced journal entry with `sourceType='project_expense'`.
+
+### 5) Completed-project profitability view added
+Evidence now:
+- `getProject()` now returns `profitability` payload:
+  - `quotedRevenue`
+  - `receivedPayment`
+  - `inventoryConsumedCost`
+  - `additionalCosts`
+  - `netProfit`
+- UI section rendered for completed projects in:
+  - `src/app/(dashboard)/projects/[id]/project-detail-shell.tsx`.
+
+### 6) Integration test coverage for consume flow and profitability
+Evidence now:
+- Updated `src/__tests__/db-workflow-master.test.ts`:
+  - success path consumes inventory and decreases stock
+  - insufficient stock fails without additional decrement
+  - invalid project consume fails
+  - profitability fields verified for mixed inventory + additional costs.

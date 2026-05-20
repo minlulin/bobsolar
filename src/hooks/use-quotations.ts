@@ -70,9 +70,6 @@ export function useCreateQuotation(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
-      toast.error("Failed to create quotation");
-    },
   });
 }
 
@@ -99,9 +96,6 @@ export function useUpdateQuotationStatus(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
-      toast.error("Failed to update status");
-    },
   });
 }
 
@@ -122,9 +116,6 @@ export function useDeleteQuotation(): ReturnType<
       } else {
         toast.error(response.error);
       }
-    },
-    onError: () => {
-      toast.error("Failed to delete quotation");
     },
   });
 }
@@ -151,9 +142,6 @@ export function useUpdateQuotation(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
-      toast.error("Failed to update quotation");
-    },
   });
 }
 
@@ -178,9 +166,6 @@ export function useDuplicateQuotation(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
-      toast.error("Failed to duplicate quotation");
-    },
   });
 }
 
@@ -202,9 +187,6 @@ export function useArchiveQuotation(): ReturnType<
         toast.error(response.error);
       }
     },
-    onError: () => {
-      toast.error("Failed to archive quotation");
-    },
   });
 }
 
@@ -225,9 +207,6 @@ export function useRestoreQuotation(): ReturnType<
       } else {
         toast.error(response.error);
       }
-    },
-    onError: () => {
-      toast.error("Failed to restore quotation");
     },
   });
 }

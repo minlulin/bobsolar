@@ -46,10 +46,10 @@ export function PreferencesTab(): React.JSX.Element {
   }
 
   return (
-    <div className="border-border/70 bg-card/80 space-y-6 rounded-2xl border p-6">
+    <div className="border-border bg-card max-w-3xl space-y-6 rounded-xl border p-6">
       <h3 className="font-heading text-lg font-semibold">Preferences</h3>
       <div className="space-y-2">
-        <Label>Theme</Label>
+        <Label className="text-muted-foreground text-xs">Theme</Label>
         <Select
           value={prefs.theme}
           onValueChange={(value) => {
@@ -70,7 +70,7 @@ export function PreferencesTab(): React.JSX.Element {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Default Tax %</Label>
+        <Label className="text-muted-foreground text-xs">Default Tax %</Label>
         <Input
           value={prefs.defaultTaxPercent}
           onChange={(e) => {
@@ -79,7 +79,9 @@ export function PreferencesTab(): React.JSX.Element {
         />
       </div>
       <div className="space-y-2">
-        <Label>Default Warranty Alert Duration (months)</Label>
+        <Label className="text-muted-foreground text-xs">
+          Default Warranty Alert Duration (months)
+        </Label>
         <Input
           value={prefs.defaultWarrantyMonths}
           onChange={(e) => {
@@ -87,7 +89,9 @@ export function PreferencesTab(): React.JSX.Element {
           }}
         />
       </div>
-      <Button onClick={savePreferences}>Save Preferences</Button>
+      <Button className="rounded-lg" onClick={savePreferences}>
+        Save Preferences
+      </Button>
     </div>
   );
 }

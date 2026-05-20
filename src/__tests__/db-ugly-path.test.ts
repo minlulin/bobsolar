@@ -34,6 +34,13 @@ vi.mock("@/lib/auth/validate", () => ({
       role: "admin" as const,
     });
   },
+  requireFinanceAccess: async (): Promise<{ userId: string; role: "admin" }> => {
+    if (!authUserId) throw new Error("Auth user not initialized");
+    return await Promise.resolve({
+      userId: authUserId,
+      role: "admin" as const,
+    });
+  },
 }));
 
 neonConfig.webSocketConstructor = ws;

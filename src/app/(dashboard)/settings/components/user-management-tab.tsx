@@ -88,12 +88,13 @@ export function UserManagementTab(): React.JSX.Element {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="border-border bg-card space-y-5 rounded-xl border p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-heading text-lg font-semibold">User Management</h3>
         {isAdmin ? (
           <Button
             disabled={users.length >= USER_CAP}
+            className="rounded-lg"
             onClick={() => {
               setCreating(true);
             }}
@@ -116,7 +117,7 @@ export function UserManagementTab(): React.JSX.Element {
         {users.map((user) => (
           <div
             key={user.id}
-            className="border-border/70 bg-muted/35 flex items-center justify-between rounded-xl border p-4"
+            className="border-border/70 bg-muted/35 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
           >
             <div>
               <p className="font-medium">{user.name}</p>
@@ -127,6 +128,7 @@ export function UserManagementTab(): React.JSX.Element {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="rounded-lg"
                   onClick={() => {
                     setEditing({
                       id: user.id,
@@ -140,6 +142,7 @@ export function UserManagementTab(): React.JSX.Element {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="rounded-lg"
                   onClick={() => void handleResetPassword(user.id)}
                 >
                   Reset Password

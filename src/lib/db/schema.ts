@@ -49,6 +49,7 @@ export const projectStatusEnum = pgEnum("project_status", [
   "planning",
   "in_progress",
   "on_hold",
+  "installation_completed",
   "completed",
   "cancelled",
 ]);
@@ -139,7 +140,7 @@ export const inventoryItems = pgTable("inventory_items", {
   name: text("name").notNull(),
   category: inventoryCategoryEnum("category").notNull(),
   unit: inventoryUnitEnum("unit").notNull(),
-  unitPrice: decimal("unit_price", { precision: 15, scale: 0 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
   stockQty: integer("stock_qty").default(0).notNull(),
   brand: text("brand"),
   modelNumber: text("model_number"),
@@ -154,13 +155,13 @@ export const quotations = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     quoteNumber: text("quote_number").unique().notNull(), // QT-2026-0001
     customerId: uuid("customer_id")
-      .references(() => customers.id, { onDelete: "cascade" })
+      .references(() => customers.id, { onDelete: "restrict" })
       .notNull(),
     createdBy: uuid("created_by")
       .references(() => users.id)
       .notNull(),
     status: quotationStatusEnum("status").default("draft").notNull(),
-    subtotal: decimal("subtotal", { precision: 15, scale: 0 }).notNull(),
+    subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
     discountPercent: decimal("discount_percent", {
       precision: 5,
       scale: 2,
@@ -169,13 +170,13 @@ export const quotations = pgTable(
       .notNull(),
     discountAmount: decimal("discount_amount", {
       precision: 15,
-      scale: 0,
+      scale: 2,
     })
       .default("0")
       .notNull(),
     taxPercent: decimal("tax_percent", { precision: 5, scale: 2 }).default("0").notNull(),
-    taxAmount: decimal("tax_amount", { precision: 15, scale: 0 }).default("0").notNull(),
-    total: decimal("total", { precision: 15, scale: 0 }).notNull(),
+    taxAmount: decimal("tax_amount", { precision: 15, scale: 2 }).default("0").notNull(),
+    total: decimal("total", { precision: 15, scale: 2 }).notNull(),
     notes: text("notes"),
     validUntil: timestamp("valid_until"),
     isArchived: boolean("is_archived").default(false).notNull(),
@@ -209,8 +210,8 @@ export const quotationItems = pgTable(
       precision: 5,
       scale: 2,
     }).default("0"),
-    unitPrice: decimal("unit_price", { precision: 15, scale: 0 }).notNull(), // Snapshot
-    totalPrice: decimal("total_price", { precision: 15, scale: 0 }).notNull(),
+    unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(), // Snapshot
+    totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
     sortOrder: integer("sort_order").notNull(),
   },
   (table) => [index("quotation_items_quotation_id_idx").on(table.quotationId)],
@@ -231,10 +232,10 @@ export const projects = pgTable(
       precision: 10,
       scale: 2,
     }).notNull(),
-    quotedTotal: decimal("quoted_total", { precision: 15, scale: 0 }).notNull(),
+    quotedTotal: decimal("quoted_total", { precision: 15, scale: 2 }).notNull(),
     actualTotal: decimal("actual_total", {
       precision: 15,
-      scale: 0,
+      scale: 2,
     }).default("0"),
     startDate: timestamp("start_date"),
     targetCompletion: timestamp("target_completion"),
@@ -262,7 +263,7 @@ export const projectCosts = pgTable(
       .notNull(),
     itemId: uuid("item_id").references(() => inventoryItems.id),
     description: text("description").notNull(),
-    amount: decimal("amount", { precision: 15, scale: 0 }).notNull(),
+    amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
     costType: costTypeEnum("cost_type").notNull(),
     incurredDate: timestamp("incurred_date").defaultNow().notNull(),
     addedBy: uuid("added_by")
@@ -354,11 +355,11 @@ export const projectVouchers = pgTable(
     voucherNumber: text("voucher_number").unique().notNull(),
     voucherType: voucherTypeEnum("voucher_type").notNull(),
     issuedAt: timestamp("issued_at").defaultNow().notNull(),
-    totalAmount: decimal("total_amount", { precision: 15, scale: 0 }).notNull(),
-    paidAmount: decimal("paid_amount", { precision: 15, scale: 0 }).notNull(),
+    totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
+    paidAmount: decimal("paid_amount", { precision: 15, scale: 2 }).notNull(),
     balanceAmount: decimal("balance_amount", {
       precision: 15,
-      scale: 0,
+      scale: 2,
     }).notNull(),
     notes: text("notes"),
     createdBy: uuid("created_by")
@@ -387,7 +388,7 @@ export const projectPayments = pgTable(
       .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
     voucherId: uuid("voucher_id").references(() => projectVouchers.id),
-    amount: decimal("amount", { precision: 15, scale: 0 }).notNull(),
+    amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
     paymentMethodId: uuid("payment_method_id")
       .references(() => paymentMethods.id)
       .notNull(),
@@ -458,8 +459,8 @@ export const journalLines = pgTable(
     projectId: uuid("project_id").references(() => projects.id, {
       onDelete: "set null",
     }),
-    debit: decimal("debit", { precision: 15, scale: 0 }).default("0").notNull(),
-    credit: decimal("credit", { precision: 15, scale: 0 }).default("0").notNull(),
+    debit: decimal("debit", { precision: 15, scale: 2 }).default("0").notNull(),
+    credit: decimal("credit", { precision: 15, scale: 2 }).default("0").notNull(),
     memo: text("memo"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

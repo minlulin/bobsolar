@@ -54,7 +54,10 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
           paymentMethodId: data.paymentMethodId,
           paymentDate: data.paymentDate,
           reference: data.reference ?? null,
-          notes: data.notes ?? null,
+          notes:
+            data.notes && data.notes.trim().length > 0
+              ? `[${data.paymentType}] ${data.notes.trim()}`
+              : `[${data.paymentType}]`,
           createdBy: auth.userId,
         })
         .returning();

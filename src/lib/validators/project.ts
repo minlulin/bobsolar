@@ -41,6 +41,15 @@ export const addProjectCostSchema = z.object({
   incurredDate: z.coerce.date(),
 });
 
+export const consumeProjectInventorySchema = z.object({
+  projectId: z.uuid(),
+  inventoryItemId: z.uuid(),
+  paymentMethodId: z.uuid(),
+  quantity: z.number().int().min(1),
+  description: z.string().min(1).max(500),
+  incurredDate: z.coerce.date(),
+});
+
 export const addProjectRemarkSchema = z.object({
   projectId: z.uuid(),
   content: z.string().min(1).max(8000),
@@ -68,6 +77,7 @@ export const projectListFilterSchema = z.object({
 export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type AddProjectCostInput = z.infer<typeof addProjectCostSchema>;
+export type ConsumeProjectInventoryInput = z.infer<typeof consumeProjectInventorySchema>;
 export type AddProjectRemarkInput = z.infer<typeof addProjectRemarkSchema>;
 export type CreateWarrantyAlertInput = z.infer<typeof createWarrantyAlertSchema>;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;

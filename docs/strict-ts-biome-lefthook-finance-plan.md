@@ -80,3 +80,9 @@ Repo: `C:\bobsolar`
 - Biome + Lefthook enforce lint/format and pre-push quality gate.
 - Expense ledger credit side correctly maps from selected payment method.
 - `typecheck`, `lint`, `test`, and `build` pass.
+
+## 2026-05-20 Drift Note
+- Finance policy/runtime alignment update:
+  - Project finance-sensitive operations now stay on admin-only guard (`requireFinanceAccess`) for cost posting/deletion and inventory-consumption posting.
+- Added operational script for policy rollout:
+  - `pnpm db:promote-staff-admin` (idempotent one-time role migration).

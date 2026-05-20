@@ -54,8 +54,9 @@ describe("PROJECT_STATUSES", () => {
   it("contains all expected statuses", () => {
     expect(PROJECT_STATUSES).toContain("planning");
     expect(PROJECT_STATUSES).toContain("in_progress");
-    expect(PROJECT_STATUSES).toContain("completed");
     expect(PROJECT_STATUSES).toContain("on_hold");
+    expect(PROJECT_STATUSES).toContain("installation_completed");
+    expect(PROJECT_STATUSES).toContain("completed");
     expect(PROJECT_STATUSES).toContain("cancelled");
   });
 });
@@ -103,57 +104,61 @@ describe("isProjectStatus", () => {
 });
 
 describe("canTransitionQuotationStatus", () => {
-  it("allows draft → sent", () => {
+  it("allows draft to sent", () => {
     expect(canTransitionQuotationStatus("draft", "sent")).toBe(true);
   });
 
-  it("allows sent → accepted", () => {
+  it("allows sent to accepted", () => {
     expect(canTransitionQuotationStatus("sent", "accepted")).toBe(true);
   });
 
-  it("allows sent → rejected", () => {
+  it("allows sent to rejected", () => {
     expect(canTransitionQuotationStatus("sent", "rejected")).toBe(true);
   });
 
-  it("allows accepted → draft (reopen)", () => {
+  it("allows accepted to draft (reopen)", () => {
     expect(canTransitionQuotationStatus("accepted", "draft")).toBe(true);
   });
 
-  it("blocks draft → accepted (skip sent)", () => {
+  it("blocks draft to accepted", () => {
     expect(canTransitionQuotationStatus("draft", "accepted")).toBe(false);
   });
 
-  it("blocks accepted → sent (cannot go back)", () => {
+  it("blocks accepted to sent", () => {
     expect(canTransitionQuotationStatus("accepted", "sent")).toBe(false);
   });
 
-  it("blocks rejected → accepted", () => {
+  it("blocks rejected to accepted", () => {
     expect(canTransitionQuotationStatus("rejected", "accepted")).toBe(false);
   });
 });
 
 describe("canTransitionProjectStatus", () => {
-  it("allows planning → in_progress", () => {
+  it("allows planning to in_progress", () => {
     expect(canTransitionProjectStatus("planning", "in_progress")).toBe(true);
   });
 
-  it("allows in_progress → on_hold", () => {
+  it("allows in_progress to on_hold", () => {
     expect(canTransitionProjectStatus("in_progress", "on_hold")).toBe(true);
   });
 
-  it("allows on_hold → in_progress", () => {
+  it("allows on_hold to in_progress", () => {
     expect(canTransitionProjectStatus("on_hold", "in_progress")).toBe(true);
   });
 
-  it("allows in_progress → completed", () => {
-    expect(canTransitionProjectStatus("in_progress", "completed")).toBe(true);
+  it("allows in_progress to installation_completed", () => {
+    expect(canTransitionProjectStatus("in_progress", "installation_completed")).toBe(true);
   });
 
-  it("blocks completed → in_progress", () => {
+  it("blocks completed to in_progress", () => {
     expect(canTransitionProjectStatus("completed", "in_progress")).toBe(false);
   });
 
-  it("allows planning → completed (business rule permits direct completion)", () => {
-    expect(canTransitionProjectStatus("planning", "completed")).toBe(true);
+  it("blocks planning to completed", () => {
+    expect(canTransitionProjectStatus("planning", "completed")).toBe(false);
+  });
+
+  it("allows installation_completed to completed", () => {
+    expect(canTransitionProjectStatus("installation_completed", "completed")).toBe(true);
   });
 });

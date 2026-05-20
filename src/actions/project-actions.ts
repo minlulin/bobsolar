@@ -12,17 +12,19 @@ import {
 import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { requireAdmin, requireAuth, requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   type Customer,
   customers,
+  inventoryItems,
   journalEntries,
   type Project,
   type ProjectCost,
   type ProjectRemark,
   paymentMethods,
   projectCosts,
+  projectPayments,
   projectRemarks,
   projects,
   type Quotation,
@@ -48,6 +50,7 @@ import {
   addProjectCostSchema,
   addProjectRemarkSchema,
   canTransitionProjectStatus,
+  consumeProjectInventorySchema,
   convertToProjectSchema,
   createWarrantyAlertSchema,
   isProjectStatus,
@@ -80,6 +83,14 @@ export type ProjectDetail = InferSelectModel<typeof projects> & {
   warrantyAlerts: WarrantyAlert[];
   actualTotalComputed: number;
   budgetVariance: number;
+  profitability: {
+    quotedRevenue: number;
+    receivedPayment: number;
+    outstandingReceivable: number;
+    inventoryConsumedCost: number;
+    additionalCosts: number;
+    netProfit: number;
+  };
 };
 
 async function nextProjectSequence(year: number): Promise<number> {
@@ -111,6 +122,26 @@ async function persistActualTotal(projectId: string): Promise<number> {
     .set({ actualTotal: String(total) })
     .where(eq(projects.id, projectId));
   return total;
+}
+
+async function getProjectReceivedPayment(projectId: string): Promise<number> {
+  const [row] = await db
+    .select({
+      total: sql<string>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as("total"),
+    })
+    .from(projectPayments)
+    .where(eq(projectPayments.projectId, projectId));
+  return Math.round(Number(row?.total ?? 0));
+}
+
+async function getProjectOutstandingReceivable(projectId: string): Promise<number> {
+  const project = await db.query.projects.findFirst({
+    where: eq(projects.id, projectId),
+    columns: { quotedTotal: true },
+  });
+  if (!project) return 0;
+  const received = await getProjectReceivedPayment(projectId);
+  return Math.max(0, Math.round(Number(project.quotedTotal)) - received);
 }
 
 function rollupWarranty(
@@ -253,7 +284,7 @@ export async function getProjects(
 
     const scopeCond =
       scope === "active"
-        ? inArray(projects.status, ["planning", "in_progress", "on_hold"])
+        ? inArray(projects.status, ["planning", "in_progress", "on_hold", "installation_completed"])
         : eq(projects.status, "completed");
 
     const statusCond = status ? eq(projects.status, status) : undefined;
@@ -410,6 +441,15 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
     );
     const quoted = Math.round(Number(row.quotedTotal));
     const budgetVariance = actualTotalComputed - quoted;
+    const receivedPayment = await getProjectReceivedPayment(validatedId);
+    const outstandingReceivable = Math.max(0, quoted - receivedPayment);
+    const inventoryConsumedCost = Math.round(
+      row.costs
+        .filter((cost) => cost.itemId !== null)
+        .reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
+    );
+    const additionalCosts = actualTotalComputed - inventoryConsumedCost;
+    const netProfit = receivedPayment - actualTotalComputed;
 
     const costs: ProjectDetail["costs"] = row.costs.map((c) => ({
       ...c,
@@ -430,6 +470,14 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
       warrantyAlerts: row.warrantyAlerts,
       actualTotalComputed,
       budgetVariance,
+      profitability: {
+        quotedRevenue: quoted,
+        receivedPayment,
+        outstandingReceivable,
+        inventoryConsumedCost,
+        additionalCosts,
+        netProfit,
+      },
     });
   } catch (error) {
     return handleActionError(error, "getProject", "Failed to fetch project");
@@ -448,6 +496,11 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
 async function applyProjectCompletion(
   projectRow: InferSelectModel<typeof projects>,
 ): Promise<void> {
+  const outstanding = await getProjectOutstandingReceivable(projectRow.id);
+  if (outstanding > 0) {
+    throw new Error("project_receivable_outstanding");
+  }
+
   const didComplete = await db.transaction(async (tx) => {
     // Idempotent: skip if already completed.
     const updated = await tx
@@ -595,6 +648,11 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
 
     return successResponse(updated);
   } catch (error) {
+    if (error instanceof Error && error.message === "project_receivable_outstanding") {
+      return handleStateError(
+        "Cannot complete project with outstanding receivable. Record all payments first.",
+      );
+    }
     return handleActionError(error, "updateProject", "Failed to update project");
   }
 }
@@ -617,7 +675,9 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
     }
 
     if (!canTransitionProjectStatus(existing.status, "completed")) {
-      return handleStateError("Cannot mark this project completed from its current status.");
+      return handleStateError(
+        "Project must be in Installation Completed state before final completion.",
+      );
     }
 
     await applyProjectCompletion(existing);
@@ -634,13 +694,18 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
 
     return successResponse(updated);
   } catch (error) {
+    if (error instanceof Error && error.message === "project_receivable_outstanding") {
+      return handleStateError(
+        "Cannot complete project with outstanding receivable. Record all payments first.",
+      );
+    }
     return handleActionError(error, "markProjectCompleted", "Failed to complete project");
   }
 }
 
 export async function addProjectCost(raw: unknown): Promise<ActionResponse<ProjectCost[]>> {
   try {
-    const auth = await requireAuth();
+    const auth = await requireFinanceAccess();
     assertFinanceSsotDrift();
     const data = addProjectCostSchema.parse(raw);
 
@@ -648,8 +713,12 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
       where: eq(projects.id, data.projectId),
     });
     if (!projectRow) return handleNotFoundError("Project", data.projectId);
-    if (projectRow.status === "completed" || projectRow.status === "cancelled") {
-      return handleStateError("Cannot add costs to a completed or cancelled project.");
+    if (
+      projectRow.status === "installation_completed" ||
+      projectRow.status === "completed" ||
+      projectRow.status === "cancelled"
+    ) {
+      return handleStateError("Cannot add costs after installation completion or project closure.");
     }
 
     await db.transaction(async (tx) => {
@@ -730,11 +799,153 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
   }
 }
 
+export async function consumeProjectInventory(
+  raw: unknown,
+): Promise<ActionResponse<ProjectCost[]>> {
+  try {
+    const auth = await requireFinanceAccess();
+    assertFinanceSsotDrift();
+    const data = consumeProjectInventorySchema.parse(raw);
+
+    const projectRow = await db.query.projects.findFirst({
+      where: eq(projects.id, data.projectId),
+    });
+    if (!projectRow) return handleNotFoundError("Project", data.projectId);
+    if (
+      projectRow.status === "installation_completed" ||
+      projectRow.status === "completed" ||
+      projectRow.status === "cancelled"
+    ) {
+      return handleStateError(
+        "Cannot consume inventory after installation completion or project closure.",
+      );
+    }
+
+    await db.transaction(async (tx) => {
+      const item = await tx.query.inventoryItems.findFirst({
+        where: eq(inventoryItems.id, data.inventoryItemId),
+      });
+      if (!item) {
+        throw new Error("inventory_not_found");
+      }
+      if (!item.isActive) {
+        throw new Error("inventory_inactive");
+      }
+      if (item.stockQty < data.quantity) {
+        throw new Error("insufficient_stock");
+      }
+
+      const stockRemaining = item.stockQty - data.quantity;
+      await tx
+        .update(inventoryItems)
+        .set({
+          stockQty: stockRemaining,
+          updatedAt: new Date(),
+        })
+        .where(eq(inventoryItems.id, item.id));
+
+      const unitPrice = Math.round(Number(item.unitPrice));
+      const amountRounded = Math.round(unitPrice * data.quantity);
+      const [createdCost] = await tx
+        .insert(projectCosts)
+        .values({
+          projectId: data.projectId,
+          itemId: item.id,
+          description: data.description,
+          amount: String(amountRounded),
+          costType: "material",
+          incurredDate: data.incurredDate,
+          addedBy: auth.userId,
+        })
+        .returning({ id: projectCosts.id });
+
+      if (!createdCost) {
+        throw new Error("cost_insert_failed");
+      }
+
+      const method = await tx.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.id, data.paymentMethodId),
+      });
+      if (!method) {
+        throw new Error("payment_method_not_found");
+      }
+
+      const assetAccount = mapPaymentMethodNameToAssetAccount(method.name);
+      if (!assetAccount) {
+        throw new Error(`unsupported_payment_method:${method.name}`);
+      }
+
+      await createBalancedJournalEntry({
+        tx,
+        entryDate: data.incurredDate,
+        memo: `${data.description} (consume ${data.quantity} x ${item.name})`,
+        sourceType: "project_expense",
+        sourceId: createdCost.id,
+        projectId: data.projectId,
+        createdBy: auth.userId,
+        lines: [
+          {
+            accountCode: "material_expense",
+            debit: amountRounded,
+            credit: 0,
+          },
+          {
+            accountCode: assetAccount,
+            debit: 0,
+            credit: amountRounded,
+          },
+        ],
+      });
+    });
+
+    const itemForAmount = await db.query.inventoryItems.findFirst({
+      where: eq(inventoryItems.id, data.inventoryItemId),
+      columns: { unitPrice: true },
+    });
+    const consumedAmount = Math.round(Number(itemForAmount?.unitPrice ?? 0) * data.quantity);
+    const actualSpend = await persistActualTotal(data.projectId);
+    const costs = await db.query.projectCosts.findMany({
+      where: eq(projectCosts.projectId, data.projectId),
+      orderBy: [desc(projectCosts.incurredDate)],
+    });
+
+    await maybeNotifyBudgetOverrun(
+      data.projectId,
+      Math.round(Number(projectRow.quotedTotal)),
+      actualSpend - consumedAmount,
+      actualSpend,
+    );
+
+    revalidatePath(`/projects/${data.projectId}`);
+    revalidatePath("/projects");
+    revalidatePath("/inventory");
+
+    return successResponse(costs);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "inventory_not_found") {
+        return handleStateError("Inventory item not found.");
+      }
+      if (error.message === "inventory_inactive") {
+        return handleStateError("Inventory item is inactive.");
+      }
+      if (error.message === "insufficient_stock") {
+        return handleStateError("Insufficient stock for requested consumption quantity.");
+      }
+    }
+    return handleActionError(
+      error,
+      "consumeProjectInventory",
+      "Failed to consume inventory for project",
+    );
+  }
+}
+
 export async function deleteProjectCost(
   costId: string,
 ): Promise<ActionResponse<{ projectId: string }>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
     const validatedCostId = uuidSchema.parse(costId);
     const cost = await db.query.projectCosts.findFirst({
       where: eq(projectCosts.id, validatedCostId),
@@ -751,7 +962,7 @@ export async function deleteProjectCost(
 
       if (journalEntry) {
         await assertJournalEntryNotReversed(tx, journalEntry.id);
-        const auth = await requireAuth();
+        const auth = await requireFinanceAccess();
         await reverseJournalEntry({
           tx,
           originalEntryId: journalEntry.id,

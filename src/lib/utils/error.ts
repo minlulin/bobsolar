@@ -77,7 +77,26 @@ export function logError(context: string, error: unknown, extra?: Record<string,
         : String(error),
     ...extra,
   };
-  console.error(JSON.stringify(errorInfo, null, 2));
+
+  // DB/driver errors can contain BigInt and circular structures.
+  // Guard logging so error reporting never throws while handling an action error.
+  const seen = new WeakSet<object>();
+  const serialized = JSON.stringify(
+    errorInfo,
+    (_key, value) => {
+      if (typeof value === "bigint") {
+        return value.toString();
+      }
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) return "[Circular]";
+        seen.add(value);
+      }
+      return value;
+    },
+    2,
+  );
+
+  console.error(serialized);
 }
 
 export function handleActionError(

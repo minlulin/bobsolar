@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, eq, like } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createCustomer } from "@/actions/customer-actions";
@@ -17,6 +18,7 @@ import { getPaymentMethods } from "@/actions/payment-actions";
 import {
   addProjectCost,
   addProjectRemark,
+  consumeProjectInventory,
   convertQuotationToProject,
   getProject,
   markProjectCompleted,
@@ -66,6 +68,15 @@ vi.mock("@/lib/auth/validate", () => ({
     return await Promise.resolve({
       userId: authState.userId,
       role: authState.role,
+    });
+  },
+  requireFinanceAccess: async (): Promise<{ userId: string; role: "admin" }> => {
+    if (!authState.userId) {
+      throw new Error("Auth context not initialized");
+    }
+    return await Promise.resolve({
+      userId: authState.userId,
+      role: "admin",
     });
   },
 }));
@@ -243,11 +254,22 @@ describeDb("Master workflow integration: DB + server actions", () => {
     const defaultMethodId = methods[0]?.id;
     expect(defaultMethodId).toBeTruthy();
 
+    const consumedCosts = unwrap(
+      await consumeProjectInventory({
+        projectId,
+        inventoryItemId: inventoryId,
+        paymentMethodId: defaultMethodId ?? "",
+        quantity: 2,
+        description: `${runTag} panel consumption`,
+        incurredDate: new Date(),
+      }),
+    );
+    expect(consumedCosts.length).toBeGreaterThan(0);
+
     const costs = unwrap(
       await addProjectCost({
         projectId,
         paymentMethodId: defaultMethodId ?? "",
-        itemId: inventoryId,
         description: `${runTag} install labor`,
         amount: 100000,
         costType: "labor",
@@ -255,6 +277,38 @@ describeDb("Master workflow integration: DB + server actions", () => {
       }),
     );
     expect(costs.length).toBeGreaterThan(0);
+
+    const stockRow = await db.query.inventoryItems.findFirst({
+      where: eq(inventoryItems.id, inventoryId),
+      columns: { stockQty: true },
+    });
+    expect(stockRow?.stockQty).toBe(48);
+
+    const insufficient = await consumeProjectInventory({
+      projectId,
+      inventoryItemId: inventoryId,
+      paymentMethodId: defaultMethodId ?? "",
+      quantity: 9999,
+      description: `${runTag} too much`,
+      incurredDate: new Date(),
+    });
+    expect(insufficient.success).toBe(false);
+
+    const stillStockRow = await db.query.inventoryItems.findFirst({
+      where: eq(inventoryItems.id, inventoryId),
+      columns: { stockQty: true },
+    });
+    expect(stillStockRow?.stockQty).toBe(48);
+
+    const invalidProjectConsume = await consumeProjectInventory({
+      projectId: randomUUID(),
+      inventoryItemId: inventoryId,
+      paymentMethodId: defaultMethodId ?? "",
+      quantity: 1,
+      description: `${runTag} invalid project`,
+      incurredDate: new Date(),
+    });
+    expect(invalidProjectConsume.success).toBe(false);
 
     const remarks = unwrap(
       await addProjectRemark({
@@ -268,6 +322,8 @@ describeDb("Master workflow integration: DB + server actions", () => {
     const projectDetail = unwrap(await getProject(projectId));
     expect(projectDetail.costs.length).toBeGreaterThan(0);
     expect(projectDetail.remarks.length).toBeGreaterThan(0);
+    expect(projectDetail.profitability.inventoryConsumedCost).toBe(700000);
+    expect(projectDetail.profitability.additionalCosts).toBe(100000);
 
     unwrap(await markProjectCompleted(projectId));
 

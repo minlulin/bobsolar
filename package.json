@@ -22,7 +22,11 @@
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=full",
     "db:factory-reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=factory",
+    "db:handover-reset": "tsx scripts/db-handover-reset.ts --confirm=HANDOVER_RESET",
+    "db:handover-verify": "tsx scripts/db-handover-verify.ts",
+    "db:promote-staff-admin": "tsx scripts/promote-staff-admin.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:code": "vitest run --exclude src/__tests__/db-ugly-path.test.ts --exclude src/__tests__/db-workflow-master.test.ts",
     "test:db": "pnpm db:test:ping && pnpm db:migrate:test && vitest run --pool=threads --maxWorkers=1 --no-file-parallelism src/__tests__/db-ugly-path.test.ts src/__tests__/db-workflow-master.test.ts",
     "green:code": "pnpm typecheck && pnpm biome:check && pnpm test:code",
@@ -68,6 +72,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.1.6",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "lefthook": "^1.13.6",
@@ -76,7 +81,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   },
   "browserslist": [
     "last 2 Chrome versions",

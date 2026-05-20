@@ -170,6 +170,24 @@ Goal: Build a business-grade finance system with strict double-entry accounting,
   - `pnpm typecheck` - passed (tsc + tsc sw config)
   - `pnpm build` - passed (all routes compiled successfully)
 
+## 2026-05-20 Incremental Update
+- [x] Locked finance-sensitive project-cost actions to admin-only runtime policy.
+  - `addProjectCost()` and `deleteProjectCost()` now require `requireFinanceAccess()`.
+- [x] Added explicit project-side inventory consumption flow.
+  - New validator/type: `consumeProjectInventorySchema`.
+  - New action: `consumeProjectInventory()` with atomic stock decrement + cost creation + journal posting.
+  - New project detail UI action: "Consume inventory".
+  - Over-consumption policy enforced: block when requested quantity exceeds current stock.
+- [x] Added completed-project profitability panel.
+  - Source fields: quoted revenue, received payments, inventory-consumed cost, additional costs, net profit.
+- [x] Added auth lockout tests for:
+  - lock after max failed attempts
+  - active lock window block
+  - lock reset on successful login.
+- [x] Added one-time idempotent role cleanup script:
+  - `pnpm db:promote-staff-admin`
+  - promotes existing `staff` users to `admin`.
+
 ## Execution Order Recommendation
 1. Phase 1 (integrity hardening)
 2. Phase 2 (master ledger)
@@ -178,3 +196,11 @@ Goal: Build a business-grade finance system with strict double-entry accounting,
 5. Phase 5 (manual ops)
 6. Phase 6 (reports + close)
 7. Phase 7 (perf/security hardening)
+
+## 2026-05-20 Workflow Gap Closure (Implemented)
+- Added explicit two-stage project lifecycle: installation_completed -> completed (final closure).
+- Final completion is now blocked when accounts receivable is still outstanding.
+- Added operator-facing payment receive form on project detail with: payment type (dvance/inal), amount, wallet/payment method, date, reference, and note.
+- Payment entries are tagged in notes with [advance] or [final] for clear audit tracing without breaking existing payment table contracts.
+- Active project scope now includes installation_completed; completed list remains finance-closed completed only.
+

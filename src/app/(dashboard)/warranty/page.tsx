@@ -189,12 +189,17 @@ export default function WarrantyPage(): React.JSX.Element {
                     variant="outline"
                     className="rounded-full text-[11px]"
                     onClick={() => {
-                      setExpandedProjectId((prev) => (prev === group.projectId ? null : group.projectId));
+                      setExpandedProjectId((prev) =>
+                        prev === group.projectId ? null : group.projectId,
+                      );
                     }}
                   >
                     {isExpanded ? "Hide details" : "Show details"}
                     <ChevronDown
-                      className={cn("ml-2 h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")}
+                      className={cn(
+                        "ml-2 h-3.5 w-3.5 transition-transform",
+                        isExpanded && "rotate-180",
+                      )}
                     />
                   </Button>
                 </div>

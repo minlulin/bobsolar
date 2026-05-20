@@ -51,7 +51,7 @@ export async function getFinanceSummary(
 
     const [incomeRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+        sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -62,7 +62,7 @@ export async function getFinanceSummary(
           lte(journalEntries.entryDate, dateTo),
           eq(journalEntries.sourceType, "project_payment"),
           eq(journalEntries.isReversed, false),
-          eq(ledgerAccounts.code, "solar_installation_revenue"),
+          eq(ledgerAccounts.code, "accounts_receivable"),
         ),
       );
 
@@ -91,13 +91,17 @@ export async function getFinanceSummary(
 
     const [arRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric) - sum(${journalLines.credit}::numeric), 0)`.as(
-          "sum",
-        ),
+        amount: sql<number>`coalesce(sum(greatest(
+          cast(${projects.quotedTotal} as numeric) - coalesce((
+            select sum(cast(${projectPayments.amount} as numeric))
+            from ${projectPayments}
+            where ${projectPayments.projectId} = ${projects.id}
+          ), 0),
+          0
+        )), 0)`.as("amount"),
       })
-      .from(journalLines)
-      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
-      .where(eq(ledgerAccounts.code, "accounts_receivable"));
+      .from(projects)
+      .where(eq(projects.status, "completed"));
 
     const assetBalances = await db
       .select({
@@ -128,7 +132,7 @@ export async function getFinanceSummary(
     const totalIncome = Math.round(incomeRow?.sum ?? 0);
     const totalExpense = Math.round(expenseRow?.sum ?? 0);
     const netProfit = totalIncome - totalExpense;
-    const accountsReceivable = Math.round(arRow?.sum ?? 0);
+    const accountsReceivable = Math.round(arRow?.amount ?? 0);
     const cashBalance = Math.round(balanceMap.get("cash_on_hand") ?? 0);
     const walletBalance = Math.round(
       (balanceMap.get("kbz_wallet") ?? 0) +
@@ -174,7 +178,7 @@ export async function getMonthlyTrend(
     const incomeRows = await db
       .select({
         month: sql<string>`to_char(${journalEntries.entryDate}, 'YYYY-MM')`.as("month"),
-        amount: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("amount"),
+        amount: sql<string>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("amount"),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -185,7 +189,7 @@ export async function getMonthlyTrend(
           lte(journalEntries.entryDate, dateTo),
           eq(journalEntries.sourceType, "project_payment"),
           eq(journalEntries.isReversed, false),
-          eq(ledgerAccounts.code, "solar_installation_revenue"),
+          eq(ledgerAccounts.code, "accounts_receivable"),
         ),
       )
       .groupBy(sql`to_char(${journalEntries.entryDate}, 'YYYY-MM')`);

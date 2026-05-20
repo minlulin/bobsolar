@@ -20,5 +20,18 @@ export default defineConfig({
     env: {
       DATABASE_URL: process.env["TEST_DATABASE_URL"] ?? process.env["DATABASE_URL"] ?? "",
     },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      exclude: [
+        "src/__tests__/**",
+        "src/app/**",
+        "src/components/**",
+        "src/hooks/**",
+        "src/lib/db/schema.ts",
+        "src/lib/db/index.ts",
+      ],
+    },
   },
 });

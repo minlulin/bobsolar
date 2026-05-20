@@ -43,7 +43,7 @@ export function AccountTab(): React.JSX.Element {
 
   return (
     <div className="space-y-8">
-      <div className="border-border bg-card max-w-2xl space-y-6 rounded-xl border p-6">
+      <div className="border-border bg-card max-w-3xl space-y-6 rounded-xl border p-6">
         <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">Change Password</Label>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,11 +88,7 @@ export function AccountTab(): React.JSX.Element {
             />
           </div>
 
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="bg-solar hover:bg-solar/90 text-foreground mt-4 w-full sm:w-auto"
-          >
+          <Button type="submit" disabled={isPending} className="mt-4 w-full rounded-lg sm:w-auto">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Update Password
           </Button>

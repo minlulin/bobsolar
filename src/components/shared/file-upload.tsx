@@ -85,14 +85,14 @@ export function FileUpload({
           if (f) void submit(f);
         }}
         className={cn(
-          "border-border flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition hover:border-[hsl(var(--solar))/0.55]",
+          "border-border flex w-full min-w-0 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition hover:border-[hsl(var(--solar))/0.55]",
           disabled && "pointer-events-none opacity-50",
         )}
         onClick={() => inputRef.current?.click()}
       >
         <Upload className="text-muted-foreground mb-3 h-8 w-8" />
-        <p className="text-sm font-medium">Drop logo here or click to browse</p>
-        <p className="text-muted-foreground mt-2 text-xs">
+        <p className="text-sm font-medium break-words">Drop logo here or click to browse</p>
+        <p className="text-muted-foreground mt-2 text-xs break-words whitespace-normal">
           PNG/JPEG/Webp — {UPLOAD_MAX_SIZE_MB} MB max per upload burst
         </p>
 

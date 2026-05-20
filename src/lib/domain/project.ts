@@ -15,15 +15,17 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   planning: "Planning",
   in_progress: "In Progress",
   on_hold: "On Hold",
+  installation_completed: "Installation Completed",
   completed: "Completed",
   cancelled: "Cancelled",
 };
 
 /** Allowed status transitions for projects */
 export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> = {
-  planning: ["in_progress", "on_hold", "cancelled", "completed"],
-  in_progress: ["on_hold", "completed", "cancelled"],
-  on_hold: ["in_progress", "cancelled", "completed"],
+  planning: ["in_progress", "on_hold", "cancelled"],
+  in_progress: ["on_hold", "installation_completed", "cancelled"],
+  on_hold: ["in_progress", "installation_completed", "cancelled"],
+  installation_completed: ["completed", "cancelled"],
   completed: [],
   cancelled: ["planning"],
 };

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -17,7 +17,6 @@ import { FileUpload } from "@/components/shared/file-upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { AccountTab } from "./components/account-tab";
@@ -25,6 +24,8 @@ import { PreferencesTab } from "./components/preferences-tab";
 import { UserManagementTab } from "./components/user-management-tab";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
+
+type SettingsTab = "company" | "users" | "preferences" | "account";
 
 const companySchema = z.object({
   [COMPANY_SETTING_KEYS.NAME]: z.string().min(1, "Company name is required"),
@@ -52,6 +53,7 @@ export default function SettingsPage(): React.JSX.Element {
 
   const [logoSaving, setLogoSaving] = React.useState(false);
   const [infoSaving, setInfoSaving] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<SettingsTab>("company");
 
   const {
     register,
@@ -124,201 +126,245 @@ export default function SettingsPage(): React.JSX.Element {
     typeof settingsQuery.data?.[LOGO_KEY] === "string" ? settingsQuery.data[LOGO_KEY] : "";
 
   return (
-    <div className="mx-auto space-y-10 pb-36">
-      <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tighter">Settings</h1>
-        <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed">
+    <div className="mx-auto w-full max-w-6xl space-y-6 pb-24">
+      <section className="border-border bg-card rounded-xl border px-6 py-5">
+        <p className="text-muted-foreground text-xs tracking-[0.16em] uppercase">Configuration</p>
+        <h1 className="font-heading mt-2 text-3xl font-semibold tracking-tight text-[#0F172A]">
+          Settings
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
           Configure brand identity, team access, and default behavior.
         </p>
-      </div>
+      </section>
 
-      <Tabs defaultValue="company" className="w-full">
-        <TabsList className="border-border bg-card mb-8 h-auto w-full flex-wrap justify-start gap-2 border p-2">
-          <TabsTrigger value="company">Company Info</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="account">Account & Security</TabsTrigger>
-        </TabsList>
+      <section className="border-border bg-card rounded-xl border p-2">
+        <div className="flex flex-wrap gap-2">
+          <SettingsTabButton
+            label="Company Info"
+            active={activeTab === "company"}
+            onClick={() => {
+              setActiveTab("company");
+            }}
+          />
+          <SettingsTabButton
+            label="User Management"
+            active={activeTab === "users"}
+            onClick={() => {
+              setActiveTab("users");
+            }}
+          />
+          <SettingsTabButton
+            label="Preferences"
+            active={activeTab === "preferences"}
+            onClick={() => {
+              setActiveTab("preferences");
+            }}
+          />
+          <SettingsTabButton
+            label="Account & Security"
+            active={activeTab === "account"}
+            onClick={() => {
+              setActiveTab("account");
+            }}
+          />
+        </div>
+      </section>
 
-        <TabsContent value="company">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            <section className="border-border bg-card space-y-4 rounded-xl border p-6">
-              <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
-                Brand crest
-              </Label>
-              <FileUpload
-                folder="logos"
-                disabled={logoSaving || settingsQuery.isFetching}
-                onUploaded={(next) => void persistLogo(next)}
-              />
-              {logoUrl ? (
-                <p className="text-muted-foreground text-[11px] tracking-wide uppercase">
-                  Live asset synced
-                </p>
-              ) : (
-                <p className="text-muted-foreground text-[11px]">
-                  JPG · PNG · Webp — 5 MB max per upload burst
-                </p>
-              )}
-            </section>
+      {activeTab === "company" ? (
+        <section className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2">
+          <div className="border-border bg-card min-w-0 space-y-4 rounded-xl border p-6">
+            <Label className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#0F172A]">
+              Brand Logo
+            </Label>
+            <FileUpload
+              folder="logos"
+              disabled={logoSaving || settingsQuery.isFetching}
+              onUploaded={(next) => void persistLogo(next)}
+            />
+            {logoUrl ? (
+              <p className="text-muted-foreground text-[11px] tracking-wide uppercase">
+                Live asset synced
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-[11px]">
+                JPG · PNG · Webp — 5 MB max per upload
+              </p>
+            )}
+          </div>
 
-            <section className="border-border bg-card space-y-6 rounded-xl border p-6">
-              <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
-                Company Profile
-              </Label>
+          <div className="border-border bg-card min-w-0 space-y-6 rounded-xl border p-6">
+            <Label className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#0F172A]">
+              Company Profile
+            </Label>
 
-              <form
-                onSubmit={(e) => {
-                  void handleSubmit(onSubmit)(e);
-                }}
-                className="space-y-4"
-              >
+            <form
+              onSubmit={(e) => {
+                void handleSubmit(onSubmit)(e);
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.NAME}
+                  className="text-muted-foreground text-xs"
+                >
+                  Company Name
+                </Label>
+                <Input
+                  id={COMPANY_SETTING_KEYS.NAME}
+                  {...register(COMPANY_SETTING_KEYS.NAME)}
+                  className="border-border/70 bg-muted/45"
+                />
+                {errors[COMPANY_SETTING_KEYS.NAME] ? (
+                  <p className="text-destructive text-xs">
+                    {errors[COMPANY_SETTING_KEYS.NAME]?.message}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.ADDRESS}
+                  className="text-muted-foreground text-xs"
+                >
+                  Address
+                </Label>
+                <Textarea
+                  id={COMPANY_SETTING_KEYS.ADDRESS}
+                  {...register(COMPANY_SETTING_KEYS.ADDRESS)}
+                  className="border-border/70 bg-muted/45"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label
-                    htmlFor={COMPANY_SETTING_KEYS.NAME}
+                    htmlFor={COMPANY_SETTING_KEYS.PHONE}
                     className="text-muted-foreground text-xs"
                   >
-                    Company Name
+                    Phone
                   </Label>
                   <Input
-                    id={COMPANY_SETTING_KEYS.NAME}
-                    {...register(COMPANY_SETTING_KEYS.NAME)}
+                    id={COMPANY_SETTING_KEYS.PHONE}
+                    {...register(COMPANY_SETTING_KEYS.PHONE)}
                     className="border-border/70 bg-muted/45"
                   />
-                  {errors[COMPANY_SETTING_KEYS.NAME] ? (
+                </div>
+                <div className="space-y-1">
+                  <Label
+                    htmlFor={COMPANY_SETTING_KEYS.EMAIL}
+                    className="text-muted-foreground text-xs"
+                  >
+                    Email
+                  </Label>
+                  <Input
+                    id={COMPANY_SETTING_KEYS.EMAIL}
+                    {...register(COMPANY_SETTING_KEYS.EMAIL)}
+                    className="border-border/70 bg-muted/45"
+                  />
+                  {errors[COMPANY_SETTING_KEYS.EMAIL] ? (
                     <p className="text-destructive text-xs">
-                      {errors[COMPANY_SETTING_KEYS.NAME]?.message}
+                      {errors[COMPANY_SETTING_KEYS.EMAIL]?.message}
                     </p>
                   ) : null}
                 </div>
+              </div>
 
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={COMPANY_SETTING_KEYS.ADDRESS}
-                    className="text-muted-foreground text-xs"
-                  >
-                    Address
-                  </Label>
-                  <Textarea
-                    id={COMPANY_SETTING_KEYS.ADDRESS}
-                    {...register(COMPANY_SETTING_KEYS.ADDRESS)}
-                    className="border-border/70 bg-muted/45"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={COMPANY_SETTING_KEYS.PHONE}
-                      className="text-muted-foreground text-xs"
-                    >
-                      Phone
-                    </Label>
-                    <Input
-                      id={COMPANY_SETTING_KEYS.PHONE}
-                      {...register(COMPANY_SETTING_KEYS.PHONE)}
-                      className="border-border/70 bg-muted/45"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={COMPANY_SETTING_KEYS.EMAIL}
-                      className="text-muted-foreground text-xs"
-                    >
-                      Email
-                    </Label>
-                    <Input
-                      id={COMPANY_SETTING_KEYS.EMAIL}
-                      {...register(COMPANY_SETTING_KEYS.EMAIL)}
-                      className="border-border/70 bg-muted/45"
-                    />
-                    {errors[COMPANY_SETTING_KEYS.EMAIL] ? (
-                      <p className="text-destructive text-xs">
-                        {errors[COMPANY_SETTING_KEYS.EMAIL]?.message}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={COMPANY_SETTING_KEYS.TAX_ID}
-                    className="text-muted-foreground text-xs"
-                  >
-                    Tax ID / TIN
-                  </Label>
-                  <Input
-                    id={COMPANY_SETTING_KEYS.TAX_ID}
-                    {...register(COMPANY_SETTING_KEYS.TAX_ID)}
-                    className="border-border/70 bg-muted/45"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={COMPANY_SETTING_KEYS.BANK_NAME}
-                    className="text-muted-foreground text-xs"
-                  >
-                    Bank Name
-                  </Label>
-                  <Input
-                    id={COMPANY_SETTING_KEYS.BANK_NAME}
-                    {...register(COMPANY_SETTING_KEYS.BANK_NAME)}
-                    className="border-border/70 bg-muted/45"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
-                    className="text-muted-foreground text-xs"
-                  >
-                    Bank Account Number
-                  </Label>
-                  <Input
-                    id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
-                    {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER)}
-                    className="border-border/70 bg-muted/45"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
-                    className="text-muted-foreground text-xs"
-                  >
-                    Bank Account Holder Name
-                  </Label>
-                  <Input
-                    id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
-                    {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER)}
-                    className="border-border/70 bg-muted/45"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={infoSaving || settingsQuery.isFetching}
-                  className="mt-2 w-full"
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.TAX_ID}
+                  className="text-muted-foreground text-xs"
                 >
-                  {infoSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Save Company Info
-                </Button>
-              </form>
-            </section>
+                  Tax ID / TIN
+                </Label>
+                <Input
+                  id={COMPANY_SETTING_KEYS.TAX_ID}
+                  {...register(COMPANY_SETTING_KEYS.TAX_ID)}
+                  className="border-border/70 bg-muted/45"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.BANK_NAME}
+                  className="text-muted-foreground text-xs"
+                >
+                  Bank Name
+                </Label>
+                <Input
+                  id={COMPANY_SETTING_KEYS.BANK_NAME}
+                  {...register(COMPANY_SETTING_KEYS.BANK_NAME)}
+                  className="border-border/70 bg-muted/45"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
+                  className="text-muted-foreground text-xs"
+                >
+                  Bank Account Number
+                </Label>
+                <Input
+                  id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
+                  {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER)}
+                  className="border-border/70 bg-muted/45"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
+                  className="text-muted-foreground text-xs"
+                >
+                  Bank Account Holder Name
+                </Label>
+                <Input
+                  id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
+                  {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER)}
+                  className="border-border/70 bg-muted/45"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={infoSaving || settingsQuery.isFetching}
+                className="mt-2 w-full sm:w-auto"
+              >
+                {infoSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Save Company Info
+              </Button>
+            </form>
           </div>
-        </TabsContent>
+        </section>
+      ) : null}
 
-        <TabsContent value="users">
-          <UserManagementTab />
-        </TabsContent>
-
-        <TabsContent value="preferences">
-          <PreferencesTab />
-        </TabsContent>
-
-        <TabsContent value="account">
-          <AccountTab />
-        </TabsContent>
-      </Tabs>
+      {activeTab === "users" ? <UserManagementTab /> : null}
+      {activeTab === "preferences" ? <PreferencesTab /> : null}
+      {activeTab === "account" ? <AccountTab /> : null}
     </div>
+  );
+}
+
+function SettingsTabButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-lg border px-4 py-2 text-xs font-medium transition",
+        active
+          ? "border-[#D97706] bg-amber-50 text-[#0F172A]"
+          : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/50",
+      ].join(" ")}
+    >
+      {label}
+    </button>
   );
 }
