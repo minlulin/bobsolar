@@ -5,7 +5,7 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { neon } from "@neondatabase/serverless";
+import { Pool } from "pg";
 import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -20,11 +20,14 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-const sql = neon(databaseUrl);
+const pool = new Pool({
+  connectionString: databaseUrl,
+  connectionTimeoutMillis: 15_000,
+});
 
 async function main(): Promise<void> {
   // Drop all tables
-  await sql.unsafe(`
+  await pool.query(`
     DO $$ DECLARE
       r RECORD;
     BEGIN
@@ -35,7 +38,7 @@ async function main(): Promise<void> {
   `);
 
   // Drop all enum types
-  await sql.unsafe(`
+  await pool.query(`
     DO $$ DECLARE
       r RECORD;
     BEGIN
@@ -44,6 +47,8 @@ async function main(): Promise<void> {
       END LOOP;
     END $$;
   `);
+
+  await pool.end();
 
   console.log("✓ All tables and enums dropped");
 }

@@ -24,7 +24,6 @@
     "db:factory-reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=factory",
     "db:handover-reset": "tsx scripts/db-handover-reset.ts --confirm=HANDOVER_RESET",
     "db:handover-verify": "tsx scripts/db-handover-verify.ts",
-    "db:promote-staff-admin": "tsx scripts/promote-staff-admin.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:code": "vitest run --exclude src/__tests__/db-ugly-path.test.ts --exclude src/__tests__/db-workflow-master.test.ts",

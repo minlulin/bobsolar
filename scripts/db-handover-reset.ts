@@ -43,7 +43,6 @@ console.log("========================================");
 run("tsx scripts/_exec-drop.ts", "Drop all tables and enums");
 run("pnpm exec drizzle-kit push", "Apply schema");
 run("pnpm db:seed", "Seed from .env.local (admin + base data)");
-run("tsx scripts/promote-staff-admin.ts", "Promote any staff users to admin");
 run("tsx scripts/db-handover-verify.ts", "Verify fresh handover state");
 
 console.log("\n========================================");
