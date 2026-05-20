@@ -5,8 +5,8 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Pool } from "pg";
 import { config } from "dotenv";
+import { Pool } from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
