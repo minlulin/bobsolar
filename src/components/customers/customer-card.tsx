@@ -3,6 +3,7 @@
 import { Edit, FileText, Mail, MapPin, MoreVertical, Phone, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,8 @@ interface CustomerCardProps {
 
 export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps): React.JSX.Element {
   const { mutate: deleteCustomer } = useDeleteCustomer();
+  const router = useRouter();
+  const customerDetailHref = `/customers/${customer.id}`;
 
   const getInitials = (name: string): string => {
     return name
@@ -41,7 +44,20 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
     >
-      <Card className="group border-border bg-muted/25 hover:bg-muted/45 relative transition-colors">
+      <Card
+        className="group border-border bg-muted/25 hover:bg-muted/45 relative cursor-pointer transition-colors"
+        role="button"
+        tabIndex={0}
+        onClick={() => {
+          router.push(customerDetailHref);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            router.push(customerDetailHref);
+          }
+        }}
+      >
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -69,6 +85,9 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
                   size="icon"
                   aria-label={`Open actions for ${customer.name}`}
                   className="h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
@@ -84,7 +103,8 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive"
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     if (confirm("Are you sure you want to delete this customer?")) {
                       onDelete?.(customer.id);
                       deleteCustomer(customer.id);
@@ -127,7 +147,12 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
               <span>0 Quotations</span>
             </div>
 
-            <Link href={`/customers/${customer.id}`}>
+            <Link
+              href={customerDetailHref}
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
               <Button
                 variant="ghost"
                 size="sm"

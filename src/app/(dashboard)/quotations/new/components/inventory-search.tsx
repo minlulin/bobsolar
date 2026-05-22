@@ -25,6 +25,10 @@ export function InventorySearch(): React.JSX.Element {
   const debouncedSearch = useDebounce(search, 300);
 
   const addItem = useQuoteBuilderStore((state) => state.addItem);
+  const { data: availabilityData, isLoading: isCheckingInventory } = useQuery({
+    queryKey: inventoryKeys.list({ isActive: true, page: 1, limit: 1 }),
+    queryFn: () => getInventoryItems({ isActive: true, page: 1, limit: 1 }),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: inventoryKeys.search(debouncedSearch),
@@ -32,6 +36,8 @@ export function InventorySearch(): React.JSX.Element {
     enabled: open,
   });
 
+  const hasInventoryItems =
+    availabilityData?.success === true ? availabilityData.data.total > 0 : false;
   const inventoryItems = data?.success ? data.data.items : [];
 
   return (
@@ -40,10 +46,11 @@ export function InventorySearch(): React.JSX.Element {
         <PopoverTrigger asChild>
           <Button
             variant="outline"
+            disabled={!hasInventoryItems || isCheckingInventory}
             className="h-12 w-full justify-start gap-2 border-dashed border-emerald-500/20 bg-emerald-500/10 text-emerald-500 transition-all hover:bg-emerald-500/20"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Item from Inventory</span>
+            <span>{hasInventoryItems ? "Add Item from Inventory" : "No Inventory Items Yet"}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
