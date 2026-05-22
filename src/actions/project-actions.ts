@@ -28,6 +28,7 @@ import {
   projectRemarks,
   projects,
   type Quotation,
+  quotationItems,
   quotations,
   type WarrantyAlert,
   warrantyAlerts,
@@ -88,9 +89,13 @@ export type ProjectDetail = InferSelectModel<typeof projects> & {
     quotedRevenue: number;
     receivedPayment: number;
     outstandingReceivable: number;
+    cogs: number;
     inventoryConsumedCost: number;
     additionalCosts: number;
+    grossProfit: number;
     netProfit: number;
+    grossMarginPercent: number;
+    netMarginPercent: number;
   };
 };
 
@@ -217,6 +222,19 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
           const seq = await nextProjectSequence(year);
           const projectNumber = formatProjectNumber(seq, year);
 
+          // Calculate estimated COGS from quotation items cost snapshots
+          const quoteItems = await tx
+            .select({
+              costTotal: quotationItems.costTotal,
+            })
+            .from(quotationItems)
+            .where(eq(quotationItems.quotationId, quotation.id));
+
+          const estimatedCogs = quoteItems.reduce(
+            (sum, item) => sum + Math.round(Number(item.costTotal)),
+            0,
+          );
+
           const [created] = await tx
             .insert(projects)
             .values({
@@ -227,6 +245,7 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
               siteAddress,
               systemSizeKwp: systemKwp,
               quotedTotal: quotation.total,
+              estimatedCogs: String(estimatedCogs),
               actualTotal: "0",
               startDate: data.startDate ?? null,
               targetCompletion: data.targetCompletion ?? null,
@@ -238,6 +257,7 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
             return handleStateError("Failed to create project");
           }
 
+          // Revenue recognition journal entry
           const amountRounded = Math.round(Number(quotation.total));
           await createBalancedJournalEntry({
             tx,
@@ -260,6 +280,31 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
               },
             ],
           });
+
+          // COGS journal entry: recognize cost of inventory consumed
+          if (estimatedCogs > 0) {
+            await createBalancedJournalEntry({
+              tx,
+              entryDate: new Date(),
+              memo: `Cost of goods sold for Project ${projectNumber}`,
+              sourceType: "inventory_consumption",
+              sourceId: created.id,
+              projectId: created.id,
+              createdBy: auth.userId,
+              lines: [
+                {
+                  accountCode: "cost_of_goods_sold",
+                  debit: estimatedCogs,
+                  credit: 0,
+                },
+                {
+                  accountCode: "raw_materials",
+                  debit: 0,
+                  credit: estimatedCogs,
+                },
+              ],
+            });
+          }
 
           revalidatePath("/projects");
           revalidatePath(`/quotations/${quotation.id}`);
@@ -456,6 +501,7 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
       row.costs.reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
     );
     const quoted = Math.round(Number(row.quotedTotal));
+    const cogs = Math.round(Number(row.estimatedCogs));
     const budgetVariance = actualTotalComputed - quoted;
     const receivedPayment = await getProjectReceivedPayment(validatedId);
     const outstandingReceivable = Math.max(0, quoted - receivedPayment);
@@ -465,7 +511,10 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
         .reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
     );
     const additionalCosts = actualTotalComputed - inventoryConsumedCost;
-    const netProfit = receivedPayment - actualTotalComputed;
+    const grossProfit = quoted - cogs;
+    const netProfit = grossProfit - actualTotalComputed;
+    const grossMarginPercent = quoted > 0 ? Math.round((grossProfit / quoted) * 100) : 0;
+    const netMarginPercent = quoted > 0 ? Math.round((netProfit / quoted) * 100) : 0;
 
     const costs: ProjectDetail["costs"] = row.costs.map((c) => ({
       ...c,
@@ -490,9 +539,13 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
         quotedRevenue: quoted,
         receivedPayment,
         outstandingReceivable,
+        cogs,
         inventoryConsumedCost,
         additionalCosts,
+        grossProfit,
         netProfit,
+        grossMarginPercent,
+        netMarginPercent,
       },
     });
   } catch (error) {

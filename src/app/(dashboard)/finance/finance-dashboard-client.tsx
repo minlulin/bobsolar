@@ -139,7 +139,7 @@ export function FinanceDashboardClient({
       </div>
 
       {/* Summary Cards - Bento Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Total Income */}
         <SummaryCard
           title="Total Income"
@@ -150,9 +150,30 @@ export function FinanceDashboardClient({
           isLoading={isLoadingSummary}
         />
 
-        {/* Total Expense */}
+        {/* Cost of Goods Sold */}
         <SummaryCard
-          title="Total Expense"
+          title="Cost of Goods Sold"
+          value={summary?.totalCogs ?? 0}
+          icon={TrendingDown}
+          color="text-orange-600"
+          bgColor="bg-orange-50"
+          isLoading={isLoadingSummary}
+        />
+
+        {/* Gross Profit */}
+        <SummaryCard
+          title="Gross Profit"
+          value={summary?.grossProfit ?? 0}
+          icon={DollarSign}
+          color={(summary?.grossProfit ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"}
+          bgColor={(summary?.grossProfit ?? 0) >= 0 ? "bg-emerald-50" : "bg-rose-50"}
+          isLoading={isLoadingSummary}
+          showSign
+        />
+
+        {/* Operating Expenses */}
+        <SummaryCard
+          title="Operating Expenses"
           value={summary?.totalExpense ?? 0}
           icon={TrendingDown}
           color="text-rose-600"

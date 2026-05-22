@@ -102,6 +102,14 @@ vi.mock("@/lib/db", () => ({
             findFirst: vi.fn(async () => state.quotation),
           },
         },
+        select: vi.fn(() => {
+          // biome-ignore lint/suspicious/noExplicitAny: drizzle query chain mock
+          const chain: any = {
+            from: vi.fn(() => chain),
+            where: vi.fn(async () => []),
+          };
+          return chain;
+        }),
         insert: vi.fn(() => ({
           values: vi.fn(() => ({ returning: vi.fn(async () => [state.projectInsertRow]) })),
         })),

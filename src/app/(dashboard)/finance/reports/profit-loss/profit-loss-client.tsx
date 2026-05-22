@@ -49,12 +49,19 @@ export function ProfitLossReportClient({
       ...report.income.items.map((item) => [item.accountName, item.amount.toString()]),
       ["Total Income", report.income.total.toString()],
       [],
-      ["Expenses", ""],
+      ["Cost of Goods Sold", ""],
+      ...report.cogs.items.map((item) => [item.accountName, item.amount.toString()]),
+      ["Total COGS", report.cogs.total.toString()],
+      [],
+      ["Gross Profit", report.grossProfit.toString()],
+      ["Gross Margin", `${report.grossMargin}%`],
+      [],
+      ["Operating Expenses", ""],
       ...report.expense.items.map((item) => [item.accountName, item.amount.toString()]),
-      ["Total Expenses", report.expense.total.toString()],
+      ["Total Operating Expenses", report.expense.total.toString()],
       [],
       ["Net Profit", report.netProfit.toString()],
-      ["Gross Margin", `${report.grossMargin}%`],
+      ["Net Margin", `${report.netMargin}%`],
     ];
 
     const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
@@ -107,7 +114,7 @@ export function ProfitLossReportClient({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
         <SummaryMetric
           label="Total Income"
           value={report?.income.total ?? 0}
@@ -116,7 +123,22 @@ export function ProfitLossReportClient({
           isLoading={isLoading}
         />
         <SummaryMetric
-          label="Total Expenses"
+          label="COGS"
+          value={report?.cogs.total ?? 0}
+          icon={TrendingDown}
+          color="text-orange-600"
+          isLoading={isLoading}
+        />
+        <SummaryMetric
+          label="Gross Profit"
+          value={report?.grossProfit ?? 0}
+          icon={(report?.grossProfit ?? 0) >= 0 ? TrendingUp : TrendingDown}
+          color={(report?.grossProfit ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"}
+          isLoading={isLoading}
+          showSign
+        />
+        <SummaryMetric
+          label="Operating Expenses"
           value={report?.expense.total ?? 0}
           icon={TrendingDown}
           color="text-rose-600"
@@ -192,11 +214,59 @@ export function ProfitLossReportClient({
                 </div>
               </section>
 
+              {/* COGS Section */}
+              <section>
+                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-orange-700">
+                  <ArrowDown className="h-4 w-4" />
+                  Cost of Goods Sold
+                </h3>
+                <div className="space-y-1">
+                  {report.cogs.items.length > 0 ? (
+                    report.cogs.items.map((item) => (
+                      <div
+                        key={item.accountCode}
+                        className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
+                      >
+                        <span className="text-foreground">{item.accountName}</span>
+                        <span className="font-medium tabular-nums text-orange-700">
+                          {formatMMK(item.amount)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground py-4 text-center text-sm">
+                      No COGS recorded for this period.
+                    </p>
+                  )}
+                  <div className="border-border border-t pt-2">
+                    <div className="flex items-center justify-between rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold">
+                      <span>Total COGS</span>
+                      <span className="tabular-nums text-orange-700">
+                        {formatMMK(report.cogs.total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Gross Profit Subtotal */}
+              <div className="border-border rounded-lg border bg-blue-50 p-4">
+                <div className="flex items-center justify-between text-base font-bold">
+                  <span>Gross Profit</span>
+                  <span className={report.grossProfit >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                    {formatMMK(report.grossProfit)}
+                    <span className="text-muted-foreground ml-2 text-sm font-normal">
+                      ({report.grossMargin}% margin)
+                    </span>
+                  </span>
+                </div>
+              </div>
+
               {/* Expense Section */}
               <section>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-rose-700">
                   <ArrowDown className="h-4 w-4" />
-                  Expenses
+                  Operating Expenses
                 </h3>
                 <div className="space-y-1">
                   {report.expense.items.length > 0 ? (
@@ -218,7 +288,7 @@ export function ProfitLossReportClient({
                   )}
                   <div className="border-border border-t pt-2">
                     <div className="flex items-center justify-between rounded-md bg-rose-50 px-3 py-2 text-sm font-semibold">
-                      <span>Total Expenses</span>
+                      <span>Total Operating Expenses</span>
                       <span className="tabular-nums text-rose-700">
                         {formatMMK(report.expense.total)}
                       </span>
@@ -233,6 +303,10 @@ export function ProfitLossReportClient({
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Gross Margin</span>
                     <span className="font-semibold tabular-nums">{report.grossMargin}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Net Margin</span>
+                    <span className="font-semibold tabular-nums">{report.netMargin}%</span>
                   </div>
                   <div className="border-border border-t pt-2">
                     <div className="flex items-center justify-between text-base font-bold">

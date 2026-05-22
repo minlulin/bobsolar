@@ -32,9 +32,12 @@ export interface ProfitLossReport {
   periodStart: string;
   periodEnd: string;
   income: ProfitLossSection;
+  cogs: ProfitLossSection;
+  grossProfit: number;
   expense: ProfitLossSection;
   netProfit: number;
   grossMargin: number;
+  netMargin: number;
 }
 
 export async function getProfitLossReport(
@@ -101,8 +104,37 @@ export async function getProfitLossReport(
       )
       .groupBy(ledgerAccounts.code, ledgerAccounts.name);
 
+    const cogsAccounts = ["cost_of_goods_sold"];
+
+    const cogsRows = await db
+      .select({
+        accountCode: ledgerAccounts.code,
+        accountName: ledgerAccounts.name,
+        amount: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("amount"),
+      })
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+      .where(
+        and(
+          gte(journalEntries.entryDate, dateFrom),
+          lte(journalEntries.entryDate, dateTo),
+          eq(journalEntries.isReversed, false),
+          eq(ledgerAccounts.code, "cost_of_goods_sold"),
+        ),
+      )
+      .groupBy(ledgerAccounts.code, ledgerAccounts.name);
+
     const incomeItems: ProfitLossLineItem[] = incomeRows
       .filter((row) => incomeAccounts.includes(row.accountCode))
+      .map((row) => ({
+        accountCode: row.accountCode,
+        accountName: row.accountName,
+        amount: Math.round(row.amount),
+      }));
+
+    const cogsItems: ProfitLossLineItem[] = cogsRows
+      .filter((row) => cogsAccounts.includes(row.accountCode))
       .map((row) => ({
         accountCode: row.accountCode,
         accountName: row.accountName,
@@ -118,9 +150,12 @@ export async function getProfitLossReport(
       }));
 
     const totalIncome = incomeItems.reduce((sum, item) => sum + item.amount, 0);
+    const totalCogs = cogsItems.reduce((sum, item) => sum + item.amount, 0);
+    const grossProfit = totalIncome - totalCogs;
     const totalExpense = expenseItems.reduce((sum, item) => sum + item.amount, 0);
-    const netProfit = totalIncome - totalExpense;
-    const grossMargin = totalIncome > 0 ? Math.round((netProfit / totalIncome) * 100) : 0;
+    const netProfit = grossProfit - totalExpense;
+    const grossMargin = totalIncome > 0 ? Math.round((grossProfit / totalIncome) * 100) : 0;
+    const netMargin = totalIncome > 0 ? Math.round((netProfit / totalIncome) * 100) : 0;
 
     return successResponse({
       periodStart: format(dateFrom, "yyyy-MM-dd"),
@@ -130,13 +165,20 @@ export async function getProfitLossReport(
         items: incomeItems,
         total: totalIncome,
       },
+      cogs: {
+        title: "Cost of Goods Sold",
+        items: cogsItems,
+        total: totalCogs,
+      },
+      grossProfit,
       expense: {
-        title: "Expenses",
+        title: "Operating Expenses",
         items: expenseItems,
         total: totalExpense,
       },
       netProfit,
       grossMargin,
+      netMargin,
     });
   } catch (error) {
     return handleActionError(error, "getProfitLossReport", "Failed to fetch profit & loss report");

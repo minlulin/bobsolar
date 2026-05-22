@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -455,6 +455,7 @@ export function InventoryDialog({
       name: "",
       category: inventoryCategoryEnum.enumValues[0] as DBInventoryItem["category"],
       unit: inventoryUnitEnum.enumValues[0] as DBInventoryItem["unit"],
+      costPrice: 0,
       unitPrice: 0,
       stockQty: 0,
       brand: "",
@@ -479,6 +480,7 @@ export function InventoryDialog({
         name: item.name,
         category: item.category,
         unit: item.unit,
+        costPrice: Number(item.costPrice),
         unitPrice: Number(item.unitPrice),
         stockQty: item.stockQty,
         brand: item.brand || "",
@@ -493,6 +495,7 @@ export function InventoryDialog({
       name: "",
       category: "panel",
       unit: "pcs",
+      costPrice: 0,
       unitPrice: 0,
       stockQty: 0,
       brand: "",
@@ -640,13 +643,33 @@ export function InventoryDialog({
               }}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="costPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cost Price (Buy) MMK</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={formatNumericInputValue(field.value)}
+                        onChange={(e) => {
+                          field.onChange(parseNumericInput(e.target.value) ?? 0);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="unitPrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unit Price (MMK)</FormLabel>
+                    <FormLabel>Sell Price (Customer) MMK</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

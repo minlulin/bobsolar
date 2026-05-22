@@ -99,6 +99,7 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
       .insert(inventoryItems)
       .values({
         ...validated,
+        costPrice: validated.costPrice.toString(),
         unitPrice: validated.unitPrice.toString(),
       })
       .returning();
@@ -136,6 +137,7 @@ export async function updateInventoryItem(
       .update(inventoryItems)
       .set({
         ...updateData,
+        costPrice: updateData.costPrice ? updateData.costPrice.toString() : undefined,
         unitPrice: updateData.unitPrice ? updateData.unitPrice.toString() : undefined,
         updatedAt: new Date(),
       })
@@ -177,6 +179,7 @@ export async function deleteInventoryItem(id: string): Promise<ActionResponse<nu
 const bulkUpdateSchema = z.array(
   z.object({
     id: z.uuid(),
+    costPrice: z.number().min(0, "Cost price must be positive").optional(),
     unitPrice: z.number().min(0, "Unit price must be positive"),
   }),
 );
@@ -192,6 +195,7 @@ export async function bulkUpdatePrices(rawUpdates: unknown): Promise<ActionRespo
         await tx
           .update(inventoryItems)
           .set({
+            costPrice: update.costPrice !== undefined ? update.costPrice.toString() : undefined,
             unitPrice: update.unitPrice.toString(),
             updatedAt: new Date(),
           })

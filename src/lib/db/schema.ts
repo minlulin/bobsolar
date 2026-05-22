@@ -82,6 +82,7 @@ export const ledgerAccountTypeEnum = pgEnum("ledger_account_type", [
 export const journalSourceTypeEnum = pgEnum("journal_source_type", [
   "project_payment",
   "project_expense",
+  "inventory_consumption",
   "manual_adjustment",
   "opening_balance",
   "backfill",
@@ -140,6 +141,7 @@ export const inventoryItems = pgTable("inventory_items", {
   name: text("name").notNull(),
   category: inventoryCategoryEnum("category").notNull(),
   unit: inventoryUnitEnum("unit").notNull(),
+  costPrice: decimal("cost_price", { precision: 15, scale: 2 }).default("0").notNull(),
   unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
   stockQty: integer("stock_qty").default(0).notNull(),
   brand: text("brand"),
@@ -210,8 +212,10 @@ export const quotationItems = pgTable(
       precision: 5,
       scale: 2,
     }).default("0"),
-    unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(), // Snapshot
+    unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(), // Sell price snapshot
+    costPrice: decimal("cost_price", { precision: 15, scale: 2 }).default("0").notNull(), // Buy price snapshot
     totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
+    costTotal: decimal("cost_total", { precision: 15, scale: 2 }).default("0").notNull(), // Buy total = costPrice × qty
     sortOrder: integer("sort_order").notNull(),
   },
   (table) => [index("quotation_items_quotation_id_idx").on(table.quotationId)],
@@ -233,6 +237,7 @@ export const projects = pgTable(
       scale: 2,
     }).notNull(),
     quotedTotal: decimal("quoted_total", { precision: 15, scale: 2 }).notNull(),
+    estimatedCogs: decimal("estimated_cogs", { precision: 15, scale: 2 }).default("0").notNull(),
     actualTotal: decimal("actual_total", {
       precision: 15,
       scale: 2,

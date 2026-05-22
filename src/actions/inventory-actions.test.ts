@@ -180,6 +180,7 @@ describe("inventory-actions", () => {
       name: "Panel A",
       category: "panel",
       unit: "pcs",
+      costPrice: 800,
       unitPrice: 1000,
       stockQty: 10,
       brand: "Jinko",

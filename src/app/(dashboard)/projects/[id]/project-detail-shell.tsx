@@ -573,42 +573,59 @@ export function ProjectDetailShell({
           {proj.status === "completed" ? (
             <div className="bg-card border-border rounded-3xl border p-7">
               <p className="text-muted-foreground mb-5 text-[10px] font-bold uppercase">
-                Completed project profitability
+                Project profitability
               </p>
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
                 <div>
-                  <p className="text-muted-foreground text-[10px] uppercase">Quoted revenue</p>
+                  <p className="text-muted-foreground text-[10px] uppercase">Revenue</p>
                   <p className="font-mono text-base">
                     {formatMMK(proj.profitability.quotedRevenue)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-[10px] uppercase">Received payment</p>
-                  <p className="font-mono text-base">
-                    {formatMMK(proj.profitability.receivedPayment)}
+                  <p className="text-muted-foreground text-[10px] uppercase">COGS (buy cost)</p>
+                  <p className="font-mono text-base text-rose-400">
+                    −{formatMMK(proj.profitability.cogs)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-[10px] uppercase">Inventory consumed</p>
-                  <p className="font-mono text-base">
-                    {formatMMK(proj.profitability.inventoryConsumedCost)}
+                  <p className="text-muted-foreground text-[10px] uppercase">Gross profit</p>
+                  <p
+                    className={cn(
+                      "font-mono text-base",
+                      proj.profitability.grossProfit >= 0 ? "text-emerald-300" : "text-rose-400",
+                    )}
+                  >
+                    {formatMMK(proj.profitability.grossProfit)}
+                    <span className="text-muted-foreground ml-2 text-[10px]">
+                      ({proj.profitability.grossMarginPercent}%)
+                    </span>
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-[10px] uppercase">Additional costs</p>
-                  <p className="font-mono text-base">
-                    {formatMMK(proj.profitability.additionalCosts)}
+                  <p className="text-muted-foreground text-[10px] uppercase">Addl. costs</p>
+                  <p className="font-mono text-base text-amber-300">
+                    −{formatMMK(proj.profitability.additionalCosts)}
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-[10px] uppercase">Net profit</p>
                   <p
                     className={cn(
-                      "font-mono text-base",
+                      "font-mono text-base font-bold",
                       proj.profitability.netProfit >= 0 ? "text-emerald-300" : "text-rose-400",
                     )}
                   >
                     {formatMMK(proj.profitability.netProfit)}
+                    <span className="text-muted-foreground ml-2 text-[10px] font-normal">
+                      ({proj.profitability.netMarginPercent}%)
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase">Payment received</p>
+                  <p className="font-mono text-base">
+                    {formatMMK(proj.profitability.receivedPayment)}
                   </p>
                 </div>
               </div>

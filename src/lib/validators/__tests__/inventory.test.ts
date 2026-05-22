@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createInventoryItemSchema,
   updateInventoryItemPayloadSchema,
@@ -7,6 +7,7 @@ import {
 const baseItem = {
   name: "Spec Item",
   unit: "pcs" as const,
+  costPrice: 800,
   unitPrice: 1000,
   stockQty: 5,
   brand: null,

@@ -127,6 +127,13 @@
       "when": 1779435663437,
       "tag": "0017_high_ted_forrester",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779445547414,
+      "tag": "0018_add_cost_price_and_cogs",
+      "breakpoints": true
     }
   ]
 }

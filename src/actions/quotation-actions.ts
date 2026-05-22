@@ -1,12 +1,13 @@
 "use server";
 
 import { addDays } from "date-fns";
-import { and, count, desc, eq, ilike, lt, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   type Customer,
+  inventoryItems,
   projects,
   type Quotation,
   type QuotationItem,
@@ -258,20 +259,41 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
 
             if (!quote) throw new Error("Failed to create quotation record in database");
 
-            const itemsToInsert = validated.items.map((item, index) => ({
-              quotationId: quote.id,
-              itemId: item.itemId,
-              description: item.description,
-              quantity: item.quantity.toString(),
-              unitPrice: item.unitPrice.toString(),
-              discountPercentage: item.discountPercentage.toString(),
-              totalPrice: calculateLineItem({
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                discountPercentage: item.discountPercentage,
-              }).toString(),
-              sortOrder: index,
-            }));
+            // Look up cost prices for inventory-linked items
+            const itemIds = validated.items
+              .map((item) => item.itemId)
+              .filter((id): id is string => id != null);
+
+            const costPriceMap = new Map<string, number>();
+            if (itemIds.length > 0) {
+              const inventoryRows = await tx
+                .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
+                .from(inventoryItems)
+                .where(inArray(inventoryItems.id, itemIds));
+              for (const row of inventoryRows) {
+                costPriceMap.set(row.id, Math.round(Number(row.costPrice)));
+              }
+            }
+
+            const itemsToInsert = validated.items.map((item, index) => {
+              const itemCostPrice = item.itemId ? (costPriceMap.get(item.itemId) ?? 0) : 0;
+              return {
+                quotationId: quote.id,
+                itemId: item.itemId,
+                description: item.description,
+                quantity: item.quantity.toString(),
+                unitPrice: item.unitPrice.toString(),
+                costPrice: String(itemCostPrice),
+                discountPercentage: item.discountPercentage.toString(),
+                totalPrice: calculateLineItem({
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                  discountPercentage: item.discountPercentage,
+                }).toString(),
+                costTotal: String(Math.round(itemCostPrice * item.quantity)),
+                sortOrder: index,
+              };
+            });
 
             await tx.insert(quotationItems).values(itemsToInsert);
             return quote;
@@ -441,20 +463,41 @@ export async function updateQuotation(
       if (validated.items) {
         await tx.delete(quotationItems).where(eq(quotationItems.quotationId, id));
 
-        const itemsToInsert = validated.items.map((item, index) => ({
-          quotationId: id,
-          itemId: item.itemId,
-          description: item.description,
-          quantity: item.quantity.toString(),
-          unitPrice: item.unitPrice.toString(),
-          discountPercentage: item.discountPercentage.toString(),
-          totalPrice: calculateLineItem({
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            discountPercentage: item.discountPercentage,
-          }).toString(),
-          sortOrder: index,
-        }));
+        // Look up cost prices for inventory-linked items
+        const updateItemIds = validated.items
+          .map((item) => item.itemId)
+          .filter((itemId): itemId is string => itemId != null);
+
+        const updateCostMap = new Map<string, number>();
+        if (updateItemIds.length > 0) {
+          const invRows = await tx
+            .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
+            .from(inventoryItems)
+            .where(inArray(inventoryItems.id, updateItemIds));
+          for (const row of invRows) {
+            updateCostMap.set(row.id, Math.round(Number(row.costPrice)));
+          }
+        }
+
+        const itemsToInsert = validated.items.map((item, index) => {
+          const itemCostPrice = item.itemId ? (updateCostMap.get(item.itemId) ?? 0) : 0;
+          return {
+            quotationId: id,
+            itemId: item.itemId,
+            description: item.description,
+            quantity: item.quantity.toString(),
+            unitPrice: item.unitPrice.toString(),
+            costPrice: String(itemCostPrice),
+            discountPercentage: item.discountPercentage.toString(),
+            totalPrice: calculateLineItem({
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discountPercentage: item.discountPercentage,
+            }).toString(),
+            costTotal: String(Math.round(itemCostPrice * item.quantity)),
+            sortOrder: index,
+          };
+        });
 
         await tx.insert(quotationItems).values(itemsToInsert);
       }
@@ -542,8 +585,10 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
+              costPrice: item.costPrice,
               discountPercentage: item.discountPercentage,
               totalPrice: item.totalPrice,
+              costTotal: item.costTotal,
               sortOrder: index,
             }));
 

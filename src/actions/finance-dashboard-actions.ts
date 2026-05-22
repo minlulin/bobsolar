@@ -28,6 +28,8 @@ export type FinancePeriodFilterParsed = z.output<typeof periodFilterSchema>;
 
 export interface FinanceSummaryCard {
   totalIncome: number;
+  totalCogs: number;
+  grossProfit: number;
   totalExpense: number;
   netProfit: number;
   accountsReceivable: number;
@@ -129,9 +131,27 @@ export async function getFinanceSummary(
       balanceMap.set(row.accountCode, row.balance);
     }
 
+    const [cogsRow] = await db
+      .select({
+        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+      })
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+      .where(
+        and(
+          gte(journalEntries.entryDate, dateFrom),
+          lte(journalEntries.entryDate, dateTo),
+          eq(journalEntries.isReversed, false),
+          eq(ledgerAccounts.code, "cost_of_goods_sold"),
+        ),
+      );
+
     const totalIncome = Math.round(incomeRow?.sum ?? 0);
+    const totalCogs = Math.round(cogsRow?.sum ?? 0);
+    const grossProfit = totalIncome - totalCogs;
     const totalExpense = Math.round(expenseRow?.sum ?? 0);
-    const netProfit = totalIncome - totalExpense;
+    const netProfit = grossProfit - totalExpense;
     const accountsReceivable = Math.round(arRow?.amount ?? 0);
     const cashBalance = Math.round(balanceMap.get("cash_on_hand") ?? 0);
     const walletBalance = Math.round(
@@ -144,6 +164,8 @@ export async function getFinanceSummary(
     recordFinanceDashboardLatency(Math.round(performance.now() - start));
     return successResponse({
       totalIncome,
+      totalCogs,
+      grossProfit,
       totalExpense,
       netProfit,
       accountsReceivable,
