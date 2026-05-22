@@ -64,7 +64,10 @@ export async function getProfitLossReport(
       .select({
         accountCode: ledgerAccounts.code,
         accountName: ledgerAccounts.name,
-        amount: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("amount"),
+        amount:
+          sql<number>`coalesce(sum(${journalLines.credit}::numeric - ${journalLines.debit}::numeric), 0)`.as(
+            "amount",
+          ),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))

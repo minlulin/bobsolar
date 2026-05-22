@@ -37,6 +37,7 @@ import {
   assertFinanceSsotDrift,
   assertJournalEntryNotReversed,
   createBalancedJournalEntry,
+  type DbTransaction,
   mapCostTypeToExpenseAccount,
   mapPaymentMethodNameToAssetAccount,
   reverseJournalEntry,
@@ -105,8 +106,9 @@ async function nextProjectSequence(year: number): Promise<number> {
   return extractProjectSequence(existing[0]?.projectNumber) + 1;
 }
 
-async function sumProjectCosts(projectId: string): Promise<number> {
-  const [row] = await db
+async function sumProjectCosts(projectId: string, tx?: DbTransaction): Promise<number> {
+  const client = tx || db;
+  const [row] = await client
     .select({
       total: sql<string>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("total"),
     })
@@ -115,9 +117,10 @@ async function sumProjectCosts(projectId: string): Promise<number> {
   return Math.round(Number(row?.total ?? 0));
 }
 
-async function persistActualTotal(projectId: string): Promise<number> {
-  const total = await sumProjectCosts(projectId);
-  await db
+async function persistActualTotal(projectId: string, tx?: DbTransaction): Promise<number> {
+  const total = await sumProjectCosts(projectId, tx);
+  const client = tx || db;
+  await client
     .update(projects)
     .set({ actualTotal: String(total) })
     .where(eq(projects.id, projectId));
@@ -132,16 +135,6 @@ async function getProjectReceivedPayment(projectId: string): Promise<number> {
     .from(projectPayments)
     .where(eq(projectPayments.projectId, projectId));
   return Math.round(Number(row?.total ?? 0));
-}
-
-async function getProjectOutstandingReceivable(projectId: string): Promise<number> {
-  const project = await db.query.projects.findFirst({
-    where: eq(projects.id, projectId),
-    columns: { quotedTotal: true },
-  });
-  if (!project) return 0;
-  const received = await getProjectReceivedPayment(projectId);
-  return Math.max(0, Math.round(Number(project.quotedTotal)) - received);
 }
 
 function rollupWarranty(
@@ -184,7 +177,7 @@ async function maybeNotifyBudgetOverrun(
 
 export async function convertQuotationToProject(raw: unknown): Promise<ActionResponse<Project>> {
   try {
-    await requireAuth();
+    const auth = await requireAuth();
     const data = convertToProjectSchema.parse(raw);
 
     const year = new Date().getFullYear();
@@ -244,6 +237,29 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
           if (!created) {
             return handleStateError("Failed to create project");
           }
+
+          const amountRounded = Math.round(Number(quotation.total));
+          await createBalancedJournalEntry({
+            tx,
+            entryDate: new Date(),
+            memo: `Revenue recognition for Project ${projectNumber}`,
+            sourceType: "manual_adjustment",
+            sourceId: created.id,
+            projectId: created.id,
+            createdBy: auth.userId,
+            lines: [
+              {
+                accountCode: "accounts_receivable",
+                debit: amountRounded,
+                credit: 0,
+              },
+              {
+                accountCode: "solar_installation_revenue",
+                debit: 0,
+                credit: amountRounded,
+              },
+            ],
+          });
 
           revalidatePath("/projects");
           revalidatePath(`/quotations/${quotation.id}`);
@@ -496,11 +512,6 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
 async function applyProjectCompletion(
   projectRow: InferSelectModel<typeof projects>,
 ): Promise<void> {
-  const outstanding = await getProjectOutstandingReceivable(projectRow.id);
-  if (outstanding > 0) {
-    throw new Error("project_receivable_outstanding");
-  }
-
   const didComplete = await db.transaction(async (tx) => {
     // Idempotent: skip if already completed.
     const updated = await tx
@@ -648,11 +659,6 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
 
     return successResponse(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === "project_receivable_outstanding") {
-      return handleStateError(
-        "Cannot complete project with outstanding receivable. Record all payments first.",
-      );
-    }
     return handleActionError(error, "updateProject", "Failed to update project");
   }
 }
@@ -694,11 +700,6 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
 
     return successResponse(updated);
   } catch (error) {
-    if (error instanceof Error && error.message === "project_receivable_outstanding") {
-      return handleStateError(
-        "Cannot complete project with outstanding receivable. Record all payments first.",
-      );
-    }
     return handleActionError(error, "markProjectCompleted", "Failed to complete project");
   }
 }
@@ -721,12 +722,14 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
       return handleStateError("Cannot add costs after installation completion or project closure.");
     }
 
+    let actualSpend = 0;
     await db.transaction(async (tx) => {
       const [createdCost] = await tx
         .insert(projectCosts)
         .values({
           projectId: data.projectId,
           itemId: data.itemId ?? null,
+          paymentMethodId: data.paymentMethodId,
           description: data.description,
           amount: String(Math.round(data.amount)),
           costType: data.costType,
@@ -774,9 +777,10 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
           },
         ],
       });
+
+      actualSpend = await persistActualTotal(data.projectId, tx);
     });
 
-    const actualSpend = await persistActualTotal(data.projectId);
     const previousSpend = actualSpend - Math.round(data.amount);
     await maybeNotifyBudgetOverrun(
       data.projectId,
@@ -821,6 +825,8 @@ export async function consumeProjectInventory(
       );
     }
 
+    let actualSpend = 0;
+    let consumedAmount = 0;
     await db.transaction(async (tx) => {
       const item = await tx.query.inventoryItems.findFirst({
         where: eq(inventoryItems.id, data.inventoryItemId),
@@ -846,11 +852,14 @@ export async function consumeProjectInventory(
 
       const unitPrice = Math.round(Number(item.unitPrice));
       const amountRounded = Math.round(unitPrice * data.quantity);
+      consumedAmount = amountRounded;
+
       const [createdCost] = await tx
         .insert(projectCosts)
         .values({
           projectId: data.projectId,
           itemId: item.id,
+          paymentMethodId: data.paymentMethodId,
           description: data.description,
           amount: String(amountRounded),
           costType: "material",
@@ -870,11 +879,6 @@ export async function consumeProjectInventory(
         throw new Error("payment_method_not_found");
       }
 
-      const assetAccount = mapPaymentMethodNameToAssetAccount(method.name);
-      if (!assetAccount) {
-        throw new Error(`unsupported_payment_method:${method.name}`);
-      }
-
       await createBalancedJournalEntry({
         tx,
         entryDate: data.incurredDate,
@@ -890,20 +894,16 @@ export async function consumeProjectInventory(
             credit: 0,
           },
           {
-            accountCode: assetAccount,
+            accountCode: "raw_materials",
             debit: 0,
             credit: amountRounded,
           },
         ],
       });
+
+      actualSpend = await persistActualTotal(data.projectId, tx);
     });
 
-    const itemForAmount = await db.query.inventoryItems.findFirst({
-      where: eq(inventoryItems.id, data.inventoryItemId),
-      columns: { unitPrice: true },
-    });
-    const consumedAmount = Math.round(Number(itemForAmount?.unitPrice ?? 0) * data.quantity);
-    const actualSpend = await persistActualTotal(data.projectId);
     const costs = await db.query.projectCosts.findMany({
       where: eq(projectCosts.projectId, data.projectId),
       orderBy: [desc(projectCosts.incurredDate)],
@@ -971,9 +971,9 @@ export async function deleteProjectCost(
       }
 
       await tx.delete(projectCosts).where(eq(projectCosts.id, validatedCostId));
-    });
 
-    await persistActualTotal(cost.projectId);
+      await persistActualTotal(cost.projectId, tx);
+    });
 
     revalidatePath(`/projects/${cost.projectId}`);
     revalidatePath("/projects");

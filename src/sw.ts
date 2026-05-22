@@ -1,14 +1,9 @@
 import { defaultCache } from "@serwist/next/worker";
-import { CacheFirst, cacheNames, ExpirationPlugin, Serwist, StaleWhileRevalidate } from "serwist";
+import { CacheFirst, ExpirationPlugin, Serwist, StaleWhileRevalidate } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: (string | { url: string; revision: string | null })[] | undefined;
 };
-
-interface FetchEvent extends Event {
-  readonly request: Request;
-  respondWith(response: Response | Promise<Response>): void;
-}
 
 const staticAssetCache = new CacheFirst({
   cacheName: "bobsolar-static-assets-v1",
@@ -29,6 +24,8 @@ const nextDataCache = new StaleWhileRevalidate({
     }),
   ],
 });
+
+const offlineFallback = "/offline.html";
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST ?? [],
@@ -54,29 +51,16 @@ const serwist = new Serwist({
       handler: nextDataCache,
     },
   ],
+  fallbacks: {
+    entries: [
+      {
+        url: offlineFallback,
+        matcher({ request }) {
+          return request.mode === "navigate";
+        },
+      },
+    ],
+  },
 });
-
-const offlineFallback = "/offline.html";
 
 serwist.addEventListeners();
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(cacheNames.precache).then((cache) => cache.add(offlineFallback)));
-});
-
-self.addEventListener("fetch", (event: FetchEvent) => {
-  if (event.request.mode !== "navigate") return;
-  event.respondWith(
-    fetch(event.request).catch(async () => {
-      const cached = await caches.match(offlineFallback);
-      if (cached) return cached;
-      return new Response("Offline", {
-        status: 503,
-        statusText: "Service Unavailable",
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-        },
-      });
-    }),
-  );
-});

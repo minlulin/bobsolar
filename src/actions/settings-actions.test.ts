@@ -215,4 +215,18 @@ describe("settings-actions", () => {
     expect(state.revokedUserId).toBe("u1");
     expect(spies.updateUsersSet).toHaveBeenCalled();
   });
+
+  it("updateCompanySettings filters out non-standard setting keys", async () => {
+    const { updateCompanySettings } = await import("@/actions/settings-actions");
+
+    const res = await updateCompanySettings({
+      company_name: "New Name",
+      invalid_spam_key: "spam value",
+    });
+
+    expect(res.success).toBe(true);
+    expect(spies.insertCompanyValues).toHaveBeenCalledWith([
+      { key: "company_name", value: "New Name" },
+    ]);
+  });
 });

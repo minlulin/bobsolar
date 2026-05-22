@@ -3,7 +3,8 @@
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
-import { journalEntries, projectCosts, projectPayments } from "@/lib/db/schema";
+import { journalEntries, paymentMethods, projectCosts, projectPayments } from "@/lib/db/schema";
+import type { LedgerAccountCode } from "@/lib/domain/enums";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
@@ -216,8 +217,25 @@ export async function repairOrphanCost(
       );
     }
 
-    const { mapCostTypeToExpenseAccount } = await import("@/lib/finance/ledger");
+    const { mapCostTypeToExpenseAccount, mapPaymentMethodNameToAssetAccount } = await import(
+      "@/lib/finance/ledger"
+    );
     const expenseAccount = mapCostTypeToExpenseAccount(cost.costType);
+
+    let creditAccount: LedgerAccountCode = "cash_on_hand";
+    if (cost.costType === "material" || cost.itemId) {
+      creditAccount = "raw_materials";
+    } else if (cost.paymentMethodId) {
+      const method = await db.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.id, cost.paymentMethodId),
+      });
+      if (method) {
+        const assetAccount = mapPaymentMethodNameToAssetAccount(method.name);
+        if (assetAccount) {
+          creditAccount = assetAccount;
+        }
+      }
+    }
 
     const result = await db.transaction(async (tx) => {
       return createBalancedJournalEntry({
@@ -230,7 +248,7 @@ export async function repairOrphanCost(
         createdBy: auth.userId,
         lines: [
           { accountCode: expenseAccount, debit: Math.round(Number(cost.amount)), credit: 0 },
-          { accountCode: "cash_on_hand", debit: 0, credit: Math.round(Number(cost.amount)) },
+          { accountCode: creditAccount, debit: 0, credit: Math.round(Number(cost.amount)) },
         ],
       });
     });

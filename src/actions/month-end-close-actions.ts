@@ -56,7 +56,7 @@ export async function getMonthEndCloseReport(
 
     const [incomeRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+        sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -67,7 +67,7 @@ export async function getMonthEndCloseReport(
           lte(journalEntries.entryDate, monthEnd),
           eq(journalEntries.sourceType, "project_payment"),
           eq(journalEntries.isReversed, false),
-          eq(ledgerAccounts.code, "solar_installation_revenue"),
+          eq(ledgerAccounts.code, "accounts_receivable"),
         ),
       );
 

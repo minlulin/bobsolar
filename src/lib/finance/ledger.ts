@@ -12,8 +12,8 @@ import {
   PAYMENT_METHOD_PRESETS,
 } from "@/lib/domain/enums";
 
-type DbClient = ReturnType<typeof getDb>;
-type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
+export type DbClient = ReturnType<typeof getDb>;
+export type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
 
 type JournalLineInput = {
   accountCode: LedgerAccountCode;

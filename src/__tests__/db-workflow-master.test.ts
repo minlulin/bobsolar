@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, like } from "drizzle-orm";
+import { and, eq, like, or } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createCustomer } from "@/actions/customer-actions";
 import {
@@ -9,12 +9,13 @@ import {
   getUpcomingAlerts,
 } from "@/actions/dashboard-actions";
 import { createInventoryItem } from "@/actions/inventory-actions";
+import { getMonthEndCloseReport } from "@/actions/month-end-close-actions";
 import {
   getNotificationsWithFilter,
   markAllNotificationsAsRead,
   runScheduledNotificationChecks,
 } from "@/actions/notification-actions";
-import { getPaymentMethods } from "@/actions/payment-actions";
+import { getPaymentMethods, recordPayment } from "@/actions/payment-actions";
 import {
   addProjectCost,
   addProjectRemark,
@@ -22,6 +23,7 @@ import {
   convertQuotationToProject,
   getProject,
   markProjectCompleted,
+  updateProject,
 } from "@/actions/project-actions";
 import { createQuotation, getQuotation, updateQuotationStatus } from "@/actions/quotation-actions";
 import {
@@ -33,10 +35,14 @@ import { db } from "@/lib/db";
 import {
   customers,
   inventoryItems,
+  journalEntries,
+  journalLines,
   notifications,
   projectCosts,
+  projectPayments,
   projectRemarks,
   projects,
+  projectVouchers,
   quotationItems,
   quotations,
   users,
@@ -155,6 +161,8 @@ describeDb("Master workflow integration: DB + server actions", () => {
       await db.delete(projectRemarks).where(eq(projectRemarks.projectId, projectId));
       await db.delete(projectCosts).where(eq(projectCosts.projectId, projectId));
       await db.delete(warrantyAlerts).where(eq(warrantyAlerts.projectId, projectId));
+      await db.delete(projectPayments).where(eq(projectPayments.projectId, projectId));
+      await db.delete(projectVouchers).where(eq(projectVouchers.projectId, projectId));
       await db.delete(projects).where(eq(projects.id, projectId));
     }
     if (quotationId) {
@@ -176,6 +184,11 @@ describeDb("Master workflow integration: DB + server actions", () => {
       await db
         .delete(notifications)
         .where(and(like(notifications.message, `%${runTag}%`), eq(notifications.isRead, true)));
+      await db
+        .delete(journalEntries)
+        .where(
+          or(eq(journalEntries.createdBy, adminUserId), eq(journalEntries.createdBy, staffUserId)),
+        );
       await db.delete(users).where(eq(users.id, adminUserId));
       await db.delete(users).where(eq(users.id, staffUserId));
     }
@@ -250,8 +263,45 @@ describeDb("Master workflow integration: DB + server actions", () => {
     );
     projectId = createdProject.id;
 
+    // Verify that convertQuotationToProject successfully recorded a revenue recognition journal entry
+    const conversionEntries = await db.query.journalEntries.findMany({
+      where: and(
+        eq(journalEntries.sourceType, "manual_adjustment"),
+        eq(journalEntries.sourceId, projectId),
+      ),
+    });
+    // We expect 1 manual_adjustment entry for revenue recognition
+    const revRecEntry = conversionEntries.find((e) => e.sourceType === "manual_adjustment");
+    expect(revRecEntry).toBeTruthy();
+    if (!revRecEntry) {
+      throw new Error("revRecEntry not found");
+    }
+    expect(revRecEntry.memo).toContain("Revenue recognition");
+
+    // Fetch the lines for this entry
+    const revRecLines = await db.query.journalLines.findMany({
+      where: eq(journalLines.entryId, revRecEntry.id),
+      with: {
+        account: true,
+      },
+    });
+    expect(revRecLines.length).toBe(2);
+
+    const arLine = revRecLines.find((l) => l.account.code === "accounts_receivable");
+    const revLine = revRecLines.find((l) => l.account.code === "solar_installation_revenue");
+
+    expect(arLine).toBeTruthy();
+    expect(Number(arLine?.debit)).toBe(Math.round(Number(quotationDetail.total)));
+    expect(Number(arLine?.credit)).toBe(0);
+
+    expect(revLine).toBeTruthy();
+    expect(Number(revLine?.debit)).toBe(0);
+    expect(Number(revLine?.credit)).toBe(Math.round(Number(quotationDetail.total)));
+
     const methods = unwrap(await getPaymentMethods());
-    const defaultMethodId = methods[0]?.id;
+    const defaultMethod = methods[0];
+    if (!defaultMethod) throw new Error("No default payment method found");
+    const defaultMethodId = defaultMethod.id;
     expect(defaultMethodId).toBeTruthy();
 
     const consumedCosts = unwrap(
@@ -277,6 +327,18 @@ describeDb("Master workflow integration: DB + server actions", () => {
       }),
     );
     expect(costs.length).toBeGreaterThan(0);
+
+    // Verify paymentMethodId is stored in the database
+    const dbCosts = await db.query.projectCosts.findMany({
+      where: eq(projectCosts.projectId, projectId),
+    });
+    const laborCost = dbCosts.find((c) => c.costType === "labor");
+    expect(laborCost).toBeTruthy();
+    expect(laborCost?.paymentMethodId).toBe(defaultMethodId);
+
+    const materialCost = dbCosts.find((c) => c.costType === "material");
+    expect(materialCost).toBeTruthy();
+    expect(materialCost?.paymentMethodId).toBe(defaultMethodId);
 
     const stockRow = await db.query.inventoryItems.findFirst({
       where: eq(inventoryItems.id, inventoryId),
@@ -325,7 +387,36 @@ describeDb("Master workflow integration: DB + server actions", () => {
     expect(projectDetail.profitability.inventoryConsumedCost).toBe(700000);
     expect(projectDetail.profitability.additionalCosts).toBe(100000);
 
+    unwrap(await updateProject({ id: projectId, status: "in_progress" }));
+    unwrap(await updateProject({ id: projectId, status: "installation_completed" }));
+    unwrap(
+      await recordPayment({
+        projectId,
+        amount: 1396500,
+        paymentType: "final",
+        paymentMethodId: defaultMethodId ?? "",
+        paymentDate: new Date(),
+      }),
+    );
     unwrap(await markProjectCompleted(projectId));
+
+    // Verify that the month-end close checks pass
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    const closeReport = unwrap(
+      await getMonthEndCloseReport({
+        year: currentYear,
+        month: currentMonth,
+      }),
+    );
+    // Find the payments-posted check
+    const paymentsPostedCheck = closeReport.checks.find((c) => c.id === "payments-posted");
+    expect(paymentsPostedCheck).toBeTruthy();
+    expect(paymentsPostedCheck?.status).toBe("pass");
+
+    const costsPostedCheck = closeReport.checks.find((c) => c.id === "costs-posted");
+    expect(costsPostedCheck).toBeTruthy();
+    expect(costsPostedCheck?.status).toBe("pass");
 
     const allAlerts = unwrap(await getWarrantyAlerts({ tab: "all" }));
     const projectAlerts = allAlerts.filter((a) => a.projectId === projectId);
@@ -339,6 +430,95 @@ describeDb("Master workflow integration: DB + server actions", () => {
     expect(scheduled.expiringQuotes).toBeGreaterThanOrEqual(0);
     expect(scheduled.dueSoonAlerts).toBeGreaterThanOrEqual(0);
     expect(scheduled.overdueAlerts).toBeGreaterThanOrEqual(0);
+
+    // Verify cash movement report with outflows
+    const { getCashMovementReport } = await import("@/actions/cash-movement-actions");
+    const cashMovement = unwrap(
+      await getCashMovementReport({
+        dateFrom: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        dateTo: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      }),
+    );
+    const methodRow = cashMovement.byMethod.find((m) => m.methodName === defaultMethod.name);
+    expect(methodRow).toBeTruthy();
+    expect(methodRow?.totalIn).toBe(1396500);
+    expect(methodRow?.totalOut).toBe(100000);
+    expect(methodRow?.netMovement).toBe(1296500);
+
+    // Test repairOrphanCost
+    const { repairOrphanCost } = await import("@/actions/recovery-actions");
+    const { mapPaymentMethodNameToAssetAccount } = await import("@/lib/finance/ledger");
+
+    // 1. Create a legacy cost (no paymentMethodId, non-material)
+    const legacyCosts = await db
+      .insert(projectCosts)
+      .values({
+        projectId,
+        description: `${runTag} legacy cost`,
+        amount: "50000",
+        costType: "transport",
+        incurredDate: new Date(),
+        addedBy: adminUserId,
+      })
+      .returning();
+    const legacyCost = legacyCosts[0];
+    if (!legacyCost) throw new Error("Failed to insert legacy cost");
+
+    const repairLegacyResult = unwrap(await repairOrphanCost(legacyCost.id));
+    const legacyEntryLines = await db.query.journalLines.findMany({
+      where: eq(journalLines.entryId, repairLegacyResult.entryId),
+      with: { account: true },
+    });
+    const legacyCreditLine = legacyEntryLines.find((l) => Number(l.credit) > 0);
+    expect(legacyCreditLine?.account.code).toBe("cash_on_hand");
+
+    // 2. Create a material cost
+    const testMatCosts = await db
+      .insert(projectCosts)
+      .values({
+        projectId,
+        description: `${runTag} test material cost`,
+        amount: "60000",
+        costType: "material",
+        incurredDate: new Date(),
+        addedBy: adminUserId,
+      })
+      .returning();
+    const testMatCost = testMatCosts[0];
+    if (!testMatCost) throw new Error("Failed to insert material cost");
+
+    const repairMatResult = unwrap(await repairOrphanCost(testMatCost.id));
+    const matEntryLines = await db.query.journalLines.findMany({
+      where: eq(journalLines.entryId, repairMatResult.entryId),
+      with: { account: true },
+    });
+    const matCreditLine = matEntryLines.find((l) => Number(l.credit) > 0);
+    expect(matCreditLine?.account.code).toBe("raw_materials");
+
+    // 3. Create a dynamic cost with paymentMethodId
+    const dynamicCosts = await db
+      .insert(projectCosts)
+      .values({
+        projectId,
+        paymentMethodId: defaultMethodId,
+        description: `${runTag} dynamic cost`,
+        amount: "70000",
+        costType: "misc",
+        incurredDate: new Date(),
+        addedBy: adminUserId,
+      })
+      .returning();
+    const dynamicCost = dynamicCosts[0];
+    if (!dynamicCost) throw new Error("Failed to insert dynamic cost");
+
+    const repairDynamicResult = unwrap(await repairOrphanCost(dynamicCost.id));
+    const dynamicEntryLines = await db.query.journalLines.findMany({
+      where: eq(journalLines.entryId, repairDynamicResult.entryId),
+      with: { account: true },
+    });
+    const dynamicCreditLine = dynamicEntryLines.find((l) => Number(l.credit) > 0);
+    const expectedAssetAccount = mapPaymentMethodNameToAssetAccount(defaultMethod.name);
+    expect(dynamicCreditLine?.account.code).toBe(expectedAssetAccount);
 
     const stats = unwrap(await getDashboardStats());
     expect(stats.totalCustomers).toBeGreaterThanOrEqual(1);

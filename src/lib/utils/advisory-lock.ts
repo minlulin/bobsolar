@@ -35,7 +35,7 @@ export class AdvisoryLock {
 
   async acquire(): Promise<boolean> {
     const result = await this.db.execute(
-      sql`SELECT pg_try_advisory_lock(${this.key}::int8) AS "locked"`,
+      sql`SELECT pg_try_advisory_xact_lock(${this.key}::int8) AS "locked"`,
     );
     const row = result.rows[0] as { locked?: unknown } | undefined;
     this.acquired = row?.locked === true;
@@ -43,13 +43,7 @@ export class AdvisoryLock {
   }
 
   async release(): Promise<void> {
-    if (this.acquired) {
-      try {
-        await this.db.execute(sql`SELECT pg_advisory_unlock(${this.key}::int8)`);
-      } catch {
-        // Lock auto-releases on connection close — safe to ignore
-      }
-      this.acquired = false;
-    }
+    // Transaction-scoped locks are automatically released at transaction end
+    this.acquired = false;
   }
 }

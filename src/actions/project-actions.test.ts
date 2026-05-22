@@ -286,13 +286,14 @@ describe("project-actions high-impact branches", () => {
     };
   });
 
-  it("blocks completion when receivable is outstanding", async () => {
+  it("completes project even when receivable is outstanding", async () => {
+    state.projectStatus = "installation_completed";
+    state.receivedTotal = "50000";
+
     const { markProjectCompleted } = await import("@/actions/project-actions");
     const res = await markProjectCompleted("11111111-1111-4111-8111-111111111111");
 
-    expect(res.success).toBe(false);
-    if (res.success) return;
-    expect(res.error).toContain("outstanding receivable");
+    expect(res.success).toBe(true);
   });
 
   it("blocks completion from invalid status transition", async () => {

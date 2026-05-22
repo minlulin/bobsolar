@@ -146,6 +146,7 @@ describe("project-actions additional branches", () => {
   });
 
   it("convertQuotationToProject creates project on success", async () => {
+    const { createBalancedJournalEntry } = await import("@/lib/finance/ledger");
     const { convertQuotationToProject } = await import("@/actions/project-actions");
     const res = await convertQuotationToProject({
       quotationId: state.quotation.id,
@@ -154,6 +155,7 @@ describe("project-actions additional branches", () => {
     });
     expect(res.success).toBe(true);
     expect(spies.revalidatePath).toHaveBeenCalledWith("/projects");
+    expect(createBalancedJournalEntry).toHaveBeenCalled();
   });
 
   it("getProjects completed rollup computes warranty summary", async () => {

@@ -83,6 +83,7 @@ export default async function getNextConfig() {
     const withSerwist = withSerwistInit({
       swSrc: "src/sw.ts",
       swDest: "public/sw.js",
+      additionalPrecacheEntries: ["/offline.html"],
     });
     config = withSerwist(config);
   }

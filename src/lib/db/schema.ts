@@ -262,6 +262,7 @@ export const projectCosts = pgTable(
       .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
     itemId: uuid("item_id").references(() => inventoryItems.id),
+    paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id),
     description: text("description").notNull(),
     amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
     costType: costTypeEnum("cost_type").notNull(),
@@ -273,6 +274,7 @@ export const projectCosts = pgTable(
   (table) => [
     index("project_costs_project_id_idx").on(table.projectId),
     index("project_costs_incurred_date_idx").on(table.incurredDate),
+    index("project_costs_payment_method_id_idx").on(table.paymentMethodId),
   ],
 );
 
@@ -535,6 +537,10 @@ export const projectCostsRelations = relations(projectCosts, ({ one }) => ({
   addedBy: one(users, {
     fields: [projectCosts.addedBy],
     references: [users.id],
+  }),
+  paymentMethod: one(paymentMethods, {
+    fields: [projectCosts.paymentMethodId],
+    references: [paymentMethods.id],
   }),
 }));
 

@@ -11,7 +11,7 @@ import { deleteCacheValue, setCacheValue } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { companySettings, type User, users } from "@/lib/db/schema";
 import { USER_CAP } from "@/lib/domain/policies";
-import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
+import { COMPANY_SETTING_KEYS, isCompanySettingKey } from "@/lib/domain/settings-keys";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
@@ -104,10 +104,11 @@ export async function updateCompanySettings(
   await requireAdmin();
   try {
     const entries = Object.entries(data);
-    if (entries.length > 0) {
+    const validatedEntries = entries.filter(([key]) => isCompanySettingKey(key));
+    if (validatedEntries.length > 0) {
       await db
         .insert(companySettings)
-        .values(entries.map(([key, value]) => ({ key, value })))
+        .values(validatedEntries.map(([key, value]) => ({ key, value })))
         .onConflictDoUpdate({
           target: companySettings.key,
           set: { value: sql`excluded.value`, updatedAt: new Date() },

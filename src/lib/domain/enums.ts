@@ -102,3 +102,9 @@ export {
   type UserRole,
   userRoleSchema,
 } from "@/lib/domain/user-roles";
+export {
+  VOUCHER_TYPE_LABELS,
+  VOUCHER_TYPES,
+  type VoucherType,
+  voucherTypeSchema,
+} from "@/lib/domain/voucher";

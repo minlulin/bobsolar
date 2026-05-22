@@ -1,7 +1,7 @@
 "use server";
 
 import { endOfDay, format, parseISO, startOfDay, subMonths } from "date-fns";
-import { and, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, lte, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
@@ -10,6 +10,7 @@ import {
   journalLines,
   ledgerAccounts,
   paymentMethods,
+  projectCosts,
   projectPayments,
 } from "@/lib/db/schema";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
@@ -138,8 +139,9 @@ export async function getCashMovementReport(
       };
     });
 
-    const methodRows = await db
+    const methodInflowRows = await db
       .select({
+        methodId: paymentMethods.id,
         methodName: paymentMethods.name,
         totalIn: sql<number>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as("total_in"),
       })
@@ -148,14 +150,50 @@ export async function getCashMovementReport(
       .where(
         and(gte(projectPayments.paymentDate, dateFrom), lte(projectPayments.paymentDate, dateTo)),
       )
-      .groupBy(paymentMethods.name);
+      .groupBy(paymentMethods.id, paymentMethods.name);
 
-    const byMethod: CashMovementByMethod[] = methodRows.map((row) => ({
-      methodName: row.methodName,
-      totalIn: Math.round(row.totalIn),
-      totalOut: 0,
-      netMovement: Math.round(row.totalIn),
-    }));
+    const methodOutflowRows = await db
+      .select({
+        methodId: paymentMethods.id,
+        methodName: paymentMethods.name,
+        totalOut: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("total_out"),
+      })
+      .from(projectCosts)
+      .innerJoin(paymentMethods, eq(projectCosts.paymentMethodId, paymentMethods.id))
+      .where(
+        and(
+          gte(projectCosts.incurredDate, dateFrom),
+          lte(projectCosts.incurredDate, dateTo),
+          ne(projectCosts.costType, "material"),
+        ),
+      )
+      .groupBy(paymentMethods.id, paymentMethods.name);
+
+    const allMethods = await db.query.paymentMethods.findMany();
+
+    const inflowMap = new Map<string, number>();
+    for (const r of methodInflowRows) {
+      inflowMap.set(r.methodId, Math.round(r.totalIn));
+    }
+
+    const outflowMap = new Map<string, number>();
+    for (const r of methodOutflowRows) {
+      outflowMap.set(r.methodId, Math.round(r.totalOut));
+    }
+
+    const byMethod: CashMovementByMethod[] = [];
+    for (const m of allMethods) {
+      const totalIn = inflowMap.get(m.id) ?? 0;
+      const totalOut = outflowMap.get(m.id) ?? 0;
+      if (totalIn > 0 || totalOut > 0) {
+        byMethod.push({
+          methodName: m.name,
+          totalIn,
+          totalOut,
+          netMovement: totalIn - totalOut,
+        });
+      }
+    }
 
     const totalIn = byAccount.reduce((sum, a) => sum + a.totalIn, 0);
     const totalOut = byAccount.reduce((sum, a) => sum + a.totalOut, 0);
