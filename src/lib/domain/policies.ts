@@ -7,10 +7,10 @@
 // SESSION & AUTHENTICATION
 // =============================================================================
 
-/** Session duration in milliseconds (180 days) */
-export const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+/** Session duration in milliseconds (30 days) */
+export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-/** Session duration in seconds (180 days) */
+/** Session duration in seconds (30 days) */
 export const SESSION_TTL_SECONDS = SESSION_TTL_MS / 1000;
 
 // =============================================================================
@@ -22,6 +22,12 @@ export const UPLOAD_MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 /** Maximum file upload size in MB for display */
 export const UPLOAD_MAX_SIZE_MB = 5;
+
+/** Upload rate-limit window in milliseconds */
+export const UPLOAD_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+/** Maximum upload requests allowed per rate-limit window */
+export const UPLOAD_RATE_LIMIT_MAX_REQUESTS = 12;
 
 // =============================================================================
 // WARRANTY WINDOWS

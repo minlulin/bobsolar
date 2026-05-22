@@ -34,7 +34,7 @@ describe("auth validate", () => {
     state.roleFromDb = "staff";
 
     const { requireAdmin } = await import("@/lib/auth/validate");
-    await expect(requireAdmin()).rejects.toThrow("REDIRECT:/");
+    await expect(requireAdmin()).rejects.toThrow("REDIRECT:/unauthorized");
   });
 
   it("requireFinanceAccess allows admin", async () => {
@@ -45,6 +45,16 @@ describe("auth validate", () => {
     const user = await requireFinanceAccess();
 
     expect(user).toEqual({ userId: "u1", role: "admin" });
+  });
+
+  it("requireFinanceAccess allows staff", async () => {
+    state.session = { userId: "u1" };
+    state.roleFromDb = "staff";
+
+    const { requireFinanceAccess } = await import("@/lib/auth/validate");
+    const user = await requireFinanceAccess();
+
+    expect(user).toEqual({ userId: "u1", role: "staff" });
   });
 
   it("getCurrentUser returns null on invalid role", async () => {

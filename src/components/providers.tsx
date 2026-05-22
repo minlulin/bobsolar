@@ -41,11 +41,10 @@ function ThemeProvider({ children }: { children: React.ReactNode }): React.JSX.E
     applyThemeClass(theme);
   }, [theme]);
 
-  const mounted = React.useSyncExternalStore(
-    React.useCallback(() => (): void => undefined, []),
-    (): boolean => true,
-    (): boolean => false,
-  );
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const setTheme = React.useCallback((nextTheme: AppTheme): void => {
     setThemeState(nextTheme);
