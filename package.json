@@ -14,7 +14,7 @@
     "biome:fix": "biome check --write .",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.sw.json --noEmit",
     "format": "biome format --write .",
-    "format:check": "biome format . --check",
+    "format:check": "biome check .",
     "db:migrate": "drizzle-kit migrate",
     "db:baseline": "tsx src/lib/db/baseline-migrations.ts",
     "db:test:ping": "tsx scripts/db-test-ping.ts",

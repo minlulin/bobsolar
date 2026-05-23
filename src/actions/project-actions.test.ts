@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
     | "completed"
     | "cancelled",
   quotedTotal: "100000",
+  estimatedCogs: "15000",
   receivedTotal: "50000",
   updateReturningCount: 1,
   txCostSum: "0",
@@ -105,6 +106,7 @@ function makeProject(status = state.projectStatus): {
     | "completed"
     | "cancelled";
   quotedTotal: string;
+  estimatedCogs: string;
   startDate: Date | null;
   siteAddress: string;
   systemSizeKwp: string;
@@ -116,6 +118,7 @@ function makeProject(status = state.projectStatus): {
     projectNumber: "PJ-2026-0001",
     status,
     quotedTotal: state.quotedTotal,
+    estimatedCogs: state.estimatedCogs,
     startDate: null,
     siteAddress: "Site",
     systemSizeKwp: "10",
@@ -242,6 +245,7 @@ describe("project-actions high-impact branches", () => {
     state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
     state.projectStatus = "installation_completed";
     state.quotedTotal = "100000";
+    state.estimatedCogs = "15000";
     state.receivedTotal = "50000";
     state.updateReturningCount = 1;
     state.txCostSum = "0";
@@ -519,5 +523,7 @@ describe("project-actions high-impact branches", () => {
     expect(res.data.profitability.receivedPayment).toBe(25000);
     expect(res.data.profitability.inventoryConsumedCost).toBe(20000);
     expect(res.data.profitability.additionalCosts).toBe(10000);
+    expect(res.data.profitability.grossProfit).toBe(85000);
+    expect(res.data.profitability.netProfit).toBe(55000);
   });
 });

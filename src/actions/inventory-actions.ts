@@ -99,8 +99,8 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
       .insert(inventoryItems)
       .values({
         ...validated,
-        costPrice: validated.costPrice.toString(),
-        unitPrice: validated.unitPrice.toString(),
+        costPrice: validated.costPrice.toFixed(2),
+        unitPrice: validated.unitPrice.toFixed(2),
       })
       .returning();
 
@@ -137,8 +137,8 @@ export async function updateInventoryItem(
       .update(inventoryItems)
       .set({
         ...updateData,
-        costPrice: updateData.costPrice ? updateData.costPrice.toString() : undefined,
-        unitPrice: updateData.unitPrice ? updateData.unitPrice.toString() : undefined,
+        costPrice: updateData.costPrice !== undefined ? updateData.costPrice.toFixed(2) : undefined,
+        unitPrice: updateData.unitPrice !== undefined ? updateData.unitPrice.toFixed(2) : undefined,
         updatedAt: new Date(),
       })
       .where(eq(inventoryItems.id, validatedId))
@@ -195,8 +195,8 @@ export async function bulkUpdatePrices(rawUpdates: unknown): Promise<ActionRespo
         await tx
           .update(inventoryItems)
           .set({
-            costPrice: update.costPrice !== undefined ? update.costPrice.toString() : undefined,
-            unitPrice: update.unitPrice.toString(),
+            costPrice: update.costPrice !== undefined ? update.costPrice.toFixed(2) : undefined,
+            unitPrice: update.unitPrice.toFixed(2),
             updatedAt: new Date(),
           })
           .where(eq(inventoryItems.id, update.id));

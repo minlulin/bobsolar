@@ -25,6 +25,7 @@ describe("ledger cost mapping", () => {
     expect(mapCostTypeToExpenseAccount("labor")).toBe("labor_expense");
     expect(mapCostTypeToExpenseAccount("transport")).toBe("transport_expense");
     expect(mapCostTypeToExpenseAccount("misc")).toBe("misc_expense");
+    expect(mapCostTypeToExpenseAccount("general")).toBe("general_expense");
   });
 });
 

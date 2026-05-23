@@ -134,6 +134,13 @@
       "when": 1779445547414,
       "tag": "0018_add_cost_price_and_cogs",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779495000000,
+      "tag": "0019_add_general_cost_type",
+      "breakpoints": true
     }
   ]
 }

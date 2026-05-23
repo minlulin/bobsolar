@@ -133,7 +133,7 @@ function ItemRow({ item, index }: { item: QuoteBuilderItem; index: number }): Re
               setUnitPriceInput(e.target.value);
             }}
             onBlur={() => {
-              const parsed = Number.parseInt(unitPriceInput, 10);
+              const parsed = Number.parseFloat(unitPriceInput);
               const normalized = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
               setIsUnitPriceEditing(false);
               updateItemPrice(index, normalized);

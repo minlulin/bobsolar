@@ -53,6 +53,7 @@ export function mapCostTypeToExpenseAccount(costType: CostType): LedgerAccountCo
   if (costType === "material") return "material_expense";
   if (costType === "labor") return "labor_expense";
   if (costType === "transport") return "transport_expense";
+  if (costType === "general") return "general_expense";
   return "misc_expense";
 }
 
@@ -69,7 +70,7 @@ export function assertFinanceSsotDrift(): void {
   }
 
   const costSet = new Set(COST_TYPES);
-  for (const required of ["material", "labor", "transport", "misc"] as const) {
+  for (const required of ["material", "labor", "transport", "misc", "general"] as const) {
     if (!costSet.has(required)) {
       throw new Error(`Finance SSoT drift: missing cost type '${required}'.`);
     }
@@ -239,6 +240,8 @@ export async function reverseJournalEntry(input: {
   memo?: string | null;
   createdBy: string;
 }): Promise<{ entryId: string }> {
+  await assertJournalEntryNotReversed(input.tx, input.originalEntryId);
+
   const original = await getJournalEntryWithLines(input.tx, input.originalEntryId);
   if (!original) {
     throw new Error("Original journal entry not found.");

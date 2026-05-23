@@ -20,6 +20,21 @@ export type ErrorCode =
   | "INVALID_STATE"
   | "UNKNOWN";
 
+const MAX_ERROR_CHAIN_LENGTH = 500;
+
+function isNextRedirectError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const digest =
+    "digest" in error && typeof (error as { digest?: unknown }).digest === "string"
+      ? (error as { digest: string }).digest
+      : null;
+
+  return digest?.startsWith("NEXT_REDIRECT") ?? false;
+}
+
 export function getErrorCode(error: unknown): ErrorCode {
   if (error instanceof z.ZodError) return "VALIDATION_ERROR";
   if (error instanceof Error) {
@@ -51,7 +66,11 @@ function formatErrorChain(error: unknown, fallback: string): string {
     }
   }
   if (parts.length > 0) {
-    return [...new Set(parts)].join(" → ");
+    const chain = [...new Set(parts)].join(" -> ");
+    if (chain.length > MAX_ERROR_CHAIN_LENGTH) {
+      return `${chain.slice(0, MAX_ERROR_CHAIN_LENGTH)}...`;
+    }
+    return chain;
   }
   return fallback;
 }
@@ -104,6 +123,10 @@ export function handleActionError(
   context: string,
   fallbackMessage: string,
 ): ActionFailure {
+  if (isNextRedirectError(error)) {
+    throw error;
+  }
+
   const code = getErrorCode(error);
   const message =
     process.env.NODE_ENV === "development"

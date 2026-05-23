@@ -11,6 +11,7 @@ export const COST_TYPE_LABELS: Record<CostType, string> = {
   labor: "Labor",
   transport: "Logistics",
   misc: "Miscellaneous",
+  general: "General",
 };
 
 /** UI filter (includes 'all') */

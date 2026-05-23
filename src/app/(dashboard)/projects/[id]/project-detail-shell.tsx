@@ -97,6 +97,7 @@ function aggregateCosts(project: ProjectDetail): {
     labor: 0,
     transport: 0,
     misc: 0,
+    general: 0,
   };
 
   project.costs.forEach((cost) => {
@@ -1049,6 +1050,7 @@ export function ProjectDetailShell({
                         key === "labor" && "bg-emerald-400/95",
                         key === "transport" && "bg-indigo-500/85",
                         key === "misc" && "bg-zinc-500/95",
+                        key === "general" && "bg-cyan-500/85",
                       )}
                     />
                   ) : null,

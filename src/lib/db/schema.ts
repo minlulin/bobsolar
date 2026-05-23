@@ -54,7 +54,13 @@ export const projectStatusEnum = pgEnum("project_status", [
   "cancelled",
 ]);
 
-export const costTypeEnum = pgEnum("cost_type", ["material", "labor", "transport", "misc"]);
+export const costTypeEnum = pgEnum("cost_type", [
+  "material",
+  "labor",
+  "transport",
+  "misc",
+  "general",
+]);
 
 export const remarkTypeEnum = pgEnum("remark_type", ["note", "issue", "update"]);
 

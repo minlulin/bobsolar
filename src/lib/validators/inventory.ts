@@ -5,7 +5,7 @@ const panelSpecificationsSchema = z
   .object({
     brandModel: z.string().min(1, "Panel brand/model is required"),
     cellType: z.enum(["n_type", "p_type"]),
-    wattageW: z.number().positive("Panel wattage must be greater than 0"),
+    wattageW: z.number().nonnegative("Panel wattage must be 0 or greater"),
     warranty: z.string().min(1, "Panel warranty is required"),
   })
   .strict();
@@ -25,8 +25,8 @@ const batterySpecificationsSchema = z
   .object({
     brandModel: z.string().min(1, "Battery brand/model is required"),
     chemistryType: z.enum(["lifepo4", "gel", "lead_acid"]),
-    voltageV: z.number().positive("Battery voltage must be greater than 0"),
-    capacityAh: z.number().positive("Battery capacity must be greater than 0"),
+    voltageV: z.number().nonnegative("Battery voltage must be 0 or greater"),
+    capacityAh: z.number().nonnegative("Battery capacity must be 0 or greater"),
     warranty: z.string().min(1, "Battery warranty is required"),
   })
   .strict();
@@ -48,7 +48,7 @@ const cableSpecificationsSchema = z
 const accessorySpecificationsSchema = z
   .object({
     type: z.string().min(1, "Accessory type is required"),
-    ratingAmpere: z.number().positive("Accessory ampere rating must be > 0"),
+    ratingAmpere: z.number().nonnegative("Accessory ampere rating must be 0 or greater"),
     voltageRating: z.string().min(1, "Accessory voltage rating is required"),
   })
   .strict();

@@ -402,7 +402,10 @@ export async function getProjects(
         .leftJoin(projectCosts, eq(projectCosts.projectId, projects.id))
         .where(whereClause)
         .groupBy(projects.id, customers.name, quotations.quoteNumber)
-        .orderBy(scope === "completed" ? desc(projects.actualCompletion) : desc(projects.createdAt))
+        .orderBy(
+          scope === "completed" ? desc(projects.actualCompletion) : desc(projects.createdAt),
+          desc(projects.id),
+        )
         .limit(limit)
         .offset(offset),
       db

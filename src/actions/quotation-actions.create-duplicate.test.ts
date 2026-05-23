@@ -21,6 +21,8 @@ const state = vi.hoisted(() => ({
   } as any,
   dbMode: "ok" as "ok" | "lock_busy" | "dup_error",
   firstTxn: true,
+  inventoryCostRows: [{ id: "11111111-1111-4111-8111-111111111111", costPrice: "88.40" }],
+  insertedQuotationItems: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("next/cache", () => ({
@@ -68,8 +70,19 @@ vi.mock("@/lib/db", () => ({
       }
       const tx = {
         query: { quotations: { findFirst: vi.fn(async () => state.quote) } },
+        select: vi.fn(() => ({
+          from: vi.fn(() => ({
+            where: vi.fn(async () => state.inventoryCostRows),
+          })),
+        })),
         insert: vi.fn(() => ({
-          values: vi.fn(() => ({ returning: vi.fn(async () => [{ id: "q2" }]) })),
+          values: vi.fn((valuesArg: unknown) => {
+            if (Array.isArray(valuesArg)) {
+              state.insertedQuotationItems = valuesArg as Array<Record<string, unknown>>;
+              return Promise.resolve(undefined);
+            }
+            return { returning: vi.fn(async () => [{ id: "q2" }]) };
+          }),
         })),
         update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn(async () => undefined) })) })),
         delete: vi.fn(() => ({ where: vi.fn(async () => undefined) })),
@@ -87,6 +100,8 @@ describe("quotation create/duplicate branches", () => {
     vi.clearAllMocks();
     state.dbMode = "ok";
     state.firstTxn = true;
+    state.inventoryCostRows = [{ id: "11111111-1111-4111-8111-111111111111", costPrice: "88.40" }];
+    state.insertedQuotationItems = [];
   });
 
   it("createQuotation returns lock busy state error", async () => {
@@ -118,5 +133,27 @@ describe("quotation create/duplicate branches", () => {
     const { duplicateQuotation } = await import("@/actions/quotation-actions");
     const res = await duplicateQuotation("11111111-1111-4111-8111-111111111111");
     expect(res.success).toBe(false);
+  });
+
+  it("createQuotation binds sell price from form and buy price from inventory snapshot", async () => {
+    const { createQuotation } = await import("@/actions/quotation-actions");
+    const res = await createQuotation({
+      customerId: "11111111-1111-4111-8111-111111111111",
+      discountPercent: 0,
+      taxPercent: 0,
+      items: [
+        {
+          itemId: "11111111-1111-4111-8111-111111111111",
+          description: "Panel",
+          quantity: 2,
+          unitPrice: 1250.75,
+          discountPercentage: 0,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    expect(state.insertedQuotationItems).toHaveLength(1);
+    expect(state.insertedQuotationItems[0]?.["unitPrice"]).toBe("1250.75");
+    expect(state.insertedQuotationItems[0]?.["costPrice"]).toBe("88");
   });
 });
