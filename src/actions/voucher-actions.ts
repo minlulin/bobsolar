@@ -1,6 +1,5 @@
 "use server";
 
-import type { InferSelectModel } from "drizzle-orm";
 import { desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/validate";
@@ -12,7 +11,7 @@ import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/
 import { extractVoucherSequence, formatVoucherNumber } from "@/lib/utils/voucher-number";
 import { generateVoucherSchema } from "@/lib/validators/voucher";
 
-export type VoucherWithProject = InferSelectModel<typeof projectVouchers> & {
+export type VoucherWithProject = ProjectVoucher & {
   projectNumber: string;
   customerName: string;
 };

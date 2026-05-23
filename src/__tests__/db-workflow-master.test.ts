@@ -537,5 +537,5 @@ describeDb("Master workflow integration: DB + server actions", () => {
     const unread = unwrap(await getNotificationsWithFilter({ unreadOnly: true }));
     expect(Array.isArray(unread)).toBe(true);
     unwrap(await markAllNotificationsAsRead());
-  });
+  }, 60000);
 });

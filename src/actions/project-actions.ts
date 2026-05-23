@@ -11,7 +11,7 @@ import {
 } from "date-fns";
 import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin, requireAuth, requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
@@ -45,6 +45,7 @@ import {
 } from "@/lib/finance/ledger";
 import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
+import { AdvisoryLock } from "@/lib/utils/advisory-lock";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
 import { extractProjectSequence, formatProjectNumber } from "@/lib/utils/project-number";
 import { uuidSchema } from "@/lib/validators/common";
@@ -99,9 +100,10 @@ export type ProjectDetail = InferSelectModel<typeof projects> & {
   };
 };
 
-async function nextProjectSequence(year: number): Promise<number> {
+async function nextProjectSequence(year: number, tx?: DbTransaction): Promise<number> {
   const prefix = `PJ-${year}-`;
-  const existing = await db
+  const client = tx || db;
+  const existing = await client
     .select({ projectNumber: projects.projectNumber })
     .from(projects)
     .where(ilike(projects.projectNumber, `${prefix}%`))
@@ -218,81 +220,93 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
               ? String(data.systemSizeKwp)
               : "0";
 
-          // Get next project sequence within the transaction
-          const seq = await nextProjectSequence(year);
-          const projectNumber = formatProjectNumber(seq, year);
-
-          // Calculate estimated COGS from quotation items cost snapshots
-          const quoteItems = await tx
-            .select({
-              costTotal: quotationItems.costTotal,
-            })
-            .from(quotationItems)
-            .where(eq(quotationItems.quotationId, quotation.id));
-
-          const estimatedCogs = quoteItems.reduce(
-            (sum, item) => sum + Math.round(Number(item.costTotal)),
-            0,
-          );
-
-          const [created] = await tx
-            .insert(projects)
-            .values({
-              projectNumber,
-              quotationId: quotation.id,
-              customerId: quotation.customerId,
-              status: "planning",
-              siteAddress,
-              systemSizeKwp: systemKwp,
-              quotedTotal: quotation.total,
-              estimatedCogs: String(estimatedCogs),
-              actualTotal: "0",
-              startDate: data.startDate ?? null,
-              targetCompletion: data.targetCompletion ?? null,
-              notes: data.notes ?? null,
-            })
-            .returning();
-
-          if (!created) {
-            return handleStateError("Failed to create project");
+          const lockKey = BigInt(0x50_52_4f_4a); // 'PROJ'
+          const lock = new AdvisoryLock(tx, lockKey);
+          const acquired = await lock.acquire();
+          if (!acquired) {
+            return handleStateError("Too many concurrent requests – please try again");
           }
 
-          // Revenue recognition journal entry
-          const amountRounded = Math.round(Number(quotation.total));
-          await createBalancedJournalEntry({
-            tx,
-            entryDate: new Date(),
-            memo: `Revenue recognition for Project ${projectNumber}`,
-            sourceType: "manual_adjustment",
-            sourceId: created.id,
-            projectId: created.id,
-            createdBy: auth.userId,
-            lines: [
-              {
-                accountCode: "accounts_receivable",
-                debit: amountRounded,
-                credit: 0,
-              },
-              {
-                accountCode: "solar_installation_revenue",
-                debit: 0,
-                credit: amountRounded,
-              },
-            ],
-          });
+          try {
+            // Get next project sequence within the transaction
+            const seq = await nextProjectSequence(year, tx);
+            const projectNumber = formatProjectNumber(seq, year);
 
-          revalidatePath("/projects");
-          revalidatePath(`/quotations/${quotation.id}`);
-          revalidatePath("/quotations");
+            // Calculate estimated COGS from quotation items cost snapshots
+            const quoteItems = await tx
+              .select({
+                costTotal: quotationItems.costTotal,
+              })
+              .from(quotationItems)
+              .where(eq(quotationItems.quotationId, quotation.id));
 
-          return successResponse(created);
+            const estimatedCogs = quoteItems.reduce(
+              (sum, item) => sum + Math.round(Number(item.costTotal)),
+              0,
+            );
+
+            const [created] = await tx
+              .insert(projects)
+              .values({
+                projectNumber,
+                quotationId: quotation.id,
+                customerId: quotation.customerId,
+                status: "planning",
+                siteAddress,
+                systemSizeKwp: systemKwp,
+                quotedTotal: quotation.total,
+                estimatedCogs: String(estimatedCogs),
+                actualTotal: "0",
+                startDate: data.startDate ?? null,
+                targetCompletion: data.targetCompletion ?? null,
+                notes: data.notes ?? null,
+              })
+              .returning();
+
+            if (!created) {
+              return handleStateError("Failed to create project");
+            }
+
+            // Revenue recognition journal entry
+            const amountRounded = Math.round(Number(quotation.total));
+            await createBalancedJournalEntry({
+              tx,
+              entryDate: new Date(),
+              memo: `Revenue recognition for Project ${projectNumber}`,
+              sourceType: "manual_adjustment",
+              sourceId: created.id,
+              projectId: created.id,
+              createdBy: auth.userId,
+              lines: [
+                {
+                  accountCode: "accounts_receivable",
+                  debit: amountRounded,
+                  credit: 0,
+                },
+                {
+                  accountCode: "solar_installation_revenue",
+                  debit: 0,
+                  credit: amountRounded,
+                },
+              ],
+            });
+
+            revalidateTag("dashboard:stats", "default");
+            revalidatePath("/projects");
+            revalidatePath(`/quotations/${quotation.id}`);
+            revalidatePath("/quotations");
+
+            return successResponse(created);
+          } finally {
+            await lock.release();
+          }
         });
       } catch (error: unknown) {
         if (
           error &&
           typeof error === "object" &&
           "code" in error &&
-          error.code === "23505" &&
+          (error as { code: unknown }).code === "23505" &&
           retries > 1
         ) {
           // 23505 is unique_violation - could be project number or quotation_id conflict
@@ -630,6 +644,22 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
       }
 
       if (data.status === "completed") {
+        const patch: Partial<typeof projects.$inferInsert> = {};
+        if (data.siteAddress !== undefined) {
+          patch.siteAddress = data.siteAddress?.trim() || existing.siteAddress;
+        }
+        if (data.systemSizeKwp !== undefined) {
+          patch.systemSizeKwp = String(data.systemSizeKwp);
+        }
+        if (data.targetCompletion !== undefined) {
+          patch.targetCompletion = data.targetCompletion;
+        }
+        if (data.notes !== undefined) patch.notes = data.notes;
+
+        if (Object.keys(patch).length > 0) {
+          await db.update(projects).set(patch).where(eq(projects.id, data.id));
+        }
+
         await applyProjectCompletion(existing);
       } else {
         const patch: Partial<typeof projects.$inferInsert> = {
@@ -683,6 +713,7 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
     });
     if (!updated) return handleNotFoundError("Project", data.id);
 
+    revalidateTag("dashboard:stats", "default");
     revalidatePath("/projects");
     revalidatePath(`/projects/${data.id}`);
     revalidatePath("/projects/completed");
@@ -724,6 +755,7 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
     });
     if (!updated) return handleNotFoundError("Project", validatedId);
 
+    revalidateTag("dashboard:stats", "default");
     revalidatePath("/projects");
     revalidatePath(`/projects/${validatedId}`);
     revalidatePath("/projects/completed");
@@ -1105,6 +1137,7 @@ export async function createWarrantyAlertForProject(
       link: `/projects/${data.projectId}`,
     });
 
+    revalidateTag("dashboard:stats", "default");
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/warranty");
 

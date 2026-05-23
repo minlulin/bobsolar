@@ -10,7 +10,7 @@ const journalLineSchema = z.object({
 
 export const manualJournalSchema = z
   .object({
-    entryDate: z.string().min(1, "Entry date is required"),
+    entryDate: z.coerce.date(),
     memo: z.string().min(1, "Memo is required").max(500, "Memo must be under 500 characters"),
     sourceType: z.enum(JOURNAL_SOURCE_TYPES).default("manual_adjustment"),
     projectId: z.string().uuid().optional().nullable(),

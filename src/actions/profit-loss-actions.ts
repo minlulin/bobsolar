@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
+import type { LedgerAccountCode } from "@/lib/domain/enums";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
@@ -17,7 +18,7 @@ const periodSchema = z.object({
 export type ProfitLossPeriod = z.input<typeof periodSchema>;
 
 export interface ProfitLossLineItem {
-  accountCode: string;
+  accountCode: LedgerAccountCode;
   accountName: string;
   amount: number;
 }
@@ -128,7 +129,7 @@ export async function getProfitLossReport(
     const incomeItems: ProfitLossLineItem[] = incomeRows
       .filter((row) => incomeAccounts.includes(row.accountCode))
       .map((row) => ({
-        accountCode: row.accountCode,
+        accountCode: row.accountCode as LedgerAccountCode,
         accountName: row.accountName,
         amount: Math.round(row.amount),
       }));
@@ -136,7 +137,7 @@ export async function getProfitLossReport(
     const cogsItems: ProfitLossLineItem[] = cogsRows
       .filter((row) => cogsAccounts.includes(row.accountCode))
       .map((row) => ({
-        accountCode: row.accountCode,
+        accountCode: row.accountCode as LedgerAccountCode,
         accountName: row.accountName,
         amount: Math.round(row.amount),
       }));
@@ -144,7 +145,7 @@ export async function getProfitLossReport(
     const expenseItems: ProfitLossLineItem[] = expenseRows
       .filter((row) => expenseAccounts.includes(row.accountCode))
       .map((row) => ({
-        accountCode: row.accountCode,
+        accountCode: row.accountCode as LedgerAccountCode,
         accountName: row.accountName,
         amount: Math.round(row.amount),
       }));

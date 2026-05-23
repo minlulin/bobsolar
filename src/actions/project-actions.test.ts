@@ -90,6 +90,7 @@ const spies = vi.hoisted(() => ({
   revalidatePath: vi.fn((path: string) => {
     state.revalidateCalls.push(path);
   }),
+  revalidateTag: vi.fn(),
   notifyAllUsers: vi.fn(async () => undefined),
   notifyAdminUsers: vi.fn(async () => undefined),
   createBalancedJournalEntry: vi.fn(async () => undefined),
@@ -129,6 +130,7 @@ function makeProject(status = state.projectStatus): {
 
 vi.mock("next/cache", () => ({
   revalidatePath: spies.revalidatePath,
+  revalidateTag: spies.revalidateTag,
 }));
 
 vi.mock("@/lib/auth/validate", () => ({

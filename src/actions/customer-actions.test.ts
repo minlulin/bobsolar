@@ -88,6 +88,12 @@ vi.mock("@/lib/db", () => ({
         ),
         findFirst: vi.fn(async () => state.customerDetail),
       },
+      projects: {
+        findFirst: vi.fn(async () => null),
+      },
+      quotations: {
+        findFirst: vi.fn(async () => null),
+      },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({

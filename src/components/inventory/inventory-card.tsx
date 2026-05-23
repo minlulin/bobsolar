@@ -33,7 +33,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useDeleteInventoryItem, useUpdateInventoryItem } from "@/hooks/use-inventory";
 import { STOCK_WARNING_THRESHOLDS } from "@/lib/constants";
-import type { InventoryCategory, InventoryItem } from "@/lib/db/schema";
+import type { InventoryItem } from "@/lib/db/schema";
+import type { InventoryCategory } from "@/lib/domain/enums";
 import { cn, formatMMK } from "@/lib/utils";
 
 interface InventoryCardProps {

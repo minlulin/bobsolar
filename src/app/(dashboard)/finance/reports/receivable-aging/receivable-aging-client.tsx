@@ -41,10 +41,10 @@ export function ReceivableAgingReportClient({
       ["Summary", ""],
       ["Total Outstanding", report.summary.totalOutstanding.toString()],
       ["Current (0-30 days)", report.summary.current.toString()],
-      ["31-60 days", report.summary.days30.toString()],
-      ["61-90 days", report.summary.days60.toString()],
-      ["91-120 days", report.summary.days90.toString()],
-      ["120+ days", report.summary.days90Plus.toString()],
+      ["31-60 days", report.summary.days31to60.toString()],
+      ["61-90 days", report.summary.days61to90.toString()],
+      ["91-120 days", report.summary.days91to120.toString()],
+      ["120+ days", report.summary.days120Plus.toString()],
       [],
       ["Project Details", ""],
       [
@@ -63,10 +63,10 @@ export function ReceivableAgingReportClient({
         b.customerName,
         b.outstanding.toString(),
         b.current.toString(),
-        b.days30.toString(),
-        b.days60.toString(),
-        b.days90.toString(),
-        b.days90Plus.toString(),
+        b.days31to60.toString(),
+        b.days61to90.toString(),
+        b.days91to120.toString(),
+        b.days120Plus.toString(),
         b.completionDate ?? "N/A",
       ]),
     ];
@@ -126,25 +126,25 @@ export function ReceivableAgingReportClient({
         />
         <AgingMetric
           label="31-60 days"
-          value={report?.summary.days30 ?? 0}
+          value={report?.summary.days31to60 ?? 0}
           color="text-amber-600"
           isLoading={isLoading}
         />
         <AgingMetric
           label="61-90 days"
-          value={report?.summary.days60 ?? 0}
+          value={report?.summary.days61to90 ?? 0}
           color="text-orange-600"
           isLoading={isLoading}
         />
         <AgingMetric
           label="91-120 days"
-          value={report?.summary.days90 ?? 0}
+          value={report?.summary.days91to120 ?? 0}
           color="text-rose-600"
           isLoading={isLoading}
         />
         <AgingMetric
           label="120+ days"
-          value={report?.summary.days90Plus ?? 0}
+          value={report?.summary.days120Plus ?? 0}
           color="text-red-700"
           isLoading={isLoading}
         />
@@ -213,16 +213,16 @@ export function ReceivableAgingReportClient({
                         {bucket.current > 0 ? formatMMK(bucket.current) : "-"}
                       </td>
                       <td className="py-2.5 text-right tabular-nums text-amber-700">
-                        {bucket.days30 > 0 ? formatMMK(bucket.days30) : "-"}
+                        {bucket.days31to60 > 0 ? formatMMK(bucket.days31to60) : "-"}
                       </td>
                       <td className="py-2.5 text-right tabular-nums text-orange-700">
-                        {bucket.days60 > 0 ? formatMMK(bucket.days60) : "-"}
+                        {bucket.days61to90 > 0 ? formatMMK(bucket.days61to90) : "-"}
                       </td>
                       <td className="py-2.5 text-right tabular-nums text-rose-700">
-                        {bucket.days90 > 0 ? formatMMK(bucket.days90) : "-"}
+                        {bucket.days91to120 > 0 ? formatMMK(bucket.days91to120) : "-"}
                       </td>
                       <td className="py-2.5 text-right tabular-nums text-red-700">
-                        {bucket.days90Plus > 0 ? formatMMK(bucket.days90Plus) : "-"}
+                        {bucket.days120Plus > 0 ? formatMMK(bucket.days120Plus) : "-"}
                       </td>
                       <td className="py-2.5 text-muted-foreground">
                         {bucket.completionDate ? (

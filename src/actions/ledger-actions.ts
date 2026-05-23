@@ -2,39 +2,26 @@
 
 import { endOfDay, parseISO, startOfDay } from "date-fns";
 import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
-import { z } from "zod";
 import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts, projects, users } from "@/lib/db/schema";
-import { JOURNAL_SOURCE_TYPES, LEDGER_ACCOUNT_CODES } from "@/lib/domain/enums";
+import type { JournalSourceType, LedgerAccountCode, LedgerAccountType } from "@/lib/domain/enums";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
-
-const ledgerFilterSchema = z.object({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  accountCode: z.enum(LEDGER_ACCOUNT_CODES).optional(),
-  projectId: z.string().uuid().optional(),
-  sourceType: z.enum(JOURNAL_SOURCE_TYPES).optional(),
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(10).max(100).default(50),
-});
-
-export type LedgerFilter = z.input<typeof ledgerFilterSchema>;
-export type LedgerFilterParsed = z.output<typeof ledgerFilterSchema>;
+import { ledgerFilterSchema } from "@/lib/validators/ledger";
 
 export interface LedgerEntryRow {
   entryId: string;
   entryDate: Date;
   memo: string | null;
-  sourceType: string;
+  sourceType: JournalSourceType;
   sourceId: string | null;
   createdBy: string;
   creatorName: string | null;
   isReversed: boolean;
   lines: {
     id: string;
-    accountCode: string;
+    accountCode: LedgerAccountCode;
     accountName: string;
     projectId: string | null;
     projectNumber: string | null;
@@ -163,14 +150,14 @@ export async function getLedgerEntries(
       entryId: row.id,
       entryDate: row.entryDate,
       memo: row.memo,
-      sourceType: row.sourceType,
+      sourceType: row.sourceType as JournalSourceType,
       sourceId: row.sourceId,
       createdBy: row.createdBy,
       creatorName: row.creatorName,
       isReversed: row.isReversed,
       lines: (linesByEntry.get(row.id) ?? []).map((line) => ({
         id: line.id,
-        accountCode: line.accountCode,
+        accountCode: line.accountCode as LedgerAccountCode,
         accountName: line.accountName,
         projectId: line.projectId,
         projectNumber: line.projectNumber,
@@ -193,9 +180,9 @@ export async function getLedgerEntries(
 }
 
 export interface AccountBalanceRow {
-  accountCode: string;
+  accountCode: LedgerAccountCode;
   accountName: string;
-  accountType: string;
+  accountType: LedgerAccountType;
   totalDebit: number;
   totalCredit: number;
   balance: number;
@@ -241,9 +228,9 @@ export async function getAccountBalances(
       const balance = isAsset ? debit - credit : credit - debit;
 
       return {
-        accountCode: row.accountCode,
+        accountCode: row.accountCode as LedgerAccountCode,
         accountName: row.accountName,
-        accountType: row.accountType,
+        accountType: row.accountType as LedgerAccountType,
         totalDebit: debit,
         totalCredit: credit,
         balance,

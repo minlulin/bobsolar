@@ -14,6 +14,7 @@ import {
   projectPayments,
   projects,
 } from "@/lib/db/schema";
+import type { LedgerAccountCode, ProjectStatus } from "@/lib/domain/enums";
 import { recordFinanceDashboardLatency, recordJournalPostFailure } from "@/lib/finance/metrics";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
@@ -53,7 +54,9 @@ export async function getFinanceSummary(
 
     const [incomeRow] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
+        sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric - ${journalLines.debit}::numeric), 0)`.as(
+          "sum",
+        ),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -62,9 +65,8 @@ export async function getFinanceSummary(
         and(
           gte(journalEntries.entryDate, dateFrom),
           lte(journalEntries.entryDate, dateTo),
-          eq(journalEntries.sourceType, "project_payment"),
           eq(journalEntries.isReversed, false),
-          eq(ledgerAccounts.code, "accounts_receivable"),
+          eq(ledgerAccounts.type, "income"),
         ),
       );
 
@@ -200,7 +202,10 @@ export async function getMonthlyTrend(
     const incomeRows = await db
       .select({
         month: sql<string>`to_char(${journalEntries.entryDate}, 'YYYY-MM')`.as("month"),
-        amount: sql<string>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("amount"),
+        amount:
+          sql<string>`coalesce(sum(${journalLines.credit}::numeric - ${journalLines.debit}::numeric), 0)`.as(
+            "amount",
+          ),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -209,9 +214,8 @@ export async function getMonthlyTrend(
         and(
           gte(journalEntries.entryDate, dateFrom),
           lte(journalEntries.entryDate, dateTo),
-          eq(journalEntries.sourceType, "project_payment"),
           eq(journalEntries.isReversed, false),
-          eq(ledgerAccounts.code, "accounts_receivable"),
+          eq(ledgerAccounts.type, "income"),
         ),
       )
       .groupBy(sql`to_char(${journalEntries.entryDate}, 'YYYY-MM')`);
@@ -219,7 +223,10 @@ export async function getMonthlyTrend(
     const expenseRows = await db
       .select({
         month: sql<string>`to_char(${journalEntries.entryDate}, 'YYYY-MM')`.as("month"),
-        amount: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("amount"),
+        amount:
+          sql<string>`coalesce(sum(${journalLines.debit}::numeric - ${journalLines.credit}::numeric), 0)`.as(
+            "amount",
+          ),
       })
       .from(journalEntries)
       .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
@@ -228,15 +235,8 @@ export async function getMonthlyTrend(
         and(
           gte(journalEntries.entryDate, dateFrom),
           lte(journalEntries.entryDate, dateTo),
-          eq(journalEntries.sourceType, "project_expense"),
           eq(journalEntries.isReversed, false),
-          inArray(ledgerAccounts.code, [
-            "material_expense",
-            "labor_expense",
-            "transport_expense",
-            "misc_expense",
-            "general_expense",
-          ]),
+          eq(ledgerAccounts.type, "expense"),
         ),
       )
       .groupBy(sql`to_char(${journalEntries.entryDate}, 'YYYY-MM')`);
@@ -270,7 +270,7 @@ export async function getMonthlyTrend(
 }
 
 export interface ExpenseBreakdownRow {
-  type: string;
+  type: LedgerAccountCode;
   label: string;
   amount: number;
   percentage: number;
@@ -328,7 +328,7 @@ export async function getExpenseBreakdown(
       const amount = Math.round(Number(row.amount));
       total += amount;
       breakdown.push({
-        type: row.accountCode,
+        type: row.accountCode as LedgerAccountCode,
         label: typeLabels[row.accountCode] ?? row.accountCode,
         amount,
         percentage: 0,
@@ -357,7 +357,7 @@ export interface ReceivableRiskProject {
   paidAmount: number;
   outstanding: number;
   daysOverdue: number;
-  status: string;
+  status: ProjectStatus;
 }
 
 export async function getReceivableRiskData(): Promise<ActionResponse<ReceivableRiskProject[]>> {
@@ -417,7 +417,7 @@ export async function getReceivableRiskData(): Promise<ActionResponse<Receivable
         paidAmount: paid,
         outstanding,
         daysOverdue,
-        status: row.status,
+        status: row.status as ProjectStatus,
       });
     }
 

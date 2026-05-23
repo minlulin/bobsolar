@@ -22,7 +22,7 @@ const state = vi.hoisted(() => ({
   } as any,
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => ({ userId: "u1", role: "admin" as const })),

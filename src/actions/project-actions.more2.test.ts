@@ -30,10 +30,14 @@ const state = vi.hoisted(() => ({
 
 const spies = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
   notifyAllUsers: vi.fn(async () => undefined),
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: spies.revalidatePath }));
+vi.mock("next/cache", () => ({
+  revalidatePath: spies.revalidatePath,
+  revalidateTag: spies.revalidateTag,
+}));
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => state.auth),
@@ -97,6 +101,7 @@ vi.mock("@/lib/db", () => ({
     // biome-ignore lint/suspicious/noExplicitAny: drizzle transaction mock
     transaction: vi.fn(async (cb: (tx: any) => Promise<any>) => {
       const tx = {
+        execute: vi.fn(async () => ({ rows: [{ locked: true }] })),
         query: {
           quotations: {
             findFirst: vi.fn(async () => state.quotation),
@@ -106,7 +111,11 @@ vi.mock("@/lib/db", () => ({
           // biome-ignore lint/suspicious/noExplicitAny: drizzle query chain mock
           const chain: any = {
             from: vi.fn(() => chain),
-            where: vi.fn(async () => []),
+            where: vi.fn(() => chain),
+            orderBy: vi.fn(() => chain),
+            limit: vi.fn(() => chain),
+            // biome-ignore lint/suspicious/noThenProperty: thenable mock
+            then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve([])),
           };
           return chain;
         }),

@@ -1,11 +1,11 @@
 "use server";
 
-import { parseISO } from "date-fns";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { ledgerAccounts, projects } from "@/lib/db/schema";
+import type { LedgerAccountCode, LedgerAccountType } from "@/lib/domain/enums";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleStateError } from "@/lib/utils/error";
@@ -31,7 +31,7 @@ export async function createManualJournalEntry(
     const result = await db.transaction(async (tx) => {
       const entry = await createBalancedJournalEntry({
         tx,
-        entryDate: parseISO(data.entryDate),
+        entryDate: data.entryDate,
         memo: data.memo,
         sourceType: data.sourceType,
         sourceId: data.projectId ?? `manual-${Date.now()}`,
@@ -59,9 +59,9 @@ export async function createManualJournalEntry(
 }
 
 export interface LedgerAccountOption {
-  code: string;
+  code: LedgerAccountCode;
   name: string;
-  type: string;
+  type: LedgerAccountType;
 }
 
 export async function getLedgerAccountOptions(): Promise<ActionResponse<LedgerAccountOption[]>> {
@@ -75,9 +75,9 @@ export async function getLedgerAccountOptions(): Promise<ActionResponse<LedgerAc
 
     return successResponse(
       accounts.map((a) => ({
-        code: a.code,
+        code: a.code as LedgerAccountCode,
         name: a.name,
-        type: a.type,
+        type: a.type as LedgerAccountType,
       })),
     );
   } catch (error) {

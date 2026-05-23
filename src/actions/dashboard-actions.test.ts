@@ -3,51 +3,20 @@ import { db } from "@/lib/db";
 
 const state = vi.hoisted(() => ({ authFail: false }));
 
-type WhereResult = {
-  limit: () => Promise<unknown>;
-  orderBy: () => { limit: () => Promise<unknown> };
-};
-
-type InnerWhereResult = {
-  orderBy: () => { limit: () => Promise<unknown> };
-};
-
-function selectChain(result: unknown): {
-  from: () => {
-    then: (resolve: (value: unknown) => unknown) => Promise<unknown>;
-    where: () => WhereResult;
-    limit: () => Promise<unknown>;
-    orderBy: () => { limit: () => Promise<unknown> };
-    innerJoin: () => {
-      innerJoin: () => { where: () => InnerWhereResult };
-      where: () => InnerWhereResult;
-    };
+// biome-ignore lint/suspicious/noExplicitAny: test mock query chain
+function selectChain(result: unknown): any {
+  // biome-ignore lint/suspicious/noExplicitAny: test mock query chain
+  const chain: any = {
+    from: () => chain,
+    where: () => chain,
+    limit: () => chain,
+    orderBy: () => chain,
+    innerJoin: () => chain,
+    leftJoin: () => chain,
+    // biome-ignore lint/suspicious/noThenProperty: drizzle select is thenable
+    then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve(result)),
   };
-} {
-  return {
-    from: () => ({
-      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for drizzle query builder
-      then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve(result)),
-      where: () => {
-        const rows = [...(result as unknown[])] as unknown[] & WhereResult;
-        rows.limit = async () => result;
-        rows.orderBy = () => ({ limit: async () => result });
-        return rows as unknown as WhereResult;
-      },
-      limit: async () => result,
-      orderBy: () => ({ limit: async () => result }),
-      innerJoin: () => ({
-        innerJoin: () => ({
-          where: () => ({ orderBy: () => ({ limit: async () => result }) }),
-        }),
-        where: () => {
-          const rows = [...(result as unknown[])] as unknown[] & InnerWhereResult;
-          rows.orderBy = () => ({ limit: async () => result });
-          return rows as unknown as InnerWhereResult;
-        },
-      }),
-    }),
-  };
+  return chain;
 }
 
 vi.mock("next/cache", () => ({ unstable_cache: vi.fn((fn: unknown) => fn) }));

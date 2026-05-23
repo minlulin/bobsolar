@@ -1,7 +1,7 @@
 "use server";
 
 import { endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
-import { and, asc, count, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
@@ -9,12 +9,14 @@ import {
   customers,
   journalEntries,
   journalLines,
+  ledgerAccounts,
   projectPayments,
   projects,
   quotations,
   users,
   warrantyAlerts,
 } from "@/lib/db/schema";
+import type { AlertType } from "@/lib/domain/enums";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
@@ -50,7 +52,7 @@ export type UpcomingAlertItem = {
   projectNumber: string;
   description: string;
   dueDate: Date;
-  alertType: "warranty_expiry" | "maintenance_due" | "follow_up";
+  alertType: AlertType;
   isOverdue: boolean;
 };
 
@@ -353,24 +355,38 @@ const getCachedFinanceQuickView = unstable_cache(
           })
           .from(journalEntries)
           .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
           .where(
             and(
               gte(journalEntries.entryDate, today),
-              eq(journalEntries.sourceType, "project_payment"),
               eq(journalEntries.isReversed, false),
+              inArray(ledgerAccounts.code, [
+                "cash_on_hand",
+                "kbz_wallet",
+                "wave_wallet",
+                "aya_wallet",
+                "bank_account",
+              ]),
             ),
           ),
         db
           .select({
-            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+            sum: sql<string>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
           })
           .from(journalEntries)
           .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
           .where(
             and(
               gte(journalEntries.entryDate, today),
-              eq(journalEntries.sourceType, "project_expense"),
               eq(journalEntries.isReversed, false),
+              inArray(ledgerAccounts.code, [
+                "cash_on_hand",
+                "kbz_wallet",
+                "wave_wallet",
+                "aya_wallet",
+                "bank_account",
+              ]),
             ),
           ),
         db
@@ -379,24 +395,38 @@ const getCachedFinanceQuickView = unstable_cache(
           })
           .from(journalEntries)
           .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
           .where(
             and(
               gte(journalEntries.entryDate, monthStart),
-              eq(journalEntries.sourceType, "project_payment"),
               eq(journalEntries.isReversed, false),
+              inArray(ledgerAccounts.code, [
+                "cash_on_hand",
+                "kbz_wallet",
+                "wave_wallet",
+                "aya_wallet",
+                "bank_account",
+              ]),
             ),
           ),
         db
           .select({
-            sum: sql<string>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+            sum: sql<string>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
           })
           .from(journalEntries)
           .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+          .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
           .where(
             and(
               gte(journalEntries.entryDate, monthStart),
-              eq(journalEntries.sourceType, "project_expense"),
               eq(journalEntries.isReversed, false),
+              inArray(ledgerAccounts.code, [
+                "cash_on_hand",
+                "kbz_wallet",
+                "wave_wallet",
+                "aya_wallet",
+                "bank_account",
+              ]),
             ),
           ),
         db

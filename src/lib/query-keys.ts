@@ -1,5 +1,5 @@
-import type { LedgerFilter } from "@/actions/ledger-actions";
 import { type InventoryFilter, inventoryFilterSchema } from "@/lib/validators/inventory";
+import type { LedgerFilter } from "@/lib/validators/ledger";
 import { type QuotationFilterInput, quotationFilterSchema } from "@/lib/validators/quotation";
 
 function normalizeOptionalString(value: string | null | undefined): string | null {

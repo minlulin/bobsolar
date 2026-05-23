@@ -1,10 +1,11 @@
 "use server";
 
 import { format, startOfDay } from "date-fns";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { customers, projectPayments, projects } from "@/lib/db/schema";
+import type { ProjectStatus } from "@/lib/domain/enums";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
@@ -14,21 +15,21 @@ export interface ReceivableAgingBucket {
   customerName: string;
   outstanding: number;
   current: number;
-  days30: number;
-  days60: number;
-  days90: number;
-  days90Plus: number;
+  days31to60: number;
+  days61to90: number;
+  days91to120: number;
+  days120Plus: number;
   completionDate: string | null;
-  status: string;
+  status: ProjectStatus;
 }
 
 export interface ReceivableAgingSummary {
   totalOutstanding: number;
   current: number;
-  days30: number;
-  days60: number;
-  days90: number;
-  days90Plus: number;
+  days31to60: number;
+  days61to90: number;
+  days91to120: number;
+  days120Plus: number;
   projectCount: number;
 }
 
@@ -52,6 +53,7 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
         quotedTotal: projects.quotedTotal,
         status: projects.status,
         actualCompletion: projects.actualCompletion,
+        createdAt: projects.createdAt,
         paidAmount: sql<string>`coalesce(sum(${projectPayments.amount}::numeric), 0)`.as(
           "paid_amount",
         ),
@@ -59,7 +61,15 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
       .from(projects)
       .innerJoin(customers, eq(projects.customerId, customers.id))
       .leftJoin(projectPayments, eq(projectPayments.projectId, projects.id))
-      .where(eq(projects.status, "completed"))
+      .where(
+        inArray(projects.status, [
+          "planning",
+          "in_progress",
+          "on_hold",
+          "installation_completed",
+          "completed",
+        ]),
+      )
       .groupBy(
         projects.id,
         projects.projectNumber,
@@ -67,16 +77,17 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
         projects.quotedTotal,
         projects.status,
         projects.actualCompletion,
+        projects.createdAt,
       )
       .orderBy(desc(projects.actualCompletion));
 
     const buckets: ReceivableAgingBucket[] = [];
     let summaryTotal = 0;
     let summaryCurrent = 0;
-    let summary30 = 0;
-    let summary60 = 0;
-    let summary90 = 0;
-    let summary90Plus = 0;
+    let summary31to60 = 0;
+    let summary61to90 = 0;
+    let summary91to120 = 0;
+    let summary120Plus = 0;
 
     for (const row of rows) {
       const quoted = Math.round(Number(row.quotedTotal));
@@ -86,37 +97,38 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
       if (outstanding <= 0) continue;
 
       let daysSinceCompletion = 0;
-      if (row.actualCompletion) {
-        const completionDate = new Date(row.actualCompletion);
+      const baseDate = row.actualCompletion || row.createdAt;
+      if (baseDate) {
+        const completionDate = new Date(baseDate);
         daysSinceCompletion = Math.floor(
           (now.getTime() - completionDate.getTime()) / (1000 * 60 * 60 * 24),
         );
       }
 
       let current = 0;
-      let days30 = 0;
-      let days60 = 0;
-      let days90 = 0;
-      let days90Plus = 0;
+      let days31to60 = 0;
+      let days61to90 = 0;
+      let days91to120 = 0;
+      let days120Plus = 0;
 
       if (daysSinceCompletion <= 30) {
         current = outstanding;
       } else if (daysSinceCompletion <= 60) {
-        days30 = outstanding;
+        days31to60 = outstanding;
       } else if (daysSinceCompletion <= 90) {
-        days60 = outstanding;
+        days61to90 = outstanding;
       } else if (daysSinceCompletion <= 120) {
-        days90 = outstanding;
+        days91to120 = outstanding;
       } else {
-        days90Plus = outstanding;
+        days120Plus = outstanding;
       }
 
       summaryTotal += outstanding;
       summaryCurrent += current;
-      summary30 += days30;
-      summary60 += days60;
-      summary90 += days90;
-      summary90Plus += days90Plus;
+      summary31to60 += days31to60;
+      summary61to90 += days61to90;
+      summary91to120 += days91to120;
+      summary120Plus += days120Plus;
 
       buckets.push({
         projectId: row.projectId,
@@ -124,14 +136,14 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
         customerName: row.customerName ?? "Unknown",
         outstanding,
         current,
-        days30,
-        days60,
-        days90,
-        days90Plus,
+        days31to60,
+        days61to90,
+        days91to120,
+        days120Plus,
         completionDate: row.actualCompletion
           ? format(new Date(row.actualCompletion), "yyyy-MM-dd")
           : null,
-        status: row.status,
+        status: row.status as ProjectStatus,
       });
     }
 
@@ -142,10 +154,10 @@ export async function getReceivableAgingReport(): Promise<ActionResponse<Receiva
       summary: {
         totalOutstanding: summaryTotal,
         current: summaryCurrent,
-        days30: summary30,
-        days60: summary60,
-        days90: summary90,
-        days90Plus: summary90Plus,
+        days31to60: summary31to60,
+        days61to90: summary61to90,
+        days91to120: summary91to120,
+        days120Plus: summary120Plus,
         projectCount: buckets.length,
       },
       buckets,

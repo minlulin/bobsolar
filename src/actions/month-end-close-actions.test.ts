@@ -37,11 +37,13 @@ describe("getMonthEndCloseReport", () => {
 
   it("returns pass/fail checks and totals from journal + operational data", async () => {
     state.rowsQueue = [
-      [{ sum: 1000 }],
-      [{ sum: 400 }],
-      [{ sum: 1000 }],
-      [{ sum: 500 }],
-      [{ count: 3 }],
+      [{ sum: 1000 }], // paymentsPostedRow
+      [{ sum: 400 }], // costsPostedRow
+      [{ sum: 1000 }], // incomeRow
+      [{ sum: 400 }], // expenseRow
+      [{ sum: 1000 }], // operationalPaymentsRow
+      [{ sum: 500 }], // operationalCostsRow
+      [{ count: 3 }], // completedProjectsRow
     ];
 
     const { getMonthEndCloseReport } = await import("@/actions/month-end-close-actions");

@@ -1,4 +1,4 @@
-import type { InventoryCategory } from "@/lib/db/schema";
+import type { InventoryCategory } from "@/lib/domain/enums";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

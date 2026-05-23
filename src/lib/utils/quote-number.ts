@@ -12,7 +12,7 @@ export function formatQuoteNumber(sequence: number, year?: number): string {
 /**
  * Extracts the sequence from a quote number string.
  */
-export function extractSequence(quoteNumber: string | undefined): number {
+export function extractQuoteSequence(quoteNumber: string | undefined): number {
   if (!quoteNumber) return 0;
   const parts = quoteNumber.split("-");
   if (parts.length < 3) return 0;

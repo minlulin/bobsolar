@@ -87,6 +87,15 @@ Source of Truth decision: **this workspace (schema.ts + drizzle/migrations) is a
   - 1778602000000
   - 1778602790508
 
+### May 2026 Logical Safety and Metric Alignments
+- **Accounting Metric Realignment (SSoT Metric Drift)**:
+  - Month-End report totals (`totalIncome` / `totalExpense`) and Dashboard finance summaries now strictly calculate accrual-basis revenue and expense from ledger accounts of type `"income"` and `"expense"` (instead of mapping cash collections).
+  - Quick View Cash flow card now computes debits/credits specifically on cash-representing asset accounts (`cash_on_hand`, bank account, and e-wallets) to reflect actual cash movements (excluding non-cash COGS consumption).
+- **Concurrency Locking for Project Sequences**:
+  - Implemented Postgres-native transaction-scoped advisory locks via `pg_try_advisory_xact_lock` using key `0x50_52_4f_4a` (`1347571530n`) during quote-to-project conversions to prevent duplicate project sequence generation.
+- **Referential Integrity for Customer Archiving**:
+  - Added guards to customer archiving (`deleteCustomer`) to block archiving operations when active quotations or projects exist for the target customer, mimicking relational safety constraints.
+
 ## 5) Runtime Safety Notes
 - `pnpm db:migrate` now succeeds in this workspace.
 - Runtime uses pooled URL; migrations use direct URL.

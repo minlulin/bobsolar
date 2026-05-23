@@ -1,13 +1,20 @@
 "use server";
 
-import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
-import { type Customer, customers, type Project, type Quotation } from "@/lib/db/schema";
+import {
+  type Customer,
+  customers,
+  type Project,
+  projects,
+  type Quotation,
+  quotations,
+} from "@/lib/db/schema";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
-import { handleActionError } from "@/lib/utils/error";
+import { handleActionError, handleStateError } from "@/lib/utils/error";
 import { uuidSchema } from "@/lib/validators/common";
 import {
   createCustomerSchema,
@@ -169,6 +176,26 @@ export async function deleteCustomer(id: string): Promise<ActionResponse<null>> 
   try {
     await requireAuth();
     const { id: validatedId } = deleteCustomerInputSchema.parse({ id });
+
+    const activeProjects = await db.query.projects.findFirst({
+      where: and(
+        eq(projects.customerId, validatedId),
+        inArray(projects.status, ["planning", "in_progress", "on_hold", "installation_completed"]),
+      ),
+    });
+    if (activeProjects) {
+      return handleStateError("Cannot archive customer with active projects.");
+    }
+
+    const activeQuotes = await db.query.quotations.findFirst({
+      where: and(
+        eq(quotations.customerId, validatedId),
+        inArray(quotations.status, ["draft", "sent", "accepted"]),
+      ),
+    });
+    if (activeQuotes) {
+      return handleStateError("Cannot archive customer with active quotations.");
+    }
 
     await db
       .update(customers)

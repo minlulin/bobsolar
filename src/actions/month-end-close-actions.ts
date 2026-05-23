@@ -1,7 +1,7 @@
 "use server";
 
 import { endOfMonth, format, startOfMonth } from "date-fns";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
@@ -54,7 +54,7 @@ export async function getMonthEndCloseReport(
     const monthEnd = endOfMonth(new Date(input.year, input.month));
     const monthLabel = format(monthStart, "MMMM yyyy");
 
-    const [incomeRow] = await db
+    const [paymentsPostedRow] = await db
       .select({
         sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric), 0)`.as("sum"),
       })
@@ -71,7 +71,7 @@ export async function getMonthEndCloseReport(
         ),
       );
 
-    const [expenseRow] = await db
+    const [costsPostedRow] = await db
       .select({
         sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
       })
@@ -84,6 +84,50 @@ export async function getMonthEndCloseReport(
           lte(journalEntries.entryDate, monthEnd),
           eq(journalEntries.sourceType, "project_expense"),
           eq(journalEntries.isReversed, false),
+          inArray(ledgerAccounts.code, [
+            "material_expense",
+            "labor_expense",
+            "transport_expense",
+            "misc_expense",
+            "general_expense",
+            "cost_of_goods_sold",
+          ]),
+        ),
+      );
+
+    const [incomeRow] = await db
+      .select({
+        sum: sql<number>`coalesce(sum(${journalLines.credit}::numeric - ${journalLines.debit}::numeric), 0)`.as(
+          "sum",
+        ),
+      })
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+      .where(
+        and(
+          gte(journalEntries.entryDate, monthStart),
+          lte(journalEntries.entryDate, monthEnd),
+          eq(journalEntries.isReversed, false),
+          eq(ledgerAccounts.type, "income"),
+        ),
+      );
+
+    const [expenseRow] = await db
+      .select({
+        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric - ${journalLines.credit}::numeric), 0)`.as(
+          "sum",
+        ),
+      })
+      .from(journalEntries)
+      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+      .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+      .where(
+        and(
+          gte(journalEntries.entryDate, monthStart),
+          lte(journalEntries.entryDate, monthEnd),
+          eq(journalEntries.isReversed, false),
+          eq(ledgerAccounts.type, "expense"),
         ),
       );
 
@@ -123,12 +167,14 @@ export async function getMonthEndCloseReport(
 
     const totalIncome = Math.round(incomeRow?.sum ?? 0);
     const totalExpense = Math.round(expenseRow?.sum ?? 0);
+    const postedPaymentsSum = Math.round(paymentsPostedRow?.sum ?? 0);
+    const postedCostsSum = Math.round(costsPostedRow?.sum ?? 0);
     const operationalPayments = Math.round(operationalPaymentsRow?.sum ?? 0);
     const operationalCosts = Math.round(operationalCostsRow?.sum ?? 0);
     const projectCount = completedProjectsRow?.count ?? 0;
 
-    const incomeMatch = totalIncome === operationalPayments;
-    const expenseMatch = totalExpense === operationalCosts;
+    const incomeMatch = postedPaymentsSum === operationalPayments;
+    const expenseMatch = postedCostsSum === operationalCosts;
 
     const checks: CloseCheckItem[] = [
       {
@@ -137,8 +183,8 @@ export async function getMonthEndCloseReport(
         description: "Journal income matches operational payment totals",
         status: incomeMatch ? "pass" : "fail",
         detail: incomeMatch
-          ? `Journal: ${totalIncome.toLocaleString()} = Payments: ${operationalPayments.toLocaleString()}`
-          : `Journal: ${totalIncome.toLocaleString()} ≠ Payments: ${operationalPayments.toLocaleString()}`,
+          ? `Journal: ${postedPaymentsSum.toLocaleString()} = Payments: ${operationalPayments.toLocaleString()}`
+          : `Journal: ${postedPaymentsSum.toLocaleString()} ≠ Payments: ${operationalPayments.toLocaleString()}`,
       },
       {
         id: "costs-posted",
@@ -146,8 +192,8 @@ export async function getMonthEndCloseReport(
         description: "Journal expense matches operational cost totals",
         status: expenseMatch ? "pass" : "fail",
         detail: expenseMatch
-          ? `Journal: ${totalExpense.toLocaleString()} = Costs: ${operationalCosts.toLocaleString()}`
-          : `Journal: ${totalExpense.toLocaleString()} ≠ Costs: ${operationalCosts.toLocaleString()}`,
+          ? `Journal: ${postedCostsSum.toLocaleString()} = Costs: ${operationalCosts.toLocaleString()}`
+          : `Journal: ${postedCostsSum.toLocaleString()} ≠ Costs: ${operationalCosts.toLocaleString()}`,
       },
       {
         id: "no-reversed-entries",

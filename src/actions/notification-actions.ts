@@ -15,6 +15,7 @@ import {
   users,
   warrantyAlerts,
 } from "@/lib/db/schema";
+import { notificationTypeSchema } from "@/lib/domain/enums";
 import {
   QUOTATION_EXPIRY_WARNING_DAYS,
   WARRANTY_NOTIFICATION_WINDOW_DAYS,
@@ -31,7 +32,7 @@ const createNotificationSchema = z.object({
   userIds: z.array(z.uuid()).min(1),
   title: z.string().min(1),
   message: z.string().min(1),
-  type: z.enum(["info", "warning", "action"]),
+  type: notificationTypeSchema,
   link: z
     .string()
     .optional()

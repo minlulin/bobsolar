@@ -31,11 +31,13 @@ const state = vi.hoisted(() => ({
 
 const spies = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
   notifyAllUsers: vi.fn(async () => undefined),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: spies.revalidatePath,
+  revalidateTag: spies.revalidateTag,
 }));
 
 vi.mock("@/lib/auth/validate", () => ({

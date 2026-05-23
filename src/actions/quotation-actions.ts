@@ -19,7 +19,7 @@ import { calculateLineItem, calculateQuotation, type LineItem } from "@/lib/pric
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { AdvisoryLock } from "@/lib/utils/advisory-lock";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
-import { extractSequence, formatQuoteNumber } from "@/lib/utils/quote-number";
+import { extractQuoteSequence, formatQuoteNumber } from "@/lib/utils/quote-number";
 import { uuidSchema } from "@/lib/validators/common";
 import {
   canTransitionStatus,
@@ -235,7 +235,7 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
 
             let nextSequence = 1;
             if (lastQuote) {
-              nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+              nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
             }
             const quoteNumber = formatQuoteNumber(nextSequence);
 
@@ -556,7 +556,7 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
 
             let nextSequence = 1;
             if (lastQuote) {
-              nextSequence = extractSequence(lastQuote.quoteNumber) + 1;
+              nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
             }
             const quoteNumber = formatQuoteNumber(nextSequence);
 

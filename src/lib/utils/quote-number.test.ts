@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractSequence, formatQuoteNumber } from "@/lib/utils/quote-number";
+import { extractQuoteSequence, formatQuoteNumber } from "@/lib/utils/quote-number";
 
 describe("quote number utils", () => {
   it("formats quote number", () => {
@@ -8,8 +8,8 @@ describe("quote number utils", () => {
   });
 
   it("extracts sequence safely", () => {
-    expect(extractSequence("QT-2026-0500")).toBe(500);
-    expect(extractSequence("bad")).toBe(0);
-    expect(extractSequence(undefined)).toBe(0);
+    expect(extractQuoteSequence("QT-2026-0500")).toBe(500);
+    expect(extractQuoteSequence("bad")).toBe(0);
+    expect(extractQuoteSequence(undefined)).toBe(0);
   });
 });

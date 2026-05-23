@@ -10,4 +10,4 @@ export const recordPaymentSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
+export type RecordPayment = z.infer<typeof recordPaymentSchema>;

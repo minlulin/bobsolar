@@ -74,10 +74,10 @@ export const projectListFilterSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export type ConvertToProjectInput = z.infer<typeof convertToProjectSchema>;
-export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
-export type AddProjectCostInput = z.infer<typeof addProjectCostSchema>;
-export type ConsumeProjectInventoryInput = z.infer<typeof consumeProjectInventorySchema>;
-export type AddProjectRemarkInput = z.infer<typeof addProjectRemarkSchema>;
-export type CreateWarrantyAlertInput = z.infer<typeof createWarrantyAlertSchema>;
+export type ConvertToProject = z.infer<typeof convertToProjectSchema>;
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
+export type AddProjectCost = z.infer<typeof addProjectCostSchema>;
+export type ConsumeProjectInventory = z.infer<typeof consumeProjectInventorySchema>;
+export type AddProjectRemark = z.infer<typeof addProjectRemarkSchema>;
+export type CreateWarrantyAlert = z.infer<typeof createWarrantyAlertSchema>;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;

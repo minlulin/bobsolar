@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, Clock, type LucideIcon, Send, XCircle } from "lucide-react";
-import type { InventoryCategory, QuotationStatus } from "@/lib/db/schema";
+import type { InventoryCategory, QuotationStatus } from "@/lib/domain/enums";
 
 type QuotationStatusConfig = {
   label: string;

@@ -3,7 +3,7 @@
 import { addDays, startOfToday } from "date-fns";
 import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, eq, gt, gte, lt, lte, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { customers, projects, warrantyAlerts } from "@/lib/db/schema";
@@ -139,6 +139,7 @@ export async function resolveWarrantyAlert(id: string): Promise<ActionResponse<b
       link: `/projects/${alertRow.projectId}`,
     });
 
+    revalidateTag("dashboard:stats", "default");
     revalidatePath("/warranty");
     revalidatePath(`/projects/${alertRow.projectId}`);
 
@@ -162,6 +163,7 @@ export async function reopenWarrantyAlert(id: string): Promise<ActionResponse<bo
       .set({ isResolved: false })
       .where(eq(warrantyAlerts.id, validatedId));
 
+    revalidateTag("dashboard:stats", "default");
     revalidatePath("/warranty");
     revalidatePath(`/projects/${row.projectId}`);
 

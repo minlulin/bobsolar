@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import type { LedgerFilter } from "@/actions/ledger-actions";
 import { getAccountBalances, getLedgerEntries, getLedgerProjects } from "@/actions/ledger-actions";
 import { ledgerKeys } from "@/lib/query-keys";
+import type { LedgerFilter } from "@/lib/validators/ledger";
 
 export function useLedgerEntries(filters: LedgerFilter = {}) {
   return useQuery({

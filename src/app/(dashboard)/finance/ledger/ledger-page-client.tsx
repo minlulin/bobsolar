@@ -3,11 +3,7 @@
 import { format } from "date-fns";
 import { BookOpen, ChevronDown, ChevronRight, Download, Filter, RotateCcw } from "lucide-react";
 import { useCallback, useState } from "react";
-import type {
-  LedgerEntryRow,
-  LedgerFilter,
-  LedgerPage as LedgerPageType,
-} from "@/actions/ledger-actions";
+import type { LedgerEntryRow, LedgerPage as LedgerPageType } from "@/actions/ledger-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +22,7 @@ import {
   LEDGER_ACCOUNT_LABELS,
 } from "@/lib/domain/enums";
 import { formatMMK } from "@/lib/utils";
+import type { LedgerFilter } from "@/lib/validators/ledger";
 
 interface LedgerPageClientProps {
   initialLedger: LedgerPageType | null;
