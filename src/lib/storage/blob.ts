@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { del, put } from "@vercel/blob";
 
 function requireToken(): string {
@@ -7,6 +9,31 @@ function requireToken(): string {
     throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
   }
   return token;
+}
+
+async function toBuffer(
+  data: Buffer | Blob | ReadableStream<ArrayBufferLike> | ArrayBuffer,
+): Promise<Buffer> {
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof ArrayBuffer) return Buffer.from(data);
+  if (data instanceof Blob) return Buffer.from(await data.arrayBuffer());
+  throw new Error("Unsupported upload data type for local fallback");
+}
+
+async function writeLocalFallback(
+  data: Buffer | Blob | ReadableStream<ArrayBufferLike> | ArrayBuffer,
+  filename: string,
+  folder: string,
+): Promise<string> {
+  const safeName = filename.replace(/[^\w.-]/g, "_");
+  const cleanFolder = folder.replace(/^\/+/, "");
+  const targetDir = path.join(process.cwd(), "public", cleanFolder);
+  await mkdir(targetDir, { recursive: true });
+  const outputName = `${randomUUID()}-${safeName}`;
+  const outputPath = path.join(targetDir, outputName);
+  const buf = await toBuffer(data);
+  await writeFile(outputPath, buf);
+  return `/${cleanFolder}/${outputName}`;
 }
 
 /**
@@ -18,20 +45,31 @@ export async function uploadFileFromBufferOrBlob(
   folder: string,
   contentType: string | undefined,
 ): Promise<string> {
-  const token = requireToken();
   const safeName = filename.replace(/[^\w.-]/g, "_");
-  const pathname = `${folder.replace(/^\//, "")}/${randomUUID()}-${safeName}`;
+  const cleanFolder = folder.replace(/^\//, "");
+  const pathname = `${cleanFolder}/${randomUUID()}-${safeName}`;
+  const token = process.env["BLOB_READ_WRITE_TOKEN"];
+
+  if (!token && process.env["NODE_ENV"] !== "production") {
+    return writeLocalFallback(data, filename, cleanFolder);
+  }
 
   const options: Parameters<typeof put>[2] = {
     access: "public",
-    token,
+    token: requireToken(),
     cacheControlMaxAge: 60 * 60 * 24 * 30,
     ...(contentType ? { contentType } : {}),
   };
 
-  const result = await put(pathname, data, options);
-
-  return result.url;
+  try {
+    const result = await put(pathname, data, options);
+    return result.url;
+  } catch (error) {
+    if (process.env["NODE_ENV"] !== "production") {
+      return writeLocalFallback(data, filename, cleanFolder);
+    }
+    throw error;
+  }
 }
 
 export async function deleteFile(url: string): Promise<void> {

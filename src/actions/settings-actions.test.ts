@@ -161,7 +161,11 @@ describe("settings-actions", () => {
 
     const good = await setCompanyLogoUrl({ url: "https://cdn/new-logo.png" });
     expect(good.success).toBe(true);
-    expect(spies.deleteCacheValue).toHaveBeenCalledTimes(2);
+
+    const goodRelative = await setCompanyLogoUrl({ url: "/logos/local-logo.png" });
+    expect(goodRelative.success).toBe(true);
+
+    expect(spies.deleteCacheValue).toHaveBeenCalledTimes(4);
     expect(spies.revalidatePath).toHaveBeenCalled();
     expect(spies.revalidateTag).toHaveBeenCalled();
   });

@@ -58,10 +58,12 @@ export function FileUpload({
           method: "POST",
           body: fd,
         });
-
-        const body = (await res.json()) as { url?: string; error?: string };
+        const contentType = res.headers.get("content-type") ?? "";
+        const body = contentType.includes("application/json")
+          ? ((await res.json()) as { url?: string; error?: string })
+          : ({ error: await res.text() } as { url?: string; error?: string });
         if (!res.ok || !body.url) {
-          throw new Error(body.error || "Upload failed");
+          throw new Error(body.error || `Upload failed (${res.status})`);
         }
 
         URL.revokeObjectURL(localUrl);

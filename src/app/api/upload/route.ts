@@ -157,10 +157,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ url }, { status: 200, headers: { "Cache-Control": "no-store" } });
   } catch (e) {
-    const message =
-      e instanceof Error && e.message.includes("BLOB_READ_WRITE_TOKEN")
-        ? "File storage not configured."
-        : "Upload failed.";
+    const rawMessage = e instanceof Error ? e.message : "";
+    const normalized = rawMessage.toLowerCase();
+    const message = normalized.includes("blob_read_write_token")
+      ? "File storage not configured (missing BLOB_READ_WRITE_TOKEN)."
+      : normalized.includes("token")
+        ? "Blob upload token rejected. Verify BLOB_READ_WRITE_TOKEN value and environment scope."
+        : normalized.includes("vercel blob") || normalized.includes("@vercel/blob")
+          ? "Blob upload failed. Verify Blob store is linked to this Vercel project."
+          : "Upload failed.";
     console.error("[upload]", e);
     return NextResponse.json(
       { error: message },
