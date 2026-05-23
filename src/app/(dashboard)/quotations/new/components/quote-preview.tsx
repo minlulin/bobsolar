@@ -9,8 +9,15 @@ import { formatMMK } from "@/lib/utils";
 import { useQuoteBuilderStore } from "@/stores/quote-builder-store";
 
 export function QuotePreview(): React.JSX.Element {
-  const { selectedCustomerId, items, discountPercent, taxPercent, notes, validUntil } =
-    useQuoteBuilderStore();
+  const {
+    selectedCustomerId,
+    items,
+    discountPercent,
+    taxPercent,
+    notes,
+    validUntil,
+    quotationDate,
+  } = useQuoteBuilderStore();
   const totals = useQuoteTotals();
 
   const { data: customerRes } = useQuery({
@@ -60,7 +67,7 @@ export function QuotePreview(): React.JSX.Element {
             <div className="flex flex-col gap-0.5">
               <p className="text-primary font-bold">QT-2026-####</p>
               <p className="text-muted-foreground font-medium">
-                {format(new Date(), "MMMM dd, yyyy")}
+                {format(quotationDate ?? new Date(), "MMMM dd, yyyy")}
               </p>
             </div>
           </div>

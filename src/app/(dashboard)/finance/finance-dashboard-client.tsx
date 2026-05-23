@@ -14,6 +14,7 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import type {
   DataConsistencyCheck,
@@ -24,6 +25,7 @@ import type {
   ReceivableRiskProject,
 } from "@/actions/finance-dashboard-actions";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -125,17 +127,22 @@ export function FinanceDashboardClient({
           </p>
         </div>
 
-        <Select defaultValue="1y" onValueChange={handlePeriodChange}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-            <SelectItem value="1y">Last 12 months</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/finance/reports">Open Reports</Link>
+          </Button>
+          <Select defaultValue="1y" onValueChange={handlePeriodChange}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="1y">Last 12 months</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary Cards - Bento Grid */}

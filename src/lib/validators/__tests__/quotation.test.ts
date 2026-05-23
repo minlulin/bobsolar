@@ -15,6 +15,7 @@ describe("createQuotationSchema", () => {
       items: [validItem],
       discountPercent: 0,
       taxPercent: 5,
+      quotationDate: new Date("2026-05-22T00:00:00.000Z"),
     });
     expect(result.success).toBe(true);
   });

@@ -253,6 +253,7 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
                 total: pricing.total.toString(),
                 notes: validated.notes,
                 validUntil: validated.validUntil,
+                createdAt: validated.quotationDate ?? undefined,
                 status: "draft",
               })
               .returning();

@@ -57,8 +57,16 @@ export function QuoteEditor({
 }: QuoteEditorProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const { selectedCustomerId, items, discountPercent, taxPercent, notes, validUntil, reset } =
-    useQuoteBuilderStore();
+  const {
+    selectedCustomerId,
+    items,
+    discountPercent,
+    taxPercent,
+    notes,
+    validUntil,
+    quotationDate,
+    reset,
+  } = useQuoteBuilderStore();
 
   React.useEffect(() => {
     if (mode === "create") {
@@ -96,6 +104,7 @@ export function QuoteEditor({
           taxPercent,
           notes,
           validUntil,
+          quotationDate,
         };
 
         const res =

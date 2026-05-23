@@ -23,6 +23,7 @@ const state = vi.hoisted(() => ({
   firstTxn: true,
   inventoryCostRows: [{ id: "11111111-1111-4111-8111-111111111111", costPrice: "88.40" }],
   insertedQuotationItems: [] as Array<Record<string, unknown>>,
+  insertedQuotation: null as Record<string, unknown> | null,
 }));
 
 vi.mock("next/cache", () => ({
@@ -81,6 +82,7 @@ vi.mock("@/lib/db", () => ({
               state.insertedQuotationItems = valuesArg as Array<Record<string, unknown>>;
               return Promise.resolve(undefined);
             }
+            state.insertedQuotation = valuesArg as Record<string, unknown>;
             return { returning: vi.fn(async () => [{ id: "q2" }]) };
           }),
         })),
@@ -102,6 +104,7 @@ describe("quotation create/duplicate branches", () => {
     state.firstTxn = true;
     state.inventoryCostRows = [{ id: "11111111-1111-4111-8111-111111111111", costPrice: "88.40" }];
     state.insertedQuotationItems = [];
+    state.insertedQuotation = null;
   });
 
   it("createQuotation returns lock busy state error", async () => {
@@ -155,5 +158,21 @@ describe("quotation create/duplicate branches", () => {
     expect(state.insertedQuotationItems).toHaveLength(1);
     expect(state.insertedQuotationItems[0]?.["unitPrice"]).toBe("1250.75");
     expect(state.insertedQuotationItems[0]?.["costPrice"]).toBe("88");
+  });
+
+  it("createQuotation writes user-selected quotation date as createdAt", async () => {
+    const { createQuotation } = await import("@/actions/quotation-actions");
+    const quotationDate = new Date("2026-05-22T00:00:00.000Z");
+
+    const res = await createQuotation({
+      customerId: "11111111-1111-4111-8111-111111111111",
+      discountPercent: 0,
+      taxPercent: 0,
+      quotationDate,
+      items: [{ description: "Panel", quantity: 1, unitPrice: 100, discountPercentage: 0 }],
+    });
+
+    expect(res.success).toBe(true);
+    expect(state.insertedQuotation?.["createdAt"]).toEqual(quotationDate);
   });
 });

@@ -7,7 +7,7 @@ import {
 } from "@/lib/domain/policies";
 import { uploadFileFromBufferOrBlob } from "@/lib/storage/blob";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const ALLOWED_FOLDERS: Readonly<Record<string, string>> = {
   logos: "logos",
   uploads: "uploads",
@@ -53,6 +53,12 @@ function detectImageType(buf: Buffer): string | null {
     return "image/webp";
   }
   return null;
+}
+
+function normalizeImageMimeType(type: string | null | undefined): string {
+  const raw = (type ?? "").trim().toLowerCase();
+  if (raw === "image/jpg" || raw === "image/pjpeg") return "image/jpeg";
+  return raw;
 }
 
 function getClientIp(request: NextRequest): string | null {
@@ -121,9 +127,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const file = entry;
-    const type = file.type;
+    const type = normalizeImageMimeType(file.type);
 
-    if (!ALLOWED_TYPES.includes(type)) {
+    if (type && !ALLOWED_TYPES.has(type)) {
       return NextResponse.json(
         {
           error: "Only jpeg, png, and webp images are allowed.",
@@ -139,11 +145,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const arrayBuffer = await file.arrayBuffer();
     const buf = Buffer.from(arrayBuffer);
     const signatureType = detectImageType(buf);
-    if (!signatureType || signatureType !== type) {
+    if (!signatureType) {
       return NextResponse.json({ error: "Invalid or spoofed image file." }, { status: 415 });
     }
 
-    const url = await uploadFileFromBufferOrBlob(buf, file.name, folder, type);
+    if (type && signatureType !== type) {
+      return NextResponse.json({ error: "Invalid or spoofed image file." }, { status: 415 });
+    }
+
+    const url = await uploadFileFromBufferOrBlob(buf, file.name, folder, signatureType);
 
     return NextResponse.json({ url }, { status: 200, headers: { "Cache-Control": "no-store" } });
   } catch (e) {

@@ -6,6 +6,12 @@ import * as React from "react";
 import { UPLOAD_MAX_SIZE_BYTES, UPLOAD_MAX_SIZE_MB } from "@/lib/domain/policies";
 import { cn } from "@/lib/utils";
 
+function normalizeImageMimeType(type: string): string {
+  const raw = type.trim().toLowerCase();
+  if (raw === "image/jpg" || raw === "image/pjpeg") return "image/jpeg";
+  return raw;
+}
+
 export interface FileUploadProps {
   folder: string;
   onUploaded: (url: string) => void;
@@ -28,8 +34,9 @@ export function FileUpload({
     async (file: File): Promise<void> => {
       setErr(null);
 
-      const allowed = ["image/jpeg", "image/png", "image/webp"];
-      if (!allowed.includes(file.type)) {
+      const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+      const normalizedType = normalizeImageMimeType(file.type);
+      if (normalizedType && !allowed.has(normalizedType)) {
         setErr("JPEG, PNG, or WebP only.");
         return;
       }

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { type UseFormRegister, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -33,9 +33,15 @@ const companySchema = z.object({
   [COMPANY_SETTING_KEYS.PHONE]: z.string().min(1, "Phone is required"),
   [COMPANY_SETTING_KEYS.EMAIL]: z.email(),
   [COMPANY_SETTING_KEYS.TAX_ID]: z.string().optional(),
-  [COMPANY_SETTING_KEYS.BANK_NAME]: z.string().optional(),
-  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: z.string().optional(),
-  [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_1_NAME]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_NUMBER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_HOLDER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_2_NAME]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_NUMBER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_HOLDER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_3_NAME]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_NUMBER]: z.string().optional(),
+  [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_HOLDER]: z.string().optional(),
 });
 
 type CompanyForm = z.infer<typeof companySchema>;
@@ -68,9 +74,15 @@ export default function SettingsPage(): React.JSX.Element {
       [COMPANY_SETTING_KEYS.PHONE]: "",
       [COMPANY_SETTING_KEYS.EMAIL]: "",
       [COMPANY_SETTING_KEYS.TAX_ID]: "",
-      [COMPANY_SETTING_KEYS.BANK_NAME]: "",
-      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]: "",
-      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]: "",
+      [COMPANY_SETTING_KEYS.BANK_1_NAME]: "",
+      [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_NUMBER]: "",
+      [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_HOLDER]: "",
+      [COMPANY_SETTING_KEYS.BANK_2_NAME]: "",
+      [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_NUMBER]: "",
+      [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_HOLDER]: "",
+      [COMPANY_SETTING_KEYS.BANK_3_NAME]: "",
+      [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_NUMBER]: "",
+      [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_HOLDER]: "",
     },
   });
 
@@ -82,11 +94,24 @@ export default function SettingsPage(): React.JSX.Element {
       [COMPANY_SETTING_KEYS.PHONE]: settingsQuery.data[COMPANY_SETTING_KEYS.PHONE] ?? "",
       [COMPANY_SETTING_KEYS.EMAIL]: settingsQuery.data[COMPANY_SETTING_KEYS.EMAIL] ?? "",
       [COMPANY_SETTING_KEYS.TAX_ID]: settingsQuery.data[COMPANY_SETTING_KEYS.TAX_ID] ?? "",
-      [COMPANY_SETTING_KEYS.BANK_NAME]: settingsQuery.data[COMPANY_SETTING_KEYS.BANK_NAME] ?? "",
-      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER]:
-        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER] ?? "",
-      [COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER]:
-        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_1_NAME]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_1_NAME] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_NUMBER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_NUMBER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_HOLDER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_HOLDER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_2_NAME]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_2_NAME] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_NUMBER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_NUMBER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_HOLDER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_HOLDER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_3_NAME]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_3_NAME] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_NUMBER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_NUMBER] ?? "",
+      [COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_HOLDER]:
+        settingsQuery.data[COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_HOLDER] ?? "",
     });
   }, [settingsQuery.data, reset]);
 
@@ -284,45 +309,27 @@ export default function SettingsPage(): React.JSX.Element {
                 />
               </div>
 
-              <div className="space-y-1">
-                <Label
-                  htmlFor={COMPANY_SETTING_KEYS.BANK_NAME}
-                  className="text-muted-foreground text-xs"
-                >
-                  Bank Name
-                </Label>
-                <Input
-                  id={COMPANY_SETTING_KEYS.BANK_NAME}
-                  {...register(COMPANY_SETTING_KEYS.BANK_NAME)}
-                  className="border-border/70 bg-muted/45"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label
-                  htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
-                  className="text-muted-foreground text-xs"
-                >
-                  Bank Account Number
-                </Label>
-                <Input
-                  id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER}
-                  {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_NUMBER)}
-                  className="border-border/70 bg-muted/45"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label
-                  htmlFor={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
-                  className="text-muted-foreground text-xs"
-                >
-                  Bank Account Holder Name
-                </Label>
-                <Input
-                  id={COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER}
-                  {...register(COMPANY_SETTING_KEYS.BANK_ACCOUNT_HOLDER)}
-                  className="border-border/70 bg-muted/45"
-                />
-              </div>
+              <BankAccountFields
+                title="Bank Account 1"
+                nameKey={COMPANY_SETTING_KEYS.BANK_1_NAME}
+                accountNumberKey={COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_NUMBER}
+                accountHolderKey={COMPANY_SETTING_KEYS.BANK_1_ACCOUNT_HOLDER}
+                register={register}
+              />
+              <BankAccountFields
+                title="Bank Account 2"
+                nameKey={COMPANY_SETTING_KEYS.BANK_2_NAME}
+                accountNumberKey={COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_NUMBER}
+                accountHolderKey={COMPANY_SETTING_KEYS.BANK_2_ACCOUNT_HOLDER}
+                register={register}
+              />
+              <BankAccountFields
+                title="Bank Account 3"
+                nameKey={COMPANY_SETTING_KEYS.BANK_3_NAME}
+                accountNumberKey={COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_NUMBER}
+                accountHolderKey={COMPANY_SETTING_KEYS.BANK_3_ACCOUNT_HOLDER}
+                register={register}
+              />
 
               <Button
                 type="submit"
@@ -366,5 +373,55 @@ function SettingsTabButton({
     >
       {label}
     </button>
+  );
+}
+
+function BankAccountFields({
+  title,
+  nameKey,
+  accountNumberKey,
+  accountHolderKey,
+  register,
+}: {
+  title: string;
+  nameKey: keyof CompanyForm;
+  accountNumberKey: keyof CompanyForm;
+  accountHolderKey: keyof CompanyForm;
+  register: UseFormRegister<CompanyForm>;
+}): React.JSX.Element {
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed p-3">
+      <p className="text-muted-foreground text-xs font-semibold">{title}</p>
+      <div className="space-y-1">
+        <Label htmlFor={String(nameKey)} className="text-muted-foreground text-xs">
+          Bank Name
+        </Label>
+        <Input
+          id={String(nameKey)}
+          {...register(nameKey)}
+          className="border-border/70 bg-muted/45"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={String(accountNumberKey)} className="text-muted-foreground text-xs">
+          Bank Account Number
+        </Label>
+        <Input
+          id={String(accountNumberKey)}
+          {...register(accountNumberKey)}
+          className="border-border/70 bg-muted/45"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor={String(accountHolderKey)} className="text-muted-foreground text-xs">
+          Bank Account Holder Name
+        </Label>
+        <Input
+          id={String(accountHolderKey)}
+          {...register(accountHolderKey)}
+          className="border-border/70 bg-muted/45"
+        />
+      </div>
+    </div>
   );
 }

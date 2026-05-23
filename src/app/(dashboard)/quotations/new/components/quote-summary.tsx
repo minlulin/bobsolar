@@ -14,10 +14,12 @@ export function QuoteSummary(): React.JSX.Element {
     taxPercent,
     notes,
     validUntil,
+    quotationDate,
     setDiscount,
     setTax,
     setNotes,
     setValidUntil,
+    setQuotationDate,
   } = useQuoteBuilderStore();
   const totals = useQuoteTotals();
   const [discountInput, setDiscountInput] = React.useState<string>(String(discountPercent));
@@ -45,6 +47,27 @@ export function QuoteSummary(): React.JSX.Element {
             placeholder="Terms, bank details, or special instructions..."
             className="border-border/70 bg-muted/35 min-h-[120px] resize-none transition-all focus:border-amber-500/50"
           />
+        </div>
+
+        <div className="space-y-2">
+          <label
+            htmlFor="quotation-date"
+            className="text-muted-foreground ml-1 text-sm font-medium"
+          >
+            Quotation Date
+          </label>
+          <div className="relative">
+            <CalendarIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              id="quotation-date"
+              type="date"
+              value={quotationDate ? quotationDate.toISOString().split("T")[0] : ""}
+              onChange={(e) => {
+                setQuotationDate(e.target.value ? new Date(e.target.value) : null);
+              }}
+              className="border-border/70 bg-muted/35 pl-10 transition-all focus:border-amber-500/50"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">

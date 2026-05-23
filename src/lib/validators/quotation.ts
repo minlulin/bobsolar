@@ -24,6 +24,7 @@ export const createQuotationSchema = z.object({
   taxPercent: z.number().min(0).max(100).default(5),
   notes: z.string().optional().nullable(),
   validUntil: z.date().optional().nullable(),
+  quotationDate: z.date().optional().nullable(),
 });
 
 // Use z.input for form types — matches zodResolver's expected input shape

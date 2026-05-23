@@ -19,6 +19,7 @@ interface QuoteBuilderState {
   taxPercent: number;
   notes: string;
   validUntil: Date | null;
+  quotationDate: Date | null;
 
   // Actions
   setCustomer: (customerId: string | null) => void;
@@ -35,21 +36,25 @@ interface QuoteBuilderState {
   setTax: (percent: number) => void;
   setNotes: (notes: string) => void;
   setValidUntil: (date: Date | null) => void;
+  setQuotationDate: (date: Date | null) => void;
   reset: () => void;
   loadFromQuotation: (quotation: Quotation & { items: QuotationItem[] }) => void;
 }
 
-const initialState = {
-  selectedCustomerId: null,
-  items: [],
-  discountPercent: 0,
-  taxPercent: 5, // Default tax 5% as per validators
-  notes: "",
-  validUntil: null,
-};
+function createInitialState() {
+  return {
+    selectedCustomerId: null,
+    items: [],
+    discountPercent: 0,
+    taxPercent: 5, // Default tax 5% as per validators
+    notes: "",
+    validUntil: null,
+    quotationDate: new Date(),
+  };
+}
 
 export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
-  ...initialState,
+  ...createInitialState(),
 
   setCustomer: (customerId): void => {
     set({ selectedCustomerId: customerId });
@@ -164,8 +169,12 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
     set({ validUntil: date });
   },
 
+  setQuotationDate: (date): void => {
+    set({ quotationDate: date });
+  },
+
   reset: (): void => {
-    set(initialState);
+    set(createInitialState());
   },
 
   loadFromQuotation: (quotation): void => {
@@ -175,6 +184,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
       taxPercent: Number(quotation.taxPercent),
       notes: quotation.notes || "",
       validUntil: quotation.validUntil ? new Date(quotation.validUntil) : null,
+      quotationDate: quotation.createdAt ? new Date(quotation.createdAt) : null,
       items: [...quotation.items]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((item) => ({
