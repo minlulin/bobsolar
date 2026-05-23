@@ -211,6 +211,7 @@ describeDb("Master workflow integration: DB + server actions", () => {
         name: `${runTag} Panel`,
         category: "panel",
         unit: "pcs",
+        costPrice: 200000,
         unitPrice: 350000,
         stockQty: 50,
         brand: "BOB",
@@ -384,7 +385,7 @@ describeDb("Master workflow integration: DB + server actions", () => {
     const projectDetail = unwrap(await getProject(projectId));
     expect(projectDetail.costs.length).toBeGreaterThan(0);
     expect(projectDetail.remarks.length).toBeGreaterThan(0);
-    expect(projectDetail.profitability.inventoryConsumedCost).toBe(700000);
+    expect(projectDetail.profitability.inventoryConsumedCost).toBe(400000);
     expect(projectDetail.profitability.additionalCosts).toBe(100000);
 
     unwrap(await updateProject({ id: projectId, status: "in_progress" }));

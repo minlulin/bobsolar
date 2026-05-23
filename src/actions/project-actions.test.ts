@@ -523,7 +523,7 @@ describe("project-actions high-impact branches", () => {
     expect(res.data.profitability.receivedPayment).toBe(25000);
     expect(res.data.profitability.inventoryConsumedCost).toBe(20000);
     expect(res.data.profitability.additionalCosts).toBe(10000);
-    expect(res.data.profitability.grossProfit).toBe(85000);
-    expect(res.data.profitability.netProfit).toBe(55000);
+    expect(res.data.profitability.grossProfit).toBe(80000);
+    expect(res.data.profitability.netProfit).toBe(70000);
   });
 });

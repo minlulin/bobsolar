@@ -281,31 +281,6 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
             ],
           });
 
-          // COGS journal entry: recognize cost of inventory consumed
-          if (estimatedCogs > 0) {
-            await createBalancedJournalEntry({
-              tx,
-              entryDate: new Date(),
-              memo: `Cost of goods sold for Project ${projectNumber}`,
-              sourceType: "inventory_consumption",
-              sourceId: created.id,
-              projectId: created.id,
-              createdBy: auth.userId,
-              lines: [
-                {
-                  accountCode: "cost_of_goods_sold",
-                  debit: estimatedCogs,
-                  credit: 0,
-                },
-                {
-                  accountCode: "raw_materials",
-                  debit: 0,
-                  credit: estimatedCogs,
-                },
-              ],
-            });
-          }
-
           revalidatePath("/projects");
           revalidatePath(`/quotations/${quotation.id}`);
           revalidatePath("/quotations");
@@ -504,7 +479,6 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
       row.costs.reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
     );
     const quoted = Math.round(Number(row.quotedTotal));
-    const cogs = Math.round(Number(row.estimatedCogs));
     const budgetVariance = actualTotalComputed - quoted;
     const receivedPayment = await getProjectReceivedPayment(validatedId);
     const outstandingReceivable = Math.max(0, quoted - receivedPayment);
@@ -513,9 +487,10 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
         .filter((cost) => cost.itemId !== null)
         .reduce((sum, cost) => sum + Math.round(Number(cost.amount)), 0),
     );
+    const cogs = inventoryConsumedCost;
     const additionalCosts = actualTotalComputed - inventoryConsumedCost;
     const grossProfit = quoted - cogs;
-    const netProfit = grossProfit - actualTotalComputed;
+    const netProfit = grossProfit - additionalCosts;
     const grossMarginPercent = quoted > 0 ? Math.round((grossProfit / quoted) * 100) : 0;
     const netMarginPercent = quoted > 0 ? Math.round((netProfit / quoted) * 100) : 0;
 
@@ -906,8 +881,8 @@ export async function consumeProjectInventory(
         })
         .where(eq(inventoryItems.id, item.id));
 
-      const unitPrice = Math.round(Number(item.unitPrice));
-      const amountRounded = Math.round(unitPrice * data.quantity);
+      const costPrice = Math.round(Number(item.costPrice));
+      const amountRounded = Math.round(costPrice * data.quantity);
       consumedAmount = amountRounded;
 
       const [createdCost] = await tx
@@ -945,7 +920,7 @@ export async function consumeProjectInventory(
         createdBy: auth.userId,
         lines: [
           {
-            accountCode: "material_expense",
+            accountCode: "cost_of_goods_sold",
             debit: amountRounded,
             credit: 0,
           },

@@ -16,13 +16,18 @@ import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
-const relativePathSchema = z
-  .string()
-  .regex(/^\/(?!\/).+/, "Invalid URL")
-  .refine((value) => !value.includes(".."), "Invalid URL");
-
 const setLogoSchema = z.object({
-  url: z.union([z.url(), relativePathSchema]),
+  url: z.string().refine((val) => {
+    if (val.startsWith("/")) {
+      return !val.startsWith("//") && !val.includes("..");
+    }
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Invalid URL"),
 });
 
 const updateUserSchema = z.object({
