@@ -1,0 +1,692 @@
+# BOB Solar Frontend Refactor — Implementation Plan
+
+A visual/CSS-only refactor to make the app feel more polished, compact, and professional. **Zero business logic changes.** Every change targets styling, layout, spacing, and visual effects only.
+
+> [!CAUTION]
+> ## Critical Rule for All Agents
+> **DO NOT modify any business logic, event handlers, data fetching, server actions, hooks, or API calls.** This refactor is strictly visual. If a function handles data (e.g., `onEdit`, `onDelete`, `deleteCustomer`, `handleSubmit`), leave it untouched. Only modify JSX class names, layout structure, and CSS files. When removing elements (like the "View History" button), remove only the JSX and its `event.stopPropagation()` click handler — do NOT remove the imports used elsewhere or the `Link`/`router` logic that powers card navigation.
+
+---
+
+## Workstream 1 — Floating Navigation Dock Redesign
+
+### Goal
+Transform the flat 2D outline Lucide icons into vibrant, iOS/macOS-style dock icons with **colored rounded-square backgrounds** and **filled icon variants**. Reduce magnification for smoother feel.
+
+### Files to Modify
+
+#### [MODIFY] [nav-orbit.tsx](file:///c:/bobsolar/src/components/layout/nav-orbit.tsx)
+
+**1a. Add per-icon identity colors to `navItems` array (lines 21–29)**
+
+Each nav item gets a unique `color` property. These are Tailwind-compatible class fragments:
+
+```diff
+ const navItems = [
+-  { name: "Dashboard", href: "/", icon: Home },
+-  { name: "Customers", href: "/customers", icon: Users },
+-  { name: "Quotations", href: "/quotations", icon: ClipboardList },
+-  { name: "Projects", href: "/projects", icon: Zap },
+-  { name: "Inventory", href: "/inventory", icon: Package },
+-  { name: "Finance", href: "/finance", icon: Wallet },
+-  { name: "Ledger", href: "/finance/ledger", icon: BookOpen },
++  { name: "Dashboard", href: "/", icon: Home, bg: "bg-blue-500", text: "text-white" },
++  { name: "Customers", href: "/customers", icon: Users, bg: "bg-teal-500", text: "text-white" },
++  { name: "Quotations", href: "/quotations", icon: ClipboardList, bg: "bg-amber-500", text: "text-white" },
++  { name: "Projects", href: "/projects", icon: Zap, bg: "bg-violet-500", text: "text-white" },
++  { name: "Inventory", href: "/inventory", icon: Package, bg: "bg-emerald-500", text: "text-white" },
++  { name: "Finance", href: "/finance", icon: Wallet, bg: "bg-rose-500", text: "text-white" },
++  { name: "Ledger", href: "/finance/ledger", icon: BookOpen, bg: "bg-indigo-500", text: "text-white" },
+ ];
+```
+
+Update the `item` type in the `NavIcon` props accordingly:
+```typescript
+item: { name: string; href: string; icon: LucideIcon; bg: string; text: string }
+```
+
+**1b. Redesign the icon container in `NavIcon` (lines 65–89)**
+
+Replace the flat transparent icon container with a colored rounded-square:
+
+```tsx
+<motion.div
+  ref={iconRef}
+  style={{ scale, y: translateY }}
+  className={cn(
+    "relative flex items-center justify-center rounded-[12px] transition-shadow duration-200",
+    "h-10 w-10",
+    item.bg, item.text,
+    isActive
+      ? "shadow-lg ring-2 ring-white/25"
+      : "opacity-80 hover:opacity-100 hover:shadow-md",
+  )}
+>
+  <Icon
+    className="relative z-10 h-5 w-5"
+    strokeWidth={isActive ? 2.5 : 2}
+  />
+
+  {/* Active Indicator Dot */}
+  {isActive && (
+    <motion.div
+      layoutId="nav-orbit-indicator"
+      className="absolute -bottom-2.5 h-1 w-1 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]"
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+    />
+  )}
+</motion.div>
+```
+
+Key changes:
+- Background: colored via `item.bg` (e.g., `bg-blue-500`) instead of transparent
+- Corner radius: `rounded-[12px]` (iOS app icon style)
+- Icon color: white (`item.text`) instead of `text-muted-foreground`
+- Active state: `shadow-lg ring-2 ring-white/25` instead of `text-[var(--color-solar-amber)]`
+- Active dot: white instead of solar-amber (contrasts better with colored backgrounds)
+- Hover on inactive: opacity transition (`opacity-80 → hover:opacity-100`) + subtle shadow
+
+**1c. Reduce magnification intensity (lines 52–58)**
+
+Make the dock physics smoother by reducing the magnification range:
+
+```diff
+-  const scaleSync = useTransform(distance, [-150, 0, 150], [1, 1.6, 1]);
++  const scaleSync = useTransform(distance, [-120, 0, 120], [1, 1.3, 1]);
+   const scale = useSpring(scaleSync, dockSpringConfig);
+
+-  const translateYSync = useTransform(distance, [-150, 0, 150], [0, -8, 0]);
++  const translateYSync = useTransform(distance, [-120, 0, 120], [0, -6, 0]);
+   const translateY = useSpring(translateYSync, dockSpringConfig);
+```
+
+- Magnification: `1.6x → 1.3x` (less exaggerated)
+- Lift: `-8px → -6px` (subtler vertical shift)
+- Zone: `150px → 120px` (tighter effect radius for snappier feel)
+
+**1d. Drop-shadow removal**
+
+Remove `drop-shadow-md` from the `<Icon>` element — it's unnecessary with a colored background and adds rendering cost:
+
+```diff
+-<Icon className="relative z-10 h-5 w-5 drop-shadow-md" ...
++<Icon className="relative z-10 h-5 w-5" ...
+```
+
+> [!WARNING]
+> Do NOT remove or change the `mouseX` MotionValue logic, `onMouseMove`, `onMouseLeave`, `useTransform`, or `useSpring` hook calls. These are the dock's core physics engine. Only change the **numerical values** inside `useTransform`.
+
+---
+
+## Workstream 2 — Compact Card Views
+
+### Goal
+Reduce card sizes across Customer, Project, and Quotation cards to show more content per viewport. Target: ~12-15 customer cards visible on a standard 1440px display.
+
+---
+
+### 2A. Customer Card
+
+#### [MODIFY] [customer-card.tsx](file:///c:/bobsolar/src/components/customers/customer-card.tsx)
+
+**2A-1. Reduce padding and avatar size**
+
+```diff
+-<CardContent className="p-5">
++<CardContent className="p-3.5">
+```
+
+```diff
+-<Avatar className="bg-solar shadow-solar border-border/70 h-12 w-12 border-2">
+-  <AvatarFallback className="text-foreground bg-transparent text-lg font-bold">
++<Avatar className="bg-solar shadow-solar border-border/70 h-9 w-9 border">
++  <AvatarFallback className="text-foreground bg-transparent text-sm font-bold">
+```
+
+**2A-2. Reduce heading and contact info spacing**
+
+```diff
+-<h3 className="font-heading text-foreground text-lg font-semibold tracking-tight">
++<h3 className="font-heading text-foreground text-sm font-semibold tracking-tight">
+```
+
+```diff
+-<div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
++<div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+```
+
+**2A-3. Compact the email/address section**
+
+```diff
+-<div className="mt-6 grid gap-3">
++<div className="mt-3 grid gap-2">
+```
+
+Reduce the icon containers from `h-7 w-7` to `h-5 w-5` and the icons from `h-3.5 w-3.5` to `h-3 w-3`:
+
+```diff
+-<div className="bg-muted/45 flex h-7 w-7 items-center justify-center rounded-lg">
+-  <Mail className="h-3.5 w-3.5" />
++<div className="bg-muted/45 flex h-5 w-5 items-center justify-center rounded">
++  <Mail className="h-3 w-3" />
+```
+
+Same for the MapPin container. Also change text from `text-sm` to `text-xs`.
+
+**2A-4. Remove the "View History" button and its footer section**
+
+Delete the entire footer section (approximately lines 144–164):
+
+```diff
+-          <div className="border-border/60 mt-6 flex items-center justify-between gap-4 border-t pt-4">
+-            <div className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+-              <FileText className="text-solar h-3 w-3" />
+-              <span>0 Quotations</span>
+-            </div>
+-
+-            <Link
+-              href={customerDetailHref}
+-              onClick={(event) => {
+-                event.stopPropagation();
+-              }}
+-            >
+-              <Button
+-                variant="ghost"
+-                size="sm"
+-                className="hover:bg-solar/10 hover:text-solar h-8 gap-2 text-xs"
+-              >
+-                View History
+-              </Button>
+-            </Link>
+-          </div>
+```
+
+After removal, also clean up unused imports. Remove `FileText` from the lucide import if no longer used. Remove `Link` from the `next/link` import if no longer used. **Check before removing** — `Link` is used by the removed section only, but double-check.
+
+> [!IMPORTANT]
+> The `customerDetailHref` variable and the `router.push(customerDetailHref)` on the card `onClick` must remain. The card-level click navigation is the primary navigation path.
+
+#### [MODIFY] [customers/page.tsx](file:///c:/bobsolar/src/app/(dashboard)/customers/page.tsx)
+
+**2A-5. Update the grid layout to be denser**
+
+```diff
+-className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
++className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+```
+
+Gap reduced from `gap-6` to `gap-4`, added `xl:grid-cols-4` for wider screens.
+
+---
+
+### 2B. Project Card
+
+#### [MODIFY] [project-card.tsx](file:///c:/bobsolar/src/components/project/project-card.tsx)
+
+**2B-1. Reduce padding**
+
+```diff
+-<CardContent className="relative space-y-5 p-7">
++<CardContent className="relative space-y-3 p-4">
+```
+
+**2B-2. Compact the project number and status header**
+
+```diff
+-className="font-heading text-lg font-semibold tracking-[0.2em] uppercase"
++className="font-heading text-sm font-semibold tracking-[0.15em] uppercase"
+```
+
+```diff
+-<p className="text-muted-foreground text-sm">{project.customerName}</p>
++<p className="text-muted-foreground text-xs">{project.customerName}</p>
+```
+
+**2B-3. Compact the stats grid**
+
+```diff
+-<div className="grid gap-4 text-sm md:grid-cols-3">
++<div className="grid gap-3 text-xs md:grid-cols-3">
+```
+
+Reduce section label font size:
+```diff
+-<p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
++<p className="text-muted-foreground mb-0.5 text-[9px] font-bold tracking-[0.2em] uppercase">
+```
+
+Reduce system size value:
+```diff
+-<p className="text-foreground font-mono text-lg font-semibold">
++<p className="text-foreground font-mono text-sm font-semibold">
+```
+
+**2B-4. Compact the footer section**
+
+```diff
+-<div className="border-border mt-6 flex justify-between gap-5 border-t border-dashed pt-5">
++<div className="border-border mt-3 flex justify-between items-center gap-3 border-t border-dashed pt-3">
+```
+
+```diff
+-<Button asChild size="sm" variant="secondary" className="rounded-full px-8">
++<Button asChild size="sm" variant="secondary" className="rounded-full px-5 text-xs">
+```
+
+#### [MODIFY] [active-projects-client.tsx](file:///c:/bobsolar/src/app/(dashboard)/projects/components/active-projects-client.tsx)
+
+**2B-5. Update grid layout for project cards**
+
+```diff
+-<div className="grid gap-6 xl:grid-cols-2">
++<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+```
+
+---
+
+### 2C. Quotation Card
+
+#### [MODIFY] [quotation-card.tsx](file:///c:/bobsolar/src/components/quotations/quotation-card.tsx)
+
+**2C-1. Remove the hover translate effect**
+
+```diff
+-<div className="transition-all hover:-translate-y-1">
++<div className="transition-colors">
+```
+
+**2C-2. Reduce padding**
+
+```diff
+-<CardContent className="p-5">
++<CardContent className="p-3.5">
+```
+
+**2C-3. Compact the customer name**
+
+```diff
+-<h3 className="font-heading text-foreground line-clamp-1 text-lg font-semibold">
++<h3 className="font-heading text-foreground line-clamp-1 text-sm font-semibold">
+```
+
+**2C-4. Compact the amount/metadata section**
+
+```diff
+-<div className="mt-6 flex flex-col gap-3">
++<div className="mt-3 flex flex-col gap-2">
+```
+
+**2C-5. Compact the footer**
+
+```diff
+-<div className="border-border/60 mt-5 flex items-center gap-2 border-t pt-4">
++<div className="border-border/60 mt-3 flex items-center gap-2 border-t pt-3">
+```
+
+---
+
+### 2D. Skeleton Update
+
+#### [MODIFY] [list-grid-skeleton.tsx](file:///c:/bobsolar/src/components/skeletons/list-grid-skeleton.tsx)
+
+Skeleton grid should match the new card grid density:
+
+```diff
+-<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
++<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+```
+
+Also compact the skeleton card padding:
+
+```diff
+-className="bg-muted/40 border-border/60 rounded-2xl border p-5"
++className="bg-muted/40 border-border/60 rounded-xl border p-3.5"
+```
+
+Reduce avatar skeleton:
+```diff
+-<Skeleton className="h-10 w-10 rounded-full" />
++<Skeleton className="h-8 w-8 rounded-full" />
+```
+
+---
+
+## Workstream 3 — Customer Detail Page Layout Fix
+
+### Goal
+Fix the broken layout on `/customers/[id]` where the left panel takes full width and the right panel stacks in a corner. Restructure to a simple single-column layout, similar to the Settings page.
+
+#### [MODIFY] [customers/[id]/page.tsx](file:///c:/bobsolar/src/app/(dashboard)/customers/[id]/page.tsx)
+
+**3-1. Fix the Overview tab grid layout**
+
+The current `md:grid-cols-3` split with `md:col-span-2` causes layout breakage. Replace with a single-column stacked layout:
+
+```diff
+-className="grid gap-6 md:grid-cols-3"
++className="grid gap-6 grid-cols-1 lg:grid-cols-2"
+```
+
+Remove `md:col-span-2` from the General Information card:
+
+```diff
+-<Card className="border-border/60 bg-muted/45 md:col-span-2">
++<Card className="border-border/60 bg-muted/45">
+```
+
+**3-2. Stack the right-side cards into a single flow**
+
+The current layout has a wrapper `<div className="space-y-6">` containing "Customer Metrics" and "Quick Actions" cards. Change this to use `lg:grid-cols-2` with the metrics and quick actions as separate grid items within the main grid:
+
+Replace the entire overview tab content structure:
+
+```tsx
+<TabsContent value="overview">
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="space-y-6"
+  >
+    {/* General Information — full width */}
+    <Card className="border-border/60 bg-muted/45">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">General Information</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              Address
+            </span>
+            <p className="text-sm leading-relaxed">
+              {customer.address || "No address provided"}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              City
+            </span>
+            <p className="text-sm">{customer.city || "Not specified"}</p>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+            Notes
+          </span>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {customer.notes || "No notes added for this customer."}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Metrics + Quick Actions — side by side on large screens */}
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Card className="border-border/60 bg-muted/45">
+        {/* ... Customer Metrics card content unchanged ... */}
+      </Card>
+
+      <Card className="border-border/60 bg-muted/45">
+        {/* ... Quick Actions card content unchanged ... */}
+      </Card>
+    </div>
+  </motion.div>
+</TabsContent>
+```
+
+Key layout change:
+- General Information → full-width, no `col-span`
+- Customer Metrics + Quick Actions → side-by-side in `lg:grid-cols-2`
+- All content wrapped in a single `space-y-6` vertical stack
+
+> [!IMPORTANT]
+> Do NOT touch the Quotations and Projects tab content. They use `grid gap-6 sm:grid-cols-2 lg:grid-cols-3` which should be updated to match the compact card sizing from Workstream 2: `grid gap-4 sm:grid-cols-2 lg:grid-cols-3`. But do NOT change their data mapping or card component props.
+
+**3-3. Update tab grids in Quotations and Projects tabs**
+
+```diff
+-<div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
++<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+```
+
+Apply this to both the quotations tab grid (line 252) and the projects tab grid (line 292).
+
+---
+
+## Workstream 4 — Design System Polish
+
+### Goal
+Refine color tokens, add a shadow elevation system, consistent hover/focus states, and add JetBrains Mono for numerical data.
+
+---
+
+### 4A. JetBrains Mono Font
+
+#### [NEW] Font file download
+
+Download `JetBrainsMono-Regular.woff2` (~20KB) and place it at:
+```
+public/fonts/jetbrains-mono-regular.woff2
+```
+
+Source: https://github.com/JetBrains/JetBrainsMono/releases — download the latest release, extract the `woff2` directory, and take `JetBrainsMono-Regular.woff2`.
+
+#### [MODIFY] [layout.tsx](file:///c:/bobsolar/src/app/layout.tsx)
+
+Add the monospace font declaration after the existing `interHeading` declaration:
+
+```typescript
+const jetbrainsMono = localFont({
+  variable: "--font-mono",
+  display: "swap",
+  src: [
+    {
+      path: "../../public/fonts/jetbrains-mono-regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+});
+```
+
+Add the variable to the `<html>` className:
+
+```diff
+-className={`${inter.variable} ${interHeading.variable} h-full antialiased`}
++className={`${inter.variable} ${interHeading.variable} ${jetbrainsMono.variable} h-full antialiased`}
+```
+
+#### [MODIFY] [globals.css](file:///c:/bobsolar/src/app/globals.css)
+
+Add the font-mono mapping in the `@theme` block:
+
+```diff
+ @theme {
+   /* Design System Tokens — aligned with 2026 standards */
++  --font-mono: var(--font-mono);
+   --color-background: var(--background);
+```
+
+> [!NOTE]
+> After adding the font, any existing `font-mono` Tailwind class in the app (used in ProjectCard for prices/kWp values) will automatically pick up JetBrains Mono instead of the system monospace. No additional class changes needed for existing `font-mono` usage.
+
+---
+
+### 4B. Color Token Refinement
+
+#### [MODIFY] [globals.css](file:///c:/bobsolar/src/app/globals.css)
+
+**Light mode — warmer, slightly less clinical:**
+
+```diff
+ :root {
+-  --background: oklch(0.985 0.005 247); /* Soft Slate */
++  --background: oklch(0.98 0.004 250); /* Warmer Soft Slate */
+   --foreground: oklch(0.208 0.042 265.75); /* Deep Navy */
+   --card: oklch(1 0 0);
+   --card-foreground: oklch(0.208 0.042 265.75);
+```
+
+**Dark mode — richer depth, less flat:**
+
+```diff
+ .dark {
+-  --background: oklch(0.12 0.02 265);
++  --background: oklch(0.11 0.015 270); /* Slightly deeper, cooler tint */
+-  --foreground: oklch(0.92 0.01 247);
++  --foreground: oklch(0.93 0.008 250); /* Slightly brighter for contrast */
+-  --card: oklch(0.16 0.02 265);
++  --card: oklch(0.15 0.018 268); /* Subtle differentiation from bg */
+   --card-foreground: oklch(0.92 0.01 247);
+-  --popover: oklch(0.16 0.02 265);
++  --popover: oklch(0.17 0.018 268); /* Slightly lighter than card */
+   --popover-foreground: oklch(0.92 0.01 247);
+-  --secondary: oklch(0.22 0.02 265);
++  --secondary: oklch(0.20 0.015 268);
+-  --muted: oklch(0.2 0.02 265);
++  --muted: oklch(0.18 0.015 268);
+-  --muted-foreground: oklch(0.6 0.02 265);
++  --muted-foreground: oklch(0.58 0.015 268);
+-  --border: oklch(0.25 0.02 265);
++  --border: oklch(0.23 0.015 268);
+-  --input: oklch(0.25 0.02 265);
++  --input: oklch(0.23 0.015 268);
+ }
+```
+
+---
+
+### 4C. Shadow Elevation System
+
+#### [MODIFY] [globals.css](file:///c:/bobsolar/src/app/globals.css)
+
+Add elevation utilities to the `@layer utilities` block:
+
+```css
+@layer utilities {
+  /* Existing premium-glass ... */
+
+  /* Elevation system for cards and interactive surfaces */
+  .elevation-1 {
+    box-shadow:
+      0 1px 2px 0 rgba(0, 0, 0, 0.03),
+      0 1px 3px 0 rgba(0, 0, 0, 0.06);
+  }
+  .elevation-2 {
+    box-shadow:
+      0 2px 4px -1px rgba(0, 0, 0, 0.04),
+      0 4px 8px -1px rgba(0, 0, 0, 0.08);
+  }
+  .dark .elevation-1 {
+    box-shadow:
+      0 1px 2px 0 rgba(0, 0, 0, 0.15),
+      0 1px 3px 0 rgba(0, 0, 0, 0.2);
+  }
+  .dark .elevation-2 {
+    box-shadow:
+      0 2px 4px -1px rgba(0, 0, 0, 0.2),
+      0 4px 8px -1px rgba(0, 0, 0, 0.3);
+  }
+}
+```
+
+---
+
+### 4D. Consistent Hover/Focus States
+
+#### [MODIFY] [card.tsx](file:///c:/bobsolar/src/components/ui/card.tsx)
+
+Add default elevation and hover transition to the base `Card` component. Find the Card's base className and add:
+
+```diff
+-"bg-card text-card-foreground ..."
++"bg-card text-card-foreground elevation-1 transition-shadow duration-200 hover:elevation-2 ..."
+```
+
+> [!WARNING]
+> Only add the elevation classes to the Card primitive. Do NOT add hover states to cards that already define their own hover behavior in consumer components (like customer-card, project-card). The consumer-level classes will layer on top. Verify that this does not double-apply shadows by testing both light and dark themes.
+
+#### [MODIFY] [button.tsx](file:///c:/bobsolar/src/components/ui/button.tsx)
+
+Add a consistent `focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-ring` to the base button variant if not already present. Check the existing focus styles first — shadcn/ui buttons typically have this, so this may be a no-op.
+
+---
+
+## Workstream 5 — Verification Plan
+
+### Automated Checks
+
+Run after all changes:
+
+```bash
+pnpm -w -s build
+```
+
+This will catch:
+- TypeScript errors from changed prop types
+- Missing imports from removed elements
+- CSS/Tailwind class issues
+
+```bash
+pnpm biome check
+```
+
+This will catch:
+- Unused imports (e.g., `FileText`, `Link` after removal from customer-card)
+- Code style issues
+
+### Visual Verification
+
+The agent should start the dev server and verify:
+
+```bash
+pnpm dev
+```
+
+Check the following pages visually:
+1. **Dashboard** (`/`) — verify dock renders with colored icon backgrounds
+2. **Customers** (`/customers`) — verify compact cards, no "View History" button, 4-column on wide screens
+3. **Customer Detail** (`/customers/[id]`) — verify single-column layout like Settings page, no crashed UI
+4. **Projects** (`/projects`) — verify compact project cards, 3-column on wide screens
+5. **Quotations** (`/quotations`) — verify compact quotation cards
+6. **Settings** (`/settings`) — verify no regressions (should be untouched)
+7. **Dark mode** — toggle theme and verify all changes look correct in dark mode
+
+### What NOT to Test
+
+Do not run end-to-end tests or integration tests — this is a CSS-only change. No API endpoints, server actions, or data fetching logic was modified.
+
+---
+
+## File Change Summary
+
+| File | Workstream | Change Type |
+|------|-----------|-------------|
+| [nav-orbit.tsx](file:///c:/bobsolar/src/components/layout/nav-orbit.tsx) | WS1 | Icon redesign, physics tuning |
+| [customer-card.tsx](file:///c:/bobsolar/src/components/customers/customer-card.tsx) | WS2A | Compact layout, remove footer |
+| [customers/page.tsx](file:///c:/bobsolar/src/app/(dashboard)/customers/page.tsx) | WS2A | Grid density update |
+| [project-card.tsx](file:///c:/bobsolar/src/components/project/project-card.tsx) | WS2B | Compact layout |
+| [active-projects-client.tsx](file:///c:/bobsolar/src/app/(dashboard)/projects/components/active-projects-client.tsx) | WS2B | Grid density update |
+| [quotation-card.tsx](file:///c:/bobsolar/src/components/quotations/quotation-card.tsx) | WS2C | Compact layout |
+| [list-grid-skeleton.tsx](file:///c:/bobsolar/src/components/skeletons/list-grid-skeleton.tsx) | WS2D | Match new card density |
+| [customers/[id]/page.tsx](file:///c:/bobsolar/src/app/(dashboard)/customers/[id]/page.tsx) | WS3 | Single-column layout fix |
+| [layout.tsx](file:///c:/bobsolar/src/app/layout.tsx) | WS4A | JetBrains Mono font |
+| [globals.css](file:///c:/bobsolar/src/app/globals.css) | WS4B/C | Color tokens, shadows, font |
+| [card.tsx](file:///c:/bobsolar/src/components/ui/card.tsx) | WS4D | Elevation defaults |
+| [button.tsx](file:///c:/bobsolar/src/components/ui/button.tsx) | WS4D | Focus state check |
+| `public/fonts/jetbrains-mono-regular.woff2` | WS4A | **[NEW]** Font file |
+
+---
+
+## Execution Order for Agents
+
+> [!IMPORTANT]
+> Execute workstreams in this order to avoid conflicts:
+> 1. **WS4A** (font + globals.css) — foundation layer, no component deps
+> 2. **WS4B/C** (color tokens + shadows) — CSS-only, no component deps
+> 3. **WS4D** (card.tsx, button.tsx primitives) — affects all consumers
+> 4. **WS1** (nav-orbit.tsx) — isolated component
+> 5. **WS2** (all card compacting) — can be parallelized across 2A/2B/2C/2D
+> 6. **WS3** (customer detail page) — depends on WS2 card sizing
+> 7. **WS5** (verification) — final pass

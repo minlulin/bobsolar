@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
@@ -196,7 +196,7 @@ export default function SettingsPage(): React.JSX.Element {
       </section>
 
       {activeTab === "company" ? (
-        <section className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2">
+        <section className="grid w-full grid-cols-1 gap-2 xl:grid-cols-2">
           <div className="border-border bg-card min-w-0 space-y-4 rounded-xl border p-6">
             <Label className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#0F172A]">
               Brand Logo

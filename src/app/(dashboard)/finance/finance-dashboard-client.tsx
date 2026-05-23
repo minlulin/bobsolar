@@ -234,7 +234,7 @@ export function FinanceDashboardClient({
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         {/* Monthly Trend Chart */}
         <Card className="border-border lg:col-span-2">
           <CardHeader className="pb-3">
@@ -291,7 +291,7 @@ export function FinanceDashboardClient({
       </div>
 
       {/* Receivable Risk & Data Consistency */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         {/* Receivable Risk */}
         <Card className="border-border">
           <CardHeader className="pb-3">

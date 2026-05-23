@@ -99,7 +99,7 @@ export function ActiveProjectsClient({
           </Button>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid gap-2 xl:grid-cols-2">
           {items.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

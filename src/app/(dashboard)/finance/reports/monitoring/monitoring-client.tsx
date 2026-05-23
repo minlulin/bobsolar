@@ -262,7 +262,7 @@ function LatencyRow({ label, avgMs, p95Ms, samples }: LatencyRowProps): React.JS
         <p className="text-sm font-medium text-foreground">{label}</p>
         <p className="text-muted-foreground text-xs">{samples} samples</p>
       </div>
-      <div className="flex items-center gap-6 text-right">
+      <div className="flex items-center gap-2 text-right">
         <div>
           <p className="text-muted-foreground text-xs">Avg</p>
           <p

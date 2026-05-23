@@ -109,7 +109,7 @@ export function InventoryPageClient({ canEdit }: InventoryPageClientProps): Reac
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {response.items.map((item) => (
             <InventoryCard key={item.id} item={item} canEdit={canEdit} onEdit={handleEdit} />

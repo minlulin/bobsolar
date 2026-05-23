@@ -86,8 +86,8 @@ export default function CustomerDetailPage(): React.JSX.Element {
       </Button>
 
       {/* Header Profile Section */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-6">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex items-center gap-2">
           <Avatar className="bg-solar shadow-solar border-border/60 h-20 w-20 border-4 lg:h-24 lg:w-24">
             <AvatarFallback className="text-foreground bg-transparent text-2xl font-bold lg:text-3xl">
               {getInitials(customer.name)}
@@ -158,14 +158,14 @@ export default function CustomerDetailPage(): React.JSX.Element {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid gap-6 md:grid-cols-3"
+            className="flex flex-col gap-2"
           >
             <Card className="border-border/60 bg-muted/45 md:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">General Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2 xl:grid-cols-2">
                   <div className="space-y-1">
                     <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Address
@@ -249,7 +249,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
             className="space-y-4"
           >
             {customer.quotations.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {customer.quotations.map((quotation) => (
                   <QuotationCard
                     key={quotation.id}
@@ -289,7 +289,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
             className="space-y-4"
           >
             {customer.projects.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {customer.projects.map((project) => (
                   <ProjectCard
                     key={project.id}

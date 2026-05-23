@@ -73,7 +73,7 @@ export function QuotationsGridClient({
   return (
     <div className="space-y-6">
       {/* Filters & Tabs Section */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <Tabs defaultValue="all" className="w-full" onValueChange={setStatus}>
           <TabsList className="border-border/60 h-11 w-full justify-start gap-2 border-b bg-transparent p-0">
             {TABS.map((tab) => (
@@ -105,7 +105,7 @@ export function QuotationsGridClient({
       {isLoading ? (
         <ListGridSkeleton count={8} />
       ) : quotations.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {quotations.map((quote) => (
             <QuotationCard key={quote.id} quotation={quote} />
           ))}

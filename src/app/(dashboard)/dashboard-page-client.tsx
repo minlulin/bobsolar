@@ -63,7 +63,7 @@ export default function DashboardPage(): React.JSX.Element {
 
   return (
     <motion.div
-      className="grid grid-cols-1 gap-6 sm:grid-cols-12"
+      className="grid grid-cols-1 gap-2 sm:grid-cols-12"
       variants={container}
       initial="hidden"
       animate="show"
@@ -71,7 +71,7 @@ export default function DashboardPage(): React.JSX.Element {
       {/* Hero Header — Full Width */}
       <motion.div
         variants={item}
-        className="border-border bg-card col-span-12 flex flex-col justify-between gap-6 rounded-2xl border p-8 sm:flex-row sm:items-center"
+        className="border-border bg-card col-span-12 flex flex-col justify-between gap-2 rounded-2xl border p-8 sm:flex-row sm:items-center"
       >
         <div className="space-y-1">
           <p className="text-accent text-xs font-bold tracking-[0.2em] uppercase">

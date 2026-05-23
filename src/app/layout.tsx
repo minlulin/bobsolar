@@ -45,6 +45,18 @@ const interHeading = localFont({
   ],
 });
 
+const jetbrainsMono = localFont({
+  variable: "--font-mono",
+  display: "swap",
+  src: [
+    {
+      path: "../../public/fonts/JetBrainsMono/fonts/ttf/JetBrainsMono-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+});
+
 export const metadata: Metadata = {
   title: {
     default: "BOB Solar - Solar Installation Management",
@@ -81,7 +93,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${interHeading.variable} h-full antialiased`}
+      className={`${inter.variable} ${interHeading.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="font-body flex min-h-full flex-col">
         <Providers>

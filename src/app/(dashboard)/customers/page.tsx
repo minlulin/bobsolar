@@ -88,7 +88,7 @@ export default function CustomersPage(): React.JSX.Element {
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
         >
           {optimisticCustomers.map((customer) => (
             <CustomerCard

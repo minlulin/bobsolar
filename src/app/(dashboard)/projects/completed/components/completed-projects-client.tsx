@@ -49,7 +49,7 @@ export function CompletedProjectsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-6">
+      <div className="flex flex-wrap gap-2">
         <div className="relative w-full max-w-md flex-1">
           <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
@@ -97,7 +97,7 @@ export function CompletedProjectsClient({
           No records match · tweak filters?
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid gap-2 xl:grid-cols-2">
           {items.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}

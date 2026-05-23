@@ -73,12 +73,12 @@ export function ProjectCard({
   return (
     <div className="transition-all">
       <Card className="bg-card border-border group hover:bg-muted/30 border transition-colors">
-        <CardContent className="relative space-y-5 p-7">
+        <CardContent className="relative space-y-3 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <Link
                 href={`${hrefBase}/${project.id}`}
-                className="font-heading text-lg font-semibold tracking-[0.2em] uppercase"
+                className="font-heading text-sm font-semibold tracking-[0.2em] uppercase"
               >
                 {project.projectNumber}
               </Link>
@@ -99,7 +99,7 @@ export function ProjectCard({
             </div>
           </div>
 
-          <div className="grid gap-4 text-sm md:grid-cols-3">
+          <div className="grid gap-2 text-xs md:grid-cols-3">
             <div>
               <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
                 System size
@@ -141,7 +141,7 @@ export function ProjectCard({
           </div>
 
           {showBudgetBar ? (
-            <div className="text-muted-foreground text-xs">
+            <div className="text-muted-foreground text-xxs">
               <p className="text-[10px] font-semibold uppercase">Spend vs quotation</p>
               <div className="bg-muted mt-2 h-2 overflow-hidden rounded-full">
                 <div

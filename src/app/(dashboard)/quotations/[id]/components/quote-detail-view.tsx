@@ -93,10 +93,10 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
   }, [quotation, loadFromQuotation]);
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-12">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
       {/* Immersive Header */}
-      <div className="border-border bg-card col-span-12 flex flex-col items-start justify-between gap-6 rounded-2xl border p-8 shadow-sm md:flex-row md:items-center">
-        <div className="flex items-center gap-6">
+      <div className="border-border bg-card col-span-12 flex flex-col items-start justify-between gap-2 rounded-2xl border p-8 shadow-sm md:flex-row md:items-center">
+        <div className="flex items-center gap-2">
           <Button
             variant="secondary"
             size="icon"

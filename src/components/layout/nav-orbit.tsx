@@ -51,7 +51,7 @@ function NavIcon({
 
   // Transform distance into a scale value (Peak size: 64px, Base size: 40px)
   // Magnification zone is [-150, 0, 150] pixels from center
-  const scaleSync = useTransform(distance, [-150, 0, 150], [1, 1.6, 1]);
+  const scaleSync = useTransform(distance, [-150, 0, 150], [1, 1.3, 1]);
   const scale = useSpring(scaleSync, dockSpringConfig);
 
   // Transform scale into translation to push adjacent icons away smoothly
@@ -66,17 +66,14 @@ function NavIcon({
             ref={iconRef}
             style={{ scale, y: translateY }}
             className={cn(
-              "relative flex items-center justify-center rounded-xl transition-colors duration-300",
+              "relative flex items-center justify-center rounded-xl transition-colors duration-300 bg-primary/10 text-primary-foreground",
               "h-10 w-10", // Base size (40px)
               isActive
                 ? "text-[var(--color-solar-amber)]"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                : "text-muted-foreground hover:text-foreground hover:bg-primary/20",
             )}
           >
-            <Icon
-              className="relative z-10 h-5 w-5 drop-shadow-md"
-              strokeWidth={isActive ? 2.5 : 2}
-            />
+            <Icon className="relative z-10 h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
 
             {/* Active Indicator (Flowing Solar Dot) */}
             {isActive && (
@@ -111,9 +108,11 @@ export function NavOrbit(): React.JSX.Element {
           <motion.div
             className={cn(
               "flex items-end gap-3 rounded-2xl px-4 py-3",
-              "premium-glass border border-white/10 shadow-2xl",
+              "premium-glass border border-white/10",
+              // Subtle inner glow instead of heavy shadow
+              "shadow-inner shadow-primary/20",
               // Add a subtle reflection beneath the dock
-              "after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-white/5 after:blur-md",
+              "after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-primary/5 after:blur-md",
             )}
             onMouseMove={(e) => {
               mouseX.set(e.pageX);

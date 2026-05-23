@@ -94,7 +94,7 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
           router.push(`/quotations/${quotation.id}`);
         }}
       >
-        <CardContent className="p-5">
+        <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
                   {config.label}
                 </Badge>
               </div>
-              <h3 className="font-heading text-foreground line-clamp-1 text-lg font-semibold">
+              <h3 className="font-heading text-foreground line-clamp-1 text-sm font-semibold">
                 {quotation.customer.name}
               </h3>
             </div>
@@ -181,9 +181,9 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
             </DropdownMenu>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3">
+          <div className="mt-6 flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">Total Amount</span>
+              <span className="text-muted-foreground text-xs">Total Amount</span>
               <span className="font-heading text-foreground font-bold">
                 {formatMMK(parseFloat(quotation.total))}
               </span>
@@ -203,7 +203,7 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
 
           <div className="border-border/60 mt-5 flex items-center gap-2 border-t pt-4">
             <div className="bg-solar h-1.5 w-1.5 animate-pulse rounded-full" />
-            <span className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">
+            <span className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
               Ready for Export
             </span>
           </div>

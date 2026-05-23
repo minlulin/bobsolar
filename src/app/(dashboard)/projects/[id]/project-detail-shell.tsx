@@ -739,7 +739,7 @@ export function ProjectDetailShell({
             </form>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-2 lg:grid-cols-2">
             <motion.div variants={staggerContainer} animate="animate">
               <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
                 <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
