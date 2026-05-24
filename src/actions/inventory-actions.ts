@@ -95,10 +95,28 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
 
     const validated = createInventoryItemSchema.parse(raw);
 
+    let brand = validated.brand;
+    let modelNumber = validated.modelNumber;
+    if (
+      ["panel", "inverter", "battery"].includes(validated.category) &&
+      validated.specifications &&
+      typeof validated.specifications === "object"
+    ) {
+      const specs = validated.specifications as Record<string, unknown>;
+      if (typeof specs["brandModel"] === "string") {
+        const brandModel = specs["brandModel"].trim();
+        const parts = brandModel.split(/\s+/);
+        brand = parts[0] || "";
+        modelNumber = parts.slice(1).join(" ") || "";
+      }
+    }
+
     const [item] = await db
       .insert(inventoryItems)
       .values({
         ...validated,
+        brand: brand || null,
+        modelNumber: modelNumber || null,
         costPrice: validated.costPrice.toFixed(2),
         unitPrice: validated.unitPrice.toFixed(2),
       })
@@ -133,10 +151,29 @@ export async function updateInventoryItem(
     const { id: parsedId, ...updateData } = validated;
     void parsedId;
 
+    let brand = updateData.brand;
+    let modelNumber = updateData.modelNumber;
+    if (
+      updateData.category &&
+      ["panel", "inverter", "battery"].includes(updateData.category) &&
+      updateData.specifications &&
+      typeof updateData.specifications === "object"
+    ) {
+      const specs = updateData.specifications as Record<string, unknown>;
+      if (typeof specs["brandModel"] === "string") {
+        const brandModel = specs["brandModel"].trim();
+        const parts = brandModel.split(/\s+/);
+        brand = parts[0] || "";
+        modelNumber = parts.slice(1).join(" ") || "";
+      }
+    }
+
     const [item] = await db
       .update(inventoryItems)
       .set({
         ...updateData,
+        ...(brand !== undefined ? { brand: brand || null } : {}),
+        ...(modelNumber !== undefined ? { modelNumber: modelNumber || null } : {}),
         costPrice: updateData.costPrice !== undefined ? updateData.costPrice.toFixed(2) : undefined,
         unitPrice: updateData.unitPrice !== undefined ? updateData.unitPrice.toFixed(2) : undefined,
         updatedAt: new Date(),

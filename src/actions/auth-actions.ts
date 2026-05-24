@@ -12,7 +12,7 @@ import {
 } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { authRateLimits, users } from "@/lib/db/schema";
-import { userRoleSchema } from "@/lib/domain/enums";
+
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { changePasswordSchema, type LoginInput, loginSchema } from "@/lib/validators/auth";
 
@@ -97,8 +97,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   }
 
   try {
-    const parsedRole = userRoleSchema.parse(user.role);
-    await createSession(user.id, parsedRole);
+    await createSession(user.id);
   } catch (error) {
     console.error("[login.createSession]", error);
     return errorResponse(

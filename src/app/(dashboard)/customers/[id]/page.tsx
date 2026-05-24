@@ -2,323 +2,503 @@
 
 import { format } from "date-fns";
 import {
-  Calendar,
-  ChevronLeft,
+  ArrowLeft,
+  ChevronRight,
   Edit,
   FileText,
-  Layout,
-  Loader2,
+  FolderKanban,
   Mail,
   MapPin,
   Phone,
+  Plus,
 } from "lucide-react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ProjectCard } from "@/components/project/project-card";
-import { QuotationCard } from "@/components/quotations/quotation-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useCustomer } from "@/hooks/use-customers";
+import { STATUS_CONFIG } from "@/lib/constants";
+import { cn, formatMMK } from "@/lib/utils";
 
 const CustomerDialog = dynamic(
   () => import("@/components/customers/customer-dialog").then((mod) => mod.CustomerDialog),
   { ssr: false },
 );
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Tab = "overview" | "quotations" | "projects";
+
+// ─── Tab button — matches Settings page pattern ───────────────────────────────
+function TabButton({
+  label,
+  active,
+  count,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  count?: number;
+  onClick: () => void;
+}): React.JSX.Element {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+        active
+          ? "border-solar/50 bg-solar/8 text-foreground"
+          : "border-transparent text-muted-foreground hover:border-border/50 hover:bg-muted/40 hover:text-foreground",
+      )}
+    >
+      {label}
+      {count !== undefined && count > 0 && (
+        <span
+          className={cn(
+            "flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+            active ? "bg-solar/25 text-solar" : "bg-muted/60 text-muted-foreground",
+          )}
+        >
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// ─── Field row ────────────────────────────────────────────────────────────────
+function Field({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+}): React.JSX.Element | null {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-4 py-4 border-b border-border/30 last:border-0">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/50">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60 mb-0.5">
+          {label}
+        </p>
+        <p className="text-sm text-foreground leading-relaxed">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Section label ────────────────────────────────────────────────────────────
+function SectionLabel({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return (
+    <>
+      <p className="mt-6 mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
+        {children}
+      </p>
+      <Separator className="mb-1 opacity-40" />
+    </>
+  );
+}
+
+// ─── Stat chip ────────────────────────────────────────────────────────────────
+function Chip({ label, value }: { label: string; value: string | number }): React.JSX.Element {
+  return (
+    <div className="flex flex-col gap-0.5 rounded-xl border border-border/50 bg-muted/30 px-5 py-3.5">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">
+        {label}
+      </span>
+      <span className="text-xl font-bold tracking-tight text-foreground">{value}</span>
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+function Empty({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/20">
+        <Icon className="h-7 w-7 text-muted-foreground/30" />
+      </div>
+      <p className="text-base font-semibold text-foreground">{title}</p>
+      <p className="mt-1.5 max-w-xs text-sm text-muted-foreground leading-relaxed">{description}</p>
+      {action && <div className="mt-6">{action}</div>}
+    </div>
+  );
+}
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+function Skeleton(): React.JSX.Element {
+  return (
+    <div className="mx-auto max-w-3xl animate-pulse space-y-8">
+      <div className="flex items-center gap-4">
+        <div className="h-14 w-14 rounded-full bg-muted/60" />
+        <div className="space-y-2">
+          <div className="h-5 w-40 rounded bg-muted/60" />
+          <div className="h-3.5 w-28 rounded bg-muted/40" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {["card-1", "card-2", "card-3"].map((key) => (
+          <div key={key} className="h-16 rounded-xl bg-muted/40" />
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {["tab-1", "tab-2", "tab-3"].map((key) => (
+          <div key={key} className="h-8 w-24 rounded-lg bg-muted/40" />
+        ))}
+      </div>
+      <div className="space-y-4">
+        {["row-1", "row-2", "row-3", "row-4"].map((key) => (
+          <div key={key} className="h-12 rounded bg-muted/30" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function CustomerDetailPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   const { data: customer, isLoading } = useCustomer(id);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="text-solar h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!customer) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <h2 className="text-2xl font-bold">Customer not found</h2>
-        <Button
-          variant="link"
-          onClick={() => {
-            router.push("/customers");
-          }}
-          className="mt-4"
-        >
-          Back to list
-        </Button>
-      </div>
-    );
-  }
-
-  const getInitials = (name: string): string => {
-    return name
+  const initials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
       .substring(0, 2);
-  };
+
+  if (isLoading) return <Skeleton />;
+
+  if (!customer) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <h2 className="text-xl font-semibold">Customer not found</h2>
+        <Button
+          variant="link"
+          onClick={() => router.push("/customers")}
+          className="mt-3 text-muted-foreground"
+        >
+          Back to customers
+        </Button>
+      </div>
+    );
+  }
+
+  const memberSince = format(new Date(customer.createdAt), "d MMM yyyy");
+  const fullAddress = [customer.address, customer.city].filter(Boolean).join(", ");
 
   return (
-    <div className="space-y-6">
-      {/* Back Navigation */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          router.push("/customers");
-        }}
-        className="group text-muted-foreground hover:text-foreground -ml-2"
-      >
-        <ChevronLeft className="mr-1 h-4 w-4 transition-transform group-hover:-translate-x-1" />
-        Back to Customers
-      </Button>
+    <div className="mx-auto max-w-3xl space-y-6 pb-24">
+      {/* ── Back ──────────────────────────────────────────────── */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
+        <button
+          type="button"
+          onClick={() => router.push("/customers")}
+          className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+          Customers
+        </button>
+      </motion.div>
 
-      {/* Header Profile Section */}
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-2">
-          <Avatar className="bg-solar shadow-solar border-border/60 h-20 w-20 border-4 lg:h-24 lg:w-24">
-            <AvatarFallback className="text-foreground bg-transparent text-2xl font-bold lg:text-3xl">
-              {getInitials(customer.name)}
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="flex items-start justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <Avatar className="h-14 w-14 shrink-0 ring-2 ring-solar/30 ring-offset-2 ring-offset-background">
+            <AvatarFallback className="bg-solar/15 text-foreground font-bold text-lg">
+              {initials(customer.name)}
             </AvatarFallback>
           </Avatar>
-
-          <div className="space-y-1">
-            <h1 className="font-heading text-foreground text-3xl font-bold tracking-tight lg:text-4xl">
+          <div>
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
               {customer.name}
             </h1>
-            <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1">
-              <div className="flex items-center gap-1.5 text-sm">
-                <Phone className="h-3.5 w-3.5" />
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
                 {customer.phone}
-              </div>
-              {customer.email && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Mail className="h-3.5 w-3.5" />
-                  {customer.email}
-                </div>
-              )}
+              </span>
               {customer.city && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <MapPin className="h-3.5 w-3.5" />
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
                   {customer.city}
-                </div>
+                </span>
               )}
             </div>
           </div>
         </div>
-
         <Button
-          onClick={() => {
-            setEditDialogOpen(true);
-          }}
           variant="outline"
-          className="border-border/70 bg-muted/45 hover:bg-muted/55 gap-2"
+          size="sm"
+          onClick={() => setEditDialogOpen(true)}
+          className="shrink-0 gap-1.5 border-border/60 text-muted-foreground hover:text-foreground"
         >
-          <Edit className="h-4 w-4" />
-          Edit Profile
+          <Edit className="h-3.5 w-3.5" />
+          Edit
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Tabs Section */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="border-border/60 w-full justify-start border-b bg-transparent p-0">
-          <TabsTrigger
-            value="overview"
-            className="data-[state=active]:border-solar data-[state=active]:text-solar rounded-none border-b-2 border-transparent px-6 pt-2 pb-3 data-[state=active]:bg-transparent"
-          >
-            Overview
-          </TabsTrigger>
-          <TabsTrigger
-            value="quotations"
-            className="data-[state=active]:border-solar data-[state=active]:text-solar rounded-none border-b-2 border-transparent px-6 pt-2 pb-3 data-[state=active]:bg-transparent"
-          >
-            Quotations
-          </TabsTrigger>
-          <TabsTrigger
-            value="projects"
-            className="data-[state=active]:border-solar data-[state=active]:text-solar rounded-none border-b-2 border-transparent px-6 pt-2 pb-3 data-[state=active]:bg-transparent"
-          >
-            Projects
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Stats ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
+        className="grid grid-cols-3 gap-3"
+      >
+        <Chip label="Member since" value={memberSince} />
+        <Chip label="Quotations" value={customer.quotations.length} />
+        <Chip label="Projects" value={customer.projects.length} />
+      </motion.div>
 
-        <TabsContent value="overview">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <Card className="border-border/60 bg-muted/45">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">General Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                      Address
-                    </span>
-                    <p className="text-sm leading-relaxed">
-                      {customer.address || "No address provided"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                      City
-                    </span>
-                    <p className="text-sm">{customer.city || "Not specified"}</p>
-                  </div>
-                </div>
+      {/* ── Sub-tab bar — same pattern as Settings page ──────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.08 }}
+        className="flex flex-wrap gap-2 rounded-xl border border-border/40 bg-muted/20 p-1.5"
+      >
+        <TabButton
+          label="Overview"
+          active={activeTab === "overview"}
+          onClick={() => setActiveTab("overview")}
+        />
+        <TabButton
+          label="Quotations"
+          active={activeTab === "quotations"}
+          count={customer.quotations.length}
+          onClick={() => setActiveTab("quotations")}
+        />
+        <TabButton
+          label="Projects"
+          active={activeTab === "projects"}
+          count={customer.projects.length}
+          onClick={() => setActiveTab("projects")}
+        />
+      </motion.div>
 
-                <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                    Notes
-                  </span>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {customer.notes || "No notes added for this customer."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+      {/* ── Tab content ───────────────────────────────────────── */}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22 }}
+        className="min-h-[28rem]"
+      >
+        {/* OVERVIEW ─────────────────────────────────────────── */}
+        {activeTab === "overview" && (
+          <div>
+            <SectionLabel>Contact</SectionLabel>
+            <Field icon={Phone} label="Phone" value={customer.phone} />
+            {customer.email && <Field icon={Mail} label="Email" value={customer.email} />}
+            {fullAddress && <Field icon={MapPin} label="Address" value={fullAddress} />}
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="border-border/60 bg-muted/45">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Customer Metrics</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Customer Since</span>
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <Calendar className="text-solar h-3.5 w-3.5" />
-                      {format(new Date(customer.createdAt), "MMM d, yyyy")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total Quotes</span>
-                    <span className="font-medium">{customer.quotations.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total Projects</span>
-                    <span className="font-medium">{customer.projects.length}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/60 bg-muted/45">
-                <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-2">
-                  <Button
-                    variant="outline"
-                    className="hover:bg-solar/10 hover:text-solar hover:border-solar/20 border-border/60 bg-muted/45 justify-start gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    New Quotation
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="hover:bg-solar/10 hover:text-solar hover:border-solar/20 border-border/60 bg-muted/45 justify-start gap-2"
-                  >
-                    <Layout className="h-4 w-4" />
-                    Create Project
-                  </Button>
-                </CardContent>
-              </Card>
+            <SectionLabel>Notes</SectionLabel>
+            <div className="py-4">
+              {customer.notes ? (
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                  {customer.notes}
+                </p>
+              ) : (
+                <p className="text-sm italic text-muted-foreground/50">No notes added.</p>
+              )}
             </div>
-          </motion.div>
-        </TabsContent>
 
-        <TabsContent value="quotations">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
+            <SectionLabel>Quick Actions</SectionLabel>
+            <div className="flex flex-col gap-2 py-4 sm:flex-row">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                onClick={() => router.push("/quotations/new")}
+              >
+                <Plus className="h-4 w-4" />
+                New Quotation
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2 border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              >
+                <Plus className="h-4 w-4" />
+                Create Project
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* QUOTATIONS ───────────────────────────────────────── */}
+        {activeTab === "quotations" && (
+          <div>
             {customer.quotations.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {customer.quotations.map((quotation) => (
-                  <QuotationCard
-                    key={quotation.id}
-                    quotation={{
-                      ...quotation,
-                      customer: { name: customer.name },
-                    }}
-                  />
-                ))}
-              </div>
+              <>
+                <SectionLabel>
+                  {customer.quotations.length} quotation
+                  {customer.quotations.length !== 1 ? "s" : ""}
+                </SectionLabel>
+                {customer.quotations.map((quotation) => {
+                  const config = STATUS_CONFIG[quotation.status];
+                  const StatusIcon = config.icon;
+                  return (
+                    <Link
+                      key={quotation.id}
+                      href={`/quotations/${quotation.id}`}
+                      className="group flex items-center gap-4 py-4 border-b border-border/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-muted/30"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-semibold text-foreground font-mono">
+                            {quotation.quoteNumber}
+                          </span>
+                          <Badge
+                            className={cn(
+                              "px-1.5 py-0 text-[10px] font-semibold border-0",
+                              config.color,
+                            )}
+                          >
+                            <StatusIcon className="mr-1 h-2.5 w-2.5" />
+                            {config.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(quotation.createdAt), "d MMM yyyy")}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-foreground tabular-nums">
+                          {formatMMK(parseFloat(quotation.total))}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  );
+                })}
+              </>
             ) : (
-              <div className="border-border/60 bg-muted/45 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-24 text-center">
-                <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
-                  <FileText className="h-10 w-10 opacity-20" />
-                </div>
-                <h3 className="text-foreground mt-6 text-xl font-semibold">No quotations yet</h3>
-                <p className="text-muted-foreground mt-2 max-w-xs">
-                  Create a solar quotation for this customer to get started.
-                </p>
-                <Button
-                  className="bg-solar text-foreground mt-6"
-                  onClick={() => {
-                    router.push("/quotations/new");
-                  }}
-                >
-                  Create Quotation
-                </Button>
-              </div>
+              <Empty
+                icon={FileText}
+                title="No quotations yet"
+                description="Create a solar quotation for this customer to get started."
+                action={
+                  <Button
+                    className="bg-solar text-foreground hover:bg-solar/90 gap-2"
+                    onClick={() => router.push("/quotations/new")}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Quotation
+                  </Button>
+                }
+              />
             )}
-          </motion.div>
-        </TabsContent>
+          </div>
+        )}
 
-        <TabsContent value="projects">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
+        {/* PROJECTS ─────────────────────────────────────────── */}
+        {activeTab === "projects" && (
+          <div>
             {customer.projects.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {customer.projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={{
-                      ...project,
-                      customerName: customer.name,
-                      quoteNumber: project.quotation?.quoteNumber ?? null,
-                      costTotal: project.costs.reduce(
-                        (sum, c) => sum + Math.round(Number(c.amount)),
-                        0,
-                      ),
-                    }}
-                  />
-                ))}
-              </div>
+              <>
+                <SectionLabel>
+                  {customer.projects.length} project{customer.projects.length !== 1 ? "s" : ""}
+                </SectionLabel>
+                {customer.projects.map((project) => {
+                  const costTotal = project.costs.reduce(
+                    (sum, c) => sum + Math.round(Number(c.amount)),
+                    0,
+                  );
+                  const statusColorMap: Record<string, string> = {
+                    planning: "bg-indigo-500/10 text-indigo-500",
+                    in_progress: "bg-emerald-500/10 text-emerald-500",
+                    installation_completed: "bg-teal-500/10 text-teal-500",
+                    on_hold: "bg-amber-500/10 text-amber-500",
+                    completed: "bg-emerald-500/10 text-emerald-600",
+                    cancelled: "bg-rose-500/10 text-rose-500",
+                  };
+                  const statusColor =
+                    statusColorMap[project.status] ?? "bg-muted/50 text-muted-foreground";
+
+                  return (
+                    <Link
+                      key={project.id}
+                      href={`/projects/${project.id}`}
+                      className="group flex items-center gap-4 py-4 border-b border-border/30 last:border-0 -mx-2 px-2 rounded-lg transition-colors hover:bg-muted/30"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+                        <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-sm font-semibold text-foreground font-mono">
+                            {project.projectNumber}
+                          </span>
+                          <Badge
+                            className={cn(
+                              "px-1.5 py-0 text-[10px] font-semibold border-0 capitalize",
+                              statusColor,
+                            )}
+                          >
+                            {project.status.replace("_", " ")}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {Number(project.systemSizeKwp)} kWp
+                          {project.quotation?.quoteNumber
+                            ? ` · ${project.quotation.quoteNumber}`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {costTotal > 0 && (
+                          <p className="text-sm font-bold text-foreground tabular-nums">
+                            {formatMMK(costTotal)}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  );
+                })}
+              </>
             ) : (
-              <div className="border-border/60 bg-muted/45 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed py-24 text-center">
-                <div className="text-muted-foreground bg-muted/45 flex h-20 w-20 items-center justify-center rounded-full">
-                  <Layout className="h-10 w-10 opacity-20" />
-                </div>
-                <h3 className="text-foreground mt-6 text-xl font-semibold">No active projects</h3>
-                <p className="text-muted-foreground mt-2 max-w-xs">
-                  Once a quotation is accepted, it can be converted into a project.
-                </p>
-              </div>
+              <Empty
+                icon={FolderKanban}
+                title="No active projects"
+                description="Once a quotation is accepted, it can be converted into a project."
+              />
             )}
-          </motion.div>
-        </TabsContent>
-      </Tabs>
+          </div>
+        )}
+      </motion.div>
 
       {/* Edit Dialog */}
       {editDialogOpen && (

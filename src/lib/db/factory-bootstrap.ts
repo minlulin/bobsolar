@@ -47,7 +47,10 @@ async function main(): Promise<void> {
   }));
 
   for (const method of methods) {
-    await db.insert(paymentMethods).values(method).onConflictDoNothing();
+    await db
+      .insert(paymentMethods)
+      .values(method)
+      .onConflictDoNothing({ target: paymentMethods.name });
   }
 
   console.log("Payment methods seeded");

@@ -517,9 +517,28 @@ export function InventoryDialog({
   }, [form, selectedCategory, selectedSpecs]);
 
   const onSubmit = (data: CreateInventoryItem): void => {
+    let brand = data.brand;
+    let modelNumber = data.modelNumber;
+
+    if (
+      ["panel", "inverter", "battery"].includes(data.category) &&
+      data.specifications &&
+      typeof data.specifications === "object"
+    ) {
+      const specs = data.specifications as Record<string, unknown>;
+      if (typeof specs["brandModel"] === "string") {
+        const brandModel = specs["brandModel"].trim();
+        const parts = brandModel.split(/\s+/);
+        brand = parts[0] || "";
+        modelNumber = parts.slice(1).join(" ") || "";
+      }
+    }
+
     const normalizedData: CreateInventoryItem = {
       ...data,
       name: deriveInventoryName(data.category, data.specifications, data.name),
+      brand: brand || null,
+      modelNumber: modelNumber || null,
     };
 
     if (item) {

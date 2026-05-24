@@ -43,9 +43,6 @@ export {
   type LedgerAccountType,
   ledgerAccountCodeSchema,
   ledgerAccountTypeSchema,
-  PROJECT_EXPENSE_TYPES,
-  type ProjectExpenseType,
-  projectExpenseTypeSchema,
 } from "@/lib/domain/finance";
 export {
   INVENTORY_CATEGORIES,

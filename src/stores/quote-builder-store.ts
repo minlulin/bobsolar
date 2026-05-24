@@ -110,7 +110,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
         if (partial.quantity !== undefined) {
           newItems[index] = {
             ...newItems[index],
-            quantity: Math.max(1, Math.round(partial.quantity)),
+            quantity: Math.max(0.01, Math.round(partial.quantity * 100) / 100),
           };
         }
       }
@@ -119,7 +119,7 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
   },
 
   updateItemQuantity: (index, quantity): void => {
-    const sanitizedQuantity = Math.max(1, Math.round(quantity));
+    const sanitizedQuantity = Math.max(0.01, Math.round(quantity * 100) / 100);
     get().updateItem(index, { quantity: sanitizedQuantity });
   },
 

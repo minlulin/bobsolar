@@ -61,7 +61,7 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
         <CardContent className="p-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Avatar className="bg-solar border-border/70 h-9 w-9 border">
+              <Avatar className="bg-solar shadow-solar border-border/70 h-9 w-9 border">
                 <AvatarFallback className="text-foreground bg-transparent text-xs font-bold">
                   {getInitials(customer.name)}
                 </AvatarFallback>

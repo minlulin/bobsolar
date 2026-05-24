@@ -83,8 +83,3 @@ export const journalSourceTypeSchema = z.enum(JOURNAL_SOURCE_TYPES);
 export const FINANCE_TRANSACTION_TYPES = ["income", "expense"] as const;
 export type FinanceTransactionType = (typeof FINANCE_TRANSACTION_TYPES)[number];
 export const financeTransactionTypeSchema = z.enum(FINANCE_TRANSACTION_TYPES);
-
-export const PROJECT_EXPENSE_TYPES = ["material", "labor", "transport", "misc", "general"] as const;
-
-export type ProjectExpenseType = (typeof PROJECT_EXPENSE_TYPES)[number];
-export const projectExpenseTypeSchema = z.enum(PROJECT_EXPENSE_TYPES);

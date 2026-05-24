@@ -19,48 +19,39 @@ export const manualJournalSchema = z
       .min(2, "Journal entry requires at least two lines")
       .max(20, "Maximum 20 lines per entry"),
   })
-  .refine(
-    (data) => {
-      let totalDebit = 0;
-      let totalCredit = 0;
-      let hasInvalidLine = false;
+  .superRefine((data, ctx) => {
+    let totalDebit = 0;
+    let totalCredit = 0;
+    let hasInvalidLine = false;
 
-      for (const line of data.lines) {
-        const hasDebit = line.debit > 0;
-        const hasCredit = line.credit > 0;
+    for (const line of data.lines) {
+      const hasDebit = line.debit > 0;
+      const hasCredit = line.credit > 0;
 
-        if ((hasDebit && hasCredit) || (!hasDebit && !hasCredit)) {
-          hasInvalidLine = true;
-        }
-
-        totalDebit += Math.round(line.debit);
-        totalCredit += Math.round(line.credit);
+      if ((hasDebit && hasCredit) || (!hasDebit && !hasCredit)) {
+        hasInvalidLine = true;
       }
 
-      if (hasInvalidLine) {
-        return {
-          success: false,
-          error: {
-            message: "Each line must be debit-only or credit-only (not both, not neither)",
-            path: ["lines"],
-          },
-        };
-      }
+      totalDebit += Math.round(line.debit);
+      totalCredit += Math.round(line.credit);
+    }
 
-      if (totalDebit !== totalCredit) {
-        return {
-          success: false,
-          error: {
-            message: `Entry is unbalanced: Debit ${totalDebit.toLocaleString()} ≠ Credit ${totalCredit.toLocaleString()}`,
-            path: ["lines"],
-          },
-        };
-      }
+    if (hasInvalidLine) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Each line must be debit-only or credit-only (not both, not neither)",
+        path: ["lines"],
+      });
+    }
 
-      return { success: true };
-    },
-    { message: "Journal entry validation failed" },
-  );
+    if (totalDebit !== totalCredit) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Entry is unbalanced: Debit ${totalDebit.toLocaleString()} ≠ Credit ${totalCredit.toLocaleString()}`,
+        path: ["lines"],
+      });
+    }
+  });
 
 export type ManualJournalInput = z.input<typeof manualJournalSchema>;
 export type ManualJournalOutput = z.output<typeof manualJournalSchema>;
