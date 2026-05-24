@@ -17,6 +17,7 @@ export function VoucherHtml({
   const companyAddress = companySettings["company_address"] ?? "";
   const companyPhone = companySettings["company_phone"] ?? "";
   const companyEmail = companySettings["company_email"] ?? "";
+  const companyLogoUrl = companySettings["company_logo_url"] ?? null;
 
   const title =
     voucher.voucherType === "completion_certificate"
@@ -65,6 +66,11 @@ export function VoucherHtml({
       margin-bottom: 40px; border-bottom: 3px solid var(--primary); padding-bottom: 30px;
     }
     .brand-section { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .brand-logo {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
     .logo-placeholder {
       background: var(--primary); color: white; width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center; border-radius: 8px;
@@ -115,7 +121,11 @@ export function VoucherHtml({
     <div class="header">
       <div>
         <div class="brand-section">
-          <div class="logo-placeholder">BS</div>
+          ${
+            companyLogoUrl
+              ? `<img src="${companyLogoUrl}" class="brand-logo" alt="Logo" />`
+              : `<div class="logo-placeholder">BS</div>`
+          }
           <span class="brand-name">${companyName}</span>
         </div>
         <div class="company-details">

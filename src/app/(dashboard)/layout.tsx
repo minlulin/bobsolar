@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import type * as React from "react";
+import { getCompanyLogoUrl } from "@/actions/settings-actions";
 import { CommandBar } from "@/components/layout/command-bar";
 import { NavOrbit } from "@/components/layout/nav-orbit";
 import { NotificationBell } from "@/components/layout/notification-bell";
@@ -37,6 +38,8 @@ export default async function DashboardLayout({
 
   const userName = user.name;
   const userRole = user.role;
+  const companyLogoUrl = await getCompanyLogoUrl();
+  const logoSrc = companyLogoUrl || "/icons/logo.png";
 
   return (
     <div className="bg-background relative min-h-screen">
@@ -52,12 +55,13 @@ export default async function DashboardLayout({
           <div className="flex items-center gap-3">
             <div className="bg-solar relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
               <Image
-                src="/icons/logo.png"
+                src={logoSrc}
                 alt="BOB Solar Logo"
                 fill
                 sizes="40px"
                 className="object-contain p-1"
                 priority
+                unoptimized
               />
             </div>
             <span className="font-heading hidden text-xl font-bold tracking-tight sm:block">
