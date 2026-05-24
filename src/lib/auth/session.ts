@@ -17,6 +17,12 @@ function assertSessionSecret(): string {
   return secret;
 }
 
+export function assertSessionSecretAtStartup(): void {
+  if (process.env.NODE_ENV === "production") {
+    assertSessionSecret();
+  }
+}
+
 /**
  * Build the iron-session config lazily so the encryption key is read from
  * the env at request time. Avoids capturing a placeholder secret at module

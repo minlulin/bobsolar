@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Providers } from "@/components/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { assertSessionSecretAtStartup } from "@/lib/auth/session";
 import "./globals.css";
 
 const inter = localFont({
@@ -50,7 +51,7 @@ const jetbrainsMono = localFont({
   display: "swap",
   src: [
     {
-      path: "../../public/fonts/JetBrainsMono/fonts/ttf/JetBrainsMono-Regular.ttf",
+      path: "../../public/fonts/jetbrains-mono-regular.woff2",
       weight: "400",
       style: "normal",
     },
@@ -89,6 +90,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>): React.JSX.Element {
+  assertSessionSecretAtStartup();
+
   return (
     <html
       lang="en"

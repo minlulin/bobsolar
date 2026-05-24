@@ -158,14 +158,14 @@ export default function CustomerDetailPage(): React.JSX.Element {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-2"
+            className="space-y-6"
           >
-            <Card className="border-border/60 bg-muted/45 md:col-span-2">
+            <Card className="border-border/60 bg-muted/45">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">General Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid gap-2 xl:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
                     <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                       Address
@@ -193,7 +193,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
               </CardContent>
             </Card>
 
-            <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <Card className="border-border/60 bg-muted/45">
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold">Customer Metrics</CardTitle>
@@ -249,7 +249,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
             className="space-y-4"
           >
             {customer.quotations.length > 0 ? (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {customer.quotations.map((quotation) => (
                   <QuotationCard
                     key={quotation.id}
@@ -289,7 +289,7 @@ export default function CustomerDetailPage(): React.JSX.Element {
             className="space-y-4"
           >
             {customer.projects.length > 0 ? (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {customer.projects.map((project) => (
                   <ProjectCard
                     key={project.id}

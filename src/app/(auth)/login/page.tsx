@@ -151,9 +151,15 @@ export default function LoginPage(): React.JSX.Element {
                   placeholder="Enter your username"
                   autoComplete="username"
                   {...register("email")}
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? "email-error" : undefined}
                   className={errors.email ? "border-destructive" : ""}
                 />
-                {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
+                {errors.email && (
+                  <p id="email-error" role="alert" className="text-destructive text-xs">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -165,6 +171,8 @@ export default function LoginPage(): React.JSX.Element {
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     {...register("password")}
+                    aria-invalid={errors.password ? "true" : "false"}
+                    aria-describedby={errors.password ? "password-error" : undefined}
                     className={errors.password ? "border-destructive pr-10" : "pr-10"}
                   />
                   <button
@@ -179,7 +187,9 @@ export default function LoginPage(): React.JSX.Element {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-destructive text-xs">{errors.password.message}</p>
+                  <p id="password-error" role="alert" className="text-destructive text-xs">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
               <Button

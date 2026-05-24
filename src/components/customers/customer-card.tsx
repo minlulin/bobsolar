@@ -3,6 +3,7 @@
 import { Edit, Mail, MapPin, MoreVertical, Phone, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,10 +58,10 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
           }
         }}
       >
-        <CardContent className="p-3">
+        <CardContent className="p-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Avatar className="bg-solar border-border/70 h-8 w-8 border-2">
+              <Avatar className="bg-solar border-border/70 h-9 w-9 border">
                 <AvatarFallback className="text-foreground bg-transparent text-xs font-bold">
                   {getInitials(customer.name)}
                 </AvatarFallback>
@@ -70,7 +71,7 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
                 <h3 className="font-heading text-foreground text-sm font-semibold tracking-tight">
                   {customer.name}
                 </h3>
-                <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+                <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
                   <Phone className="h-3 w-3" />
                   {customer.phone}
                 </div>
@@ -106,7 +107,18 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
                     event.stopPropagation();
                     if (confirm("Are you sure you want to delete this customer?")) {
                       onDelete?.(customer.id);
-                      deleteCustomer(customer.id);
+                      deleteCustomer(customer.id, {
+                        onError: () => {
+                          toast.error("Failed to delete customer. Restoring customer list.");
+                          router.refresh();
+                        },
+                        onSuccess: (res) => {
+                          if (!res.success) {
+                            toast.error(res.error ?? "Failed to delete customer");
+                            router.refresh();
+                          }
+                        },
+                      });
                     }
                   }}
                 >
@@ -117,10 +129,10 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
             </DropdownMenu>
           </div>
 
-          <div className="mt-4 grid gap-2">
+          <div className="mt-3 grid gap-2">
             {customer.email && (
               <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                <div className="bg-muted/45 flex h-6 w-6 items-center justify-center rounded-lg">
+                <div className="bg-muted/45 flex h-5 w-5 items-center justify-center rounded">
                   <Mail className="h-3 w-3" />
                 </div>
                 {customer.email}
@@ -129,7 +141,7 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
 
             {customer.address && (
               <div className="text-muted-foreground flex items-start gap-3 text-xs">
-                <div className="bg-muted/45 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg">
+                <div className="bg-muted/45 mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded">
                   <MapPin className="h-3 w-3" />
                 </div>
                 <span className="line-clamp-2">
@@ -139,9 +151,6 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
               </div>
             )}
           </div>
-          <Button size="sm" className="hover:bg-solar/10 hover:text-solar h-6 gap-1 text-xs">
-            View History
-          </Button>
         </CardContent>
       </Card>
     </motion.div>

@@ -57,7 +57,7 @@
 .dark {
   /* Midnight Dark — deep charcoal navy, not pure black */
   --background: oklch(0.11 0.015 270); /* Slightly deeper, cooler tint */
-  --foreground: oklch(0.92 0.01 247);
+  --foreground: oklch(0.93 0.008 250); /* Slightly brighter for contrast */
   --card: oklch(0.15 0.018 268); /* Subtle differentiation from bg */
   --card-foreground: oklch(0.92 0.01 247);
   --popover: oklch(0.17 0.018 268); /* Slightly lighter than card */

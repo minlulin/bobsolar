@@ -19,13 +19,31 @@ const dockSpringConfig = {
 };
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Quotations", href: "/quotations", icon: ClipboardList },
-  { name: "Projects", href: "/projects", icon: Zap },
-  { name: "Inventory", href: "/inventory", icon: Package },
-  { name: "Finance", href: "/finance", icon: Wallet },
-  { name: "Ledger", href: "/finance/ledger", icon: BookOpen },
+  { name: "Dashboard", href: "/", icon: Home, bg: "bg-blue-500", text: "text-white" },
+  { name: "Customers", href: "/customers", icon: Users, bg: "bg-teal-500", text: "text-white" },
+  {
+    name: "Quotations",
+    href: "/quotations",
+    icon: ClipboardList,
+    bg: "bg-amber-500",
+    text: "text-white",
+  },
+  { name: "Projects", href: "/projects", icon: Zap, bg: "bg-violet-500", text: "text-white" },
+  {
+    name: "Inventory",
+    href: "/inventory",
+    icon: Package,
+    bg: "bg-emerald-500",
+    text: "text-white",
+  },
+  { name: "Finance", href: "/finance", icon: Wallet, bg: "bg-rose-500", text: "text-white" },
+  {
+    name: "Ledger",
+    href: "/finance/ledger",
+    icon: BookOpen,
+    bg: "bg-indigo-500",
+    text: "text-white",
+  },
 ];
 
 function NavIcon({
@@ -33,7 +51,7 @@ function NavIcon({
   isActive,
   mouseX,
 }: {
-  item: { name: string; href: string; icon: LucideIcon };
+  item: { name: string; href: string; icon: LucideIcon; bg: string; text: string };
   isActive: boolean;
   mouseX: MotionValue<number>;
 }): React.JSX.Element {
@@ -51,11 +69,11 @@ function NavIcon({
 
   // Transform distance into a scale value (Peak size: 64px, Base size: 40px)
   // Magnification zone is [-150, 0, 150] pixels from center
-  const scaleSync = useTransform(distance, [-150, 0, 150], [1, 1.3, 1]);
+  const scaleSync = useTransform(distance, [-120, 0, 120], [1, 1.3, 1]);
   const scale = useSpring(scaleSync, dockSpringConfig);
 
   // Transform scale into translation to push adjacent icons away smoothly
-  const translateYSync = useTransform(distance, [-150, 0, 150], [0, -8, 0]);
+  const translateYSync = useTransform(distance, [-120, 0, 120], [0, -6, 0]);
   const translateY = useSpring(translateYSync, dockSpringConfig);
 
   return (
@@ -66,11 +84,13 @@ function NavIcon({
             ref={iconRef}
             style={{ scale, y: translateY }}
             className={cn(
-              "relative flex items-center justify-center rounded-xl transition-colors duration-300 bg-primary/10 text-primary-foreground",
-              "h-10 w-10", // Base size (40px)
+              "relative flex items-center justify-center rounded-[12px] transition-shadow duration-200",
+              "h-10 w-10",
+              item.bg,
+              item.text,
               isActive
-                ? "text-[var(--color-solar-amber)]"
-                : "text-muted-foreground hover:text-foreground hover:bg-primary/20",
+                ? "shadow-lg ring-2 ring-white/25"
+                : "opacity-80 hover:opacity-100 hover:shadow-md",
             )}
           >
             <Icon className="relative z-10 h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
@@ -79,7 +99,7 @@ function NavIcon({
             {isActive && (
               <motion.div
                 layoutId="nav-orbit-indicator"
-                className="absolute -bottom-2 h-1.5 w-1.5 rounded-full bg-[var(--color-solar-amber)] shadow-[0_0_8px_rgba(var(--color-solar-amber),0.8)]"
+                className="absolute -bottom-2.5 h-1 w-1 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}

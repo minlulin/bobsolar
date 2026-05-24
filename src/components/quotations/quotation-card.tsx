@@ -44,57 +44,64 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
   const config = STATUS_CONFIG[quotation.status];
   const Icon = config.icon;
 
-  const handleDelete = (e: React.MouseEvent): void => {
-    e.stopPropagation();
+  const runAction = (
+    operation: () => Promise<{ success: boolean; error?: string }>,
+    successMessage: string,
+    fallbackErrorMessage: string,
+  ): void => {
     startTransition((): void => {
       void (async (): Promise<void> => {
-        const result = await deleteQuotation(quotation.id);
-        if (result.success) {
-          toast.success("Draft deleted successfully");
-        } else {
-          toast.error(result.error || "Failed to delete draft");
+        try {
+          const result = await operation();
+          if (result.success) {
+            toast.success(successMessage);
+            return;
+          }
+          toast.error(result.error || fallbackErrorMessage);
+        } catch (error: unknown) {
+          console.error("[quotation-card.action]", error);
+          toast.error("An unexpected error occurred");
         }
       })();
     });
+  };
+
+  const handleDelete = (e: React.MouseEvent): void => {
+    e.stopPropagation();
+    runAction(
+      () => deleteQuotation(quotation.id),
+      "Draft deleted successfully",
+      "Failed to delete draft",
+    );
   };
 
   const handleArchive = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    startTransition((): void => {
-      void (async (): Promise<void> => {
-        const result = await archiveQuotation(quotation.id);
-        if (result.success) {
-          toast.success("Quotation archived");
-        } else {
-          toast.error(result.error || "Failed to archive quotation");
-        }
-      })();
-    });
+    runAction(
+      () => archiveQuotation(quotation.id),
+      "Quotation archived",
+      "Failed to archive quotation",
+    );
   };
 
   const handleRestore = (e: React.MouseEvent): void => {
     e.stopPropagation();
-    startTransition((): void => {
-      void (async (): Promise<void> => {
-        const result = await restoreQuotation(quotation.id);
-        if (result.success) {
-          toast.success("Quotation restored");
-        } else {
-          toast.error(result.error || "Failed to restore quotation");
-        }
-      })();
-    });
+    runAction(
+      () => restoreQuotation(quotation.id),
+      "Quotation restored",
+      "Failed to restore quotation",
+    );
   };
 
   return (
-    <div className="transition-all hover:-translate-y-1">
+    <div className="transition-colors">
       <Card
         className="bg-card border-border group hover:bg-muted/30 cursor-pointer border transition-colors"
         onClick={() => {
           router.push(`/quotations/${quotation.id}`);
         }}
       >
-        <CardContent className="p-4">
+        <CardContent className="p-3.5">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -181,7 +188,7 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
             </DropdownMenu>
           </div>
 
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-3 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground text-xs">Total Amount</span>
               <span className="font-heading text-foreground font-bold">
@@ -201,7 +208,7 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
             </div>
           </div>
 
-          <div className="border-border/60 mt-5 flex items-center gap-2 border-t pt-4">
+          <div className="border-border/60 mt-3 flex items-center gap-2 border-t pt-3">
             <div className="bg-solar h-1.5 w-1.5 animate-pulse rounded-full" />
             <span className="text-muted-foreground text-xs font-medium tracking-widest uppercase">
               Ready for Export

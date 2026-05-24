@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import type * as React from "react";
 import { CommandBar } from "@/components/layout/command-bar";
 import { NavOrbit } from "@/components/layout/nav-orbit";
@@ -7,6 +8,7 @@ import { NotificationBell } from "@/components/layout/notification-bell";
 import { UserNav } from "@/components/layout/user-nav";
 import { RouteTransition } from "@/components/shared/route-transition";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { clearSessionCookies } from "@/lib/auth/session";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -28,8 +30,13 @@ export default async function DashboardLayout({
     },
   });
 
-  const userName = user?.name || "User";
-  const userRole = user?.role || "user";
+  if (!user) {
+    await clearSessionCookies();
+    redirect("/login");
+  }
+
+  const userName = user.name;
+  const userRole = user.role;
 
   return (
     <div className="bg-background relative min-h-screen">

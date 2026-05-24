@@ -9,12 +9,12 @@ interface ListGridSkeletonProps {
 
 export function ListGridSkeleton({ count = 8 }: ListGridSkeletonProps): React.JSX.Element {
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: count }).map((_, index) => (
         <div
           // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton has no stable identifier
           key={`skeleton-${index}`}
-          className="bg-muted/40 border-border/60 rounded-2xl border p-5"
+          className="bg-muted/40 border-border/60 rounded-xl border p-3.5"
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <Skeleton className="h-8 w-8 rounded-full" />

@@ -14,13 +14,23 @@ import { db } from "@/lib/db";
 import { authRateLimits, users } from "@/lib/db/schema";
 import { userRoleSchema } from "@/lib/domain/enums";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
-import { type LoginInput, loginSchema } from "@/lib/validators/auth";
+import { changePasswordSchema, type LoginInput, loginSchema } from "@/lib/validators/auth";
 
 const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_MAX_ATTEMPTS = 5;
 const AUTH_LOCK_MS = 15 * 60 * 1000;
+const AUTH_MIN_RESPONSE_MS = 120;
+
+async function applyMinAuthDelay(startMs: number): Promise<void> {
+  const elapsed = Date.now() - startMs;
+  if (elapsed >= AUTH_MIN_RESPONSE_MS) return;
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, AUTH_MIN_RESPONSE_MS - elapsed);
+  });
+}
 
 export async function login(data: LoginInput): Promise<ActionResponse<null>> {
+  const authStartMs = Date.now();
   const result = loginSchema.safeParse(data);
 
   if (!result.success) {
@@ -78,6 +88,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
       });
     }
 
+    await applyMinAuthDelay(authStartMs);
     return errorResponse("Invalid credentials");
   }
 
@@ -95,6 +106,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
     );
   }
 
+  await applyMinAuthDelay(authStartMs);
   return successResponse(null);
 }
 
@@ -111,12 +123,16 @@ export async function changePassword(formData: FormData): Promise<ActionResponse
   const session = await getSessionFromCookie();
   if (!session) return errorResponse("Unauthorized");
 
-  const currentPassword = formData.get("currentPassword") as string;
-  const newPassword = formData.get("newPassword") as string;
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+  });
 
-  if (!currentPassword || !newPassword || newPassword.length < 8) {
-    return errorResponse("Invalid input");
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    return errorResponse(firstIssue?.message ?? "Invalid input");
   }
+  const { currentPassword, newPassword } = parsed.data;
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.userId),

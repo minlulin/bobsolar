@@ -54,21 +54,30 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
   const loadFromQuotation = useQuoteBuilderStore((state) => state.loadFromQuotation);
 
   const handleStatusChange = (newStatus: Quotation["status"]): void => {
+    const previousStatus = optimisticStatus;
     setOptimisticStatus(newStatus);
-    startTransition(async () => {
-      const res = await updateQuotationStatus(quotation.id, newStatus);
-      if (res.success) {
-        showLinkedToast({
-          title: `Status updated to ${newStatus}`,
-          description: "The sales pipeline has been updated.",
-          href: `/quotations/${quotation.id}`,
-          variant: "success",
-        });
-        router.refresh();
-      } else {
-        toast.error(res.error);
-        router.refresh();
-      }
+    startTransition((): void => {
+      void (async (): Promise<void> => {
+        try {
+          const res = await updateQuotationStatus(quotation.id, newStatus);
+          if (res.success) {
+            showLinkedToast({
+              title: `Status updated to ${newStatus}`,
+              description: "The sales pipeline has been updated.",
+              href: `/quotations/${quotation.id}`,
+              variant: "success",
+            });
+            router.refresh();
+            return;
+          }
+
+          setOptimisticStatus(previousStatus);
+          toast.error(res.error);
+        } catch {
+          setOptimisticStatus(previousStatus);
+          toast.error("Failed to update quotation status");
+        }
+      })();
     });
   };
 

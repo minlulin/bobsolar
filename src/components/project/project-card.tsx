@@ -78,11 +78,11 @@ export function ProjectCard({
             <div>
               <Link
                 href={`${hrefBase}/${project.id}`}
-                className="font-heading text-sm font-semibold tracking-[0.2em] uppercase"
+                className="font-heading text-sm font-semibold tracking-[0.15em] uppercase"
               >
                 {project.projectNumber}
               </Link>
-              <p className="text-muted-foreground text-sm">{project.customerName}</p>
+              <p className="text-muted-foreground text-xs">{project.customerName}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <Badge
@@ -99,17 +99,17 @@ export function ProjectCard({
             </div>
           </div>
 
-          <div className="grid gap-2 text-xs md:grid-cols-3">
+          <div className="grid gap-3 text-xs md:grid-cols-3">
             <div>
-              <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
+              <p className="text-muted-foreground mb-0.5 text-[9px] font-bold tracking-[0.2em] uppercase">
                 System size
               </p>
-              <p className="text-foreground font-mono text-lg font-semibold">
+              <p className="text-foreground font-mono text-sm font-semibold">
                 {Number(project.systemSizeKwp)} kWp
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
+              <p className="text-muted-foreground mb-0.5 text-[9px] font-bold tracking-[0.2em] uppercase">
                 Dates
               </p>
               <p className="text-xs leading-relaxed">
@@ -125,7 +125,7 @@ export function ProjectCard({
               </p>
             </div>
             <div className="md:text-right">
-              <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
+              <p className="text-muted-foreground mb-0.5 text-[9px] font-bold tracking-[0.2em] uppercase">
                 Warranty signals
               </p>
               {project.status === "completed" && warrantyLine ? (
@@ -171,7 +171,7 @@ export function ProjectCard({
             </div>
           )}
 
-          <div className="border-border mt-6 flex justify-between gap-5 border-t border-dashed pt-5">
+          <div className="border-border mt-3 flex items-center justify-between gap-3 border-t border-dashed pt-3">
             <div className="text-muted-foreground text-[10px]">
               Quote ·{" "}
               <span className="text-foreground font-mono font-semibold">
@@ -179,7 +179,7 @@ export function ProjectCard({
               </span>
             </div>
 
-            <Button asChild size="sm" variant="secondary" className="rounded-full px-8">
+            <Button asChild size="sm" variant="secondary" className="rounded-full px-5 text-xs">
               <Link href={`${hrefBase}/${project.id}`}>View detail</Link>
             </Button>
           </div>

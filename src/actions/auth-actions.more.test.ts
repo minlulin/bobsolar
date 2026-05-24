@@ -76,8 +76,8 @@ describe("auth-actions additional branches", () => {
   it("changePassword rejects when unauthorized", async () => {
     const { changePassword } = await import("@/actions/auth-actions");
     const fd = new FormData();
-    fd.set("currentPassword", "oldpass123");
-    fd.set("newPassword", "newpass123");
+    fd.set("currentPassword", "OldPass123!");
+    fd.set("newPassword", "NewPassword123!");
     const res = await changePassword(fd);
     expect(res.success).toBe(false);
   });
@@ -97,8 +97,8 @@ describe("auth-actions additional branches", () => {
     state.currentPasswordValid = false;
     const { changePassword } = await import("@/actions/auth-actions");
     const fd = new FormData();
-    fd.set("currentPassword", "oldpass123");
-    fd.set("newPassword", "newpass123");
+    fd.set("currentPassword", "OldPass123!");
+    fd.set("newPassword", "NewPassword123!");
     const res = await changePassword(fd);
     expect(res.success).toBe(false);
     if (!res.success) expect(res.error).toContain("Incorrect current password");
@@ -108,8 +108,8 @@ describe("auth-actions additional branches", () => {
     state.session = { id: "s1", userId: "u1" };
     const { changePassword } = await import("@/actions/auth-actions");
     const fd = new FormData();
-    fd.set("currentPassword", "oldpass123");
-    fd.set("newPassword", "newpass123");
+    fd.set("currentPassword", "OldPass123!");
+    fd.set("newPassword", "NewPassword123!");
     const res = await changePassword(fd);
     expect(res.success).toBe(true);
     expect(spies.updateSet).toHaveBeenCalled();
