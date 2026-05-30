@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    // ── Language & Environment ──────────────────────────────────────────
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    // ── Emit ────────────────────────────────────────────────────────────
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    // ── Interop Constraints ─────────────────────────────────────────────
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    // ── Strict Flags — ALL ENABLED ──────────────────────────────────────
+    "strict": true,
+    // ── Strict Mode (all covered by `strict: true`) ────────────────────
+    // `noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`,
+    // `strictBindCallApply`, `strictPropertyInitialization`,
+    // `noImplicitThis`, `useUnknownInCatchVariables`, `alwaysStrict`
+    // ── Additional Safety Checks ────────────────────────────────────────
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": true,
+    // ── Completeness ────────────────────────────────────────────────────
+    // PRAGMATIC STRICTNESS: third-party libs have unfixable errors
+    "skipLibCheck": true,
+    // ── JSX & Framework ─────────────────────────────────────────────────
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "allowJs": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "**/*.mts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next", "src/sw.ts"]
+}

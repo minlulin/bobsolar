@@ -1,0 +1,1 @@
+ALTER TYPE "public"."inventory_category" ADD VALUE 'protection' BEFORE 'labor';

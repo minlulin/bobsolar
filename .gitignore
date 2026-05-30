@@ -1,0 +1,80 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+build/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env*.local
+.env.production
+.env.development
+.env.test
+.env.staging
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.playwright/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+# Ignore ad-hoc SQL dumps/exports, but always track Drizzle migrations.
+*.dump
+*.bak.sql
+backups/**/*.sql
+tmp/**/*.sql
+!drizzle/migrations/**/*.sql
+
+# Build artifacts
+dist/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vercel
+.vercel/
+
+# Misc
+.DS_Store
+*.pem
+.debug
+Thumbs.db
+*.tgz
+.cache/
+
+# Auth keys
+*.key
+*.cert
+
+# Uploads (if applicable)
+uploads/
+
+# Agents
+.agents
+.agent/
+/.agents
+.codex
+.cursor
+.vercel
+
+# Documentation
+
+.agent/instructions/

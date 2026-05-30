@@ -1,0 +1,1 @@
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_dedupe_key_unique" UNIQUE("user_id","notification_dedupe_key");

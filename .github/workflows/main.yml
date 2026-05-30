@@ -1,0 +1,91 @@
+# CI pipeline for BOB Solar Next.js application.
+#
+# Two jobs:
+#   code-gate  — always runs; validates typecheck, lint, format, and non-DB unit tests.
+#   db-gate    — only runs when DB secrets are available (i.e. on internal branches / PRs,
+#                not from external forks); runs migration and DB integration tests.
+#
+# Branch protection MUST require `db-gate` before merge to main.
+# The pnpm version is sourced from `packageManager` in package.json (pnpm@11.1.0).
+name: Next.js CI
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Code gate: lint + typecheck + non-DB tests. No DB secrets required.
+  # ──────────────────────────────────────────────────────────────────────────
+  code-gate:
+    name: Code Gate (lint, typecheck, unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          # Must match `packageManager` field in package.json (pnpm@11.1.0).
+          version: 11.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run code gate
+        run: pnpm green:code
+
+      - name: Build
+        run: pnpm build
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # DB gate: migration check + DB integration tests.
+  # Requires TEST_DATABASE_URL secret — skipped for external fork PRs that
+  # lack access to secrets (secrets context is empty for forks by default).
+  # Branch protection for main MUST require this job.
+  # ──────────────────────────────────────────────────────────────────────────
+  db-gate:
+    name: DB Gate (migration check + integration tests)
+    runs-on: ubuntu-latest
+    # Only run when the secret is available (internal branches/PRs).
+    # For external forks secrets are empty strings; the job is skipped rather
+    # than failing so the code-gate alone gates fork PRs.
+    if: ${{ secrets.TEST_DATABASE_URL != '' }}
+    env:
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify migration state (no pending unapplied migrations)
+        run: pnpm exec drizzle-kit check
+
+      - name: Ping test database
+        run: pnpm db:test:ping
+
+      - name: Run DB gate (migrate test DB + integration tests)
+        run: pnpm green:db

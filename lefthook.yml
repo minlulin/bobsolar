@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome-fix-staged
+      glob:
+        - "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css,md,yml,yaml}"
+      run: pnpm biome check --write {staged_files}
+      stage_fixed: true
+
+pre-push:
+  jobs:
+    - name: quality-gate
+      run: pnpm green:code
