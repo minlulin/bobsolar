@@ -24,6 +24,7 @@
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=full",
     "db:factory-reset": "tsx scripts/db-reset.ts --confirm=RESET --mode=factory",
+    "db:backup": "tsx scripts/db-backup.ts",
     "db:handover-reset": "tsx scripts/db-handover-reset.ts --confirm=HANDOVER_RESET",
     "db:handover-verify": "tsx scripts/db-handover-verify.ts",
     "test": "vitest run",

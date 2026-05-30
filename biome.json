@@ -12,7 +12,8 @@
       "!**/.next",
       "!**/node_modules",
       "!**/drizzle/migrations",
-      "!**/public/sw.js"
+      "!**/public/sw.js",
+      "!**/backups"
     ]
   },
   "formatter": {

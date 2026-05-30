@@ -67,6 +67,9 @@ Thumbs.db
 # Uploads (if applicable)
 uploads/
 
+# Database backups
+backups/
+
 # Agents
 .agents
 .agent/

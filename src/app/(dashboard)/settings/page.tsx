@@ -21,12 +21,13 @@ import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { settingsKeys } from "@/lib/query-keys";
 import { type CompanySettingsInput, companySettingsSchema } from "@/lib/validators/settings";
 import { AccountTab } from "./components/account-tab";
+import { BackupTab } from "./components/backup-tab";
 import { PreferencesTab } from "./components/preferences-tab";
 import { UserManagementTab } from "./components/user-management-tab";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
-type SettingsTab = "company" | "users" | "preferences" | "account";
+type SettingsTab = "company" | "users" | "preferences" | "account" | "backup";
 
 type CompanyForm = CompanySettingsInput;
 
@@ -177,6 +178,13 @@ export default function SettingsPage(): React.JSX.Element {
             active={activeTab === "account"}
             onClick={() => {
               setActiveTab("account");
+            }}
+          />
+          <SettingsTabButton
+            label="Backup & Recovery"
+            active={activeTab === "backup"}
+            onClick={() => {
+              setActiveTab("backup");
             }}
           />
         </div>
@@ -352,6 +360,7 @@ export default function SettingsPage(): React.JSX.Element {
       {activeTab === "users" ? <UserManagementTab /> : null}
       {activeTab === "preferences" ? <PreferencesTab /> : null}
       {activeTab === "account" ? <AccountTab /> : null}
+      {activeTab === "backup" ? <BackupTab /> : null}
     </div>
   );
 }
