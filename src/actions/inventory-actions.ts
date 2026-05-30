@@ -10,6 +10,7 @@ import { type InventoryItem, inventoryItems } from "@/lib/db/schema";
 import { extractBrandModel } from "@/lib/domain/inventory";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
+import { withIdempotency } from "@/lib/utils/idempotency";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   createInventoryItemSchema,
@@ -93,8 +94,7 @@ export async function getInventoryItem(id: string): Promise<ActionResponse<Inven
 
 export async function createInventoryItem(raw: unknown): Promise<ActionResponse<InventoryItem>> {
   try {
-    await requireAdmin();
-
+    const session = await requireAdmin();
     const validated = createInventoryItemSchema.parse(raw);
 
     const extracted = extractBrandModel(
@@ -104,26 +104,28 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
       validated.modelNumber,
     );
 
-    const [item] = await db
-      .insert(inventoryItems)
-      .values({
-        ...validated,
-        durationMonths: validated.durationMonths ?? 0,
-        brand: extracted.brand || null,
-        modelNumber: extracted.modelNumber || null,
-        costPrice: toDbDecimal(validated.costPrice),
-        unitPrice: toDbDecimal(validated.unitPrice),
-      })
-      .returning();
+    return await withIdempotency("createInventoryItem", session.userId, validated, async () => {
+      const [item] = await db
+        .insert(inventoryItems)
+        .values({
+          ...validated,
+          durationMonths: validated.durationMonths ?? 0,
+          brand: extracted.brand || null,
+          modelNumber: extracted.modelNumber || null,
+          costPrice: toDbDecimal(validated.costPrice),
+          unitPrice: toDbDecimal(validated.unitPrice),
+        })
+        .returning();
 
-    if (!item) {
-      return errorResponse("Failed to create inventory item");
-    }
-    await deleteCacheValue("inventory:categories");
+      if (!item) {
+        return errorResponse("Failed to create inventory item");
+      }
+      await deleteCacheValue("inventory:categories");
 
-    revalidateTag("inventory:list", "max");
-    revalidatePath("/inventory");
-    return successResponse(item);
+      revalidateTag("inventory:list", "max");
+      revalidatePath("/inventory");
+      return successResponse(item);
+    });
   } catch (error) {
     return handleActionError(error, "createInventoryItem", "Failed to create inventory item");
   }

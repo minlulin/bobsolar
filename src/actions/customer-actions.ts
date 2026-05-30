@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { type Customer, customers, projects, quotations } from "@/lib/db/schema";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleStateError } from "@/lib/utils/error";
+import { withIdempotency } from "@/lib/utils/idempotency";
 import { uuidSchema } from "@/lib/validators/common";
 import {
   createCustomerSchema,
@@ -110,24 +111,25 @@ export async function getCustomer(id: string): Promise<ActionResponse<CustomerWi
 
 export async function createCustomer(raw: unknown): Promise<ActionResponse<Customer>> {
   try {
-    await requireAuth(); // Any authenticated user can create a customer
-
+    const session = await requireAuth();
     const validated = createCustomerSchema.parse(raw);
 
-    const [item] = await db
-      .insert(customers)
-      .values({
-        ...validated,
-        email: validated.email || null,
-      })
-      .returning();
+    return await withIdempotency("createCustomer", session.userId, validated, async () => {
+      const [item] = await db
+        .insert(customers)
+        .values({
+          ...validated,
+          email: validated.email || null,
+        })
+        .returning();
 
-    if (!item) {
-      return errorResponse("Failed to create customer");
-    }
+      if (!item) {
+        return errorResponse("Failed to create customer");
+      }
 
-    revalidatePath("/customers");
-    return successResponse(item);
+      revalidatePath("/customers");
+      return successResponse(item);
+    });
   } catch (error) {
     return handleActionError(error, "createCustomer", "Failed to create customer");
   }

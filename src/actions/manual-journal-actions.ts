@@ -10,6 +10,7 @@ import type { LedgerAccountCode } from "@/lib/domain/finance";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleStateError } from "@/lib/utils/error";
+import { withIdempotency } from "@/lib/utils/idempotency";
 import { manualJournalSchema } from "@/lib/validators/manual-journal";
 
 export async function createManualJournalEntry(
@@ -17,7 +18,6 @@ export async function createManualJournalEntry(
 ): Promise<ActionResponse<{ entryId: string }>> {
   try {
     const auth = await requireAdmin();
-
     const data = manualJournalSchema.parse(raw);
 
     if (data.projectId) {
@@ -29,31 +29,38 @@ export async function createManualJournalEntry(
       }
     }
 
-    const result = await db.transaction(async (tx) => {
-      const entry = await createBalancedJournalEntry({
-        tx,
-        entryDate: data.entryDate,
-        memo: data.memo,
-        sourceType: data.sourceType,
-        sourceId: data.projectId ?? null,
-        projectId: data.projectId ?? null,
-        createdBy: auth.userId,
-        lines: data.lines.map((line) => ({
-          accountCode: line.accountCode,
-          debit: Math.round(line.debit),
-          credit: Math.round(line.credit),
-          memo: line.memo ?? null,
-        })),
-      });
+    const result = await withIdempotency(
+      "createManualJournalEntry",
+      auth.userId,
+      data,
+      async () => {
+        const entry = await db.transaction(async (tx) => {
+          return createBalancedJournalEntry({
+            tx,
+            entryDate: data.entryDate,
+            memo: data.memo,
+            sourceType: data.sourceType,
+            sourceId: data.projectId ?? null,
+            projectId: data.projectId ?? null,
+            createdBy: auth.userId,
+            lines: data.lines.map((line) => ({
+              accountCode: line.accountCode,
+              debit: Math.round(line.debit),
+              credit: Math.round(line.credit),
+              memo: line.memo ?? null,
+            })),
+          });
+        });
 
-      return entry;
-    });
+        revalidatePath("/finance/ledger");
+        revalidatePath("/finance");
+        revalidatePath("/");
 
-    revalidatePath("/finance/ledger");
-    revalidatePath("/finance");
-    revalidatePath("/");
+        return successResponse(entry);
+      },
+    );
 
-    return successResponse(result);
+    return result;
   } catch (error) {
     return handleActionError(error, "createManualJournalEntry", "Failed to create journal entry");
   }

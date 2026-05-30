@@ -18,6 +18,7 @@ import {
 } from "@/lib/finance/ledger";
 import { errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
+import { withIdempotency } from "@/lib/utils/idempotency";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import { createPurchaseOrderSchema, payPurchaseOrderSchema } from "@/lib/validators/purchase";
 
@@ -70,47 +71,51 @@ export async function createPurchaseOrder(raw: unknown) {
   try {
     const user = await requirePurchaseManagementAccess();
     const validated = createPurchaseOrderSchema.parse(raw);
-    const data = validated;
-    const totalAmount = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const totalAmount = validated.items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0,
+    );
 
-    const po = await db.transaction(async (tx) => {
-      const [newPo] = await tx
-        .insert(purchaseOrders)
-        .values({
-          poNumber: data.poNumber,
-          supplierId: data.supplierId,
-          totalAmount: toDbDecimal(totalAmount),
-          balanceDue: toDbDecimal(totalAmount),
-          status: "draft",
-          paymentStatus: "unpaid",
-          billDate: data.billDate ?? null,
-          dueDate: data.dueDate ?? null,
-          notes: data.notes,
-          createdBy: user.userId,
-        })
-        .returning();
+    return await withIdempotency("createPurchaseOrder", user.userId, validated, async () => {
+      const po = await db.transaction(async (tx) => {
+        const [newPo] = await tx
+          .insert(purchaseOrders)
+          .values({
+            poNumber: validated.poNumber,
+            supplierId: validated.supplierId,
+            totalAmount: toDbDecimal(totalAmount),
+            balanceDue: toDbDecimal(totalAmount),
+            status: "draft",
+            paymentStatus: "unpaid",
+            billDate: validated.billDate ?? null,
+            dueDate: validated.dueDate ?? null,
+            notes: validated.notes,
+            createdBy: user.userId,
+          })
+          .returning();
 
-      if (!newPo) throw new Error("Failed to create PO");
+        if (!newPo) throw new Error("Failed to create PO");
 
-      if (data.items.length > 0) {
-        await tx.insert(purchaseOrderItems).values(
-          data.items.map((item, index) => ({
-            purchaseOrderId: newPo.id,
-            itemId: item.itemId,
-            description: item.description,
-            quantity: toDbDecimal(item.quantity),
-            unitPrice: toDbDecimal(item.unitPrice),
-            totalPrice: toDbDecimal(item.quantity * item.unitPrice),
-            sortOrder: index,
-          })),
-        );
-      }
+        if (validated.items.length > 0) {
+          await tx.insert(purchaseOrderItems).values(
+            validated.items.map((item, index) => ({
+              purchaseOrderId: newPo.id,
+              itemId: item.itemId,
+              description: item.description,
+              quantity: toDbDecimal(item.quantity),
+              unitPrice: toDbDecimal(item.unitPrice),
+              totalPrice: toDbDecimal(item.quantity * item.unitPrice),
+              sortOrder: index,
+            })),
+          );
+        }
 
-      return newPo;
+        return newPo;
+      });
+
+      revalidatePath("/purchases");
+      return successResponse(po);
     });
-
-    revalidatePath("/purchases");
-    return successResponse(po);
   } catch (error) {
     return handleActionError(error, "createPurchaseOrder", "Failed to create purchase order");
   }
@@ -212,102 +217,103 @@ export async function payPurchaseOrder(raw: unknown) {
   try {
     const user = await requirePurchaseManagementAccess();
     const validated = payPurchaseOrderSchema.parse(raw);
-    const data = validated;
 
-    await db.transaction(async (tx) => {
-      // Lock the PO row to prevent concurrent payment race conditions
-      const [po] = await tx
-        .select()
-        .from(purchaseOrders)
-        .where(eq(purchaseOrders.id, data.purchaseOrderId))
-        .for("update");
+    return await withIdempotency("payPurchaseOrder", user.userId, validated, async () => {
+      await db.transaction(async (tx) => {
+        // Lock the PO row to prevent concurrent payment race conditions
+        const [po] = await tx
+          .select()
+          .from(purchaseOrders)
+          .where(eq(purchaseOrders.id, validated.purchaseOrderId))
+          .for("update");
 
-      if (!po) throw new Error("PO not found");
-      if (po.status === "draft") throw new Error("Cannot pay a draft PO. Receive it first.");
+        if (!po) throw new Error("PO not found");
+        if (po.status === "draft") throw new Error("Cannot pay a draft PO. Receive it first.");
 
-      const balanceDue = Math.round(Number(po.balanceDue));
-      if (data.amount <= 0 || data.amount > balanceDue) {
-        throw new Error("Invalid payment amount");
-      }
+        const balanceDue = Math.round(Number(po.balanceDue));
+        if (validated.amount <= 0 || validated.amount > balanceDue) {
+          throw new Error("Invalid payment amount");
+        }
 
-      // 1. Record Payment
-      await tx.insert(supplierPayments).values({
-        purchaseOrderId: po.id,
-        supplierId: po.supplierId,
-        amount: data.amount.toString(),
-        paymentMethodId: data.paymentMethodId,
-        reference: data.reference,
-        notes: data.notes,
-        createdBy: user.userId,
-      });
+        // 1. Record Payment
+        await tx.insert(supplierPayments).values({
+          purchaseOrderId: po.id,
+          supplierId: po.supplierId,
+          amount: validated.amount.toString(),
+          paymentMethodId: validated.paymentMethodId,
+          reference: validated.reference,
+          notes: validated.notes,
+          createdBy: user.userId,
+        });
 
-      // 2. Update PO Balances
-      const newPaid = Math.round(Number(po.paidAmount)) + Math.round(data.amount);
-      const newBalance = Math.round(Number(po.totalAmount)) - newPaid;
-      const newPaymentStatus = newBalance <= 0 ? "paid" : "partial";
+        // 2. Update PO Balances
+        const newPaid = Math.round(Number(po.paidAmount)) + Math.round(validated.amount);
+        const newBalance = Math.round(Number(po.totalAmount)) - newPaid;
+        const newPaymentStatus = newBalance <= 0 ? "paid" : "partial";
 
-      await tx
-        .update(purchaseOrders)
-        .set({
-          paidAmount: newPaid.toString(),
-          balanceDue: newBalance.toString(),
-          paymentStatus: newPaymentStatus,
-          updatedAt: new Date(),
-        })
-        .where(eq(purchaseOrders.id, po.id));
-
-      // 3. Update Supplier Total Owed
-      const [supplier] = await tx
-        .select()
-        .from(suppliers)
-        .where(eq(suppliers.id, po.supplierId))
-        .for("update");
-      if (supplier) {
         await tx
-          .update(suppliers)
+          .update(purchaseOrders)
           .set({
-            totalOwed: Math.max(
-              0,
-              Math.round(Number(supplier.totalOwed)) - Math.round(data.amount),
-            ).toString(),
+            paidAmount: newPaid.toString(),
+            balanceDue: newBalance.toString(),
+            paymentStatus: newPaymentStatus,
+            updatedAt: new Date(),
           })
-          .where(eq(suppliers.id, po.supplierId));
-      }
+          .where(eq(purchaseOrders.id, po.id));
 
-      // 4. Finance Ledger (Debit AP, Credit Payment Method)
-      const method = await tx.query.paymentMethods.findFirst({
-        where: eq(paymentMethods.id, data.paymentMethodId),
+        // 3. Update Supplier Total Owed
+        const [supplier] = await tx
+          .select()
+          .from(suppliers)
+          .where(eq(suppliers.id, po.supplierId))
+          .for("update");
+        if (supplier) {
+          await tx
+            .update(suppliers)
+            .set({
+              totalOwed: Math.max(
+                0,
+                Math.round(Number(supplier.totalOwed)) - Math.round(validated.amount),
+              ).toString(),
+            })
+            .where(eq(suppliers.id, po.supplierId));
+        }
+
+        // 4. Finance Ledger (Debit AP, Credit Payment Method)
+        const method = await tx.query.paymentMethods.findFirst({
+          where: eq(paymentMethods.id, validated.paymentMethodId),
+        });
+
+        if (!method) {
+          throw new Error("payment_method_not_found");
+        }
+
+        const assetAccountCode = mapPaymentMethodNameToAssetAccount(method.name);
+        if (!assetAccountCode) {
+          throw new Error(`unsupported_payment_method:${method.name}`);
+        }
+
+        const paymentAmountRounded = Math.round(Number(validated.amount));
+        await createBalancedJournalEntry({
+          tx,
+          entryDate: new Date(),
+          memo: `Supplier Payment: ${po.poNumber} via ${method.name}`,
+          sourceType: "supplier_payment",
+          sourceId: po.id,
+          createdBy: user.userId,
+          lines: [
+            { accountCode: "accounts_payable", debit: paymentAmountRounded, credit: 0 },
+            { accountCode: assetAccountCode, debit: 0, credit: paymentAmountRounded },
+          ],
+        });
       });
 
-      if (!method) {
-        throw new Error("payment_method_not_found");
-      }
-
-      const assetAccountCode = mapPaymentMethodNameToAssetAccount(method.name);
-      if (!assetAccountCode) {
-        throw new Error(`unsupported_payment_method:${method.name}`);
-      }
-
-      const paymentAmountRounded = Math.round(Number(data.amount));
-      await createBalancedJournalEntry({
-        tx,
-        entryDate: new Date(),
-        memo: `Supplier Payment: ${po.poNumber} via ${method.name}`,
-        sourceType: "supplier_payment",
-        sourceId: po.id,
-        createdBy: user.userId,
-        lines: [
-          { accountCode: "accounts_payable", debit: paymentAmountRounded, credit: 0 },
-          { accountCode: assetAccountCode, debit: 0, credit: paymentAmountRounded },
-        ],
-      });
+      revalidatePath(`/purchases/${validated.purchaseOrderId}`);
+      revalidatePath("/purchases");
+      revalidatePath("/suppliers");
+      revalidatePath("/finance");
+      return successResponse(null);
     });
-
-    revalidatePath(`/purchases/${data.purchaseOrderId}`);
-    revalidatePath("/purchases");
-    revalidatePath("/suppliers");
-    revalidatePath("/finance");
-    return successResponse(null);
   } catch (error) {
     return handleActionError(error, "payPurchaseOrder", "Failed to process payment");
   }

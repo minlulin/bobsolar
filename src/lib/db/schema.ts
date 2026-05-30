@@ -1021,6 +1021,18 @@ export const accountingPeriodsRelations = relations(accountingPeriods, ({ one })
   }),
 }));
 
+// --- Idempotency ---
+
+export const idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    key: text("key").primaryKey(),
+    response: jsonb("response").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("idempotency_keys_created_at_idx").on(table.createdAt)],
+);
+
 // --- Types ---
 
 export type User = InferSelectModel<typeof users>;
@@ -1103,3 +1115,6 @@ export type NewBudget = InferInsertModel<typeof budgets>;
 
 export type AccountingPeriod = InferSelectModel<typeof accountingPeriods>;
 export type NewAccountingPeriod = InferInsertModel<typeof accountingPeriods>;
+
+export type IdempotencyKey = InferSelectModel<typeof idempotencyKeys>;
+export type NewIdempotencyKey = InferInsertModel<typeof idempotencyKeys>;
