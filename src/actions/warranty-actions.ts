@@ -5,6 +5,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, eq, gt, gte, lt, lte, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { customers, projects, warrantyAlerts } from "@/lib/db/schema";
 import { WARRANTY_SOON_WINDOW_DAYS } from "@/lib/domain/policies";
@@ -140,7 +141,7 @@ export async function resolveWarrantyAlert(id: string): Promise<ActionResponse<b
       link: `/projects/${alertRow.projectId}`,
     });
 
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/warranty");
     revalidatePath(`/projects/${alertRow.projectId}`);
 
@@ -164,7 +165,7 @@ export async function reopenWarrantyAlert(id: string): Promise<ActionResponse<bo
       .set({ isResolved: false })
       .where(eq(warrantyAlerts.id, validatedId));
 
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/warranty");
     revalidatePath(`/projects/${row.projectId}`);
 

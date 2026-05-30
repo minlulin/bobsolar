@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { idempotencyKeys } from "@/lib/db/schema";
 import type { ActionResponse } from "@/lib/utils/action-response";
-import { errorResponse } from "@/lib/utils/action-response";
+import { handleActionError } from "@/lib/utils/error";
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -37,7 +37,7 @@ export async function withIdempotency<T>(
   try {
     result = await handler();
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Operation failed");
+    return handleActionError(error, `withIdempotency.${action}`, "Operation failed");
   }
 
   if (result.success) {

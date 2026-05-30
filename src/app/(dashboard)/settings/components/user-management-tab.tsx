@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { USER_CAP } from "@/lib/domain/policies";
+import { settingsKeys } from "@/lib/query-keys";
 
 type EditableUser = {
   id: string;
@@ -30,7 +31,7 @@ type EditableUser = {
 
 export function UserManagementTab(): React.JSX.Element {
   const usersQuery = useQuery({
-    queryKey: ["settings", "users"],
+    queryKey: settingsKeys.users(),
     queryFn: async () => {
       const res = await getSettingsUsers();
       if (!res.success) throw new Error(res.error);

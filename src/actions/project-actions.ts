@@ -13,6 +13,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin, requireAuth, requireFinanceAccess } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import {
   customers,
@@ -422,7 +423,7 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
               return handleStateError("Failed to create project");
             }
 
-            revalidateTag("dashboard:stats", "max");
+            revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
             revalidatePath("/projects");
             revalidatePath(`/quotations/${quotation.id}`);
             revalidatePath("/quotations");
@@ -979,7 +980,7 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
     });
     if (!updated) return handleNotFoundError("Project", data.id);
 
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/projects");
     revalidatePath(`/projects/${data.id}`);
     revalidatePath("/projects/completed");
@@ -1021,7 +1022,7 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
     });
     if (!updated) return handleNotFoundError("Project", validatedId);
 
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/projects");
     revalidatePath(`/projects/${validatedId}`);
     revalidatePath("/projects/completed");
@@ -1425,7 +1426,7 @@ export async function createWarrantyAlertForProject(
       link: `/projects/${data.projectId}`,
     });
 
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/warranty");
 

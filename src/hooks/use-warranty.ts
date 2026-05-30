@@ -6,6 +6,7 @@ import {
   reopenWarrantyAlert,
   resolveWarrantyAlert,
 } from "@/actions/warranty-actions";
+import { projectKeys, warrantyKeys } from "@/lib/query-keys";
 import type { WarrantyListFilter } from "@/lib/validators/warranty";
 
 type ActionData<T> = T extends { data: infer D } ? D : never;
@@ -14,7 +15,7 @@ export function useWarrantySummary(): ReturnType<
   typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>>
 > {
   return useQuery({
-    queryKey: ["warranty", "summary"],
+    queryKey: warrantyKeys.summary(),
     queryFn: async () => {
       const res = await getWarrantySummary();
       if (!res.success) throw new Error(res.error);
@@ -30,7 +31,7 @@ export function useWarrantyAlerts(
   const tab = filter.tab ?? "all";
 
   return useQuery({
-    queryKey: ["warranty", "alerts", tab],
+    queryKey: warrantyKeys.list(tab),
     queryFn: async () => {
       const res = await getWarrantyAlerts({ tab });
       if (!res.success) throw new Error(res.error);
@@ -54,8 +55,8 @@ export function useResolveWarrantyAlert(): ReturnType<
     onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        await queryClient.invalidateQueries({ queryKey: ["warranty"] });
-        await queryClient.invalidateQueries({ queryKey: ["projects"] });
+        await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
+        await queryClient.invalidateQueries({ queryKey: projectKeys.all });
         toast.success("Alert resolved");
       }
     },
@@ -79,7 +80,7 @@ export function useReopenWarrantyAlert(): ReturnType<
     onSuccess: async (res) => {
       if (!res.success) toast.error(res.error);
       else {
-        await queryClient.invalidateQueries({ queryKey: ["warranty"] });
+        await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
         toast.success("Alert reopened");
       }
     },

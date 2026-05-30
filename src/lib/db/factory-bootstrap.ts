@@ -16,6 +16,7 @@ import {
   LEDGER_ACCOUNT_LABELS,
 } from "@/lib/domain/finance";
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHOD_PRESETS } from "@/lib/domain/payment";
+import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { db } from "./index";
 import { companySettings, ledgerAccounts, paymentMethods } from "./schema";
 
@@ -23,10 +24,10 @@ async function main(): Promise<void> {
   console.log("Seeding factory bootstrap data...");
 
   const settings: { key: string; value: string }[] = [
-    { key: "company_name", value: "BOB Solar" },
-    { key: "company_address", value: "Yangon, Myanmar" },
-    { key: "company_phone", value: "+95-1-234567" },
-    { key: "company_email", value: "info@bobsolar.com" },
+    { key: COMPANY_SETTING_KEYS.NAME, value: "BOB Solar" },
+    { key: COMPANY_SETTING_KEYS.ADDRESS, value: "Yangon, Myanmar" },
+    { key: COMPANY_SETTING_KEYS.PHONE, value: "+95-1-234567" },
+    { key: COMPANY_SETTING_KEYS.EMAIL, value: "info@bobsolar.com" },
   ];
 
   for (const setting of settings) {

@@ -8,6 +8,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { revokeAllUserSessions } from "@/lib/auth/session";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
 import { setCacheValue } from "@/lib/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { companySettings, type UserRole, users } from "@/lib/db/schema";
 import { USER_CAP } from "@/lib/domain/policies";
@@ -59,7 +60,7 @@ const getCachedCompanySettingsRows = unstable_cache(
       .from(companySettings);
   },
   ["settings:company-rows"],
-  { tags: ["settings:company"], revalidate: 600 },
+  { tags: [CACHE_TAGS.SETTINGS_COMPANY], revalidate: 600 },
 );
 
 async function getCachedCompanySettingsMap(): Promise<Record<string, string>> {
@@ -95,19 +96,13 @@ export async function setCompanyLogoUrl(raw: unknown): Promise<ActionResponse<{ 
         set: { value: url, updatedAt: new Date() },
       });
 
-    revalidateTag("settings:company", "max");
+    revalidateTag(CACHE_TAGS.SETTINGS_COMPANY, "max");
     revalidatePath("/settings");
     revalidatePath("/", "layout");
 
     return successResponse({ url });
   } catch (error) {
-    return errorResponse(
-      error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? "Invalid URL")
-        : error instanceof Error
-          ? error.message
-          : "Failed to save logo",
-    );
+    return handleActionError(error, "setCompanyLogoUrl", "Failed to save logo");
   }
 }
 
@@ -128,12 +123,12 @@ export async function updateCompanySettings(
           set: { value: sql`excluded.value`, updatedAt: new Date() },
         });
     }
-    revalidateTag("settings:company", "max");
+    revalidateTag(CACHE_TAGS.SETTINGS_COMPANY, "max");
     revalidatePath("/settings");
 
     return successResponse(null);
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Failed to save settings");
+    return handleActionError(error, "updateCompanySettings", "Failed to save settings");
   }
 }
 
@@ -189,7 +184,7 @@ export async function getSettingsUsers(): Promise<
       : [me];
     return successResponse({ isAdmin, users: userRows, me });
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Failed to load users");
+    return handleActionError(error, "getSettingsUsers", "Failed to load users");
   }
 }
 
@@ -207,13 +202,7 @@ export async function updateSettingsUser(raw: unknown): Promise<ActionResponse<n
     revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {
-    return errorResponse(
-      error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? "Validation failed")
-        : error instanceof Error
-          ? error.message
-          : "Failed to update user",
-    );
+    return handleActionError(error, "updateSettingsUser", "Failed to update user");
   }
 }
 
@@ -246,13 +235,7 @@ export async function createSettingsUser(raw: unknown): Promise<ActionResponse<n
     revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {
-    return errorResponse(
-      error instanceof z.ZodError
-        ? (error.issues[0]?.message ?? "Validation failed")
-        : error instanceof Error
-          ? error.message
-          : "Failed to create user",
-    );
+    return handleActionError(error, "createSettingsUser", "Failed to create user");
   }
 }
 
@@ -275,6 +258,6 @@ export async function resetSettingsUserPassword(
 
     return successResponse({ temporaryPassword });
   } catch (error) {
-    return errorResponse(error instanceof Error ? error.message : "Failed to reset password");
+    return handleActionError(error, "resetSettingsUserPassword", "Failed to reset password");
   }
 }

@@ -12,6 +12,7 @@ import {
   supplierPayments,
   suppliers,
 } from "@/lib/db/schema";
+import type { LedgerAccountCode } from "@/lib/domain/finance";
 import {
   createBalancedJournalEntry,
   mapPaymentMethodNameToAssetAccount,
@@ -179,8 +180,16 @@ export async function receivePurchaseOrder(id: string) {
         sourceId: po.id,
         createdBy: user.userId,
         lines: [
-          { accountCode: "raw_materials", debit: totalAmountRounded, credit: 0 },
-          { accountCode: "accounts_payable", debit: 0, credit: totalAmountRounded },
+          {
+            accountCode: "raw_materials" as LedgerAccountCode,
+            debit: totalAmountRounded,
+            credit: 0,
+          },
+          {
+            accountCode: "accounts_payable" as LedgerAccountCode,
+            debit: 0,
+            credit: totalAmountRounded,
+          },
         ],
       });
 
@@ -302,7 +311,11 @@ export async function payPurchaseOrder(raw: unknown) {
           sourceId: po.id,
           createdBy: user.userId,
           lines: [
-            { accountCode: "accounts_payable", debit: paymentAmountRounded, credit: 0 },
+            {
+              accountCode: "accounts_payable" as LedgerAccountCode,
+              debit: paymentAmountRounded,
+              credit: 0,
+            },
             { accountCode: assetAccountCode, debit: 0, credit: paymentAmountRounded },
           ],
         });

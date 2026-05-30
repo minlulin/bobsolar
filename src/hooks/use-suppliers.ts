@@ -6,11 +6,12 @@ import {
   getSuppliers,
   updateSupplier,
 } from "@/actions/supplier-actions";
+import { supplierKeys } from "@/lib/query-keys";
 import type { CreateSupplier, UpdateSupplier } from "@/lib/validators/supplier";
 
 export function useSuppliers() {
   return useQuery({
-    queryKey: ["suppliers"],
+    queryKey: supplierKeys.all,
     queryFn: async () => {
       const res = await getSuppliers();
       if (!res.success) throw new Error(res.error);
@@ -30,7 +31,7 @@ export function useCreateSupplier() {
     },
     onSuccess: () => {
       toast.success("Supplier created successfully");
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
     },
     onError: (err) => {
       toast.error(err.message);
@@ -49,7 +50,7 @@ export function useUpdateSupplier() {
     },
     onSuccess: () => {
       toast.success("Supplier updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
     },
     onError: (err) => {
       toast.error(err.message);
@@ -68,7 +69,7 @@ export function useDeleteSupplier() {
     },
     onSuccess: () => {
       toast.success("Supplier deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
     },
     onError: (err) => {
       toast.error(err.message);

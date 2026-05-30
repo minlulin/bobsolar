@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createBackup, deleteBackup, getBackupHistory } from "@/actions/backup-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { settingsKeys } from "@/lib/query-keys";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -28,7 +29,7 @@ export function BackupTab(): React.JSX.Element {
   const queryClient = useQueryClient();
 
   const historyQuery = useQuery({
-    queryKey: ["settings", "backups"],
+    queryKey: settingsKeys.backups(),
     queryFn: async () => {
       const res = await getBackupHistory();
       if (!res.success) throw new Error(res.error);
@@ -42,7 +43,7 @@ export function BackupTab(): React.JSX.Element {
     onSuccess: (res) => {
       if (res.success) {
         toast.success(`Backup created: ${res.data.totalRows} rows`);
-        void queryClient.invalidateQueries({ queryKey: ["settings", "backups"] });
+        void queryClient.invalidateQueries({ queryKey: settingsKeys.backups() });
       } else {
         toast.error(res.error);
       }
@@ -57,7 +58,7 @@ export function BackupTab(): React.JSX.Element {
     onSuccess: (res) => {
       if (res.success) {
         toast.success("Backup deleted");
-        void queryClient.invalidateQueries({ queryKey: ["settings", "backups"] });
+        void queryClient.invalidateQueries({ queryKey: settingsKeys.backups() });
       } else {
         toast.error(res.error);
       }

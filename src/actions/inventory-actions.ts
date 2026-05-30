@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { z } from "zod";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
 import { deleteCacheValue } from "@/lib/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { type InventoryItem, inventoryItems } from "@/lib/db/schema";
 import { extractBrandModel } from "@/lib/domain/inventory";
@@ -53,7 +54,7 @@ const getCachedInventoryPage = unstable_cache(
     return { items, total };
   },
   ["inventory:list-page"],
-  { tags: ["inventory:list"], revalidate: 300 },
+  { tags: [CACHE_TAGS.INVENTORY_LIST], revalidate: 300 },
 );
 
 export async function getInventoryItems(
@@ -122,7 +123,7 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
       }
       await deleteCacheValue("inventory:categories");
 
-      revalidateTag("inventory:list", "max");
+      revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
       revalidatePath("/inventory");
       return successResponse(item);
     });
@@ -181,7 +182,7 @@ export async function updateInventoryItem(
     }
     await deleteCacheValue("inventory:categories");
 
-    revalidateTag("inventory:list", "max");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");
     return successResponse(item);
   } catch (error) {
@@ -200,7 +201,7 @@ export async function deleteInventoryItem(id: string): Promise<ActionResponse<nu
       .where(eq(inventoryItems.id, validatedId));
     await deleteCacheValue("inventory:categories");
 
-    revalidateTag("inventory:list", "max");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");
     return successResponse(null);
   } catch (error) {
@@ -252,7 +253,7 @@ export async function bulkUpdatePrices(rawUpdates: unknown): Promise<ActionRespo
     });
     await deleteCacheValue("inventory:categories");
 
-    revalidateTag("inventory:list", "max");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");
     return successResponse(null);
   } catch (error) {
@@ -272,7 +273,7 @@ const getCachedInventoryCategories = unstable_cache(
       .groupBy(inventoryItems.category);
   },
   ["inventory:categories-list"],
-  { tags: ["inventory:list"], revalidate: 600 },
+  { tags: [CACHE_TAGS.INVENTORY_LIST], revalidate: 600 },
 );
 
 export async function getInventoryCategories(): Promise<

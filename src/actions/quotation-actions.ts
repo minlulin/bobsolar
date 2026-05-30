@@ -4,6 +4,7 @@ import { addDays } from "date-fns";
 import { and, count, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import {
   type Customer,
@@ -61,7 +62,7 @@ const getCachedQuotationsPage = unstable_cache(
     });
   },
   ["quotations:list-page"],
-  { tags: ["quotations:list"], revalidate: 300 },
+  { tags: [CACHE_TAGS.QUOTATIONS_LIST], revalidate: 300 },
 );
 
 type QuotationsPageParams = {
@@ -364,8 +365,8 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
           }
         });
 
-        revalidateTag("quotations:list", "max");
-        revalidateTag("dashboard:stats", "max");
+        revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+        revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
         revalidatePath("/quotations");
         return successResponse(result);
       } catch (error: unknown) {
@@ -441,8 +442,8 @@ export async function updateQuotationStatus(
       });
     }
 
-    revalidateTag("quotations:list", "max");
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath(`/quotations/${validatedId}`);
     return successResponse(null);
@@ -616,8 +617,8 @@ export async function updateQuotation(
       return quote.id;
     });
 
-    revalidateTag("quotations:list", "max");
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath(`/quotations/${validatedId}`);
 
@@ -720,8 +721,8 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
           }
         });
 
-        revalidateTag("quotations:list", "max");
-        revalidateTag("dashboard:stats", "max");
+        revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+        revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
         revalidatePath("/quotations");
         return successResponse(result);
       } catch (error: unknown) {
@@ -779,8 +780,8 @@ export async function deleteQuotation(id: string): Promise<ActionResponse<null>>
       .set({ isArchived: true, archivedAt: new Date(), updatedAt: new Date() })
       .where(eq(quotations.id, validatedId));
 
-    revalidateTag("quotations:list", "max");
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath("/", "layout");
     return successResponse(null);
@@ -807,8 +808,8 @@ export async function archiveQuotation(id: string): Promise<ActionResponse<null>
       .set({ isArchived: true, archivedAt: new Date(), updatedAt: new Date() })
       .where(eq(quotations.id, validatedId));
 
-    revalidateTag("quotations:list", "max");
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath(`/quotations/${validatedId}`);
     return successResponse(null);
@@ -832,8 +833,8 @@ export async function restoreQuotation(id: string): Promise<ActionResponse<null>
       .set({ isArchived: false, archivedAt: null, updatedAt: new Date() })
       .where(eq(quotations.id, validatedId));
 
-    revalidateTag("quotations:list", "max");
-    revalidateTag("dashboard:stats", "max");
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath(`/quotations/${validatedId}`);
     return successResponse(null);
@@ -858,8 +859,8 @@ export async function expireOverdueQuotations(): Promise<ActionResponse<{ expire
       .returning({ id: quotations.id });
 
     if (result.length > 0) {
-      revalidateTag("quotations:list", "max");
-      revalidateTag("dashboard:stats", "max");
+      revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+      revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
       revalidatePath("/quotations");
     }
     return successResponse({ expired: result.length });

@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import type { ProjectVoucher } from "@/lib/db/schema";
+import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { formatMMK } from "@/lib/utils";
 
 interface VoucherHtmlInput {
@@ -13,11 +14,11 @@ export function VoucherHtml({
   customerAddress,
   companySettings = {},
 }: VoucherHtmlInput): string {
-  const companyName = companySettings["company_name"] ?? "BOB Solar";
-  const companyAddress = companySettings["company_address"] ?? "";
-  const companyPhone = companySettings["company_phone"] ?? "";
-  const companyEmail = companySettings["company_email"] ?? "";
-  const companyLogoUrl = companySettings["company_logo_url"] ?? null;
+  const companyName = companySettings[COMPANY_SETTING_KEYS.NAME] ?? "BOB Solar";
+  const companyAddress = companySettings[COMPANY_SETTING_KEYS.ADDRESS] ?? "";
+  const companyPhone = companySettings[COMPANY_SETTING_KEYS.PHONE] ?? "";
+  const companyEmail = companySettings[COMPANY_SETTING_KEYS.EMAIL] ?? "";
+  const companyLogoUrl = companySettings[COMPANY_SETTING_KEYS.LOGO_URL] ?? null;
 
   const isCompletion = voucher.voucherType === "completion_certificate";
   const title = isCompletion ? "COMPLETION CERTIFICATE" : "PAYMENT VOUCHER";

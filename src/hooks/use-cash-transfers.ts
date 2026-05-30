@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createCashTransfer } from "@/actions/cash-transfer-actions";
+import { financeKeys } from "@/lib/query-keys";
 import type { CashTransferInput } from "@/lib/validators/cash-transfer";
 
 export function useCreateCashTransfer() {
@@ -14,7 +15,7 @@ export function useCreateCashTransfer() {
     },
     onSuccess: () => {
       toast.success("Cash transfer recorded successfully");
-      void queryClient.invalidateQueries({ queryKey: ["finance"] });
+      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
     },
     onError: (error) => {
       toast.error(error.message || "Failed to record cash transfer");

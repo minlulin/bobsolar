@@ -80,7 +80,8 @@ export const dashboardKeys = {
 
 export const warrantyKeys = {
   all: ["warranty"] as const,
-  list: () => [...warrantyKeys.all, "list"] as const,
+  summary: () => [...warrantyKeys.all, "summary"] as const,
+  list: (tab?: string) => [...warrantyKeys.all, "list", ...(tab ? [tab] : [])] as const,
 };
 
 export const ledgerKeys = {
@@ -137,6 +138,7 @@ export const settingsKeys = {
   all: ["settings"] as const,
   company: () => [...settingsKeys.all, "company"] as const,
   users: () => [...settingsKeys.all, "users"] as const,
+  backups: () => [...settingsKeys.all, "backups"] as const,
 };
 
 export const manualJournalKeys = {
