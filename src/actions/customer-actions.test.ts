@@ -94,6 +94,9 @@ vi.mock("@/lib/db", () => ({
       quotations: {
         findFirst: vi.fn(async () => null),
       },
+      idempotencyKeys: {
+        findFirst: vi.fn(async () => null),
+      },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({
@@ -104,6 +107,9 @@ vi.mock("@/lib/db", () => ({
       values: vi.fn(() => ({
         returning: vi.fn(async () => state.insertedRows),
       })),
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(async () => undefined),
     })),
     update: vi.fn(() => ({
       set: vi.fn(() => ({
