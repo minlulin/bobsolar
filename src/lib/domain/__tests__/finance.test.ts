@@ -19,12 +19,12 @@ describe("finance ssot: payment methods", () => {
   it("contains accepted real-world methods", () => {
     expect(PAYMENT_METHOD_PRESETS).toEqual([
       "cash",
-      "kbz_banking",
       "kbz_pay",
-      "aya_banking",
+      "kbz_banking",
       "aya_pay",
-      "cb_banking",
+      "aya_banking",
       "cb_pay",
+      "cb_banking",
       "wave_pay",
     ]);
   });

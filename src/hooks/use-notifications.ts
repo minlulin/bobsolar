@@ -8,10 +8,10 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "@/actions/notification-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { notificationKeys } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
 import { useNotificationStore } from "@/stores/notification-store";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useNotifications(): ReturnType<
   typeof useQuery<ActionData<Awaited<ReturnType<typeof getNotificationsWithFilter>>>>
@@ -23,7 +23,7 @@ export function useNotifications(): ReturnType<
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 15 * 1000,
+    staleTime: STALE_TIME.REALTIME,
   });
 }
 
@@ -37,7 +37,7 @@ export function useUnreadCount(): ReturnType<
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 15 * 1000,
+    staleTime: STALE_TIME.REALTIME,
     refetchInterval: 30 * 1000,
   });
 }

@@ -11,11 +11,12 @@ import {
   updateQuotation,
   updateQuotationStatus,
 } from "@/actions/quotation-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import type { QuotationStatus } from "@/lib/db/schema";
+import { STALE_TIME } from "@/lib/query-config";
 import { quotationKeys } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
 import type { QuotationFilterInput, UpdateQuotation } from "@/lib/validators/quotation";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useQuotations(
   filters: QuotationFilterInput = {},
@@ -29,7 +30,7 @@ export function useQuotations(
       return response.data;
     },
     ...(initialData ? { initialData } : {}),
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -44,7 +45,7 @@ export function useQuotation(
       return response.data;
     },
     enabled: !!id,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -184,50 +185,16 @@ export function useDuplicateQuotation(): ReturnType<
   });
 }
 
-export function useArchiveQuotation(): ReturnType<
-  typeof useMutation<Awaited<ReturnType<typeof archiveQuotation>>, Error, string>
-> {
-  const queryClient = useQueryClient();
+export const useArchiveQuotation = createMutationHook({
+  mutationFn: (id: string) => archiveQuotation(id),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation archived",
+  errorMessage: "Failed to archive quotation",
+});
 
-  return useMutation({
-    mutationFn: archiveQuotation,
-    onSuccess: async (response, id) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(id),
-        });
-        toast.success("Quotation archived");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to archive quotation. Please try again.");
-    },
-  });
-}
-
-export function useRestoreQuotation(): ReturnType<
-  typeof useMutation<Awaited<ReturnType<typeof restoreQuotation>>, Error, string>
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: restoreQuotation,
-    onSuccess: async (response, id) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(id),
-        });
-        toast.success("Quotation restored");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to restore quotation. Please try again.");
-    },
-  });
-}
+export const useRestoreQuotation = createMutationHook({
+  mutationFn: (id: string) => restoreQuotation(id),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation restored",
+  errorMessage: "Failed to restore quotation",
+});

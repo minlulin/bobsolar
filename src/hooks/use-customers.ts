@@ -10,6 +10,7 @@ import {
 } from "@/actions/customer-actions";
 import { createMutationHook } from "@/hooks/mutation-factory";
 import type { Customer } from "@/lib/db/schema";
+import { STALE_TIME } from "@/lib/query-config";
 import { customerKeys } from "@/lib/query-keys";
 import type { CreateCustomer, CustomerFilter } from "@/lib/validators/customer";
 
@@ -27,7 +28,7 @@ export function useCustomers(
       return res.data;
     },
     ...(initialData !== undefined && { initialData }),
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -40,7 +41,7 @@ export function useCustomer(id: string): UseQueryResult<CustomerWithHistory> {
       return res.data;
     },
     enabled: !!id,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -53,7 +54,7 @@ export function useSearchCustomers(query: string): UseQueryResult<Customer[]> {
       return res.data;
     },
     enabled: query.length >= 2,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 

@@ -18,11 +18,6 @@ describe("ledger payment mapping", () => {
     expect(mapPaymentMethodNameToAssetAccount("Wave Pay")).toBe("wave_wallet");
   });
 
-  it("maps legacy bank_transfer to kbz_banking for backward compatibility", () => {
-    expect(mapPaymentMethodNameToAssetAccount("Bank Transfer")).toBe("kbz_banking");
-    expect(mapPaymentMethodNameToAssetAccount("bank")).toBe("kbz_banking");
-  });
-
   it("returns null for unknown methods", () => {
     expect(mapPaymentMethodNameToAssetAccount("Cheque")).toBeNull();
   });

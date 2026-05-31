@@ -10,6 +10,7 @@ import {
 } from "@/actions/inventory-actions";
 import { createMutationHook } from "@/hooks/mutation-factory";
 import type { InventoryItem } from "@/lib/db/schema";
+import { STALE_TIME } from "@/lib/query-config";
 import { inventoryKeys } from "@/lib/query-keys";
 import type { CreateInventoryItem, InventoryFilter } from "@/lib/validators/inventory";
 
@@ -26,7 +27,7 @@ export function useInventoryItems(
       if (res.data === undefined) throw new Error("Missing response data");
       return res.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: STALE_TIME.LONG,
   });
 }
 
@@ -40,7 +41,7 @@ export function useInventoryItem(id: string): UseQueryResult<InventoryItem, Erro
       return res.data;
     },
     enabled: !!id,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 

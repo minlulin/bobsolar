@@ -28,11 +28,6 @@ describe("ledger payment mapping", () => {
     expect(mapPaymentMethodNameToAssetAccount("wave pay")).toBe("wave_wallet");
     expect(mapPaymentMethodNameToAssetAccount("cb banking")).toBe("cb_banking");
   });
-
-  it("maps legacy bank_transfer to kbz_banking for backward compatibility", () => {
-    expect(mapPaymentMethodNameToAssetAccount("Bank Transfer")).toBe("kbz_banking");
-    expect(mapPaymentMethodNameToAssetAccount("BANK")).toBe("kbz_banking");
-  });
 });
 
 describe("ledger cost mapping", () => {

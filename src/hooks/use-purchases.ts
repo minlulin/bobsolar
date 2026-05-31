@@ -8,9 +8,8 @@ import {
   receivePurchaseOrder,
 } from "@/actions/purchase-actions";
 import { inventoryKeys, purchaseKeys } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
 import type { CreatePurchaseOrder, PayPurchaseOrder } from "@/lib/validators/purchase";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
 export type PurchaseOrderListRow = ActionData<
   Awaited<ReturnType<typeof getPurchaseOrders>>
 >[number];

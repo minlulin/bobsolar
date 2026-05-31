@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { generateVoucher, getProjectVouchers } from "@/actions/voucher-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { projectKeys } from "@/lib/query-keys";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
+import type { ActionData } from "@/lib/utils/action-response";
 
 export function useProjectVouchers(
   projectId: string,
@@ -16,7 +16,7 @@ export function useProjectVouchers(
       return res.data;
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 

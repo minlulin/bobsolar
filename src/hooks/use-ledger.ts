@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAccountBalances, getLedgerEntries, getLedgerProjects } from "@/actions/ledger-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { ledgerKeys } from "@/lib/query-keys";
 import type { LedgerFilter } from "@/lib/validators/ledger";
 
@@ -11,7 +12,7 @@ export function useLedgerEntries(filters: LedgerFilter = {}) {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -23,7 +24,7 @@ export function useAccountBalances(filters: LedgerFilter = {}) {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 
@@ -35,6 +36,6 @@ export function useLedgerProjects() {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }

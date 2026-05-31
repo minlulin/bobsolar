@@ -8,14 +8,18 @@ import {
   journalLines,
   ledgerAccounts,
 } from "@/lib/db/schema";
-import { COST_TYPES } from "@/lib/domain/cost-types";
+import { COST_TYPE_EXPENSE_MAP, COST_TYPES } from "@/lib/domain/cost-types";
 import {
   LEDGER_ACCOUNT_CODE_TYPE_MAP,
   LEDGER_ACCOUNT_CODES,
   LEDGER_ACCOUNT_LABELS,
   type LedgerAccountCode,
 } from "@/lib/domain/finance";
-import { PAYMENT_METHOD_PRESETS } from "@/lib/domain/payment";
+import {
+  PAYMENT_METHOD_LEDGER_MAP,
+  PAYMENT_METHOD_PRESETS,
+  type PaymentMethodPreset,
+} from "@/lib/domain/payment";
 
 export type DbClient = ReturnType<typeof getDb>;
 export type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
@@ -39,30 +43,20 @@ type CreateJournalEntryInput = {
   overridePeriodLock?: boolean;
 };
 
-function normalizeMethodName(value: string): string {
-  return value.trim().toLowerCase().replaceAll("-", "_").replaceAll(" ", "_");
-}
-
+/** Re-export SSoT from domain/payment.ts for backward compatibility. */
 export function mapPaymentMethodNameToAssetAccount(methodName: string): LedgerAccountCode | null {
-  const normalized = normalizeMethodName(methodName);
-  if (normalized === "cash") return "cash_on_hand";
-  if (normalized === "kbz_banking" || normalized === "kbzbanking") return "kbz_banking";
-  if (normalized === "kbz_pay" || normalized === "kbzpay") return "kbz_wallet";
-  if (normalized === "aya_banking" || normalized === "ayabanking") return "aya_banking";
-  if (normalized === "aya_pay" || normalized === "ayapay") return "aya_wallet";
-  if (normalized === "cb_banking" || normalized === "cbbanking") return "cb_banking";
-  if (normalized === "cb_pay" || normalized === "cbpay") return "cb_wallet";
-  if (normalized === "wave_pay" || normalized === "wavepay") return "wave_wallet";
-  // Legacy alias for backward compatibility
-  if (normalized === "bank_transfer" || normalized === "bank") return "kbz_banking";
+  const normalized = methodName.trim().toLowerCase().replaceAll(/[- ]/g, "_");
+  if (normalized in PAYMENT_METHOD_LEDGER_MAP) {
+    return PAYMENT_METHOD_LEDGER_MAP[normalized as PaymentMethodPreset];
+  }
   return null;
 }
 
+/** Re-export SSoT from domain/cost-types.ts for backward compatibility. */
 export function mapCostTypeToExpenseAccount(costType: CostType): LedgerAccountCode {
-  if (costType === "material") return "material_expense";
-  if (costType === "labor") return "labor_expense";
-  if (costType === "transport") return "transport_expense";
-  if (costType === "general") return "general_expense";
+  if (costType in COST_TYPE_EXPENSE_MAP) {
+    return COST_TYPE_EXPENSE_MAP[costType];
+  }
   return "misc_expense";
 }
 

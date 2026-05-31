@@ -6,9 +6,9 @@ import {
   getProjectPayments,
   recordPayment,
 } from "@/actions/payment-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { financeDashboardKeys, financeKeys, projectKeys } from "@/lib/query-keys";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
+import type { ActionData } from "@/lib/utils/action-response";
 
 export function useProjectPayments(
   projectId: string,
@@ -21,7 +21,7 @@ export function useProjectPayments(
       return res.data;
     },
     enabled: !!projectId,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -35,7 +35,7 @@ export function usePaymentMethods(): ReturnType<
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }
 
@@ -80,6 +80,6 @@ export function useFinanceSummary(): ReturnType<
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }

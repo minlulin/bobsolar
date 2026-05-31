@@ -1,11 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   createSupplier,
   deleteSupplier,
   getSuppliers,
   updateSupplier,
 } from "@/actions/supplier-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import { supplierKeys } from "@/lib/query-keys";
 import type { CreateSupplier, UpdateSupplier } from "@/lib/validators/supplier";
 
@@ -20,59 +20,23 @@ export function useSuppliers() {
   });
 }
 
-export function useCreateSupplier() {
-  const queryClient = useQueryClient();
+export const useCreateSupplier = createMutationHook({
+  mutationFn: (data: CreateSupplier) => createSupplier(data),
+  invalidateKeys: [supplierKeys.all],
+  successMessage: "Supplier created successfully",
+  errorMessage: "Failed to create supplier",
+});
 
-  return useMutation({
-    mutationFn: async (data: CreateSupplier) => {
-      const res = await createSupplier(data);
-      if (!res.success) throw new Error(res.error);
-      return res.data;
-    },
-    onSuccess: () => {
-      toast.success("Supplier created successfully");
-      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
-}
+export const useUpdateSupplier = createMutationHook({
+  mutationFn: (args: { id: string; data: UpdateSupplier }) => updateSupplier(args.id, args.data),
+  invalidateKeys: [supplierKeys.all],
+  successMessage: "Supplier updated successfully",
+  errorMessage: "Failed to update supplier",
+});
 
-export function useUpdateSupplier() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateSupplier }) => {
-      const res = await updateSupplier(id, data);
-      if (!res.success) throw new Error(res.error);
-      return res.data;
-    },
-    onSuccess: () => {
-      toast.success("Supplier updated successfully");
-      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
-}
-
-export function useDeleteSupplier() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await deleteSupplier(id);
-      if (!res.success) throw new Error(res.error);
-      return true;
-    },
-    onSuccess: () => {
-      toast.success("Supplier deleted successfully");
-      queryClient.invalidateQueries({ queryKey: supplierKeys.all });
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
-}
+export const useDeleteSupplier = createMutationHook({
+  mutationFn: (id: string) => deleteSupplier(id),
+  invalidateKeys: [supplierKeys.all],
+  successMessage: "Supplier deleted successfully",
+  errorMessage: "Failed to delete supplier",
+});

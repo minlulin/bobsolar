@@ -6,10 +6,10 @@ import {
   reopenWarrantyAlert,
   resolveWarrantyAlert,
 } from "@/actions/warranty-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { projectKeys, warrantyKeys } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
 import type { WarrantyListFilter } from "@/lib/validators/warranty";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useWarrantySummary(): ReturnType<
   typeof useQuery<ActionData<Awaited<ReturnType<typeof getWarrantySummary>>>>
@@ -21,7 +21,7 @@ export function useWarrantySummary(): ReturnType<
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 
@@ -37,7 +37,7 @@ export function useWarrantyAlerts(
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 

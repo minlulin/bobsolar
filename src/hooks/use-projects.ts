@@ -15,6 +15,7 @@ import {
   updateProject,
 } from "@/actions/project-actions";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/domain/policies";
+import { STALE_TIME } from "@/lib/query-config";
 import {
   dashboardKeys,
   inventoryKeys,
@@ -22,9 +23,8 @@ import {
   quotationKeys,
   warrantyKeys,
 } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
 import type { ProjectListFilter, UpdateProject } from "@/lib/validators/project";
-
-type ActionData<T> = T extends { data: infer D } ? D : never;
 
 export function useProjects(
   filters: Partial<ProjectListFilter> = {},
@@ -49,9 +49,7 @@ export function useProjects(
       return res.data;
     },
     ...(initialData ? { initialData } : {}),
-    staleTime: 30 * 1000,
-    retry: 2,
-    retryDelay: 1000,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -66,7 +64,7 @@ export function useProject(
       return res.data;
     },
     enabled: !!id,
-    staleTime: 30 * 1000,
+    staleTime: STALE_TIME.SHORT,
     retry: 2,
     retryDelay: 1000,
   });

@@ -101,7 +101,7 @@ function numberSpec(value: unknown): number | null {
 }
 
 function formatSpecNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : String(value);
+  return String(value);
 }
 
 function labelFromMap(labels: Record<string, string>, value: string): string {

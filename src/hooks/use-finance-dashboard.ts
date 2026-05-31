@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import type { FinancePeriodFilter } from "@/actions/finance-dashboard-actions";
 import {
   getDataConsistencyCheck,
   getExpenseBreakdown,
@@ -7,7 +6,9 @@ import {
   getMonthlyTrend,
   getReceivableRiskData,
 } from "@/actions/finance-dashboard-actions";
+import { STALE_TIME } from "@/lib/query-config";
 import { financeDashboardKeys } from "@/lib/query-keys";
+import type { FinancePeriodFilter } from "@/lib/validators/finance";
 
 export function useFinanceDashboardData(filters: FinancePeriodFilter = {}) {
   return useQuery({
@@ -17,7 +18,7 @@ export function useFinanceDashboardData(filters: FinancePeriodFilter = {}) {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 
@@ -29,7 +30,7 @@ export function useMonthlyTrendData(filters: FinancePeriodFilter = {}) {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 
@@ -41,7 +42,7 @@ export function useExpenseBreakdown(filters: FinancePeriodFilter = {}) {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 60 * 1000,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 
@@ -53,7 +54,7 @@ export function useReceivableRiskData() {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }
 
@@ -65,6 +66,6 @@ export function useDataConsistencyCheck() {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }

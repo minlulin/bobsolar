@@ -1,0 +1,4 @@
+CREATE TYPE "public"."owner_transaction_status" AS ENUM('pending', 'completed');--> statement-breakpoint
+CREATE TYPE "public"."owner_transaction_type" AS ENUM('distribution', 'draw', 'capital_call_issued', 'capital_contribution');--> statement-breakpoint
+ALTER TABLE "owner_transactions" ALTER COLUMN "transaction_type" SET DATA TYPE "public"."owner_transaction_type" USING "transaction_type"::"public"."owner_transaction_type";--> statement-breakpoint
+ALTER TABLE "owner_transactions" ALTER COLUMN "status" SET DATA TYPE "public"."owner_transaction_status" USING "status"::"public"."owner_transaction_status";

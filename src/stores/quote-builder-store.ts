@@ -291,8 +291,8 @@ export const useQuoteBuilderStore = create<QuoteBuilderState>()((set, get) => ({
           discountPercentage: Number(item.discountPercentage || 0),
           sortOrder: item.sortOrder,
           category:
-            (item as QuotationItem & { inventoryItem?: InventoryItem | null }).inventoryItem
-              ?.category || null,
+            (item as QuotationItem & { inventoryItem?: { category: InventoryCategory } | null })
+              .inventoryItem?.category ?? null,
         })),
     });
   },

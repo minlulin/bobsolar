@@ -3,6 +3,7 @@
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { ChevronLeft, Loader2, Plus, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -13,7 +14,20 @@ import {
   resolveWarrantyAlert as resolveWarrantyAlertAction,
 } from "@/actions/warranty-actions";
 import { ProjectStateRail } from "@/components/project/project-state-rail";
-import { ProjectTimeline } from "@/components/project/project-timeline";
+
+const ProjectTimeline = dynamic(
+  () => import("@/components/project/project-timeline").then((mod) => mod.ProjectTimeline),
+  { loading: () => <Loader2 className="animate-spin" /> },
+);
+const ProjectOperationalNotes = dynamic(
+  () => import("./components/project-operational-notes").then((mod) => mod.ProjectOperationalNotes),
+  { loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-[2rem]" /> },
+);
+const CompletedProjectVouchers = dynamic(
+  () => import("./components/completed-vouchers").then((mod) => mod.CompletedProjectVouchers),
+  { loading: () => <div className="h-[300px] animate-pulse bg-muted rounded-2xl" /> },
+);
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,10 +50,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 
 type ProjectTab = "overview" | "costs" | "remarks" | "warranty";
 
-import { Textarea } from "@/components/ui/textarea";
 import { useInventoryItems } from "@/hooks/use-inventory";
 import { usePaymentMethods, useProjectPayments, useRecordPayment } from "@/hooks/use-payments";
 import {
@@ -54,7 +68,6 @@ import {
   useProject,
   useUpdateProject,
 } from "@/hooks/use-projects";
-import { useGenerateVoucher, useProjectVouchers } from "@/hooks/use-vouchers";
 import type { AlertType, CostType, ProjectStatus, RemarkType } from "@/lib/db/schema";
 import { COST_FILTERS } from "@/lib/domain/cost-types";
 import type { PaymentType } from "@/lib/domain/payment";
@@ -1438,164 +1451,6 @@ export function ProjectDetailShell({
           </DialogContent>
         </Dialog>
       </div>
-    </div>
-  );
-}
-
-function ProjectOperationalNotes({
-  disabled,
-  initialNotes,
-  onPersist,
-}: {
-  disabled: boolean;
-  initialNotes: string | null | undefined;
-  onPersist: (draft: string) => void;
-}): React.JSX.Element {
-  const [draft, setDraft] = React.useState(() => initialNotes ?? "");
-
-  return (
-    <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
-      <h3 className="text-muted-foreground text-[10px] font-bold uppercase">Operational notes</h3>
-      <Textarea
-        disabled={disabled}
-        value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
-        }}
-        className="min-h-[170px]"
-      />
-      <Button
-        disabled={disabled}
-        variant="outline"
-        className="rounded-full"
-        onClick={() => {
-          onPersist(draft);
-        }}
-        type="button"
-      >
-        Save briefing
-      </Button>
-    </div>
-  );
-}
-
-function CompletedProjectVouchers({ projectId }: { projectId: string }): React.JSX.Element {
-  const { data: vouchers } = useProjectVouchers(projectId);
-  const generateVoucherMutation = useGenerateVoucher();
-
-  const [voucherType, setVoucherType] = React.useState<
-    "completion_certificate" | "final_payment_voucher"
-  >("completion_certificate");
-  const [totalAmount, setTotalAmount] = React.useState("");
-  const [paidAmount, setPaidAmount] = React.useState("");
-
-  return (
-    <div className="bg-card border-border rounded-2xl border p-6">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-muted-foreground mb-1 text-[10px] font-bold tracking-[0.3em] uppercase">
-            Project vouchers
-          </p>
-          <p className="text-muted-foreground text-[11px]">
-            Generate completion certificates and payment handover documents.
-          </p>
-        </div>
-      </div>
-
-      <div className="border-border/50 mb-5 flex flex-wrap gap-3 border-b border-dashed pb-5">
-        <Button
-          variant={voucherType === "completion_certificate" ? "default" : "outline"}
-          size="sm"
-          className="rounded-full text-[10px] font-bold uppercase"
-          onClick={() => {
-            setVoucherType("completion_certificate");
-          }}
-        >
-          Completion Certificate
-        </Button>
-        <Button
-          variant={voucherType === "final_payment_voucher" ? "default" : "outline"}
-          size="sm"
-          className="rounded-full text-[10px] font-bold uppercase"
-          onClick={() => {
-            setVoucherType("final_payment_voucher");
-          }}
-        >
-          Final Payment Voucher
-        </Button>
-      </div>
-
-      <div className="mb-5 grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label className="text-[10px] tracking-wide uppercase">Total amount (MMK)</Label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            value={totalAmount}
-            onChange={(e) => {
-              setTotalAmount(e.target.value);
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] tracking-wide uppercase">Paid amount (MMK)</Label>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            value={paidAmount}
-            onChange={(e) => {
-              setPaidAmount(e.target.value);
-            }}
-          />
-        </div>
-      </div>
-
-      <Button
-        className="rounded-full text-[10px] font-bold uppercase"
-        disabled={generateVoucherMutation.isPending || !totalAmount || !paidAmount}
-        onClick={() => {
-          generateVoucherMutation.mutate({
-            projectId,
-            voucherType,
-            totalAmount: Math.round(Number(totalAmount)),
-            paidAmount: Math.round(Number(paidAmount)),
-          });
-        }}
-      >
-        {generateVoucherMutation.isPending ? (
-          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-        ) : null}
-        Generate {voucherType === "completion_certificate" ? "Certificate" : "Voucher"}
-      </Button>
-
-      {vouchers && vouchers.length > 0 ? (
-        <div className="mt-6 space-y-3">
-          <p className="text-muted-foreground text-[10px] font-bold uppercase">Issued vouchers</p>
-          {vouchers.map((v) => (
-            <div
-              key={v.id}
-              className="border-border/70 bg-muted/25 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-5 py-3"
-            >
-              <div>
-                <p className="text-sm font-semibold">{v.voucherNumber}</p>
-                <p className="text-muted-foreground text-[10px] uppercase">
-                  {v.voucherType.replace("_", " ")}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm">{formatMMK(Number(v.totalAmount))}</span>
-                <Button variant="outline" size="sm" className="rounded-full text-[10px]" asChild>
-                  <a href={`/vouchers/${v.id}/pdf`} target="_blank" rel="noopener">
-                    Print
-                  </a>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

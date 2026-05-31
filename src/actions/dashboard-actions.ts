@@ -3,6 +3,7 @@
 import { endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import type { AlertType } from "@/lib/db/schema";
@@ -116,7 +117,7 @@ const getCachedSharedStats = unstable_cache(
   { tags: ["dashboard:stats"], revalidate: 300 },
 );
 
-export async function getDashboardStats(): Promise<ActionResponse<DashboardStats>> {
+export const getDashboardStats = cache(async (): Promise<ActionResponse<DashboardStats>> => {
   try {
     const auth = await requireAuth();
 
@@ -157,191 +158,195 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
   } catch (error) {
     return handleActionError(error, "getDashboardStats", "Failed to fetch dashboard stats");
   }
-}
+});
 
-export async function getDashboardPipeline(): Promise<
-  ActionResponse<{ stages: DashboardPipelineNode[] }>
-> {
-  try {
-    await requireAuth();
+export const getDashboardPipeline = cache(
+  async (): Promise<ActionResponse<{ stages: DashboardPipelineNode[] }>> => {
+    try {
+      await requireAuth();
 
-    const [[customersCountRow], [quotesSummary], [projectsSummary]] = await Promise.all([
-      db.select({ total: count() }).from(customers).where(eq(customers.isArchived, false)),
-      db
-        .select({
-          activeQuoteCount: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent')) as int)`,
-          activeQuoteValue: sql<string>`coalesce(sum(${quotations.total}::numeric) filter (where ${quotations.status} in ('draft', 'sent')), 0)`,
-        })
-        .from(quotations),
-      db
-        .select({
-          activeProjectCount: sql<number>`cast(count(*) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')) as int)`,
-          activeProjectValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')), 0)`,
-          completedCount: sql<number>`cast(count(*) filter (where ${projects.status} = 'completed') as int)`,
-          completedValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
-        })
-        .from(projects),
-    ]);
+      const [[customersCountRow], [quotesSummary], [projectsSummary]] = await Promise.all([
+        db.select({ total: count() }).from(customers).where(eq(customers.isArchived, false)),
+        db
+          .select({
+            activeQuoteCount: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent')) as int)`,
+            activeQuoteValue: sql<string>`coalesce(sum(${quotations.total}::numeric) filter (where ${quotations.status} in ('draft', 'sent')), 0)`,
+          })
+          .from(quotations),
+        db
+          .select({
+            activeProjectCount: sql<number>`cast(count(*) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')) as int)`,
+            activeProjectValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')), 0)`,
+            completedCount: sql<number>`cast(count(*) filter (where ${projects.status} = 'completed') as int)`,
+            completedValue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
+          })
+          .from(projects),
+      ]);
 
-    const stages: DashboardPipelineNode[] = [
-      {
-        key: "customers",
-        label: "Customers",
-        count: toInt(customersCountRow?.total),
-        value: 0,
-        href: "/customers",
-      },
-      {
-        key: "quotations",
-        label: "Active Quotes",
-        count: toInt(quotesSummary?.activeQuoteCount),
-        value: Number(quotesSummary?.activeQuoteValue ?? 0),
-        href: "/quotations",
-      },
-      {
-        key: "projects",
-        label: "Active Projects",
-        count: toInt(projectsSummary?.activeProjectCount),
-        value: Number(projectsSummary?.activeProjectValue ?? 0),
-        href: "/projects",
-      },
-      {
-        key: "completed",
-        label: "Completed",
-        count: toInt(projectsSummary?.completedCount),
-        value: Number(projectsSummary?.completedValue ?? 0),
-        href: "/projects/completed",
-      },
-    ];
+      const stages: DashboardPipelineNode[] = [
+        {
+          key: "customers",
+          label: "Customers",
+          count: toInt(customersCountRow?.total),
+          value: 0,
+          href: "/customers",
+        },
+        {
+          key: "quotations",
+          label: "Active Quotes",
+          count: toInt(quotesSummary?.activeQuoteCount),
+          value: Number(quotesSummary?.activeQuoteValue ?? 0),
+          href: "/quotations",
+        },
+        {
+          key: "projects",
+          label: "Active Projects",
+          count: toInt(projectsSummary?.activeProjectCount),
+          value: Number(projectsSummary?.activeProjectValue ?? 0),
+          href: "/projects",
+        },
+        {
+          key: "completed",
+          label: "Completed",
+          count: toInt(projectsSummary?.completedCount),
+          value: Number(projectsSummary?.completedValue ?? 0),
+          href: "/projects/completed",
+        },
+      ];
 
-    return successResponse({ stages });
-  } catch (error) {
-    return handleActionError(error, "getDashboardPipeline", "Failed to fetch dashboard pipeline");
-  }
-}
+      return successResponse({ stages });
+    } catch (error) {
+      return handleActionError(error, "getDashboardPipeline", "Failed to fetch dashboard pipeline");
+    }
+  },
+);
 
-export async function getRecentActivity(limit = 10): Promise<ActionResponse<ActivityItem[]>> {
-  try {
-    await requireAuth();
+export const getRecentActivity = cache(
+  async (limit = 10): Promise<ActionResponse<ActivityItem[]>> => {
+    try {
+      await requireAuth();
 
-    const safeLimit = Math.max(1, Math.min(limit, 30));
+      const safeLimit = Math.max(1, Math.min(limit, 30));
 
-    const [quotationRows, projectRows, customerRows, alertRows] = await Promise.all([
-      db
-        .select({
-          id: quotations.id,
-          quoteNumber: quotations.quoteNumber,
-          createdAt: quotations.createdAt,
-        })
-        .from(quotations)
-        .orderBy(desc(quotations.createdAt))
-        .limit(safeLimit),
-      db
-        .select({
-          id: projects.id,
-          projectNumber: projects.projectNumber,
-          status: projects.status,
-          createdAt: projects.createdAt,
-        })
-        .from(projects)
-        .orderBy(desc(projects.createdAt))
-        .limit(safeLimit),
-      db
-        .select({
-          id: customers.id,
-          name: customers.name,
-          createdAt: customers.createdAt,
-        })
-        .from(customers)
-        .where(eq(customers.isArchived, false))
-        .orderBy(desc(customers.createdAt))
-        .limit(safeLimit),
-      db
+      const [quotationRows, projectRows, customerRows, alertRows] = await Promise.all([
+        db
+          .select({
+            id: quotations.id,
+            quoteNumber: quotations.quoteNumber,
+            createdAt: quotations.createdAt,
+          })
+          .from(quotations)
+          .orderBy(desc(quotations.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: projects.id,
+            projectNumber: projects.projectNumber,
+            status: projects.status,
+            createdAt: projects.createdAt,
+          })
+          .from(projects)
+          .orderBy(desc(projects.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            createdAt: customers.createdAt,
+          })
+          .from(customers)
+          .where(eq(customers.isArchived, false))
+          .orderBy(desc(customers.createdAt))
+          .limit(safeLimit),
+        db
+          .select({
+            id: warrantyAlerts.id,
+            projectId: warrantyAlerts.projectId,
+            description: warrantyAlerts.description,
+            dueDate: warrantyAlerts.dueDate,
+            createdAt: warrantyAlerts.createdAt,
+          })
+          .from(warrantyAlerts)
+          .where(eq(warrantyAlerts.isResolved, false))
+          .orderBy(desc(warrantyAlerts.createdAt))
+          .limit(safeLimit),
+      ]);
+
+      const activities: ActivityItem[] = [
+        ...quotationRows.map((row) => ({
+          type: "quotation" as const,
+          description: `New quotation ${row.quoteNumber} created`,
+          timestamp: row.createdAt,
+          link: `/quotations/${row.id}`,
+        })),
+        ...projectRows.map((row) => ({
+          type: "project" as const,
+          description:
+            row.status === "completed"
+              ? `Project ${row.projectNumber} marked as completed`
+              : `Project ${row.projectNumber} created`,
+          timestamp: row.createdAt,
+          link: `/projects/${row.id}`,
+        })),
+        ...customerRows.map((row) => ({
+          type: "customer" as const,
+          description: `Customer ${row.name} added`,
+          timestamp: row.createdAt,
+          link: "/customers",
+        })),
+        ...alertRows.map((row) => ({
+          type: "alert" as const,
+          description: `Warranty alert due: ${row.description}`,
+          timestamp: row.createdAt,
+          link: `/projects/${row.projectId}`,
+        })),
+      ];
+
+      activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      return successResponse(activities.slice(0, safeLimit));
+    } catch (error) {
+      return handleActionError(error, "getRecentActivity", "Failed to fetch recent activity");
+    }
+  },
+);
+
+export const getUpcomingAlerts = cache(
+  async (limit = 5): Promise<ActionResponse<UpcomingAlertItem[]>> => {
+    try {
+      await requireAuth();
+      const safeLimit = Math.max(1, Math.min(limit, 20));
+
+      const rows = await db
         .select({
           id: warrantyAlerts.id,
-          projectId: warrantyAlerts.projectId,
+          projectId: projects.id,
+          projectNumber: projects.projectNumber,
           description: warrantyAlerts.description,
           dueDate: warrantyAlerts.dueDate,
-          createdAt: warrantyAlerts.createdAt,
+          alertType: warrantyAlerts.alertType,
         })
         .from(warrantyAlerts)
+        .innerJoin(projects, eq(warrantyAlerts.projectId, projects.id))
         .where(eq(warrantyAlerts.isResolved, false))
-        .orderBy(desc(warrantyAlerts.createdAt))
-        .limit(safeLimit),
-    ]);
+        .orderBy(asc(warrantyAlerts.dueDate))
+        .limit(safeLimit);
 
-    const activities: ActivityItem[] = [
-      ...quotationRows.map((row) => ({
-        type: "quotation" as const,
-        description: `New quotation ${row.quoteNumber} created`,
-        timestamp: row.createdAt,
-        link: `/quotations/${row.id}`,
-      })),
-      ...projectRows.map((row) => ({
-        type: "project" as const,
-        description:
-          row.status === "completed"
-            ? `Project ${row.projectNumber} marked as completed`
-            : `Project ${row.projectNumber} created`,
-        timestamp: row.createdAt,
-        link: `/projects/${row.id}`,
-      })),
-      ...customerRows.map((row) => ({
-        type: "customer" as const,
-        description: `Customer ${row.name} added`,
-        timestamp: row.createdAt,
-        link: "/customers",
-      })),
-      ...alertRows.map((row) => ({
-        type: "alert" as const,
-        description: `Warranty alert due: ${row.description}`,
-        timestamp: row.createdAt,
-        link: `/projects/${row.projectId}`,
-      })),
-    ];
+      const today = startOfDay(new Date());
+      const items: UpcomingAlertItem[] = rows.map((row) => ({
+        id: row.id,
+        projectNumber: row.projectNumber,
+        description: row.description,
+        dueDate: row.dueDate,
+        alertType: row.alertType,
+        isOverdue: row.dueDate.getTime() < today.getTime(),
+      }));
 
-    activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    return successResponse(activities.slice(0, safeLimit));
-  } catch (error) {
-    return handleActionError(error, "getRecentActivity", "Failed to fetch recent activity");
-  }
-}
-
-export async function getUpcomingAlerts(limit = 5): Promise<ActionResponse<UpcomingAlertItem[]>> {
-  try {
-    await requireAuth();
-    const safeLimit = Math.max(1, Math.min(limit, 20));
-
-    const rows = await db
-      .select({
-        id: warrantyAlerts.id,
-        projectId: projects.id,
-        projectNumber: projects.projectNumber,
-        description: warrantyAlerts.description,
-        dueDate: warrantyAlerts.dueDate,
-        alertType: warrantyAlerts.alertType,
-      })
-      .from(warrantyAlerts)
-      .innerJoin(projects, eq(warrantyAlerts.projectId, projects.id))
-      .where(eq(warrantyAlerts.isResolved, false))
-      .orderBy(asc(warrantyAlerts.dueDate))
-      .limit(safeLimit);
-
-    const today = startOfDay(new Date());
-    const items: UpcomingAlertItem[] = rows.map((row) => ({
-      id: row.id,
-      projectNumber: row.projectNumber,
-      description: row.description,
-      dueDate: row.dueDate,
-      alertType: row.alertType,
-      isOverdue: row.dueDate.getTime() < today.getTime(),
-    }));
-
-    return successResponse(items);
-  } catch (error) {
-    return handleActionError(error, "getUpcomingAlerts", "Failed to fetch upcoming alerts");
-  }
-}
+      return successResponse(items);
+    } catch (error) {
+      return handleActionError(error, "getUpcomingAlerts", "Failed to fetch upcoming alerts");
+    }
+  },
+);
 
 const getCachedFinanceQuickView = unstable_cache(
   async () => {
@@ -425,7 +430,7 @@ const getCachedFinanceQuickView = unstable_cache(
   { tags: ["dashboard:finance"], revalidate: 60 },
 );
 
-export async function getFinanceQuickView(): Promise<ActionResponse<FinanceQuickView>> {
+export const getFinanceQuickView = cache(async (): Promise<ActionResponse<FinanceQuickView>> => {
   try {
     await requireAuth();
     const cached = await getCachedFinanceQuickView();
@@ -440,4 +445,4 @@ export async function getFinanceQuickView(): Promise<ActionResponse<FinanceQuick
   } catch (error) {
     return handleActionError(error, "getFinanceQuickView", "Failed to fetch finance quick view");
   }
-}
+});

@@ -1,11 +1,18 @@
 import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { idempotencyKeys } from "@/lib/db/schema";
 import type { ActionResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Schema for validating stored idempotency responses (guards against corrupted JSONB). */
+const storedResponseSchema = z.union([
+  z.object({ success: z.literal(true), data: z.unknown() }),
+  z.object({ success: z.literal(false), error: z.string() }),
+]);
 
 function hashPayload(action: string, userId: string, payload: unknown): string {
   const raw = JSON.stringify({ action, userId, payload });
@@ -30,7 +37,12 @@ export async function withIdempotency<T>(
   });
 
   if (existing) {
-    return existing.response as ActionResponse<T>;
+    const parsed = storedResponseSchema.safeParse(existing.response);
+    if (parsed.success) {
+      return parsed.data as ActionResponse<T>;
+    }
+    // Corrupted idempotency record — delete and fall through to handler
+    await db.delete(idempotencyKeys).where(eq(idempotencyKeys.key, key));
   }
 
   let result: ActionResponse<T>;
@@ -43,7 +55,7 @@ export async function withIdempotency<T>(
   if (result.success) {
     await db.insert(idempotencyKeys).values({
       key,
-      response: result as unknown as Record<string, unknown>,
+      response: JSON.parse(JSON.stringify(result)) as Record<string, unknown>,
     });
 
     await cleanupExpiredKeys();

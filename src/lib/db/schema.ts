@@ -125,6 +125,11 @@ export const journalSourceTypeEnum = pgEnum("journal_source_type", [
   "supplier_payment",
   "project_invoice",
   "cash_transfer",
+  "general_expense",
+  "payroll",
+  "equity_distribution",
+  "owner_draw",
+  "capital_call",
 ]);
 
 export type JournalSourceType = (typeof journalSourceTypeEnum.enumValues)[number];
@@ -152,6 +157,22 @@ export const accountingPeriodStatusEnum = pgEnum("accounting_period_status", [
 ]);
 
 export type AccountingPeriodStatus = (typeof accountingPeriodStatusEnum.enumValues)[number];
+
+export const ownerTransactionTypeEnum = pgEnum("owner_transaction_type", [
+  "distribution",
+  "draw",
+  "capital_call_issued",
+  "capital_contribution",
+]);
+
+export type OwnerTransactionType = (typeof ownerTransactionTypeEnum.enumValues)[number];
+
+export const ownerTransactionStatusEnum = pgEnum("owner_transaction_status", [
+  "pending",
+  "completed",
+]);
+
+export type OwnerTransactionStatus = (typeof ownerTransactionStatusEnum.enumValues)[number];
 
 // --- Tables ---
 
@@ -747,6 +768,47 @@ export const accountingPeriods = pgTable("accounting_periods", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const generalExpenses = pgTable("general_expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  payeeName: text("payee_name").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  expenseDate: timestamp("expense_date").defaultNow().notNull(),
+  accountId: uuid("account_id")
+    .references(() => ledgerAccounts.id)
+    .notNull(),
+  paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id),
+  reference: text("reference"),
+  notes: text("notes"),
+  isPaid: boolean("is_paid").default(true).notNull(),
+  createdBy: uuid("created_by")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const owners = pgTable("owners", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull()
+    .unique(),
+  ownershipPercentage: decimal("ownership_percentage", { precision: 5, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ownerTransactions = pgTable("owner_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerId: uuid("owner_id")
+    .references(() => owners.id)
+    .notNull(),
+  transactionType: ownerTransactionTypeEnum("transaction_type").notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+  status: ownerTransactionStatusEnum("status").notNull(),
+  journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // --- Relations ---
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -755,6 +817,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   projectRemarks: many(projectRemarks),
   notifications: many(notifications),
   sessions: many(sessions),
+  generalExpenses: many(generalExpenses),
 }));
 
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -898,10 +961,12 @@ export const projectVouchersRelations = relations(projectVouchers, ({ one }) => 
 
 export const paymentMethodsRelations = relations(paymentMethods, ({ many }) => ({
   payments: many(projectPayments),
+  generalExpenses: many(generalExpenses),
 }));
 
 export const ledgerAccountsRelations = relations(ledgerAccounts, ({ many }) => ({
   lines: many(journalLines),
+  generalExpenses: many(generalExpenses),
 }));
 
 export const journalEntriesRelations = relations(journalEntries, ({ one, many }) => ({
@@ -1021,6 +1086,40 @@ export const accountingPeriodsRelations = relations(accountingPeriods, ({ one })
   }),
 }));
 
+export const generalExpensesRelations = relations(generalExpenses, ({ one }) => ({
+  account: one(ledgerAccounts, {
+    fields: [generalExpenses.accountId],
+    references: [ledgerAccounts.id],
+  }),
+  paymentMethod: one(paymentMethods, {
+    fields: [generalExpenses.paymentMethodId],
+    references: [paymentMethods.id],
+  }),
+  createdBy: one(users, {
+    fields: [generalExpenses.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const ownersRelations = relations(owners, ({ one, many }) => ({
+  user: one(users, {
+    fields: [owners.userId],
+    references: [users.id],
+  }),
+  transactions: many(ownerTransactions),
+}));
+
+export const ownerTransactionsRelations = relations(ownerTransactions, ({ one }) => ({
+  owner: one(owners, {
+    fields: [ownerTransactions.ownerId],
+    references: [owners.id],
+  }),
+  journalEntry: one(journalEntries, {
+    fields: [ownerTransactions.journalEntryId],
+    references: [journalEntries.id],
+  }),
+}));
+
 // --- Idempotency ---
 
 export const idempotencyKeys = pgTable(
@@ -1118,3 +1217,12 @@ export type NewAccountingPeriod = InferInsertModel<typeof accountingPeriods>;
 
 export type IdempotencyKey = InferSelectModel<typeof idempotencyKeys>;
 export type NewIdempotencyKey = InferInsertModel<typeof idempotencyKeys>;
+
+export type GeneralExpense = InferSelectModel<typeof generalExpenses>;
+export type NewGeneralExpense = InferInsertModel<typeof generalExpenses>;
+
+export type Owner = InferSelectModel<typeof owners>;
+export type NewOwner = InferInsertModel<typeof owners>;
+
+export type OwnerTransaction = InferSelectModel<typeof ownerTransactions>;
+export type NewOwnerTransaction = InferInsertModel<typeof ownerTransactions>;

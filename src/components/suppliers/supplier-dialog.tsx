@@ -88,7 +88,7 @@ export function SupplierDialog({
         { id: supplier.id, data: updatePayload },
         {
           onSuccess: (res) => {
-            onSaved?.(res);
+            if (res.success) onSaved?.(res.data);
             onOpenChange(false);
           },
         },
@@ -96,7 +96,7 @@ export function SupplierDialog({
     } else {
       createSupplier(data, {
         onSuccess: (res) => {
-          onSaved?.(res);
+          if (res.success) onSaved?.(res.data);
           onOpenChange(false);
         },
       });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  type JournalSourceType,
   journalSourceTypeEnum,
   type LedgerAccountType,
   ledgerAccountTypeEnum,
@@ -31,6 +32,24 @@ export const LEDGER_ACCOUNT_CODES = [
   "transport_expense",
   "misc_expense",
   "general_expense",
+  "rent_expense",
+  "utilities_expense",
+  "payroll_expense",
+  "tax_expense",
+  "office_supplies",
+  "software_subscriptions",
+  "accounts_payable_general",
+  "payroll_taxes_payable",
+  "retained_earnings",
+  "owner_a_capital",
+  "owner_a_draws",
+  "owner_a_distributions_payable",
+  "owner_b_capital",
+  "owner_b_draws",
+  "owner_b_distributions_payable",
+  "owner_c_capital",
+  "owner_c_draws",
+  "owner_c_distributions_payable",
 ] as const;
 
 export const CASH_ACCOUNT_CODES = [
@@ -69,6 +88,12 @@ export const OPERATING_EXPENSE_ACCOUNT_CODES = [
   "transport_expense",
   "misc_expense",
   "general_expense",
+  "rent_expense",
+  "utilities_expense",
+  "payroll_expense",
+  "tax_expense",
+  "office_supplies",
+  "software_subscriptions",
 ] as const satisfies readonly LedgerAccountCode[];
 
 export type OperatingExpenseAccountCode = (typeof OPERATING_EXPENSE_ACCOUNT_CODES)[number];
@@ -79,6 +104,12 @@ export const EXPENSE_ACCOUNT_SHORT_LABELS: Record<OperatingExpenseAccountCode, s
   transport_expense: "Logistics",
   misc_expense: "Miscellaneous",
   general_expense: "General",
+  rent_expense: "Rent",
+  utilities_expense: "Utilities",
+  payroll_expense: "Payroll",
+  tax_expense: "Taxes",
+  office_supplies: "Supplies",
+  software_subscriptions: "Software",
 };
 
 export const COGS_ACCOUNT_CODES = [
@@ -94,6 +125,11 @@ export const CURRENT_ASSET_ACCOUNT_CODES = [
 export const CURRENT_LIABILITY_ACCOUNT_CODES = [
   "accounts_payable",
   "customer_deposits",
+  "accounts_payable_general",
+  "payroll_taxes_payable",
+  "owner_a_distributions_payable",
+  "owner_b_distributions_payable",
+  "owner_c_distributions_payable",
 ] as const satisfies readonly LedgerAccountCode[];
 
 export function isLedgerAccountCode(value: string): value is LedgerAccountCode {
@@ -125,6 +161,24 @@ export const LEDGER_ACCOUNT_CODE_TYPE_MAP: Record<LedgerAccountCode, LedgerAccou
   transport_expense: "expense",
   misc_expense: "expense",
   general_expense: "expense",
+  rent_expense: "expense",
+  utilities_expense: "expense",
+  payroll_expense: "expense",
+  tax_expense: "expense",
+  office_supplies: "expense",
+  software_subscriptions: "expense",
+  accounts_payable_general: "liability",
+  payroll_taxes_payable: "liability",
+  retained_earnings: "equity",
+  owner_a_capital: "equity",
+  owner_a_draws: "equity",
+  owner_a_distributions_payable: "liability",
+  owner_b_capital: "equity",
+  owner_b_draws: "equity",
+  owner_b_distributions_payable: "liability",
+  owner_c_capital: "equity",
+  owner_c_draws: "equity",
+  owner_c_distributions_payable: "liability",
 };
 
 export const LEDGER_ACCOUNT_LABELS: Record<LedgerAccountCode, string> = {
@@ -149,10 +203,28 @@ export const LEDGER_ACCOUNT_LABELS: Record<LedgerAccountCode, string> = {
   transport_expense: "Transport Expense",
   misc_expense: "Misc Expense",
   general_expense: "General Expense",
+  rent_expense: "Rent Expense",
+  utilities_expense: "Utilities Expense",
+  payroll_expense: "Payroll Expense",
+  tax_expense: "Tax Expense",
+  office_supplies: "Office Supplies",
+  software_subscriptions: "Software Subscriptions",
+  accounts_payable_general: "Accounts Payable - General",
+  payroll_taxes_payable: "Payroll Taxes Payable",
+  retained_earnings: "Retained Earnings",
+  owner_a_capital: "Owner A - Capital Contributions",
+  owner_a_draws: "Owner A - Draws",
+  owner_a_distributions_payable: "Owner A - Distributions Payable",
+  owner_b_capital: "Owner B - Capital Contributions",
+  owner_b_draws: "Owner B - Draws",
+  owner_b_distributions_payable: "Owner B - Distributions Payable",
+  owner_c_capital: "Owner C - Capital Contributions",
+  owner_c_draws: "Owner C - Draws",
+  owner_c_distributions_payable: "Owner C - Distributions Payable",
 };
 
 export const JOURNAL_SOURCE_TYPES = journalSourceTypeEnum.enumValues;
-export type JournalSourceType = (typeof JOURNAL_SOURCE_TYPES)[number];
+export type { JournalSourceType } from "@/lib/db/schema";
 
 export const journalSourceTypeSchema = z.enum(JOURNAL_SOURCE_TYPES);
 

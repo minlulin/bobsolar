@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { accountingPeriodStatusEnum } from "@/lib/db/schema";
+import { type AccountingPeriodStatus, accountingPeriodStatusEnum } from "@/lib/db/schema";
 
+export type { AccountingPeriodStatus } from "@/lib/db/schema";
 export const ACCOUNTING_PERIOD_STATUSES = accountingPeriodStatusEnum.enumValues;
-export type AccountingPeriodStatus = (typeof ACCOUNTING_PERIOD_STATUSES)[number];
 export const accountingPeriodStatusSchema = z.enum(ACCOUNTING_PERIOD_STATUSES);
 
 export const ACCOUNTING_PERIOD_STATUS_LABELS: Record<AccountingPeriodStatus, string> = {

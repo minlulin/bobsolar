@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   createManualJournalEntry,
   getLedgerAccountOptions,
   getProjectOptions,
 } from "@/actions/manual-journal-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
+import { STALE_TIME } from "@/lib/query-config";
 import {
   dashboardKeys,
   financeDashboardKeys,
@@ -21,7 +22,7 @@ export function useLedgerAccountOptions() {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }
 
@@ -33,27 +34,13 @@ export function useProjectOptions() {
       if (!response.success) throw new Error(response.error);
       return response.data;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_TIME.LONG,
   });
 }
 
-export function useCreateManualJournalEntry() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: ManualJournalInput) => createManualJournalEntry(data),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast.success("Journal entry created successfully");
-        queryClient.invalidateQueries({ queryKey: ledgerKeys.all });
-        queryClient.invalidateQueries({ queryKey: financeDashboardKeys.all });
-        queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-      } else {
-        toast.error(result.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(`Failed to create journal entry: ${error.message}`);
-    },
-  });
-}
+export const useCreateManualJournalEntry = createMutationHook({
+  mutationFn: (data: ManualJournalInput) => createManualJournalEntry(data),
+  invalidateKeys: [ledgerKeys.all, financeDashboardKeys.all, dashboardKeys.all],
+  successMessage: "Journal entry created successfully",
+  errorMessage: "Failed to create journal entry",
+});

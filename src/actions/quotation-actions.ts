@@ -321,16 +321,16 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
             if (!quote) throw new Error("Failed to create quotation record in database");
 
             // Look up cost prices for inventory-linked items
-            const itemIds = enrichedItems
+            const costLookupItemIds = enrichedItems
               .map((item) => item.itemId)
               .filter((id): id is string => id != null);
 
             const costPriceMap = new Map<string, number>();
-            if (itemIds.length > 0) {
+            if (costLookupItemIds.length > 0) {
               const inventoryRows = await tx
                 .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
                 .from(inventoryItems)
-                .where(inArray(inventoryItems.id, itemIds));
+                .where(inArray(inventoryItems.id, costLookupItemIds));
               for (const row of inventoryRows) {
                 costPriceMap.set(row.id, Math.round(Number(row.costPrice)));
               }
@@ -465,6 +465,22 @@ export async function updateQuotation(
 
     const validated = updateQuotationSchema.parse(raw);
 
+    // Discount validation BEFORE transaction — these checks don't need DB access
+    // and must not be inside db.transaction() where `return errorResponse(...)` would
+    // return from the callback, silently discarding the error.
+    if (auth.role !== "admin") {
+      if (validated.discountPercent !== undefined && validated.discountPercent > 15) {
+        return errorResponse("Standard users cannot apply a global discount greater than 15%");
+      }
+      if (validated.items) {
+        for (const item of validated.items) {
+          if (item.discountPercentage !== undefined && item.discountPercentage > 15) {
+            return errorResponse("Standard users cannot apply an item discount greater than 15%");
+          }
+        }
+      }
+    }
+
     await db.transaction(async (tx) => {
       const lockedQuotes = await tx
         .select()
@@ -482,19 +498,6 @@ export async function updateQuotation(
         .select()
         .from(quotationItems)
         .where(eq(quotationItems.quotationId, validatedId));
-
-      if (auth.role !== "admin") {
-        if (validated.discountPercent !== undefined && validated.discountPercent > 15) {
-          return errorResponse("Standard users cannot apply a global discount greater than 15%");
-        }
-        if (validated.items) {
-          for (const item of validated.items) {
-            if (item.discountPercentage !== undefined && item.discountPercentage > 15) {
-              return errorResponse("Standard users cannot apply an item discount greater than 15%");
-            }
-          }
-        }
-      }
 
       let enrichedItems = validated.items;
       if (validated.items) {

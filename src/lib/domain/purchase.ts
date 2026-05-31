@@ -1,11 +1,15 @@
 import { z } from "zod";
-import { purchaseOrderStatusEnum, supplierPaymentStatusEnum } from "../db/schema";
+import {
+  type PurchaseOrderStatus,
+  purchaseOrderStatusEnum,
+  type SupplierPaymentStatus,
+  supplierPaymentStatusEnum,
+} from "../db/schema";
 
 export const PURCHASE_ORDER_STATUSES = purchaseOrderStatusEnum.enumValues;
 export const SUPPLIER_PAYMENT_STATUSES = supplierPaymentStatusEnum.enumValues;
 
-export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
-export type SupplierPaymentStatus = (typeof SUPPLIER_PAYMENT_STATUSES)[number];
+export type { PurchaseOrderStatus, SupplierPaymentStatus } from "@/lib/db/schema";
 
 export const purchaseOrderStatusSchema = z.enum(PURCHASE_ORDER_STATUSES);
 export const supplierPaymentStatusSchema = z.enum(SUPPLIER_PAYMENT_STATUSES);

@@ -1,24 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { createCashTransfer } from "@/actions/cash-transfer-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import { financeKeys } from "@/lib/query-keys";
 import type { CashTransferInput } from "@/lib/validators/cash-transfer";
 
-export function useCreateCashTransfer() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: CashTransferInput) => {
-      const res = await createCashTransfer(data);
-      if (!res.success) throw new Error(res.error);
-      return res.data;
-    },
-    onSuccess: () => {
-      toast.success("Cash transfer recorded successfully");
-      void queryClient.invalidateQueries({ queryKey: financeKeys.all });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to record cash transfer");
-    },
-  });
-}
+export const useCreateCashTransfer = createMutationHook({
+  mutationFn: (data: CashTransferInput) => createCashTransfer(data),
+  invalidateKeys: [financeKeys.all],
+  successMessage: "Cash transfer recorded successfully",
+  errorMessage: "Failed to record cash transfer",
+});
