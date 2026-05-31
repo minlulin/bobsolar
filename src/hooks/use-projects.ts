@@ -14,6 +14,7 @@ import {
   markProjectCompleted,
   updateProject,
 } from "@/actions/project-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import { DEFAULT_PAGE_LIMIT } from "@/lib/domain/policies";
 import { STALE_TIME } from "@/lib/query-config";
 import {
@@ -70,30 +71,12 @@ export function useProject(
   });
 }
 
-export function useConvertToProject(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof convertQuotationToProject>>,
-    Error,
-    Parameters<typeof convertQuotationToProject>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: convertQuotationToProject,
-    onSuccess: async (res) => {
-      if (res.success) {
-        await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-        await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-        toast.success(`Project ${res.data.projectNumber} created`);
-      } else {
-        toast.error(res.error);
-      }
-    },
-  });
-}
+export const useConvertToProject = createMutationHook({
+  mutationFn: (raw: unknown) => convertQuotationToProject(raw),
+  invalidateKeys: [projectKeys.all, quotationKeys.all, dashboardKeys.all, warrantyKeys.all],
+  successMessage: "Project created",
+  errorMessage: "Failed to convert quotation",
+});
 
 export function useUpdateProject(): ReturnType<
   typeof useMutation<
@@ -144,157 +127,47 @@ export function useUpdateProject(): ReturnType<
   });
 }
 
-export function useAddProjectCost(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof addProjectCost>>,
-    Error,
-    Parameters<typeof addProjectCost>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useAddProjectCost = createMutationHook({
+  mutationFn: (raw: unknown) => addProjectCost(raw),
+  invalidateKeys: [projectKeys.all],
+  successMessage: "Cost recorded",
+  errorMessage: "Operation failed. Please try again.",
+});
 
-  return useMutation({
-    mutationFn: addProjectCost,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success("Cost recorded");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
+export const useDeleteProjectCost = createMutationHook({
+  mutationFn: (costId: string) => deleteProjectCost(costId),
+  invalidateKeys: [projectKeys.all],
+  successMessage: "Cost removed",
+  errorMessage: "Operation failed. Please try again.",
+});
 
-export function useDeleteProjectCost(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof deleteProjectCost>>,
-    Error,
-    Parameters<typeof deleteProjectCost>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useConsumeProjectInventory = createMutationHook({
+  mutationFn: (raw: unknown) => consumeProjectInventory(raw),
+  invalidateKeys: [projectKeys.all, inventoryKeys.all],
+  successMessage: "Inventory consumed",
+  errorMessage: "Operation failed. Please try again.",
+});
 
-  return useMutation({
-    mutationFn: deleteProjectCost,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success("Cost removed");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
+export const useAddProjectRemark = createMutationHook({
+  mutationFn: (raw: unknown) => addProjectRemark(raw),
+  invalidateKeys: [projectKeys.all],
+  successMessage: "Posted",
+  errorMessage: "Operation failed. Please try again.",
+});
 
-export function useConsumeProjectInventory(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof consumeProjectInventory>>,
-    Error,
-    Parameters<typeof consumeProjectInventory>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useDeleteProjectRemark = createMutationHook({
+  mutationFn: (remarkId: string) => deleteProjectRemark(remarkId),
+  invalidateKeys: [projectKeys.all],
+  successMessage: "Remark removed",
+  errorMessage: "Operation failed. Please try again.",
+});
 
-  return useMutation({
-    mutationFn: consumeProjectInventory,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      await queryClient.invalidateQueries({ queryKey: inventoryKeys.all });
-      toast.success("Inventory consumed");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
-
-export function useDeleteProjectRemark(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof deleteProjectRemark>>,
-    Error,
-    Parameters<typeof deleteProjectRemark>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteProjectRemark,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success("Remark removed");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
-
-export function useAddProjectRemark(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof addProjectRemark>>,
-    Error,
-    Parameters<typeof addProjectRemark>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: addProjectRemark,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      toast.success("Posted");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
-
-export function useMarkProjectCompleted(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof markProjectCompleted>>,
-    Error,
-    Parameters<typeof markProjectCompleted>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: markProjectCompleted,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-      toast.success("Project marked complete");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
+export const useMarkProjectCompleted = createMutationHook({
+  mutationFn: (id: string) => markProjectCompleted(id),
+  invalidateKeys: [projectKeys.all, warrantyKeys.all],
+  successMessage: "Project marked complete",
+  errorMessage: "Operation failed. Please try again.",
+});
 
 export function useCheckProjectCompletionOutstanding() {
   return useMutation({
@@ -302,28 +175,9 @@ export function useCheckProjectCompletionOutstanding() {
   });
 }
 
-export function useCreateProjectWarrantyAlert(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof createWarrantyAlertForProject>>,
-    Error,
-    Parameters<typeof createWarrantyAlertForProject>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createWarrantyAlertForProject,
-    onSuccess: async (res) => {
-      if (!res.success) {
-        toast.error(res.error);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-      await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-      toast.success("Alert added");
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Operation failed. Please try again.");
-    },
-  });
-}
+export const useCreateProjectWarrantyAlert = createMutationHook({
+  mutationFn: (raw: unknown) => createWarrantyAlertForProject(raw),
+  invalidateKeys: [projectKeys.all, warrantyKeys.all],
+  successMessage: "Alert added",
+  errorMessage: "Operation failed. Please try again.",
+});

@@ -8,6 +8,7 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "@/actions/notification-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import { STALE_TIME } from "@/lib/query-config";
 import { notificationKeys } from "@/lib/query-keys";
 import type { ActionData } from "@/lib/utils/action-response";
@@ -121,21 +122,12 @@ export function useMarkAllNotificationsAsRead(): ReturnType<
   });
 }
 
-export function useDeleteNotification(): ReturnType<
-  typeof useMutation<Awaited<ReturnType<typeof deleteNotification>>, Error, string>
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => deleteNotification(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      await queryClient.invalidateQueries({
-        queryKey: notificationKeys.unread(),
-      });
-    },
-  });
-}
+export const useDeleteNotification = createMutationHook({
+  mutationFn: (id: string) => deleteNotification(id),
+  invalidateKeys: [notificationKeys.all, notificationKeys.unread()],
+  successMessage: "Notification deleted",
+  errorMessage: "Failed to delete notification",
+});
 
 export function useDeleteAllNotifications(): ReturnType<
   typeof useMutation<Awaited<ReturnType<typeof deleteAllNotifications>>, Error, void>

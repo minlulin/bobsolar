@@ -6,6 +6,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import * as React from "react";
 import { toast } from "sonner";
 import { NotificationToast } from "@/components/shared/notification-toast";
+import { extractMutationMeta } from "@/lib/mutation-meta";
 import {
   getErrorMessage,
   isNetworkError,
@@ -58,22 +59,32 @@ function handleQueryError(error: unknown): void {
 }
 
 export function Providers({ children }: { children: React.ReactNode }): React.JSX.Element {
-  const [queryClient] = React.useState(
-    () =>
-      new QueryClient({
-        queryCache: new QueryCache({
-          onError: handleQueryError,
-        }),
-        mutationCache: new MutationCache({
-          onError: handleQueryError,
-        }),
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000,
-          },
-        },
+  const [queryClient] = React.useState(() => {
+    const client = new QueryClient({
+      queryCache: new QueryCache({
+        onError: handleQueryError,
       }),
-  );
+      mutationCache: new MutationCache({
+        onSuccess: (_data, _variables, _context, mutation) => {
+          const meta = extractMutationMeta(mutation.meta);
+          if (meta?.invalidates) {
+            Promise.all(
+              meta.invalidates.map((key) => client.invalidateQueries({ queryKey: key })),
+            ).catch((err) => {
+              console.error("MutationCache auto-invalidation failed:", err);
+            });
+          }
+        },
+        onError: handleQueryError,
+      }),
+      defaultOptions: {
+        queries: {
+          staleTime: 60 * 1000,
+        },
+      },
+    });
+    return client;
+  });
 
   return (
     <QueryClientProvider client={queryClient}>

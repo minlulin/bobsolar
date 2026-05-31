@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   archiveQuotation,
   createQuotation,
@@ -12,7 +11,6 @@ import {
   updateQuotationStatus,
 } from "@/actions/quotation-actions";
 import { createMutationHook } from "@/hooks/mutation-factory";
-import type { QuotationStatus } from "@/lib/db/schema";
 import { STALE_TIME } from "@/lib/query-config";
 import { quotationKeys } from "@/lib/query-keys";
 import type { ActionData } from "@/lib/utils/action-response";
@@ -49,141 +47,41 @@ export function useQuotation(
   });
 }
 
-export function useCreateQuotation(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof createQuotation>>,
-    Error,
-    Parameters<typeof createQuotation>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useCreateQuotation = createMutationHook({
+  mutationFn: (raw: unknown) => createQuotation(raw),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation created successfully",
+  errorMessage: "Failed to create quotation. Please try again.",
+});
 
-  return useMutation({
-    mutationFn: createQuotation,
-    onSuccess: async (response) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(response.data.id),
-        });
-        toast.success("Quotation created successfully");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to create quotation. Please try again.");
-    },
-  });
-}
+export const useUpdateQuotationStatus = createMutationHook({
+  mutationFn: ({ id, status }: { id: string; status: string }) =>
+    updateQuotationStatus(id, status as Parameters<typeof updateQuotationStatus>[1]),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Status updated successfully",
+  errorMessage: "Failed to update status. Please try again.",
+});
 
-export function useUpdateQuotationStatus(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof updateQuotationStatus>>,
-    Error,
-    { id: string; status: QuotationStatus }
-  >
-> {
-  const queryClient = useQueryClient();
+export const useDeleteQuotation = createMutationHook({
+  mutationFn: (id: string) => deleteQuotation(id),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation deleted successfully",
+  errorMessage: "Failed to delete quotation. Please try again.",
+});
 
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: QuotationStatus }) =>
-      updateQuotationStatus(id, status),
-    onSuccess: async (response, variables) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(variables.id),
-        });
-        toast.success("Status updated successfully");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to update status. Please try again.");
-    },
-  });
-}
+export const useUpdateQuotation = createMutationHook({
+  mutationFn: ({ id, data }: { id: string; data: UpdateQuotation }) => updateQuotation(id, data),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation updated successfully",
+  errorMessage: "Failed to update quotation. Please try again.",
+});
 
-export function useDeleteQuotation(): ReturnType<
-  typeof useMutation<Awaited<ReturnType<typeof deleteQuotation>>, Error, string>
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteQuotation,
-    onSuccess: async (response, deletedId) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(deletedId),
-        });
-        toast.success("Quotation deleted successfully");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to delete quotation. Please try again.");
-    },
-  });
-}
-
-export function useUpdateQuotation(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof updateQuotation>>,
-    Error,
-    { id: string; data: UpdateQuotation }
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateQuotation }) => updateQuotation(id, data),
-    onSuccess: async (response, variables) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(variables.id),
-        });
-        toast.success("Quotation updated successfully");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to update quotation. Please try again.");
-    },
-  });
-}
-
-export function useDuplicateQuotation(): ReturnType<
-  typeof useMutation<Awaited<ReturnType<typeof duplicateQuotation>>, Error, string>
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: duplicateQuotation,
-    onSuccess: async (response, originalId) => {
-      if (response.success) {
-        await queryClient.invalidateQueries({ queryKey: quotationKeys.all });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(originalId),
-        });
-        await queryClient.invalidateQueries({
-          queryKey: quotationKeys.detail(response.data.id),
-        });
-        toast.success("Quotation duplicated successfully");
-      } else {
-        toast.error(response.error);
-      }
-    },
-    onError: (error) => {
-      toast.error(error.message ?? "Failed to duplicate quotation. Please try again.");
-    },
-  });
-}
+export const useDuplicateQuotation = createMutationHook({
+  mutationFn: (id: string) => duplicateQuotation(id),
+  invalidateKeys: [quotationKeys.all],
+  successMessage: "Quotation duplicated successfully",
+  errorMessage: "Failed to duplicate quotation. Please try again.",
+});
 
 export const useArchiveQuotation = createMutationHook({
   mutationFn: (id: string) => archiveQuotation(id),

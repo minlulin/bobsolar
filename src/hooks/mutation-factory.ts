@@ -8,9 +8,9 @@ import {
   type UseQueryResult,
   useMutation,
   useQuery,
-  useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { SolarMutationMeta } from "@/lib/mutation-meta";
 import type { ActionResponse } from "@/lib/utils/action-response";
 
 /** Mutation function that receives a single variables argument */
@@ -25,6 +25,12 @@ export interface MutationFactoryOptions<TData, TVariables, TContext = unknown> {
   errorMessage?: string;
   onMutate?: (variables: TVariables) => Promise<TContext | undefined>;
   onErrorRollback?: (context: TContext | undefined) => void;
+  /**
+   * Mutation metadata. If `invalidates` is set, the MutationCache handler
+   * will automatically invalidate those query keys on success — even for
+   * hooks that don't use the factory.
+   */
+  meta?: SolarMutationMeta;
 }
 
 export function createMutationHook<TData, TVariables, TContext = unknown>(
@@ -37,6 +43,7 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
     errorMessage = "Operation failed",
     onMutate,
     onErrorRollback,
+    meta,
   } = options;
 
   return function useGeneratedMutation(): UseMutationResult<
@@ -44,11 +51,13 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
     Error,
     TVariables
   > {
-    const queryClient = useQueryClient();
-
     return useMutation({
       mutationFn: async (variables: TVariables) => {
         return mutationFn(variables);
+      },
+      meta: {
+        ...meta,
+        invalidates: invalidateKeys.length > 0 ? invalidateKeys : meta?.invalidates,
       },
       ...(onMutate
         ? {
@@ -59,11 +68,6 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
         : {}),
       onSuccess: (response: MutationResponse<TData>) => {
         if (response.success) {
-          Promise.all(
-            invalidateKeys.map((key) => queryClient.invalidateQueries({ queryKey: key })),
-          ).catch((err) => {
-            console.error("Mutation success query invalidation failed:", err);
-          });
           const msg: string =
             typeof successMessage === "function" && response.data !== undefined
               ? successMessage(response.data)

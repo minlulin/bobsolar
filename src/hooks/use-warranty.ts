@@ -1,11 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import {
   getWarrantyAlerts,
   getWarrantySummary,
   reopenWarrantyAlert,
   resolveWarrantyAlert,
 } from "@/actions/warranty-actions";
+import { createMutationHook } from "@/hooks/mutation-factory";
 import { STALE_TIME } from "@/lib/query-config";
 import { projectKeys, warrantyKeys } from "@/lib/query-keys";
 import type { ActionData } from "@/lib/utils/action-response";
@@ -41,51 +41,16 @@ export function useWarrantyAlerts(
   });
 }
 
-export function useResolveWarrantyAlert(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof resolveWarrantyAlert>>,
-    Error,
-    Parameters<typeof resolveWarrantyAlert>[0]
-  >
-> {
-  const queryClient = useQueryClient();
+export const useResolveWarrantyAlert = createMutationHook({
+  mutationFn: (id: string) => resolveWarrantyAlert(id),
+  invalidateKeys: [warrantyKeys.all, projectKeys.all],
+  successMessage: "Alert resolved",
+  errorMessage: "Could not resolve",
+});
 
-  return useMutation({
-    mutationFn: resolveWarrantyAlert,
-    onSuccess: async (res) => {
-      if (!res.success) toast.error(res.error);
-      else {
-        await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-        await queryClient.invalidateQueries({ queryKey: projectKeys.all });
-        toast.success("Alert resolved");
-      }
-    },
-    onError: () => {
-      toast.error("Could not resolve");
-    },
-  });
-}
-
-export function useReopenWarrantyAlert(): ReturnType<
-  typeof useMutation<
-    Awaited<ReturnType<typeof reopenWarrantyAlert>>,
-    Error,
-    Parameters<typeof reopenWarrantyAlert>[0]
-  >
-> {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: reopenWarrantyAlert,
-    onSuccess: async (res) => {
-      if (!res.success) toast.error(res.error);
-      else {
-        await queryClient.invalidateQueries({ queryKey: warrantyKeys.all });
-        toast.success("Alert reopened");
-      }
-    },
-    onError: () => {
-      toast.error("Could not reopen");
-    },
-  });
-}
+export const useReopenWarrantyAlert = createMutationHook({
+  mutationFn: (id: string) => reopenWarrantyAlert(id),
+  invalidateKeys: [warrantyKeys.all],
+  successMessage: "Alert reopened",
+  errorMessage: "Could not reopen",
+});
