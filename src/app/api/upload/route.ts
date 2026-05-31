@@ -138,6 +138,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const host = request.headers.get("host");
     const referer = request.headers.get("referer");
 
+    if (!origin && !referer) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     if (origin) {
       try {
         const originHost = new URL(origin).host;

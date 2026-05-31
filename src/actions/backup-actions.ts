@@ -185,7 +185,7 @@ export async function createBackup(): Promise<ActionResponse<BackupMetadata>> {
     const buffer = Buffer.from(json, "utf-8");
 
     const blob = await put(`${BACKUP_FOLDER}/${filename}`, buffer, {
-      access: "public",
+      access: "private",
       token,
       contentType: "application/json",
       cacheControlMaxAge: 60 * 60 * 24 * 365,
@@ -273,7 +273,7 @@ export async function createBackupInternal(): Promise<BackupMetadata> {
   const buffer = Buffer.from(json, "utf-8");
 
   const blob = await put(`${BACKUP_FOLDER}/${filename}`, buffer, {
-    access: "public",
+    access: "private",
     token,
     contentType: "application/json",
     cacheControlMaxAge: 60 * 60 * 24 * 365,

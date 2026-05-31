@@ -8,11 +8,19 @@ export const metadata: Metadata = {
 };
 
 export default async function OwnerPortalPage() {
-  const data = await getOwnerPortalData();
+  const result = await getOwnerPortalData();
+
+  if (!result.success) {
+    return (
+      <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
+        <p className="text-destructive">Failed to load owner portal data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full p-4 md:p-8 overflow-y-auto">
-      <OwnerPortalClient data={data} />
+      <OwnerPortalClient data={result.data} />
     </div>
   );
 }

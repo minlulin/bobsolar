@@ -76,7 +76,8 @@ run(
   "tsx src/lib/db/factory-bootstrap.ts",
   "Seed factory bootstrap (payment methods + ledger accounts)",
 );
-run("pnpm db:seed", "Seed from .env.local (admin + base data)");
+run("pnpm db:seed", "Seed from .env.local (admin + users + company settings)");
+run("tsx src/lib/db/seed-owners.ts", "Seed owners from SEED_PARTNERS");
 run("tsx scripts/db-handover-verify.ts", "Verify fresh handover state");
 
 console.log("\n========================================");

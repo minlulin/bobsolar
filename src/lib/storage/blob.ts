@@ -39,13 +39,13 @@ async function writeLocalFallback(
 ): Promise<string> {
   const safeName = filename.replace(/[^\w.-]/g, "_");
   const cleanFolder = folder.replace(/^\/+/, "");
-  const targetDir = path.join(process.cwd(), "public", cleanFolder);
+  const targetDir = path.join(process.cwd(), ".uploads", cleanFolder);
   await mkdir(targetDir, { recursive: true });
   const outputName = `${randomUUID()}-${safeName}`;
   const outputPath = path.join(targetDir, outputName);
   const buf = await toBuffer(data);
   await writeFile(outputPath, buf);
-  return `/${cleanFolder}/${outputName}`;
+  return `/api/local-file?path=${encodeURIComponent(path.join(cleanFolder, outputName))}`;
 }
 
 /**

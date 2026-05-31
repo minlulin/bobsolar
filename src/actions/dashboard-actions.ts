@@ -114,7 +114,7 @@ const getCachedSharedStats = unstable_cache(
     };
   },
   ["dashboard:shared-stats"],
-  { tags: ["dashboard:stats"], revalidate: 300 },
+  { tags: ["dashboard:stats"], revalidate: 60 },
 );
 
 export const getDashboardStats = cache(async (): Promise<ActionResponse<DashboardStats>> => {

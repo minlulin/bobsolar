@@ -25,9 +25,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import type { ActionData } from "@/lib/utils/action-response";
 import { type getExpensesData, submitGeneralExpense } from "./actions";
 
-type ExpensesData = Awaited<ReturnType<typeof getExpensesData>>;
+type ExpensesData = ActionData<Awaited<ReturnType<typeof getExpensesData>>>;
 
 const listVariants: Variants = {
   hidden: { opacity: 0 },
@@ -399,7 +400,9 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
                   className="group grid grid-cols-12 items-center p-4 md:px-6 rounded-2xl hover:bg-background/80 transition-all duration-300 border border-transparent hover:border-border/50 hover:shadow-sm"
                 >
                   <div className="col-span-2 hidden md:block text-sm text-muted-foreground font-medium">
-                    {format(new Date(expense.expenseDate), "MMM dd, yyyy")}
+                    {expense.expenseDate
+                      ? format(new Date(expense.expenseDate), "MMM dd, yyyy")
+                      : "N/A"}
                   </div>
 
                   <div className="col-span-9 md:col-span-5 flex items-center gap-4">
@@ -447,7 +450,9 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
                       {fmt(expense.amount)}
                     </span>
                     <span className="text-xs text-muted-foreground md:hidden mt-1">
-                      {format(new Date(expense.expenseDate), "MMM dd")}
+                      {expense.expenseDate
+                        ? format(new Date(expense.expenseDate), "MMM dd")
+                        : "N/A"}
                     </span>
                   </div>
                 </motion.div>

@@ -10,7 +10,7 @@ type RecordExpenseInput = {
   expenseDate?: Date;
   expenseAccountCode: OperatingExpenseAccountCode;
   paymentMethodId?: string | null;
-  paymentAssetAccountCode?: LedgerAccountCode; // If paying immediately
+  paymentAssetAccountCode?: LedgerAccountCode | undefined; // If paying immediately
   reference?: string | null;
   notes?: string | null;
   createdBy: string;
@@ -23,19 +23,22 @@ export async function recordGeneralExpense(
   const date = input.expenseDate ?? new Date();
 
   // Create the expense record
+  const account = await input.tx.query.ledgerAccounts.findFirst({
+    where: (accounts, { eq }) => eq(accounts.code, input.expenseAccountCode),
+    columns: { id: true },
+  });
+
+  if (!account) {
+    throw new Error(`Ledger account not found for code: ${input.expenseAccountCode}`);
+  }
+
   const [expense] = await input.tx
     .insert(generalExpenses)
     .values({
       payeeName: input.payeeName,
       amount: String(input.amount),
       expenseDate: date,
-      // Need to resolve the accountId from the code
-      accountId: (
-        await input.tx.query.ledgerAccounts.findFirst({
-          where: (accounts, { eq }) => eq(accounts.code, input.expenseAccountCode),
-          columns: { id: true },
-        })
-      )?.id as string,
+      accountId: account.id,
       paymentMethodId: input.paymentMethodId ?? null,
       reference: input.reference ?? null,
       notes: input.notes ?? null,

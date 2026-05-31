@@ -33,10 +33,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
+import type { ActionData } from "@/lib/utils/action-response";
 import { type getOwnerPortalData, payCapitalCallAction, requestOwnerDrawAction } from "./actions";
 
-type OwnerPortalData = Awaited<ReturnType<typeof getOwnerPortalData>>;
+type OwnerPortalData = ActionData<Awaited<ReturnType<typeof getOwnerPortalData>>>;
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },

@@ -151,10 +151,15 @@ export function BackupTab(): React.JSX.Element {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={backup.url} download={backup.filename}>
-                        <Download className="h-4 w-4" />
-                      </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const params = new URLSearchParams({ url: backup.url });
+                        window.open(`/api/backup/download?${params}`, "_blank");
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
