@@ -19,25 +19,25 @@
 
 ## PHASE 1: CRITICAL FIXES (Do Immediately)
 
-### C-1. Backup Files Stored with Public Access
+### C-1. Backup Files Stored with Public Access ( FIXED )
 - **File:** `src/actions/backup-actions.ts:187-192`
 - **Issue:** `access: "public"` on Vercel Blob upload. Anyone with the URL downloads the ENTIRE database including password hashes, financial records, and user data.
 - **Fix:** Change to `access: "private"`. Create a download endpoint that checks admin auth before serving backup files.
 - **Impact:** Data breach — password hashes, financial records exposed publicly.
 
-### C-2. Owner Draw Action Hardcodes Owner A Accounts
+### C-2. Owner Draw Action Hardcodes Owner A Accounts ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:149-164`
 - **Issue:** `requestOwnerDrawAction` always uses `"owner_a_distributions_payable"` and `"owner_a_draws"` regardless of which owner requests the draw. Comment says "For demo purposes". Owner B and Owner C draws corrupt equity records.
 - **Fix:** Use the existing `resolvePartnerAccounts(tx, ownerId)` from `src/lib/finance/equity.ts` to dynamically resolve the correct owner's accounts based on their DB owner ID.
 - **Impact:** All non-Owner-A draws post to wrong ledger accounts. Financial statements are incorrect.
 
-### C-3. Owner Portal Missing Per-Owner Authorization
+### C-3. Owner Portal Missing Per-Owner Authorization ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:134`
 - **Issue:** `requestOwnerDrawAction` calls `requireAuth()` but never verifies `user.userId === owner.userId`. Any authenticated staff user can request a draw on behalf of any owner.
 - **Fix:** After resolving the owner, verify that `auth.userId === owner.userId`. Restrict to owner's own account or require admin role for cross-owner operations.
 - **Impact:** Any staff user can drain any owner's distribution balance.
 
-### C-4. Local File Fallback Stores Uploads in Public Directory
+### C-4. Local File Fallback Stores Uploads in Public Directory ( FIXED )
 - **File:** `src/lib/storage/blob.ts:35-49`
 - **Issue:** `writeLocalFallback` writes files to `public/` directory, making them directly accessible via HTTP. The `NODE_ENV` check on line 80 could be misconfigured.
 - **Fix:** Add explicit `NODE_ENV !== 'production'` guard. Write to a non-public directory (e.g., `.uploads/`) even in dev, or serve via a route handler.
@@ -46,73 +46,73 @@
 
 ## PHASE 2: HIGH PRIORITY (This Sprint)
 
-### H-1. Owner Portal Actions Bypass Error Handler
+### H-1. Owner Portal Actions Bypass Error Handler ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:129-194`
 - **Issue:** Both `requestOwnerDrawAction` and `payCapitalCallAction` have no try/catch. Raw errors propagate with internal details (stack traces, DB errors).
 - **Fix:** Wrap in try/catch, use `handleActionError()`, return `ActionResponse<T>` with `successResponse()`.
 - **Impact:** Internal error details leaked to client.
 
-### H-2. Owner Portal Missing Cache Invalidation
+### H-2. Owner Portal Missing Cache Invalidation ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:129-194`
 - **Issue:** Neither action calls `revalidatePath` or `revalidateTag`. Server component page data is stale after mutations.
 - **Fix:** Add `revalidatePath("/owner-portal")` after successful mutations.
 - **Impact:** Owner sees stale data after draws/capital calls.
 
-### H-3. Owner Portal Missing Action Response Type
+### H-3. Owner Portal Missing Action Response Type ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:167, 193`
 - **Issue:** Returns `{ success: true }` instead of `ActionResponse<T>`. Breaks consistent error handling pattern.
 - **Fix:** Return `successResponse(data)` with proper typing.
 - **Impact:** Inconsistent error handling across codebase.
 
-### H-4. Sequential DB Queries in Owner Portal
+### H-4. Sequential DB Queries in Owner Portal ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:24-107`
 - **Issue:** 6+ sequential DB queries that could be parallelized. Queries 3-7 are independent.
 - **Fix:** Use `Promise.all` for independent queries.
 - **Impact:** Slow page load for owner portal.
 
-### H-5. Finance Quick View Cache Tag Mismatch
+### H-5. Finance Quick View Cache Tag Mismatch ( FIXED )
 - **File:** `src/actions/dashboard-actions.ts:430` + `src/lib/cache-tags.ts`
 - **Issue:** `getCachedFinanceQuickView` uses tag `"dashboard:finance"` but this tag doesn't exist in `CACHE_TAGS`. Never invalidated after mutations.
 - **Fix:** Add `FINANCE_QUICK_VIEW: "dashboard:finance"` to `CACHE_TAGS` and call `revalidateTag()` in payment/expense mutations.
 - **Impact:** Finance dashboard shows stale data.
 
-### H-6. CSRF Protection Bypass on Upload
+### H-6. CSRF Protection Bypass on Upload ( FIXED )
 - **File:** `src/app/api/upload/route.ts:136-160`
 - **Issue:** If both `origin` and `referer` headers are absent, CSRF check is skipped entirely.
 - **Fix:** Reject requests that have neither `origin` nor `referer` header.
 - **Impact:** Potential CSRF attack vector.
 
-### H-7. Unsafe `as` Casts in Expenses Action
+### H-7. Unsafe `as` Casts in Expenses Action ( FIXED )
 - **File:** `src/app/(dashboard)/finance/expenses/actions.ts:19, 70-77`
 - **Issue:** Double-cast through `unknown` for Zod enum, and `formData.get("...") as string` without null checks.
 - **Fix:** Use `[...OPERATING_EXPENSE_ACCOUNT_CODES]` for mutable copy. Add null checks for FormData.
 - **Impact:** Runtime errors if fields are missing.
 
-### H-8. Expenses Action Bypasses Standard Pattern
+### H-8. Expenses Action Bypasses Standard Pattern ( FIXED )
 - **File:** `src/app/(dashboard)/finance/expenses/actions.ts:27-101`
 - **Issue:** `getExpensesData` and `submitGeneralExpense` return raw objects instead of `ActionResponse<T>`. No try/catch.
 - **Fix:** Wrap in try/catch, use `handleActionError`, return `ActionResponse`.
 - **Impact:** Inconsistent error handling.
 
-### H-9. Unsafe Cast in Finance Expenses
+### H-9. Unsafe Cast in Finance Expenses ( FIXED )
 - **File:** `src/lib/finance/expenses.ts:38`
 - **Issue:** `accountId: (...find...)?.id as string` — if account not found, casts `undefined` to `string`.
 - **Fix:** Add null check before cast: `if (!account) throw new Error("Ledger account not found")`.
 - **Impact:** FK constraint violation at DB level.
 
-### H-10. Dashboard Stats Cache Staleness
+### H-10. Dashboard Stats Cache Staleness ( FIXED )
 - **File:** `src/actions/dashboard-actions.ts:73-118`
 - **Issue:** `unstable_cache` with 300s TTL serves stale dashboard data for up to 5 minutes.
 - **Fix:** Reduce TTL to 60s, or use tag-based invalidation for real-time freshness.
 - **Impact:** Dashboard shows outdated stats.
 
-### H-11. Owner Draw Amount Not Validated Server-Side
+### H-11. Owner Draw Amount Not Validated Server-Side ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/actions.ts:140`
 - **Issue:** `z.number().int().positive()` validates format but not business logic. Client has `max` but it's soft. Owner can draw more than `availableDraw`.
 - **Fix:** Server-side validation: query current balance, verify `amount <= availableDraw` before processing.
 - **Impact:** Owner can overdraw, creating negative distribution payable balance.
 
-### H-12. Query Retry Function Too Broad
+### H-12. Query Retry Function Too Broad ( FIXED )
 - **File:** `src/lib/query-config.ts:20`
 - **Issue:** `error.message.includes("4")` matches any error containing digit "4" (e.g., "4 items found", "Failed 4 times").
 - **Fix:** Use `error.message.includes("401") || error.message.includes("403") || error.message.includes("404")`.
@@ -172,7 +172,7 @@
 - **Issue:** Accepts arbitrary tax percent but has no Myanmar Commercial Tax rules, withholding tax helpers.
 - **Fix:** Create `src/lib/domain/tax.ts` with Myanmar tax rules.
 
-### M-11. Inconsistent MMK Currency Formatting
+### M-11. Inconsistent MMK Currency Formatting ( FIXED )
 - **Files:** Various across codebase
 - **Issue:** No centralized `formatMMK()` utility. Some use `Intl.NumberFormat`, some hardcode "Ks".
 - **Fix:** Create centralized utility in `src/lib/utils.ts`.
