@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { owners, ownerTransactions } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
+import { OWNER_TX_STATUSES, OWNER_TX_TYPES } from "@/lib/domain/owner-transaction";
 import { getPartnerByEmail, type PartnerConfig } from "@/lib/domain/partners";
 import { createBalancedJournalEntry, type DbTransaction } from "./ledger";
 
@@ -99,10 +100,10 @@ export async function distributeNetIncome(
       .insert(ownerTransactions)
       .values({
         ownerId: dist.ownerId,
-        transactionType: "distribution",
+        transactionType: OWNER_TX_TYPES.DISTRIBUTION,
         amount: String(dist.amount),
         transactionDate: date,
-        status: "completed",
+        status: OWNER_TX_STATUSES.COMPLETED,
         journalEntryId: journalResult.entryId,
       })
       .returning({ id: ownerTransactions.id });
@@ -160,10 +161,10 @@ export async function recordOwnerDraw(
     .insert(ownerTransactions)
     .values({
       ownerId: input.ownerId,
-      transactionType: "draw",
+      transactionType: OWNER_TX_TYPES.DRAW,
       amount: String(input.amount),
       transactionDate: date,
-      status: "completed",
+      status: OWNER_TX_STATUSES.COMPLETED,
       journalEntryId: journalResult.entryId,
     })
     .returning({ id: ownerTransactions.id });
@@ -216,10 +217,10 @@ export async function issueCapitalCall(
     .insert(ownerTransactions)
     .values({
       ownerId: input.ownerId,
-      transactionType: "capital_call_issued",
+      transactionType: OWNER_TX_TYPES.CAPITAL_CALL_ISSUED,
       amount: String(input.amount),
       transactionDate: date,
-      status: "pending",
+      status: OWNER_TX_STATUSES.PENDING,
       journalEntryId: journalResult.entryId,
     })
     .returning({ id: ownerTransactions.id });
@@ -251,7 +252,8 @@ export async function receiveCapitalContribution(
   });
 
   if (!pendingCall) throw new Error("Capital call transaction not found.");
-  if (pendingCall.status === "completed") throw new Error("Capital call already paid.");
+  if (pendingCall.status === OWNER_TX_STATUSES.COMPLETED)
+    throw new Error("Capital call already paid.");
 
   const journalResult = await createBalancedJournalEntry({
     tx: input.tx,
@@ -277,7 +279,7 @@ export async function receiveCapitalContribution(
   await input.tx
     .update(ownerTransactions)
     .set({
-      status: "completed",
+      status: OWNER_TX_STATUSES.COMPLETED,
     })
     .where(eq(ownerTransactions.id, input.transactionId));
 

@@ -334,45 +334,49 @@ export async function getPaymentFinanceSummary(): Promise<
       });
     }
 
-    const [totalIncomingRow] = await db
-      .select({
-        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
-      })
-      .from(journalEntries)
-      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
-      .where(
-        and(eq(journalEntries.sourceType, "project_payment"), eq(journalEntries.isReversed, false)),
-      );
-
-    const [totalOutgoingRow] = await db
-      .select({
-        sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
-      })
-      .from(journalEntries)
-      .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
-      .where(
-        and(eq(journalEntries.sourceType, "project_expense"), eq(journalEntries.isReversed, false)),
-      );
-
-    // Exclude reversed payments: a payment whose journal entry is reversed
-    // is financially void, so it should not reduce the outstanding balance.
-    const unpaidCompletedRows = await db
-      .select({ count: sql<number>`cast(count(*) as int)` })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.status, "completed"),
-          sql`cast(${projects.quotedTotal} as numeric) > coalesce((
-            select sum(cast(pp.amount as numeric))
-            from ${projectPayments} pp
-            inner join ${journalEntries} je
-              on je.source_type = 'project_payment'
-              and je.source_id = pp.id
-              and je.is_reversed = false
-            where pp.project_id = ${projects.id}
-          ), 0)`,
+    const [[totalIncomingRow], [totalOutgoingRow], unpaidCompletedRows] = await Promise.all([
+      db
+        .select({
+          sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+        })
+        .from(journalEntries)
+        .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+        .where(
+          and(
+            eq(journalEntries.sourceType, "project_payment"),
+            eq(journalEntries.isReversed, false),
+          ),
         ),
-      );
+      db
+        .select({
+          sum: sql<number>`coalesce(sum(${journalLines.debit}::numeric), 0)`.as("sum"),
+        })
+        .from(journalEntries)
+        .innerJoin(journalLines, eq(journalLines.entryId, journalEntries.id))
+        .where(
+          and(
+            eq(journalEntries.sourceType, "project_expense"),
+            eq(journalEntries.isReversed, false),
+          ),
+        ),
+      db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.status, "completed"),
+            sql`cast(${projects.quotedTotal} as numeric) > coalesce((
+              select sum(cast(pp.amount as numeric))
+              from ${projectPayments} pp
+              inner join ${journalEntries} je
+                on je.source_type = 'project_payment'
+                and je.source_id = pp.id
+                and je.is_reversed = false
+              where pp.project_id = ${projects.id}
+            ), 0)`,
+          ),
+        ),
+    ]);
 
     return successResponse({
       monthly,

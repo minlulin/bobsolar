@@ -5,6 +5,7 @@ import {
   QUOTATION_STATUS_TRANSITIONS,
   quotationStatusSchema,
 } from "@/lib/domain/quotation";
+import { MYANMAR_TAX } from "@/lib/domain/tax";
 
 export { canTransitionQuotationStatus, QUOTATION_STATUS_TRANSITIONS };
 
@@ -33,7 +34,7 @@ export const createQuotationSchema = z.object({
   customerId: z.uuid("Customer is required"),
   items: z.array(quotationItemSchema).min(1, "At least one item is required"),
   discountPercent: z.number().min(0).max(100).default(0),
-  taxPercent: z.number().min(0).max(100).default(5),
+  taxPercent: z.number().min(0).max(100).default(MYANMAR_TAX.COMMERCIAL_TAX_RATE),
   notes: z.string().optional().nullable(),
   validUntil: z.date().optional().nullable(),
   quotationDate: z.date().optional().nullable(),

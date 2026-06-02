@@ -4,7 +4,6 @@ import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { z } from "zod";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
-import { deleteCacheValue } from "@/lib/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { type InventoryItem, inventoryItems } from "@/lib/db/schema";
@@ -121,7 +120,6 @@ export async function createInventoryItem(raw: unknown): Promise<ActionResponse<
       if (!item) {
         return errorResponse("Failed to create inventory item");
       }
-      await deleteCacheValue("inventory:categories");
 
       revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
       revalidatePath("/inventory");
@@ -180,7 +178,6 @@ export async function updateInventoryItem(
     if (!item) {
       return errorResponse("Item not found or failed to update");
     }
-    await deleteCacheValue("inventory:categories");
 
     revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");
@@ -199,7 +196,6 @@ export async function deleteInventoryItem(id: string): Promise<ActionResponse<nu
       .update(inventoryItems)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(inventoryItems.id, validatedId));
-    await deleteCacheValue("inventory:categories");
 
     revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");
@@ -251,7 +247,6 @@ export async function bulkUpdatePrices(rawUpdates: unknown): Promise<ActionRespo
         })
         .where(inArray(inventoryItems.id, ids));
     });
-    await deleteCacheValue("inventory:categories");
 
     revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     revalidatePath("/inventory");

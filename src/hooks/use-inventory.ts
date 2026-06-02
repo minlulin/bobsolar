@@ -27,7 +27,7 @@ export function useInventoryItems(
       if (res.data === undefined) throw new Error("Missing response data");
       return res.data;
     },
-    staleTime: STALE_TIME.LONG,
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 

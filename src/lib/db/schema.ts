@@ -796,18 +796,24 @@ export const owners = pgTable("owners", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const ownerTransactions = pgTable("owner_transactions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  ownerId: uuid("owner_id")
-    .references(() => owners.id)
-    .notNull(),
-  transactionType: ownerTransactionTypeEnum("transaction_type").notNull(),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  transactionDate: timestamp("transaction_date").defaultNow().notNull(),
-  status: ownerTransactionStatusEnum("status").notNull(),
-  journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const ownerTransactions = pgTable(
+  "owner_transactions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ownerId: uuid("owner_id")
+      .references(() => owners.id)
+      .notNull(),
+    transactionType: ownerTransactionTypeEnum("transaction_type").notNull(),
+    amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+    transactionDate: timestamp("transaction_date").defaultNow().notNull(),
+    status: ownerTransactionStatusEnum("status").notNull(),
+    journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    ownerIdIdx: index("owner_transactions_owner_id_idx").on(table.ownerId),
+  }),
+);
 
 // --- Relations ---
 

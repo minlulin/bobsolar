@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { OWNER_TX_STATUSES, OWNER_TX_TYPES } from "@/lib/domain/owner-transaction";
 import type { ActionData } from "@/lib/utils/action-response";
 import { type getOwnerPortalData, payCapitalCallAction, requestOwnerDrawAction } from "./actions";
 
@@ -301,20 +302,20 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                               <div className="flex items-center gap-5">
                                 <div
                                   className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-110 ${
-                                    tx.transactionType === "distribution"
+                                    tx.transactionType === OWNER_TX_TYPES.DISTRIBUTION
                                       ? "bg-green-500/10 text-green-600"
-                                      : tx.transactionType === "draw"
+                                      : tx.transactionType === OWNER_TX_TYPES.DRAW
                                         ? "bg-orange-500/10 text-orange-600"
-                                        : tx.transactionType === "capital_call_issued"
+                                        : tx.transactionType === OWNER_TX_TYPES.CAPITAL_CALL_ISSUED
                                           ? "bg-destructive/10 text-destructive"
                                           : "bg-blue-500/10 text-blue-600"
                                   }`}
                                 >
-                                  {tx.transactionType === "distribution" ? (
+                                  {tx.transactionType === OWNER_TX_TYPES.DISTRIBUTION ? (
                                     <ArrowDownRight className="w-6 h-6" />
-                                  ) : tx.transactionType === "draw" ? (
+                                  ) : tx.transactionType === OWNER_TX_TYPES.DRAW ? (
                                     <ArrowUpRight className="w-6 h-6" />
-                                  ) : tx.transactionType === "capital_call_issued" ? (
+                                  ) : tx.transactionType === OWNER_TX_TYPES.CAPITAL_CALL_ISSUED ? (
                                     <HandCoins className="w-6 h-6" />
                                   ) : (
                                     <Landmark className="w-6 h-6" />
@@ -333,8 +334,8 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                                 <p className="text-xl font-bold tracking-tight">
                                   {fmt(Number(tx.amount))}
                                 </p>
-                                {tx.status === "pending" &&
-                                tx.transactionType === "capital_call_issued" ? (
+                                {tx.status === OWNER_TX_STATUSES.PENDING &&
+                                tx.transactionType === OWNER_TX_TYPES.CAPITAL_CALL_ISSUED ? (
                                   <Button
                                     size="sm"
                                     variant="destructive"
@@ -350,7 +351,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                                   <Badge
                                     variant="outline"
                                     className={`text-[10px] uppercase tracking-widest font-bold border-none ${
-                                      tx.status === "completed"
+                                      tx.status === OWNER_TX_STATUSES.COMPLETED
                                         ? "bg-green-500/10 text-green-600"
                                         : "bg-muted text-muted-foreground"
                                     }`}

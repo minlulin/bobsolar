@@ -70,17 +70,12 @@ const state = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
-  deleteCacheValue: vi.fn(async () => undefined),
 }));
 
 vi.mock("next/cache", () => ({
   revalidatePath: spies.revalidatePath,
   revalidateTag: spies.revalidateTag,
   unstable_cache: vi.fn((fn: unknown) => fn),
-}));
-
-vi.mock("@/lib/cache", () => ({
-  deleteCacheValue: spies.deleteCacheValue,
 }));
 
 vi.mock("@/lib/auth/validate", () => ({
@@ -195,7 +190,6 @@ describe("inventory-actions", () => {
       isActive: true,
     });
     expect(res.success).toBe(true);
-    expect(spies.deleteCacheValue).toHaveBeenCalledWith("inventory:categories");
     expect(spies.revalidatePath).toHaveBeenCalledWith("/inventory");
   });
 

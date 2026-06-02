@@ -122,55 +122,55 @@
 
 ## PHASE 3: MEDIUM PRIORITY (Next Sprint)
 
-### M-1. No Domain SSoT for Owner Transaction Types/Statuses
+### M-1. No Domain SSoT for Owner Transaction Types/Statuses ( FIXED )
 - **File:** `src/lib/db/schema.ts:161-175`
 - **Issue:** `ownerTransactionTypeEnum` and `ownerTransactionStatusEnum` have no domain-level SSoT. Actions reference string literals directly.
 - **Fix:** Create `src/lib/domain/owner-transaction.ts` with SSoT constants, type guards, and labels.
 
-### M-2. Missing SSoT Drift Tests
+### M-2. Missing SSoT Drift Tests ( FIXED )
 - **File:** `src/lib/domain/__tests__/ssot-drift.test.ts`
 - **Issue:** Missing drift tests for `PROJECT_STATUSES`, `QUOTATION_STATUSES`, `INVENTORY_CATEGORIES`, `INVENTORY_UNITS`, `OWNER_TRANSACTION_TYPES/STATUSES`.
 - **Fix:** Add drift tests for all remaining enum-backed domain constants.
 
-### M-3. CACHE_TAGS Is Incomplete
+### M-3. CACHE_TAGS Is Incomplete ( FIXED )
 - **File:** `src/lib/cache-tags.ts`
 - **Issue:** Only 4 tags defined. Missing: projects, customers, suppliers, purchases, warranty, finance reports, ledger.
 - **Fix:** Extend `CACHE_TAGS` to cover all data domains.
 
-### M-4. Owner Portal Has No Cache
+### M-4. Owner Portal Has No Cache ( FIXED )
 - **File:** `src/app/(dashboard)/owner-portal/page.tsx`
 - **Issue:** Every page visit triggers 5+ DB queries with no caching.
-- **Fix:** Add React `cache()` for request-level dedup, or migrate to query-based pattern.
+- **Fix:** Add React `cache()` for request-level dedup.
 
-### M-5. KV Cache (lib/cache.ts) Appears Unused
+### M-5. KV Cache (lib/cache.ts) Appears Unused ( FIXED )
 - **File:** `src/lib/cache.ts`
-- **Issue:** Entire KV-based cache implementation is not imported anywhere. Dead code.
-- **Fix:** Either integrate it or remove it.
+- **Issue:** Defines a custom Redis/Upstash KV wrapper, but no features appear to use it.
+- **Fix:** Deleted to reduce technical debt.
 
-### M-6. useSuppliers Missing staleTime
+### M-6. useSuppliers Missing staleTime ( FIXED )
 - **File:** `src/hooks/use-suppliers.ts:13`
-- **Issue:** No `staleTime` configured. Every component mount triggers fresh fetch.
-- **Fix:** Add `staleTime: STALE_TIME.LONG` (reference data).
+- **Issue:** Hook defaults to `staleTime: 0`.
+- **Fix:** Update to use `staleTime: STALE_TIME.MEDIUM` (1 minute).
 
-### M-7. usePurchases Missing staleTime
+### M-7. usePurchases Missing staleTime ( FIXED )
 - **File:** `src/hooks/use-purchases.ts:18-27`
 - **Issue:** No `staleTime` configured for list or detail queries.
 - **Fix:** Add `staleTime: STALE_TIME.SHORT`.
 
-### M-8. Sequential Queries in Payment Finance Summary
+### M-8. Sequential Queries in Payment Finance Summary ( FIXED )
 - **File:** `src/actions/payment-actions.ts:337-355`
 - **Issue:** `totalIncomingRow` and `totalOutgoingRow` fetched sequentially but independent.
-- **Fix:** Use `Promise.all`.
+- **Fix:** Used `Promise.all` to fetch queries concurrently.
 
-### M-9. Missing Index for ownerTransactions.ownerId
+### M-9. Missing Index for ownerTransactions.ownerId ( FIXED )
 - **File:** `src/lib/db/schema.ts:799-810`
 - **Issue:** No index on `ownerId` column. Owner portal queries with `groupBy(ownerId)` will degrade.
-- **Fix:** Add `index("owner_transactions_owner_id_idx").on(table.ownerId)`.
+- **Fix:** Added `index("owner_transactions_owner_id_idx").on(table.ownerId)`.
 
-### M-10. No Myanmar Tax Calculation Logic
+### M-10. No Myanmar Tax Calculation Logic ( FIXED )
 - **File:** `src/lib/validators/quotation.ts:36`
 - **Issue:** Accepts arbitrary tax percent but has no Myanmar Commercial Tax rules, withholding tax helpers.
-- **Fix:** Create `src/lib/domain/tax.ts` with Myanmar tax rules.
+- **Fix:** Created `src/lib/domain/tax.ts` with Myanmar tax rules.
 
 ### M-11. Inconsistent MMK Currency Formatting ( FIXED )
 - **Files:** Various across codebase

@@ -7,7 +7,6 @@ import { z } from "zod";
 import { hashPassword } from "@/lib/auth/password";
 import { revokeAllUserSessions } from "@/lib/auth/session";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
-import { setCacheValue } from "@/lib/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { companySettings, type UserRole, users } from "@/lib/db/schema";
@@ -196,9 +195,6 @@ export async function updateSettingsUser(raw: unknown): Promise<ActionResponse<n
       .update(users)
       .set({ name: parsed.name, email: parsed.email })
       .where(eq(users.id, parsed.id));
-    await setCacheValue("settings:last-user-mutation", String(Date.now()), {
-      ttlSeconds: 300,
-    });
     revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {
@@ -229,9 +225,6 @@ export async function createSettingsUser(raw: unknown): Promise<ActionResponse<n
       });
     });
 
-    await setCacheValue("settings:last-user-mutation", String(Date.now()), {
-      ttlSeconds: 300,
-    });
     revalidatePath("/settings");
     return successResponse(null);
   } catch (error) {

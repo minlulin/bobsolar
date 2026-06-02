@@ -6,6 +6,7 @@ import {
   updateSupplier,
 } from "@/actions/supplier-actions";
 import { createMutationHook } from "@/hooks/mutation-factory";
+import { STALE_TIME } from "@/lib/query-config";
 import { supplierKeys } from "@/lib/query-keys";
 import type { CreateSupplier, UpdateSupplier } from "@/lib/validators/supplier";
 
@@ -17,6 +18,7 @@ export function useSuppliers() {
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
+    staleTime: STALE_TIME.MEDIUM,
   });
 }
 

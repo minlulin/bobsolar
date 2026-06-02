@@ -2,6 +2,7 @@
 
 import { desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/validate";
 import { getDb } from "@/lib/db";
@@ -14,10 +15,11 @@ import {
   users,
 } from "@/lib/db/schema";
 import { LEDGER_ACCOUNT_CODES } from "@/lib/domain/finance";
+import { OWNER_TX_STATUSES, OWNER_TX_TYPES } from "@/lib/domain/owner-transaction";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
-export async function getOwnerPortalData(): Promise<
+export const getOwnerPortalData = cache(async function getOwnerPortalData(): Promise<
   ActionResponse<{
     retainedEarningsBalance: number;
     ytdNetIncome: number;
@@ -82,7 +84,7 @@ export async function getOwnerPortalData(): Promise<
             total: sql<number>`SUM(${ownerTransactions.amount}::numeric)`,
           })
           .from(ownerTransactions)
-          .where(eq(ownerTransactions.status, "completed"))
+          .where(eq(ownerTransactions.status, OWNER_TX_STATUSES.COMPLETED))
           .groupBy(ownerTransactions.ownerId, ownerTransactions.transactionType),
         db.query.ownerTransactions.findMany({
           orderBy: [desc(ownerTransactions.transactionDate)],
@@ -120,8 +122,8 @@ export async function getOwnerPortalData(): Promise<
         const entry = acc[ownerId];
         if (!entry) return acc;
         const val = Math.round(Number(row.total || 0));
-        if (row.type === "capital_contribution") entry.capitalContributed += val;
-        if (row.type === "draw") entry.draws += val;
+        if (row.type === OWNER_TX_TYPES.CAPITAL_CONTRIBUTION) entry.capitalContributed += val;
+        if (row.type === OWNER_TX_TYPES.DRAW) entry.draws += val;
         return acc;
       },
       {} as Record<string, { capitalContributed: number; draws: number }>,
@@ -148,7 +150,7 @@ export async function getOwnerPortalData(): Promise<
   } catch (error) {
     return handleActionError(error, "getOwnerPortalData", "Failed to fetch owner portal data");
   }
-}
+});
 
 export async function requestOwnerDrawAction(
   rawOwnerId: string,
@@ -210,7 +212,7 @@ export async function requestOwnerDrawAction(
           })
           .from(ownerTransactions)
           .where(
-            sql`${ownerTransactions.ownerId} = ${ownerId} AND ${ownerTransactions.transactionType} = 'draw' AND ${ownerTransactions.status} = 'completed'`,
+            sql`${ownerTransactions.ownerId} = ${ownerId} AND ${ownerTransactions.transactionType} = ${OWNER_TX_TYPES.DRAW} AND ${ownerTransactions.status} = ${OWNER_TX_STATUSES.COMPLETED}`,
           );
 
         const totalDraws = Math.round(Number(ownerStats[0]?.total || 0));
@@ -272,7 +274,7 @@ export async function payCapitalCallAction(
       return errorResponse("Capital call transaction not found");
     }
 
-    if (pendingCall.status === "completed") {
+    if (pendingCall.status === OWNER_TX_STATUSES.COMPLETED) {
       return errorResponse("Capital call is already paid");
     }
 

@@ -30,7 +30,6 @@ const state = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
-  setCacheValue: vi.fn(),
   insertCompanyValues: vi.fn(),
   insertUserValues: vi.fn(),
   updateUsersSet: vi.fn(),
@@ -56,10 +55,6 @@ vi.mock("@/lib/auth/session", () => ({
     state.revokedUserId = userId;
     return 1;
   }),
-}));
-
-vi.mock("@/lib/cache", () => ({
-  setCacheValue: spies.setCacheValue,
 }));
 
 vi.mock("@/lib/db", () => {

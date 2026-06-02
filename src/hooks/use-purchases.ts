@@ -7,9 +7,11 @@ import {
   receivePurchaseOrder,
 } from "@/actions/purchase-actions";
 import { createMutationHook } from "@/hooks/mutation-factory";
+import { STALE_TIME } from "@/lib/query-config";
 import { inventoryKeys, purchaseKeys } from "@/lib/query-keys";
 import type { ActionData } from "@/lib/utils/action-response";
 import type { CreatePurchaseOrder, PayPurchaseOrder } from "@/lib/validators/purchase";
+
 export type PurchaseOrderListRow = ActionData<
   Awaited<ReturnType<typeof getPurchaseOrders>>
 >[number];
@@ -23,6 +25,7 @@ export function usePurchases() {
       if (!res.success) throw new Error(res.error);
       return res.data;
     },
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
@@ -35,6 +38,7 @@ export function usePurchaseOrder(id: string) {
       return res.data;
     },
     enabled: !!id,
+    staleTime: STALE_TIME.SHORT,
   });
 }
 
