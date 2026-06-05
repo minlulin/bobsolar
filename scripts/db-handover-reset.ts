@@ -17,15 +17,18 @@
 import { execSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const root = resolve(__dirname, "..");
 
+config({ path: resolve(root, ".env.local") });
+
 const args = process.argv.slice(2);
 const confirmArg = args.find((arg) => arg.startsWith("--confirm="));
 const confirmValue = confirmArg?.split("=")[1] ?? "";
-const forceProduction = args.includes("--force-production") as true;
+const forceProduction = args.includes("--force-production");
 
 if (confirmValue !== "HANDOVER_RESET") {
   console.error("Safety check failed. This command destroys all DB data.");
@@ -66,18 +69,26 @@ function run(cmd: string, label: string): void {
   execSync(cmd, { cwd: root, stdio: "inherit" });
 }
 
+function hasSeedPartners(): boolean {
+  return Boolean(process.env["SEED_PARTNERS"]?.trim());
+}
+
 console.log("========================================");
 console.log("DB HANDOVER RESET START");
 console.log("========================================");
 
 run("tsx scripts/_exec-drop.ts", "Drop all tables and enums");
-run("pnpm exec drizzle-kit push", "Apply schema");
+run("pnpm exec drizzle-kit push --force", "Apply schema");
 run(
   "tsx src/lib/db/factory-bootstrap.ts",
   "Seed factory bootstrap (payment methods + ledger accounts)",
 );
 run("pnpm db:seed", "Seed from .env.local (admin + users + company settings)");
-run("tsx src/lib/db/seed-owners.ts", "Seed owners from SEED_PARTNERS");
+if (hasSeedPartners()) {
+  run("tsx src/lib/db/seed-owners.ts", "Seed owners from SEED_PARTNERS");
+} else {
+  console.log("\n[handover-reset] Skip owner seed (SEED_PARTNERS is not set)");
+}
 run("tsx scripts/db-handover-verify.ts", "Verify fresh handover state");
 
 console.log("\n========================================");
