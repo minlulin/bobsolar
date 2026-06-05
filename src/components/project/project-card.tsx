@@ -36,7 +36,7 @@ interface ProjectCardProps {
   hrefBase?: string;
 }
 
-export function ProjectCard({
+export const ProjectCard = React.memo(function ProjectCard({
   project,
   hrefBase = "/projects",
 }: ProjectCardProps): React.JSX.Element {
@@ -187,4 +187,4 @@ export function ProjectCard({
       </Card>
     </div>
   );
-}
+});

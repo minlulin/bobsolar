@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { reportKeys } from "@/lib/query-keys";
 import { formatMMK } from "@/lib/utils";
 
 interface BalanceSheetClientProps {
@@ -31,7 +32,7 @@ export function BalanceSheetClient({ initialData }: BalanceSheetClientProps): Re
   );
 
   const { data, isLoading } = useQuery({
-    queryKey: ["balance-sheet", dateAsOf],
+    queryKey: reportKeys.balanceSheet({ dateAsOf }),
     queryFn: async () => {
       const result = await getBalanceSheet({ dateAsOf: dateAsOf || undefined });
       if (!result.success) throw new Error(result.error);

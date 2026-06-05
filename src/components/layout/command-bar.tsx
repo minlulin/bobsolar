@@ -2,6 +2,7 @@
 
 import {
   FileText,
+  Landmark,
   Laptop,
   LayoutDashboard,
   Moon,
@@ -196,6 +197,16 @@ export function CommandBar(): React.JSX.Element {
               >
                 <Wallet className="mr-2 h-4 w-4" />
                 <span>Finance</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => {
+                  runCommand(() => {
+                    router.push("/owner-portal");
+                  });
+                }}
+              >
+                <Landmark className="mr-2 h-4 w-4" />
+                <span>Owner Portal</span>
               </CommandItem>
               <CommandItem
                 onSelect={() => {

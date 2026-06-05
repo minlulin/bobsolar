@@ -64,7 +64,20 @@ const EXPENSE_COLORS: Record<string, string> = {
   transport_expense: "#64748B",
   general_expense: "#7C3AED",
   misc_expense: "#94A3B8",
+  rent_expense: "#2563EB",
+  utilities_expense: "#0891B2",
+  payroll_expense: "#16A34A",
+  tax_expense: "#DC2626",
+  office_supplies: "#CA8A04",
+  software_subscriptions: "#9333EA",
 };
+
+const EXPENSE_BREAKDOWN_SKELETON_KEYS = [
+  "expense-breakdown-skeleton-1",
+  "expense-breakdown-skeleton-2",
+  "expense-breakdown-skeleton-3",
+  "expense-breakdown-skeleton-4",
+] as const;
 
 export function FinanceDashboardClient({
   initialSummary,
@@ -74,18 +87,24 @@ export function FinanceDashboardClient({
   initialConsistency,
 }: FinanceDashboardClientProps): React.JSX.Element {
   const [periodFilter, setPeriodFilter] = useState<FinancePeriodFilter>({});
+  const isDefaultPeriod = Object.keys(periodFilter).length === 0;
 
   const { data: summaryData, isLoading: isLoadingSummary } = useFinanceDashboardData(
-    initialSummary ? { ...periodFilter } : periodFilter,
+    periodFilter,
+    isDefaultPeriod && initialSummary ? initialSummary : undefined,
   );
   const { data: trendData, isLoading: isLoadingTrend } = useMonthlyTrendData(
-    initialTrend.length ? { ...periodFilter } : periodFilter,
+    periodFilter,
+    isDefaultPeriod ? initialTrend : undefined,
   );
   const { data: breakdownData, isLoading: isLoadingBreakdown } = useExpenseBreakdown(
-    initialBreakdown.length ? { ...periodFilter } : periodFilter,
+    periodFilter,
+    isDefaultPeriod ? initialBreakdown : undefined,
   );
-  const { data: riskData, isLoading: isLoadingRisk } = useReceivableRiskData();
-  const { data: consistencyData, isLoading: isLoadingConsistency } = useDataConsistencyCheck();
+  const { data: riskData, isLoading: isLoadingRisk } = useReceivableRiskData(initialRisk);
+  const { data: consistencyData, isLoading: isLoadingConsistency } = useDataConsistencyCheck(
+    initialConsistency ?? undefined,
+  );
 
   const summary = summaryData ?? initialSummary;
   const trend = trendData ?? initialTrend;
@@ -339,8 +358,8 @@ export function FinanceDashboardClient({
           <CardContent>
             {isLoadingBreakdown ? (
               <div className="space-y-3">
-                {Array.from({ length: 4 }).map(() => (
-                  <Skeleton key={crypto.randomUUID()} className="h-6 w-full" />
+                {EXPENSE_BREAKDOWN_SKELETON_KEYS.map((key) => (
+                  <Skeleton key={key} className="h-6 w-full" />
                 ))}
               </div>
             ) : breakdown.length > 0 ? (

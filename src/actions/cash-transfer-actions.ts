@@ -16,7 +16,7 @@ export async function createCashTransfer(
     const data = cashTransferSchema.parse(raw);
 
     const result = await db.transaction(async (tx) => {
-      const entryId = `transfer-${data.date.toISOString().slice(0, 10)}-${crypto.randomUUID().slice(0, 8)}`;
+      const entryId = crypto.randomUUID();
 
       const entry = await createBalancedJournalEntry({
         tx,
@@ -44,7 +44,7 @@ export async function createCashTransfer(
       return entry;
     });
 
-    revalidatePath("/finance/cash-flow");
+    revalidatePath("/finance/reports/cash-flow");
     revalidatePath("/finance/ledger");
     revalidatePath("/finance");
 

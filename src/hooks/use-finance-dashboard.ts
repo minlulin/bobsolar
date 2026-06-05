@@ -1,16 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import {
+  type DataConsistencyCheck,
+  type ExpenseBreakdownRow,
+  type FinanceSummaryCard,
   getDataConsistencyCheck,
   getExpenseBreakdown,
   getFinanceSummary,
   getMonthlyTrend,
   getReceivableRiskData,
+  type MonthlyTrendRow,
+  type ReceivableRiskInvoice,
 } from "@/actions/finance-dashboard-actions";
 import { STALE_TIME } from "@/lib/query-config";
 import { financeDashboardKeys } from "@/lib/query-keys";
 import type { FinancePeriodFilter } from "@/lib/validators/finance";
 
-export function useFinanceDashboardData(filters: FinancePeriodFilter = {}) {
+export function useFinanceDashboardData(
+  filters: FinancePeriodFilter = {},
+  initialData?: FinanceSummaryCard,
+) {
   return useQuery({
     queryKey: financeDashboardKeys.summary(filters),
     queryFn: async () => {
@@ -19,10 +27,14 @@ export function useFinanceDashboardData(filters: FinancePeriodFilter = {}) {
       return response.data;
     },
     staleTime: STALE_TIME.MEDIUM,
+    ...(initialData !== undefined && { initialData }),
   });
 }
 
-export function useMonthlyTrendData(filters: FinancePeriodFilter = {}) {
+export function useMonthlyTrendData(
+  filters: FinancePeriodFilter = {},
+  initialData?: MonthlyTrendRow[],
+) {
   return useQuery({
     queryKey: financeDashboardKeys.trend(filters),
     queryFn: async () => {
@@ -31,10 +43,14 @@ export function useMonthlyTrendData(filters: FinancePeriodFilter = {}) {
       return response.data;
     },
     staleTime: STALE_TIME.MEDIUM,
+    ...(initialData !== undefined && { initialData }),
   });
 }
 
-export function useExpenseBreakdown(filters: FinancePeriodFilter = {}) {
+export function useExpenseBreakdown(
+  filters: FinancePeriodFilter = {},
+  initialData?: ExpenseBreakdownRow[],
+) {
   return useQuery({
     queryKey: financeDashboardKeys.breakdown(filters),
     queryFn: async () => {
@@ -43,10 +59,11 @@ export function useExpenseBreakdown(filters: FinancePeriodFilter = {}) {
       return response.data;
     },
     staleTime: STALE_TIME.MEDIUM,
+    ...(initialData !== undefined && { initialData }),
   });
 }
 
-export function useReceivableRiskData() {
+export function useReceivableRiskData(initialData?: ReceivableRiskInvoice[]) {
   return useQuery({
     queryKey: financeDashboardKeys.risk(),
     queryFn: async () => {
@@ -55,10 +72,11 @@ export function useReceivableRiskData() {
       return response.data;
     },
     staleTime: STALE_TIME.LONG,
+    ...(initialData !== undefined && { initialData }),
   });
 }
 
-export function useDataConsistencyCheck() {
+export function useDataConsistencyCheck(initialData?: DataConsistencyCheck) {
   return useQuery({
     queryKey: financeDashboardKeys.consistency(),
     queryFn: async () => {
@@ -67,5 +85,6 @@ export function useDataConsistencyCheck() {
       return response.data;
     },
     staleTime: STALE_TIME.LONG,
+    ...(initialData !== undefined && { initialData }),
   });
 }

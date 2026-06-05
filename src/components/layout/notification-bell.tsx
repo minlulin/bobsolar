@@ -54,6 +54,7 @@ export function NotificationBell(): React.JSX.Element {
       const timer = setTimeout(() => {
         setPulseBadge(false);
       }, 900);
+      prevUnread.current = unreadCount;
       return (): void => {
         clearTimeout(timer);
       };

@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
-import { requireAuth } from "@/lib/auth/validate";
+import { requireFinanceAccess } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { projectInvoiceLines, projectInvoices } from "@/lib/db/schema";
 import { canPostInvoice } from "@/lib/domain/invoice";
@@ -15,7 +15,7 @@ export async function createInvoice(
   rawInput: unknown,
 ): Promise<ActionResponse<{ invoiceId: string }>> {
   try {
-    const session = await requireAuth();
+    const session = await requireFinanceAccess();
     const input = createInvoiceSchema.parse(rawInput);
 
     const today = format(new Date(), "yyyyMMdd");
@@ -76,13 +76,10 @@ export async function createInvoice(
 
 export async function postInvoice(rawInput: unknown): Promise<ActionResponse<{ entryId: string }>> {
   try {
-    const session = await requireAuth();
+    const session = await requireFinanceAccess();
     const { invoiceId } = postInvoiceSchema.parse(rawInput);
 
     return await db.transaction(async (tx) => {
-      // H-4: Lock the invoice row before the status check. Without FOR UPDATE,
-      // two concurrent postInvoice calls can both read status='draft' and both
-      // insert journal entries, doubling the AR balance.
       const [invoice] = await tx
         .select()
         .from(projectInvoices)

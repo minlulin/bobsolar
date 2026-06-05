@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { type BudgetVarianceFilter, reportKeys } from "@/lib/query-keys";
 import { formatMMK } from "@/lib/utils";
 
 interface BudgetVarianceClientProps {
@@ -38,12 +39,10 @@ interface BudgetVarianceClientProps {
 export function BudgetVarianceClient({
   initialReport,
 }: BudgetVarianceClientProps): React.JSX.Element {
-  const [periodFilter, setPeriodFilter] = useState<{ periodStart?: string; periodEnd?: string }>(
-    {},
-  );
+  const [periodFilter, setPeriodFilter] = useState<BudgetVarianceFilter>({});
 
   const { data: report, isLoading } = useQuery({
-    queryKey: ["budget-variance", periodFilter],
+    queryKey: reportKeys.budgetVariance(periodFilter),
     queryFn: async () => {
       const result = await getBudgetReport(periodFilter);
       if (!result.success) throw new Error(result.error);

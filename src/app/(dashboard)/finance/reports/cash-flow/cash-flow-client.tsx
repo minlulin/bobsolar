@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { type CashFlowFilter, reportKeys } from "@/lib/query-keys";
 import { formatMMK } from "@/lib/utils";
 
 interface CashFlowClientProps {
@@ -24,10 +25,10 @@ interface CashFlowClientProps {
 }
 
 export function CashFlowClient({ initialData }: CashFlowClientProps): React.JSX.Element {
-  const [periodFilter, setPeriodFilter] = useState<{ dateFrom?: string; dateTo?: string }>({});
+  const [periodFilter, setPeriodFilter] = useState<CashFlowFilter>({});
 
   const { data, isLoading } = useQuery({
-    queryKey: ["cash-flow", periodFilter],
+    queryKey: reportKeys.cashFlow(periodFilter),
     queryFn: async () => {
       const result = await getCashFlowStatement(periodFilter);
       if (!result.success) throw new Error(result.error);

@@ -164,12 +164,12 @@ describe("finance-dashboard-actions", () => {
     expect(res.data.expenseMatch).toBe(false);
   });
 
-  it("records failure metric on summary error", async () => {
+  it("does not record journal failure metric on auth errors", async () => {
     state.financeFail = true;
     const { getFinanceSummary } = await import("@/actions/finance-dashboard-actions");
     const res = await getFinanceSummary({});
     expect(res.success).toBe(false);
-    expect(metricsSpies.failure).toHaveBeenCalled();
+    expect(metricsSpies.failure).not.toHaveBeenCalled();
   });
 
   it("does not fail summary when latency metric recording throws", async () => {

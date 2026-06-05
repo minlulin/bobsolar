@@ -176,6 +176,32 @@ export async function createBudget(raw: unknown): Promise<ActionResponse<Budget>
     const auth = await requireFinanceAccess();
     const data = createBudgetSchema.parse(raw);
 
+    const [account] = await db
+      .select({ code: ledgerAccounts.code })
+      .from(ledgerAccounts)
+      .where(eq(ledgerAccounts.code, data.accountCode))
+      .limit(1);
+
+    if (!account) {
+      return errorResponse("Budget account does not exist.");
+    }
+
+    const [existingBudget] = await db
+      .select({ id: budgets.id })
+      .from(budgets)
+      .where(
+        and(
+          eq(budgets.accountCode, data.accountCode),
+          eq(budgets.periodStart, data.periodStart),
+          eq(budgets.periodEnd, data.periodEnd),
+        ),
+      )
+      .limit(1);
+
+    if (existingBudget) {
+      return errorResponse("A budget already exists for this account and period.");
+    }
+
     const [created] = await db
       .insert(budgets)
       .values({

@@ -21,6 +21,7 @@ import {
   CASH_ACCOUNT_CODES,
   CASH_ACCOUNT_GROUPS,
   COGS_ACCOUNT_CODES,
+  CURRENT_ASSET_ACCOUNT_CODES,
   CURRENT_LIABILITY_ACCOUNT_CODES,
   EXPENSE_ACCOUNT_SHORT_LABELS,
   LEDGER_ACCOUNT_LABELS,
@@ -52,14 +53,6 @@ export interface FinanceSummaryCard {
   netCashPosition: number;
   cashAccounts: { code: string; balance: number }[];
 }
-
-const ACTIVE_PROJECT_STATUSES = [
-  "planning",
-  "in_progress",
-  "on_hold",
-  "installation_completed",
-  "completed",
-] as const;
 
 const getCachedFinanceSummary = unstable_cache(
   async (
@@ -106,24 +99,22 @@ const getCachedFinanceSummary = unstable_cache(
 
       db
         .select({
-          amount: sql<number>`coalesce(sum(greatest(
-            cast(${projects.quotedTotal} as numeric) - coalesce(pay.total, 0),
-            0
-          )), 0)`.as("amount"),
+          amount:
+            sql<number>`coalesce(sum(${journalLines.debit}::numeric - ${journalLines.credit}::numeric), 0)`.as(
+              "amount",
+            ),
         })
-        .from(projects)
-        .leftJoin(
-          db
-            .select({
-              projectId: projectPayments.projectId,
-              total: sql<number>`sum(cast(${projectPayments.amount} as numeric))`.as("total"),
-            })
-            .from(projectPayments)
-            .groupBy(projectPayments.projectId)
-            .as("pay"),
-          eq(projects.id, sql`pay.project_id`),
-        )
-        .where(inArray(projects.status, [...ACTIVE_PROJECT_STATUSES])),
+        .from(journalLines)
+        .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+        .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
+        .where(
+          and(
+            eq(ledgerAccounts.code, "accounts_receivable"),
+            gte(journalEntries.entryDate, dateFrom),
+            lte(journalEntries.entryDate, dateTo),
+            eq(journalEntries.isReversed, false),
+          ),
+        ),
 
       db
         .select({
@@ -138,7 +129,7 @@ const getCachedFinanceSummary = unstable_cache(
         .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
         .where(
           and(
-            inArray(ledgerAccounts.code, [...CASH_ACCOUNT_CODES]),
+            inArray(ledgerAccounts.code, [...CURRENT_ASSET_ACCOUNT_CODES]),
             gte(journalEntries.entryDate, dateFrom),
             lte(journalEntries.entryDate, dateTo),
             eq(journalEntries.isReversed, false),
@@ -204,6 +195,7 @@ const getCachedFinanceSummary = unstable_cache(
     const cashBalance = sumGroup(CASH_ACCOUNT_GROUPS.cash);
     const walletBalance = sumGroup(CASH_ACCOUNT_GROUPS.wallet);
     const bankBalance = sumGroup(CASH_ACCOUNT_GROUPS.banking);
+    const rawMaterialsBalance = sumGroup(["raw_materials"]);
 
     const grossProfitMargin = totalIncome > 0 ? Math.round((grossProfit / totalIncome) * 100) : 0;
     const netProfitMargin = totalIncome > 0 ? Math.round((netProfit / totalIncome) * 100) : 0;
@@ -216,7 +208,8 @@ const getCachedFinanceSummary = unstable_cache(
     const averageDebtorDays =
       annualizedIncome > 0 ? Math.round((accountsReceivable / annualizedIncome) * 365) : 0;
 
-    const totalCurrentAssets = cashBalance + walletBalance + bankBalance + accountsReceivable;
+    const totalCurrentAssets =
+      cashBalance + walletBalance + bankBalance + accountsReceivable + rawMaterialsBalance;
     const totalCurrentLiabilities = Math.round(Number(liabilityRow[0]?.balance ?? 0));
     const currentRatio =
       totalCurrentLiabilities > 0
@@ -279,7 +272,10 @@ export async function getFinanceSummary(
     }
     return successResponse({ ...rest, cashAccounts });
   } catch (error) {
-    recordJournalPostFailure(error instanceof Error ? error.message : String(error));
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("journal") || message.includes("debit") || message.includes("credit")) {
+      recordJournalPostFailure(message);
+    }
     return handleActionError(error, "getFinanceSummary", "Failed to fetch finance summary");
   }
 }

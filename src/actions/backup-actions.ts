@@ -1,6 +1,7 @@
 "use server";
 
 import { del, list, put } from "@vercel/blob";
+import { sql } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
@@ -120,30 +121,132 @@ function serializeValue(value: unknown): unknown {
   return value;
 }
 
-async function exportAllTables(): Promise<{
-  data: Record<string, unknown[]>;
+async function getTableManifest(): Promise<{
   manifest: Record<string, number>;
   totalRows: number;
 }> {
-  const data: Record<string, unknown[]> = {};
+  const results = await Promise.all(
+    TABLE_NAMES.map(async (name) => {
+      try {
+        const table = TABLE_MAP[name];
+        const [row] = await db
+          .select({ count: sql<number>`cast(count(*) as int)` })
+          .from(table as never);
+        return { name, count: row ? Number((row as { count: number }).count) : 0 };
+      } catch {
+        return { name, count: 0 };
+      }
+    }),
+  );
+
   const manifest: Record<string, number> = {};
   let totalRows = 0;
 
-  for (const name of TABLE_NAMES) {
-    try {
-      const table = TABLE_MAP[name];
-      const result = await db.select().from(table as never);
-      const rows = result.map((row) => serializeValue(row) as Record<string, unknown>);
-      data[name] = rows;
-      manifest[name] = rows.length;
-      totalRows += rows.length;
-    } catch {
-      data[name] = [];
-      manifest[name] = 0;
-    }
+  for (const result of results) {
+    manifest[result.name] = result.count;
+    totalRows += result.count;
   }
 
-  return { data, manifest, totalRows };
+  return { manifest, totalRows };
+}
+
+function enqueueJsonChunk(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  counter: { bytes: number },
+  text: string,
+): void {
+  const chunk = new TextEncoder().encode(text);
+  counter.bytes += chunk.byteLength;
+  controller.enqueue(chunk);
+}
+
+function createBackupPayloadStream({
+  createdBy,
+  manifest,
+  totalRows,
+  timestamp,
+  counter,
+}: {
+  createdBy: string;
+  manifest: Record<string, number>;
+  totalRows: number;
+  timestamp: string;
+  counter: { bytes: number };
+}): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    async start(controller): Promise<void> {
+      try {
+        enqueueJsonChunk(
+          controller,
+          counter,
+          JSON.stringify({
+            metadata: {
+              timestamp,
+              createdBy,
+              totalRows,
+              tables: manifest,
+            },
+          }).replace(/}$/, ',"data":{'),
+        );
+
+        for (const [tableIndex, name] of TABLE_NAMES.entries()) {
+          const table = TABLE_MAP[name];
+          const rows = await db.select().from(table as never);
+          enqueueJsonChunk(
+            controller,
+            counter,
+            `${tableIndex === 0 ? "" : ","}${JSON.stringify(name)}:[`,
+          );
+
+          for (const [rowIndex, row] of rows.entries()) {
+            const serialized = serializeValue(row);
+            enqueueJsonChunk(
+              controller,
+              counter,
+              `${rowIndex === 0 ? "" : ","}${JSON.stringify(serialized)}`,
+            );
+          }
+
+          enqueueJsonChunk(controller, counter, "]");
+        }
+
+        enqueueJsonChunk(controller, counter, "}}");
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+}
+
+async function uploadBackup(createdBy: string): Promise<BackupMetadata> {
+  const token = requireBlobToken();
+  const { manifest, totalRows } = await getTableManifest();
+  const timestamp = new Date().toISOString();
+  const filenameTimestamp = timestamp.replace(/[:.]/g, "-");
+  const filename = `backup-${filenameTimestamp}.json`;
+  const counter = { bytes: 0 };
+
+  const blob = await put(
+    `${BACKUP_FOLDER}/${filename}`,
+    createBackupPayloadStream({ createdBy, manifest, totalRows, timestamp, counter }),
+    {
+      access: "private",
+      token,
+      contentType: "application/json",
+      cacheControlMaxAge: 60 * 60 * 24 * 365,
+      multipart: true,
+    },
+  );
+
+  return {
+    url: blob.url,
+    filename,
+    timestamp,
+    totalRows,
+    tables: manifest,
+    size: counter.bytes,
+  };
 }
 
 function requireBlobToken(): string {
@@ -164,43 +267,7 @@ export interface BackupMetadata {
 export async function createBackup(): Promise<ActionResponse<BackupMetadata>> {
   try {
     const session = await requireAdmin();
-    const token = requireBlobToken();
-
-    const { data, manifest, totalRows } = await exportAllTables();
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filename = `backup-${timestamp}.json`;
-
-    const payload = {
-      metadata: {
-        timestamp: new Date().toISOString(),
-        createdBy: session.userId,
-        totalRows,
-        tables: manifest,
-      },
-      data,
-    };
-
-    const json = JSON.stringify(payload);
-    const buffer = Buffer.from(json, "utf-8");
-
-    const blob = await put(`${BACKUP_FOLDER}/${filename}`, buffer, {
-      access: "private",
-      token,
-      contentType: "application/json",
-      cacheControlMaxAge: 60 * 60 * 24 * 365,
-    });
-
-    const metadata: BackupMetadata = {
-      url: blob.url,
-      filename,
-      timestamp: new Date().toISOString(),
-      totalRows,
-      tables: manifest,
-      size: buffer.length,
-    };
-
-    return successResponse(metadata);
+    return successResponse(await uploadBackup(session.userId));
   } catch (error) {
     return handleActionError(error, "createBackup", "Failed to create backup");
   }
@@ -252,39 +319,5 @@ export async function deleteBackup(url: string): Promise<ActionResponse<null>> {
 }
 
 export async function createBackupInternal(): Promise<BackupMetadata> {
-  const token = requireBlobToken();
-
-  const { data, manifest, totalRows } = await exportAllTables();
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const filename = `backup-${timestamp}.json`;
-
-  const payload = {
-    metadata: {
-      timestamp: new Date().toISOString(),
-      createdBy: "cron",
-      totalRows,
-      tables: manifest,
-    },
-    data,
-  };
-
-  const json = JSON.stringify(payload);
-  const buffer = Buffer.from(json, "utf-8");
-
-  const blob = await put(`${BACKUP_FOLDER}/${filename}`, buffer, {
-    access: "private",
-    token,
-    contentType: "application/json",
-    cacheControlMaxAge: 60 * 60 * 24 * 365,
-  });
-
-  return {
-    url: blob.url,
-    filename,
-    timestamp: new Date().toISOString(),
-    totalRows,
-    tables: manifest,
-    size: buffer.length,
-  };
+  return uploadBackup("cron");
 }

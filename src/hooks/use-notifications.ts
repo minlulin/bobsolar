@@ -76,9 +76,6 @@ export function useMarkNotificationAsRead(): ReturnType<
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      await queryClient.invalidateQueries({
-        queryKey: notificationKeys.unread(),
-      });
     },
   });
 }
@@ -115,16 +112,13 @@ export function useMarkAllNotificationsAsRead(): ReturnType<
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      await queryClient.invalidateQueries({
-        queryKey: notificationKeys.unread(),
-      });
     },
   });
 }
 
 export const useDeleteNotification = createMutationHook({
   mutationFn: (id: string) => deleteNotification(id),
-  invalidateKeys: [notificationKeys.all, notificationKeys.unread()],
+  invalidateKeys: [notificationKeys.all],
   successMessage: "Notification deleted",
   errorMessage: "Failed to delete notification",
 });
@@ -153,9 +147,6 @@ export function useDeleteAllNotifications(): ReturnType<
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-      await queryClient.invalidateQueries({
-        queryKey: notificationKeys.unread(),
-      });
     },
   });
 }

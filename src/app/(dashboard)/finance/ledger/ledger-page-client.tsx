@@ -68,7 +68,7 @@ export function LedgerPageClient({
   const [showBalances, setShowBalances] = useState(false);
 
   const { data: ledgerData, isLoading: isLoadingLedger } = useLedgerEntries(
-    initialLedger ? { ...filters, ...initialLedger } : filters,
+    initialLedger ? { ...filters, page: initialLedger.page, limit: initialLedger.limit } : filters,
   );
 
   const { data: balancesData, isLoading: isLoadingBalances } = useAccountBalances({

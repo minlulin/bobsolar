@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import {
   addProjectCost,
@@ -31,16 +32,28 @@ export function useProjects(
   filters: Partial<ProjectListFilter> = {},
   initialData?: ActionData<Awaited<ReturnType<typeof getProjects>>>,
 ): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getProjects>>>>> {
-  const full: ProjectListFilter = {
-    scope: filters.scope ?? "active",
-    status: filters.status,
-    search: filters.search,
-    year: filters.year ?? null,
-    completedFrom: filters.completedFrom ?? null,
-    completedTo: filters.completedTo ?? null,
-    page: filters.page ?? 1,
-    limit: filters.limit ?? DEFAULT_PAGE_LIMIT,
-  };
+  const full = useMemo(
+    (): ProjectListFilter => ({
+      scope: filters.scope ?? "active",
+      status: filters.status,
+      search: filters.search,
+      year: filters.year ?? null,
+      completedFrom: filters.completedFrom ?? null,
+      completedTo: filters.completedTo ?? null,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? DEFAULT_PAGE_LIMIT,
+    }),
+    [
+      filters.scope,
+      filters.status,
+      filters.search,
+      filters.year,
+      filters.completedFrom,
+      filters.completedTo,
+      filters.page,
+      filters.limit,
+    ],
+  );
 
   return useQuery({
     queryKey: projectKeys.list(full),

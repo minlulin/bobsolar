@@ -23,7 +23,6 @@ export const getOwnerPortalData = cache(async function getOwnerPortalData(): Pro
   ActionResponse<{
     retainedEarningsBalance: number;
     ytdNetIncome: number;
-    paymentMethods: unknown[];
     owners: Array<{
       id: string;
       userId: string;
@@ -52,49 +51,44 @@ export const getOwnerPortalData = cache(async function getOwnerPortalData(): Pro
 
     const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
 
-    const [reAccount, ytdNetIncomeResult, allOwners, ownerStatsResult, txs, activePaymentMethods] =
-      await Promise.all([
-        db.query.ledgerAccounts.findFirst({
-          where: eq(ledgerAccounts.code, "retained_earnings"),
-        }),
-        db
-          .select({
-            balance: sql<number>`SUM(${journalLines.credit}::numeric - ${journalLines.debit}::numeric)`,
-          })
-          .from(journalLines)
-          .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
-          .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
-          .where(
-            sql`${ledgerAccounts.type} IN ('income', 'expense') AND ${journalEntries.entryDate} >= ${currentYearStart}`,
-          ),
-        db
-          .select({
-            id: owners.id,
-            userId: owners.userId,
-            ownershipPercentage: owners.ownershipPercentage,
-            name: users.name,
-            email: users.email,
-          })
-          .from(owners)
-          .innerJoin(users, eq(owners.userId, users.id)),
-        db
-          .select({
-            ownerId: ownerTransactions.ownerId,
-            type: ownerTransactions.transactionType,
-            total: sql<number>`SUM(${ownerTransactions.amount}::numeric)`,
-          })
-          .from(ownerTransactions)
-          .where(eq(ownerTransactions.status, OWNER_TX_STATUSES.COMPLETED))
-          .groupBy(ownerTransactions.ownerId, ownerTransactions.transactionType),
-        db.query.ownerTransactions.findMany({
-          orderBy: [desc(ownerTransactions.transactionDate)],
-          limit: 100,
-        }),
-        db.query.paymentMethods.findMany({
-          where: (methods, { eq }) => eq(methods.isActive, true),
-          orderBy: (methods, { asc }) => [asc(methods.name)],
-        }),
-      ]);
+    const [reAccount, ytdNetIncomeResult, allOwners, ownerStatsResult, txs] = await Promise.all([
+      db.query.ledgerAccounts.findFirst({
+        where: eq(ledgerAccounts.code, "retained_earnings"),
+      }),
+      db
+        .select({
+          balance: sql<number>`SUM(${journalLines.credit}::numeric - ${journalLines.debit}::numeric)`,
+        })
+        .from(journalLines)
+        .innerJoin(ledgerAccounts, eq(journalLines.accountId, ledgerAccounts.id))
+        .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
+        .where(
+          sql`${ledgerAccounts.type} IN ('income', 'expense') AND ${journalEntries.entryDate} >= ${currentYearStart}`,
+        ),
+      db
+        .select({
+          id: owners.id,
+          userId: owners.userId,
+          ownershipPercentage: owners.ownershipPercentage,
+          name: users.name,
+          email: users.email,
+        })
+        .from(owners)
+        .innerJoin(users, eq(owners.userId, users.id)),
+      db
+        .select({
+          ownerId: ownerTransactions.ownerId,
+          type: ownerTransactions.transactionType,
+          total: sql<number>`SUM(${ownerTransactions.amount}::numeric)`,
+        })
+        .from(ownerTransactions)
+        .where(eq(ownerTransactions.status, OWNER_TX_STATUSES.COMPLETED))
+        .groupBy(ownerTransactions.ownerId, ownerTransactions.transactionType),
+      db.query.ownerTransactions.findMany({
+        orderBy: [desc(ownerTransactions.transactionDate)],
+        limit: 100,
+      }),
+    ]);
 
     let retainedEarningsBalance = 0;
     if (reAccount) {
@@ -132,11 +126,10 @@ export const getOwnerPortalData = cache(async function getOwnerPortalData(): Pro
     return successResponse({
       retainedEarningsBalance,
       ytdNetIncome,
-      paymentMethods: activePaymentMethods,
       owners: allOwners.map((o) => {
         const stats = statsByOwner[o.id] || { capitalContributed: 0, draws: 0 };
         const availableDraw =
-          Math.floor((retainedEarningsBalance * Number(o.ownershipPercentage)) / 100) - stats.draws;
+          Math.round((retainedEarningsBalance * Number(o.ownershipPercentage)) / 100) - stats.draws;
 
         return {
           ...o,
@@ -222,7 +215,7 @@ export async function requestOwnerDrawAction(
         });
 
         const availableDraw =
-          Math.floor(
+          Math.round(
             (retainedEarningsBalance * Number(ownerRecord?.ownershipPercentage || 0)) / 100,
           ) - totalDraws;
 

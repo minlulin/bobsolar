@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ClipboardList,
   Home,
+  Landmark,
   Package,
   ShoppingCart,
   Store,
@@ -39,6 +40,13 @@ const navItems = [
   },
   { name: "Projects", href: "/projects", icon: Zap, bg: "bg-violet-500", text: "text-white" },
   { name: "Finance", href: "/finance", icon: Wallet, bg: "bg-rose-500", text: "text-white" },
+  {
+    name: "Owner Portal",
+    href: "/owner-portal",
+    icon: Landmark,
+    bg: "bg-amber-600",
+    text: "text-white",
+  },
   {
     name: "Suppliers",
     href: "/suppliers",

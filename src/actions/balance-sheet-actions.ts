@@ -148,8 +148,8 @@ export async function getBalanceSheet(
     }
     if (retainedEarnings !== 0) {
       equityAccountList.push({
-        code: "cost_of_goods_sold", // placeholder code for retained earnings display
-        label: "Retained Earnings",
+        code: "retained_earnings",
+        label: LEDGER_ACCOUNT_LABELS.retained_earnings,
         balance: retainedEarnings,
       });
     }

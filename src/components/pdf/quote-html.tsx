@@ -7,6 +7,12 @@ import {
 import { formatMMK } from "@/lib/utils";
 import type { GroupableItem } from "@/lib/utils/quotation-grouping";
 import { groupQuotationItems } from "@/lib/utils/quotation-grouping";
+import {
+  escapeHtml,
+  escapeHtmlLines,
+  escapeHtmlWithBulletLineBreaks,
+  toSafeImageSrc,
+} from "./html-escape";
 
 interface QuoteHtmlCustomer {
   id: string;
@@ -64,6 +70,14 @@ export function QuoteHtml({
     COMPANY_SETTING_DEFAULTS[COMPANY_SETTING_KEYS.EMAIL];
 
   const bankDetailsText = formatBankDetails(companySettings);
+  const safeCompanyLogoUrl = toSafeImageSrc(companyLogoUrl);
+  const companyMetaLine = [
+    companyAddress ? escapeHtmlWithBulletLineBreaks(companyAddress) : null,
+    companyPhone ? escapeHtml(companyPhone) : null,
+    companyEmail ? escapeHtml(companyEmail) : null,
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(" &bull; ");
 
   const title = type === "voucher" ? "PAYMENT VOUCHER" : "FORMAL QUOTATION";
   const accent = "#F59E0B";
@@ -86,10 +100,12 @@ export function QuoteHtml({
         ? `<span style="color:${successGreen};font-weight:700;">FREE</span>`
         : formatMMK(Number(item.totalPrice));
       const isEven = index % 2 === 0;
-      const categoryPrefix = item.category ? `[${String(item.category).toUpperCase()}] ` : "";
+      const categoryPrefix = item.category
+        ? `[${escapeHtml(String(item.category).toUpperCase())}] `
+        : "";
 
       return `<tr style="background:${isEven ? "white" : light};">
-          <td style="padding:9px 12px;border-bottom:1px solid ${border};font-size:11px;font-weight:600;color:${primary};word-break:break-word;">${categoryPrefix}${item.description}</td>
+          <td style="padding:9px 12px;border-bottom:1px solid ${border};font-size:11px;font-weight:600;color:${primary};word-break:break-word;">${categoryPrefix}${escapeHtml(item.description)}</td>
           <td style="padding:9px 12px;border-bottom:1px solid ${border};font-size:11px;text-align:center;font-weight:600;color:${slate};width:60px;">${Number(item.quantity)}</td>
           <td style="padding:9px 12px;border-bottom:1px solid ${border};font-size:11px;text-align:right;color:${slate};width:110px;">${priceDisplay}</td>
           <td style="padding:9px 12px;border-bottom:1px solid ${border};font-size:11px;text-align:right;font-weight:700;color:${primary};width:120px;">${totalDisplay}</td>
@@ -100,7 +116,7 @@ export function QuoteHtml({
   const discountHtml =
     Number(quotation.discountPercent) > 0
       ? `<tr>
-          <td style="padding:6px 0;font-size:11px;color:${slate};">Incentive (${quotation.discountPercent}%)</td>
+          <td style="padding:6px 0;font-size:11px;color:${slate};">Incentive (${escapeHtml(quotation.discountPercent)}%)</td>
           <td style="padding:6px 0;font-size:11px;text-align:right;color:#EF4444;font-weight:600;">-${formatMMK(Number(quotation.discountAmount))}</td>
         </tr>`
       : "";
@@ -108,7 +124,7 @@ export function QuoteHtml({
   const taxHtml =
     Number(quotation.taxPercent) > 0
       ? `<tr>
-          <td style="padding:6px 0;font-size:11px;color:${slate};">Commercial Tax (${quotation.taxPercent}%)</td>
+          <td style="padding:6px 0;font-size:11px;color:${slate};">Commercial Tax (${escapeHtml(quotation.taxPercent)}%)</td>
           <td style="padding:6px 0;font-size:11px;text-align:right;color:${primary};font-weight:600;">+${formatMMK(Number(quotation.taxAmount))}</td>
         </tr>`
       : "";
@@ -116,14 +132,14 @@ export function QuoteHtml({
   const notesHtml = quotation.notes
     ? `<div style="margin-bottom:14px;">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:${accent};margin-bottom:6px;">Terms &amp; Conditions</div>
-        <div style="font-size:10px;color:${slate};line-height:1.6;">${quotation.notes.replace(/\n/g, "<br/>")}</div>
+        <div style="font-size:10px;color:${slate};line-height:1.6;">${escapeHtmlLines(quotation.notes)}</div>
       </div>`
     : "";
 
   const bankHtml = bankDetailsText
     ? `<div style="margin-bottom:14px;">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:${accent};margin-bottom:6px;">Payment Instructions</div>
-        <div style="font-size:10px;color:${slate};line-height:1.6;">${bankDetailsText.replace(/\n/g, "<br/>")}</div>
+        <div style="font-size:10px;color:${slate};line-height:1.6;">${escapeHtmlLines(bankDetailsText)}</div>
       </div>`
     : "";
 
@@ -132,7 +148,7 @@ export function QuoteHtml({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${companyName} - ${title} ${quotation.quoteNumber}</title>
+  <title>${escapeHtml(companyName)} - ${title} ${escapeHtml(quotation.quoteNumber)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 
@@ -384,15 +400,14 @@ export function QuoteHtml({
         <div class="header-row">
           <div class="brand-col">
             ${
-              companyLogoUrl
-                ? `<img src="${companyLogoUrl}" class="brand-logo" alt="Logo" />`
+              safeCompanyLogoUrl
+                ? `<img src="${safeCompanyLogoUrl}" class="brand-logo" alt="Logo" />`
                 : `<div class="logo-placeholder">&#9728;</div>`
             }
             <div class="brand-text">
-              <div class="brand-name">${companyName}</div>
+              <div class="brand-name">${escapeHtml(companyName)}</div>
               <div class="brand-meta">
-                ${companyAddress ? `${companyAddress.replace(/\n/g, " &bull; ")}<br/>` : ""}
-                ${companyPhone}${companyEmail ? ` &bull; ${companyEmail}` : ""}
+                ${companyMetaLine}
               </div>
             </div>
           </div>
@@ -400,7 +415,7 @@ export function QuoteHtml({
             <div class="doc-title">${title}</div>
             <div class="meta-grid">
               <span class="meta-label">Reference</span>
-              <span class="meta-value">${quotation.quoteNumber}</span>
+              <span class="meta-value">${escapeHtml(quotation.quoteNumber)}</span>
               <span class="meta-label">Date</span>
               <span class="meta-value">${format(new Date(quotation.createdAt), "dd MMM yyyy")}</span>
               ${
@@ -417,9 +432,16 @@ export function QuoteHtml({
         <div class="customer-strip">
           <div>
             <div class="customer-label">Prepared For</div>
-            <div class="customer-name">${customer.name}</div>
+            <div class="customer-name">${escapeHtml(customer.name)}</div>
             <div class="customer-meta">
-              ${[customer.address?.replace(/\n/g, ", "), customer.city, customer.phone, customer.email].filter(Boolean).join(" &bull; ")}
+              ${[
+                customer.address ? escapeHtmlWithBulletLineBreaks(customer.address) : null,
+                customer.city ? escapeHtml(customer.city) : null,
+                customer.phone ? escapeHtml(customer.phone) : null,
+                customer.email ? escapeHtml(customer.email) : null,
+              ]
+                .filter((part): part is string => Boolean(part))
+                .join(" &bull; ")}
             </div>
           </div>
           <div style="text-align:right;">

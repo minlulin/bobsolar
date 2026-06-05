@@ -852,9 +852,6 @@ async function applyProjectCompletion(
       });
     }
 
-    // M-5: Use onConflictDoNothing() so concurrent completion calls that race past the
-    // status-update guard simply skip duplicate active alerts rather than throwing a
-    // unique-violation error. The DB unique partial index enforces the constraint.
     await tx.insert(warrantyAlerts).values(alertsToInsert).onConflictDoNothing();
 
     return true;
@@ -1097,7 +1094,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
 
     let actualSpend = 0;
     const amountRounded = Math.round(data.amount);
-    await db.transaction(async (tx) => {
+    const createdCost = await db.transaction(async (tx) => {
       const [createdCost] = await tx
         .insert(projectCosts)
         .values({
@@ -1110,7 +1107,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
           incurredDate: data.incurredDate,
           addedBy: auth.userId,
         })
-        .returning({ id: projectCosts.id });
+        .returning();
 
       if (!createdCost) {
         throw new Error("cost_insert_failed");
@@ -1152,6 +1149,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
       });
 
       actualSpend = await persistActualTotal(data.projectId, tx);
+      return createdCost;
     });
 
     const previousSpend = actualSpend - amountRounded;
@@ -1162,15 +1160,10 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
       actualSpend,
     );
 
-    const costs = await db.query.projectCosts.findMany({
-      where: eq(projectCosts.projectId, data.projectId),
-      orderBy: [desc(projectCosts.incurredDate)],
-    });
-
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
 
-    return successResponse(costs);
+    return successResponse([createdCost]);
   } catch (error) {
     return handleActionError(error, "addProjectCost", "Failed to add cost");
   }
@@ -1290,8 +1283,6 @@ export async function deleteProjectCost(
 
       if (journalEntry) {
         await assertJournalEntryNotReversed(tx, journalEntry.id);
-        // M-4: Reuse the `auth` captured at function entry — avoids a redundant DB round-trip
-        // and ensures the journal reversal is attributed to the same authenticated user.
         await reverseJournalEntry({
           tx,
           originalEntryId: journalEntry.id,
@@ -1346,21 +1337,19 @@ export async function addProjectRemark(raw: unknown): Promise<ActionResponse<Pro
     });
     if (!projectRow) return handleNotFoundError("Project", data.projectId);
 
-    await db.insert(projectRemarks).values({
-      projectId: data.projectId,
-      authorId: auth.userId,
-      content: data.content.trim(),
-      remarkType: data.remarkType,
-    });
-
-    const remarks = await db.query.projectRemarks.findMany({
-      where: eq(projectRemarks.projectId, data.projectId),
-      orderBy: [desc(projectRemarks.createdAt)],
-    });
+    const [remark] = await db
+      .insert(projectRemarks)
+      .values({
+        projectId: data.projectId,
+        authorId: auth.userId,
+        content: data.content.trim(),
+        remarkType: data.remarkType,
+      })
+      .returning();
 
     revalidatePath(`/projects/${data.projectId}`);
 
-    return successResponse(remarks);
+    return successResponse(remark ? [remark] : []);
   } catch (error) {
     return handleActionError(error, "addProjectRemark", "Failed to add remark");
   }

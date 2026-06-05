@@ -285,9 +285,6 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
           }
 
           try {
-            // M-1: Sort by createdAt DESC (timestamp) instead of quoteNumber DESC (text).
-            // Lexicographic sort on "QT-2026-NNNN" breaks above sequence 9999 because
-            // "QT-2026-10000" sorts before "QT-2026-9999" lexicographically.
             const lastQuote = await tx.query.quotations.findFirst({
               where: and(sql`${quotations.createdAt} >= ${yearStart}`),
               orderBy: [desc(quotations.createdAt)],
@@ -457,9 +454,6 @@ export async function updateQuotation(
   raw: unknown,
 ): Promise<ActionResponse<Quotation>> {
   try {
-    // H-5: Single requireAuth() call. The first call was redundant — its return value
-    // was discarded, and the second call (now this one) provides auth.role for the
-    // discount guard below. Consolidating avoids a stale-role hazard if cache() is removed.
     const auth = await requireAuth();
     const validatedId = uuidSchema.parse(id);
 
@@ -481,7 +475,7 @@ export async function updateQuotation(
       }
     }
 
-    await db.transaction(async (tx) => {
+    const updated = await db.transaction(async (tx) => {
       const lockedQuotes = await tx
         .select()
         .from(quotations)
@@ -617,17 +611,16 @@ export async function updateQuotation(
 
         await tx.insert(quotationItems).values(itemsToInsert);
       }
-      return quote.id;
+
+      const [updated] = await tx.select().from(quotations).where(eq(quotations.id, validatedId));
+
+      return updated;
     });
 
     revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
     revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
     revalidatePath("/quotations");
     revalidatePath(`/quotations/${validatedId}`);
-
-    const updated = await db.query.quotations.findFirst({
-      where: eq(quotations.id, validatedId),
-    });
 
     if (!updated) return handleNotFoundError("Quotation", validatedId);
 
@@ -670,9 +663,6 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
           }
 
           try {
-            // M-1: Sort by createdAt DESC (timestamp) instead of quoteNumber DESC (text).
-            // Lexicographic sort on "QT-2026-NNNN" breaks above sequence 9999 because
-            // "QT-2026-10000" sorts before "QT-2026-9999" lexicographically.
             const lastQuote = await tx.query.quotations.findFirst({
               where: and(sql`${quotations.createdAt} >= ${yearStart}`),
               orderBy: [desc(quotations.createdAt)],

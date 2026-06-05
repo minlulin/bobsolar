@@ -28,6 +28,7 @@ export async function getPurchaseOrders() {
     await requirePurchaseManagementAccess();
     const data = await db.query.purchaseOrders.findMany({
       orderBy: [desc(purchaseOrders.createdAt)],
+      limit: 200,
       with: {
         supplier: true,
         items: true,
@@ -160,10 +161,6 @@ export async function receivePurchaseOrder(id: string) {
           throw new Error(`inventory_item_not_found:${item.itemId}`);
         }
 
-        // H-3: Use Math.floor (truncate toward zero) instead of Math.round.
-        // The PO totalAmount was computed from the exact decimal quantity (e.g. 1.5 units).
-        // Rounding up would add more stock than the financial liability covers.
-        // Integer stock columns enforce whole units; any fractional surplus is intentionally discarded.
         await tx
           .update(inventoryItems)
           .set({ stockQty: invItem.stockQty + Math.floor(Number(item.quantity)) })

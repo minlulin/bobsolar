@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import * as Lucide from "lucide-react";
 import { Archive, ArchiveRestore, Calendar, Edit, Eye, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import * as React from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -30,7 +31,9 @@ interface QuotationCardProps {
   quotation: QuotationWithCustomer;
 }
 
-export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Element {
+export const QuotationCard = React.memo(function QuotationCard({
+  quotation,
+}: QuotationCardProps): React.JSX.Element {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
@@ -221,4 +224,4 @@ export function QuotationCard({ quotation }: QuotationCardProps): React.JSX.Elem
       </Card>
     </div>
   );
-}
+});

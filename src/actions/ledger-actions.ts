@@ -227,7 +227,8 @@ export const getLedgerProjects = cache(
           projectNumber: projects.projectNumber,
         })
         .from(projects)
-        .orderBy(desc(projects.createdAt));
+        .orderBy(desc(projects.createdAt))
+        .limit(200);
 
       return successResponse(rows);
     } catch (error) {

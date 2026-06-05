@@ -3,7 +3,7 @@
 import { desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth/validate";
+import { requireFinanceAccess } from "@/lib/auth/validate";
 import { getDb } from "@/lib/db";
 import { generalExpenses } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
@@ -55,7 +55,7 @@ type ExpenseData = {
 
 export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
   try {
-    await requireAuth();
+    await requireFinanceAccess();
     const db = await getDb();
 
     const [recentExpenses, expenseAccounts, activePaymentMethods] = await Promise.all([
@@ -97,7 +97,7 @@ export async function submitGeneralExpense(
   formData: FormData,
 ): Promise<ActionResponse<{ expenseId: string; journalEntryId: string | null }>> {
   try {
-    const sessionUser = await requireAuth();
+    const sessionUser = await requireFinanceAccess();
 
     const rawData = {
       payeeName: formData.get("payeeName"),

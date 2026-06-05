@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ProjectVoucher } from "@/lib/db/schema";
 
 // ─── Helper: create mock quotation with plain objects ──────────────────
 // (Avoids importing from @/lib/db/schema which triggers drizzle-orm side effects)
@@ -51,6 +52,8 @@ interface MockQuotation {
   items: MockItem[];
   customer: MockCustomer;
 }
+
+type MockVoucher = ProjectVoucher & { projectNumber: string; customerName: string };
 
 function mockCustomer(overrides: Partial<MockCustomer> = {}): MockCustomer {
   return {
@@ -111,6 +114,26 @@ function mockQuotation(
     updatedAt: new Date("2026-05-01"),
     items: [mockItem()],
     customer: mockCustomer(),
+    ...overrides,
+  };
+}
+
+function mockVoucher(overrides: Partial<MockVoucher> = {}): MockVoucher {
+  return {
+    id: "00000000-0000-4000-8000-000000000010",
+    projectId: "00000000-0000-4000-8000-000000000011",
+    invoiceId: null,
+    voucherNumber: "VC-2026-0001",
+    voucherType: "final_payment_voucher",
+    issuedAt: new Date("2026-05-01"),
+    totalAmount: "5000000",
+    paidAmount: "2500000",
+    balanceAmount: "2500000",
+    notes: "Voucher notes",
+    createdBy: "00000000-0000-4000-8000-000000000001",
+    createdAt: new Date("2026-05-01"),
+    projectNumber: "PJ-2026-0001",
+    customerName: "Test Customer",
     ...overrides,
   };
 }
@@ -261,6 +284,71 @@ describe("Quotation HTML Print Template", () => {
     });
 
     expect(html).toMatch(/logo-placeholder/);
+  });
+
+  it("escapes user-controlled quote HTML fields", async () => {
+    const { QuoteHtml } = await import("@/components/pdf/quote-html");
+    const malicious = `"><script>alert(1)</script><img src=x onerror=alert(2)>`;
+    const html = QuoteHtml({
+      quotation: mockQuotation({
+        quoteNumber: `QT-${malicious}`,
+        notes: `Line 1\n${malicious}`,
+        customer: mockCustomer({
+          name: malicious,
+          address: malicious,
+          city: malicious,
+          email: `ops+${malicious}@example.com`,
+        }),
+        items: [
+          mockItem({
+            description: malicious,
+            category: malicious,
+          }),
+        ],
+      }),
+      companyLogoUrl: "javascript:alert(1)",
+      companySettings: {
+        company_name: malicious,
+        company_address: malicious,
+        company_phone: malicious,
+        company_email: malicious,
+      },
+    });
+
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain('src="javascript:');
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=alert(2)&gt;");
+    expect(html).toContain("<br/>");
+  });
+
+  it("escapes user-controlled voucher HTML fields", async () => {
+    const { VoucherHtml } = await import("@/components/pdf/voucher-html");
+    const malicious = `"><script>alert(1)</script><img src=x onerror=alert(2)>`;
+    const html = VoucherHtml({
+      voucher: mockVoucher({
+        voucherNumber: `VC-${malicious}`,
+        projectNumber: `PJ-${malicious}`,
+        customerName: malicious,
+        notes: `Voucher\n${malicious}`,
+      }),
+      customerAddress: malicious,
+      companySettings: {
+        company_name: malicious,
+        company_address: malicious,
+        company_phone: malicious,
+        company_email: malicious,
+        company_logo_url: "javascript:alert(1)",
+      },
+    });
+
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain('src="javascript:');
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=alert(2)&gt;");
+    expect(html).toContain("<br/>");
   });
 });
 

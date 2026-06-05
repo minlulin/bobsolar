@@ -160,7 +160,7 @@ vi.mock("@/lib/db", () => ({
                 for: vi.fn(async () => result),
                 // biome-ignore lint/suspicious/noThenProperty: Mocking a Drizzle QueryBuilder which is Thenable
                 // biome-ignore lint/suspicious/noExplicitAny: Mock resolve signature
-                then: (resolve: any) => resolve([]),
+                then: (resolve: any) => resolve(result),
               };
             }),
           })),

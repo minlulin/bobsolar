@@ -59,7 +59,8 @@ export async function getRecoveryReport(): Promise<ActionResponse<RecoveryReport
             ),
         ),
       )
-      .orderBy(projectPayments.paymentDate);
+      .orderBy(projectPayments.paymentDate)
+      .limit(200);
 
     const orphanCostsRaw = await db
       .select({
@@ -78,16 +79,14 @@ export async function getRecoveryReport(): Promise<ActionResponse<RecoveryReport
             .from(journalEntries)
             .where(
               and(
-                // H-2: Detect orphans for BOTH source types used when posting costs:
-                // - "project_expense"       for manual cost entries (no inventory item)
-                // - "inventory_consumption" for inventory-linked cost entries (itemId set)
                 inArray(journalEntries.sourceType, ["project_expense", "inventory_consumption"]),
                 eq(journalEntries.sourceId, projectCosts.id),
               ),
             ),
         ),
       )
-      .orderBy(projectCosts.incurredDate);
+      .orderBy(projectCosts.incurredDate)
+      .limit(200);
 
     const orphanPayments: OrphanPaymentRecord[] = orphanPaymentsRaw.map((p) => ({
       paymentId: p.id,
@@ -245,12 +244,6 @@ export async function repairOrphanCost(
     }
 
     const result = await db.transaction(async (tx) => {
-      // H-2: Use the correct sourceType:
-      // - "inventory_consumption" when the cost was created by postInventoryConsumptionToProject
-      //   (identified by the presence of an itemId / inventory link)
-      // - "project_expense" for all other manual cost entries
-      // Using the wrong sourceType would cause month-end close queries filtered by sourceType
-      // to double-count or miss the repaired entry.
       const sourceType = cost.itemId ? "inventory_consumption" : "project_expense";
       return createBalancedJournalEntry({
         tx,

@@ -2,6 +2,12 @@ import { format } from "date-fns";
 import type { ProjectVoucher } from "@/lib/db/schema";
 import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { formatMMK } from "@/lib/utils";
+import {
+  escapeHtml,
+  escapeHtmlLines,
+  escapeHtmlWithBulletLineBreaks,
+  toSafeImageSrc,
+} from "./html-escape";
 
 interface VoucherHtmlInput {
   voucher: ProjectVoucher & { projectNumber: string; customerName: string };
@@ -19,6 +25,14 @@ export function VoucherHtml({
   const companyPhone = companySettings[COMPANY_SETTING_KEYS.PHONE] ?? "";
   const companyEmail = companySettings[COMPANY_SETTING_KEYS.EMAIL] ?? "";
   const companyLogoUrl = companySettings[COMPANY_SETTING_KEYS.LOGO_URL] ?? null;
+  const safeCompanyLogoUrl = toSafeImageSrc(companyLogoUrl);
+  const companyMetaLine = [
+    companyAddress ? escapeHtmlWithBulletLineBreaks(companyAddress) : null,
+    companyPhone ? escapeHtml(companyPhone) : null,
+    companyEmail ? escapeHtml(companyEmail) : null,
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(" &bull; ");
 
   const isCompletion = voucher.voucherType === "completion_certificate";
   const title = isCompletion ? "COMPLETION CERTIFICATE" : "PAYMENT VOUCHER";
@@ -43,7 +57,7 @@ export function VoucherHtml({
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${companyName} - ${title} ${voucher.voucherNumber}</title>
+  <title>${escapeHtml(companyName)} - ${title} ${escapeHtml(voucher.voucherNumber)}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 
@@ -327,15 +341,14 @@ export function VoucherHtml({
         <div class="header-row">
           <div class="brand-col">
             ${
-              companyLogoUrl
-                ? `<img src="${companyLogoUrl}" class="brand-logo" alt="Logo" />`
+              safeCompanyLogoUrl
+                ? `<img src="${safeCompanyLogoUrl}" class="brand-logo" alt="Logo" />`
                 : `<div class="logo-placeholder">&#9728;</div>`
             }
             <div>
-              <div class="brand-name">${companyName}</div>
+              <div class="brand-name">${escapeHtml(companyName)}</div>
               <div class="brand-meta">
-                ${companyAddress ? `${companyAddress.replace(/\n/g, " &bull; ")}<br/>` : ""}
-                ${companyPhone}${companyEmail ? ` &bull; ${companyEmail}` : ""}
+                ${companyMetaLine}
               </div>
             </div>
           </div>
@@ -343,11 +356,11 @@ export function VoucherHtml({
             <div class="doc-title">${title}</div>
             <div class="meta-grid">
               <span class="meta-label">Voucher No.</span>
-              <span class="meta-value">${voucher.voucherNumber}</span>
+              <span class="meta-value">${escapeHtml(voucher.voucherNumber)}</span>
               <span class="meta-label">Issue Date</span>
               <span class="meta-value">${format(new Date(voucher.issuedAt), "dd MMM yyyy")}</span>
               <span class="meta-label">Project Ref</span>
-              <span class="meta-value">${voucher.projectNumber}</span>
+              <span class="meta-value">${escapeHtml(voucher.projectNumber)}</span>
             </div>
           </div>
         </div>
@@ -356,8 +369,12 @@ export function VoucherHtml({
         <div class="customer-strip">
           <div>
             <div class="customer-label">Issued To</div>
-            <div class="customer-name">${voucher.customerName}</div>
-            ${customerAddress ? `<div class="customer-meta">${customerAddress}</div>` : ""}
+            <div class="customer-name">${escapeHtml(voucher.customerName)}</div>
+            ${
+              customerAddress
+                ? `<div class="customer-meta">${escapeHtmlWithBulletLineBreaks(customerAddress)}</div>`
+                : ""
+            }
           </div>
           <div style="text-align:right;">
             <div class="customer-label" style="margin-bottom:4px;">Payment Status</div>
@@ -421,7 +438,7 @@ export function VoucherHtml({
           voucher.notes
             ? `<div class="notes-box">
             <div class="notes-label">Remarks</div>
-            <div class="notes-content">${voucher.notes.replace(/\n/g, "<br/>")}</div>
+            <div class="notes-content">${escapeHtmlLines(voucher.notes)}</div>
           </div>`
             : ""
         }

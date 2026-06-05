@@ -3,6 +3,7 @@
 import { Edit, Mail, MapPin, MoreVertical, Phone, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
+import * as React from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,11 @@ interface CustomerCardProps {
   onDelete?: (id: string) => void;
 }
 
-export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps): React.JSX.Element {
+export const CustomerCard = React.memo(function CustomerCard({
+  customer,
+  onEdit,
+  onDelete,
+}: CustomerCardProps): React.JSX.Element {
   const { mutate: deleteCustomer } = useDeleteCustomer();
   const router = useRouter();
   const customerDetailHref = `/customers/${customer.id}`;
@@ -38,7 +43,6 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -155,4 +159,4 @@ export function CustomerCard({ customer, onEdit, onDelete }: CustomerCardProps):
       </Card>
     </motion.div>
   );
-}
+});

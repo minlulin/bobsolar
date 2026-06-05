@@ -1,7 +1,7 @@
 import { AlertCircle, Plus, Search, Store } from "lucide-react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
-import { useOptimistic, useState } from "react";
+import { useMemo, useOptimistic, useState } from "react";
 import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
 import { Button } from "@/components/ui/button";
@@ -33,15 +33,17 @@ export default function SuppliersPage(): React.JSX.Element {
   };
 
   const suppliers = suppliersData ?? [];
-  const filteredSuppliers = suppliers.filter((s) => {
-    if (!search) return true;
+  const filteredSuppliers = useMemo(() => {
+    if (!search) return suppliers;
     const term = search.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(term) ||
-      (s.companyName?.toLowerCase() || "").includes(term) ||
-      (s.phone || "").includes(term)
-    );
-  });
+    return suppliers.filter((s) => {
+      return (
+        s.name.toLowerCase().includes(term) ||
+        (s.companyName?.toLowerCase() || "").includes(term) ||
+        (s.phone || "").includes(term)
+      );
+    });
+  }, [suppliers, search]);
 
   const [optimisticSuppliers, removeOptimisticSupplier] = useOptimistic(
     filteredSuppliers,

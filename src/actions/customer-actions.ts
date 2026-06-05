@@ -76,14 +76,16 @@ export async function getCustomers(
 
     const where = searchWhere ? and(baseWhere, searchWhere) : baseWhere;
 
-    const items = await db.query.customers.findMany({
-      where,
-      orderBy: [desc(customers.createdAt)],
-      limit,
-      offset,
-    });
+    const [items, totals] = await Promise.all([
+      db.query.customers.findMany({
+        where,
+        orderBy: [desc(customers.createdAt)],
+        limit,
+        offset,
+      }),
+      db.select({ total: count() }).from(customers).where(where),
+    ]);
 
-    const totals = await db.select({ total: count() }).from(customers).where(where);
     const total = totals[0]?.total ?? 0;
 
     return successResponse({ items, total });

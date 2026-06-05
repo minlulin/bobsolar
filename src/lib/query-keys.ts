@@ -48,6 +48,44 @@ export function normalizeLedgerFilters(filters: LedgerFilter = {}): LedgerFilter
   };
 }
 
+export type BudgetVarianceFilter = {
+  periodStart?: string;
+  periodEnd?: string;
+};
+
+export type BalanceSheetFilter = {
+  dateAsOf?: string;
+};
+
+export type CashFlowFilter = {
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export function normalizeBudgetVarianceFilters(
+  filters: BudgetVarianceFilter = {},
+): Required<BudgetVarianceFilter> {
+  return {
+    periodStart: filters.periodStart ?? "",
+    periodEnd: filters.periodEnd ?? "",
+  };
+}
+
+export function normalizeBalanceSheetFilters(
+  filters: BalanceSheetFilter = {},
+): Required<BalanceSheetFilter> {
+  return {
+    dateAsOf: filters.dateAsOf ?? "",
+  };
+}
+
+export function normalizeCashFlowFilters(filters: CashFlowFilter = {}): Required<CashFlowFilter> {
+  return {
+    dateFrom: filters.dateFrom ?? "",
+    dateTo: filters.dateTo ?? "",
+  };
+}
+
 export const quotationKeys = {
   all: ["quotations"] as const,
   list: (filters: QuotationFilterInput = {}) =>
@@ -150,9 +188,10 @@ export const manualJournalKeys = {
 export const reportKeys = {
   all: ["reports"] as const,
   trialBalance: (date: string) => [...reportKeys.all, "trial-balance", date] as const,
-  balanceSheet: (date: string) => [...reportKeys.all, "balance-sheet", date] as const,
-  budgetVariance: (filters: Record<string, unknown>) =>
-    [...reportKeys.all, "budget-variance", filters] as const,
-  cashFlow: (filters: Record<string, unknown>) =>
-    [...reportKeys.all, "cash-flow", filters] as const,
+  balanceSheet: (filters: BalanceSheetFilter = {}) =>
+    [...reportKeys.all, "balance-sheet", normalizeBalanceSheetFilters(filters)] as const,
+  budgetVariance: (filters: BudgetVarianceFilter = {}) =>
+    [...reportKeys.all, "budget-variance", normalizeBudgetVarianceFilters(filters)] as const,
+  cashFlow: (filters: CashFlowFilter = {}) =>
+    [...reportKeys.all, "cash-flow", normalizeCashFlowFilters(filters)] as const,
 };

@@ -411,10 +411,6 @@ export const warrantyAlerts = pgTable(
   (table) => [
     index("warranty_alerts_resolved_due_date_idx").on(table.isResolved, table.dueDate),
     index("warranty_alerts_project_id_idx").on(table.projectId),
-    // M-5: Prevent duplicate active warranty alerts for the same project and description.
-    // Applies only to unresolved alerts (WHERE is_resolved = false) so resolved historical
-    // alerts can accumulate without constraint. ON CONFLICT DO NOTHING in insert paths
-    // provides the safe idempotent insert for concurrent completion calls.
     uniqueIndex("warranty_alerts_active_project_description_unique")
       .on(table.projectId, table.description)
       .where(sql`${table.isResolved} = false`),
@@ -601,42 +597,53 @@ export const suppliers = pgTable("suppliers", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const purchaseOrders = pgTable("purchase_orders", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  poNumber: text("po_number").unique().notNull(),
-  supplierId: uuid("supplier_id")
-    .references(() => suppliers.id, { onDelete: "restrict" })
-    .notNull(),
-  status: purchaseOrderStatusEnum("status").default("draft").notNull(),
-  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
-  paidAmount: decimal("paid_amount", { precision: 15, scale: 2 }).default("0").notNull(),
-  balanceDue: decimal("balance_due", { precision: 15, scale: 2 }).notNull(),
-  paymentStatus: supplierPaymentStatusEnum("payment_status").default("unpaid").notNull(),
-  billDate: timestamp("bill_date"),
-  dueDate: timestamp("due_date"),
-  notes: text("notes"),
-  receivedAt: timestamp("received_at"),
-  createdBy: uuid("created_by")
-    .references(() => users.id)
-    .notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const purchaseOrders = pgTable(
+  "purchase_orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    poNumber: text("po_number").unique().notNull(),
+    supplierId: uuid("supplier_id")
+      .references(() => suppliers.id, { onDelete: "restrict" })
+      .notNull(),
+    status: purchaseOrderStatusEnum("status").default("draft").notNull(),
+    totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).notNull(),
+    paidAmount: decimal("paid_amount", { precision: 15, scale: 2 }).default("0").notNull(),
+    balanceDue: decimal("balance_due", { precision: 15, scale: 2 }).notNull(),
+    paymentStatus: supplierPaymentStatusEnum("payment_status").default("unpaid").notNull(),
+    billDate: timestamp("bill_date"),
+    dueDate: timestamp("due_date"),
+    notes: text("notes"),
+    receivedAt: timestamp("received_at"),
+    createdBy: uuid("created_by")
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("purchase_orders_supplier_id_idx").on(table.supplierId),
+    index("purchase_orders_status_idx").on(table.status),
+  ],
+);
 
-export const purchaseOrderItems = pgTable("purchase_order_items", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  purchaseOrderId: uuid("purchase_order_id")
-    .references(() => purchaseOrders.id, { onDelete: "cascade" })
-    .notNull(),
-  itemId: uuid("item_id")
-    .references(() => inventoryItems.id)
-    .notNull(),
-  description: text("description").notNull(),
-  quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
-  unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
-  totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
-  sortOrder: integer("sort_order").notNull(),
-});
+export const purchaseOrderItems = pgTable(
+  "purchase_order_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    purchaseOrderId: uuid("purchase_order_id")
+      .references(() => purchaseOrders.id, { onDelete: "cascade" })
+      .notNull(),
+    itemId: uuid("item_id")
+      .references(() => inventoryItems.id)
+      .notNull(),
+    description: text("description").notNull(),
+    quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
+    unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
+    totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
+    sortOrder: integer("sort_order").notNull(),
+  },
+  (table) => [index("purchase_order_items_purchase_order_id_idx").on(table.purchaseOrderId)],
+);
 
 export const supplierPayments = pgTable(
   "supplier_payments",
@@ -768,23 +775,30 @@ export const accountingPeriods = pgTable("accounting_periods", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const generalExpenses = pgTable("general_expenses", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  payeeName: text("payee_name").notNull(),
-  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
-  expenseDate: timestamp("expense_date").defaultNow().notNull(),
-  accountId: uuid("account_id")
-    .references(() => ledgerAccounts.id)
-    .notNull(),
-  paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id),
-  reference: text("reference"),
-  notes: text("notes"),
-  isPaid: boolean("is_paid").default(true).notNull(),
-  createdBy: uuid("created_by")
-    .references(() => users.id)
-    .notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const generalExpenses = pgTable(
+  "general_expenses",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    payeeName: text("payee_name").notNull(),
+    amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+    expenseDate: timestamp("expense_date").defaultNow().notNull(),
+    accountId: uuid("account_id")
+      .references(() => ledgerAccounts.id)
+      .notNull(),
+    paymentMethodId: uuid("payment_method_id").references(() => paymentMethods.id),
+    reference: text("reference"),
+    notes: text("notes"),
+    isPaid: boolean("is_paid").default(true).notNull(),
+    createdBy: uuid("created_by")
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("general_expenses_account_id_idx").on(table.accountId),
+    index("general_expenses_payment_method_id_idx").on(table.paymentMethodId),
+  ],
+);
 
 export const owners = pgTable("owners", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -810,9 +824,10 @@ export const ownerTransactions = pgTable(
     journalEntryId: uuid("journal_entry_id").references(() => journalEntries.id),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => ({
-    ownerIdIdx: index("owner_transactions_owner_id_idx").on(table.ownerId),
-  }),
+  (table) => [
+    index("owner_transactions_owner_id_idx").on(table.ownerId),
+    index("owner_transactions_type_status_idx").on(table.transactionType, table.status),
+  ],
 );
 
 // --- Relations ---

@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { OWNER_TX_STATUSES, OWNER_TX_TYPES } from "@/lib/domain/owner-transaction";
+import { formatMMK } from "@/lib/utils";
 import type { ActionData } from "@/lib/utils/action-response";
 import { type getOwnerPortalData, payCapitalCallAction, requestOwnerDrawAction } from "./actions";
 
@@ -69,13 +70,6 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
 
   const activeOwner = data.owners.find((o) => o.id === activeOwnerId);
 
-  const fmt = (val: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "MMK",
-      maximumFractionDigits: 0,
-    }).format(val);
-
   async function handleDrawSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!activeOwner) return;
@@ -85,7 +79,11 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
       const amount = parseFloat(formData.get("amount") as string);
       const accountCode = formData.get("paymentAssetAccountCode") as string;
 
-      await requestOwnerDrawAction(activeOwner.id, amount, accountCode);
+      const result = await requestOwnerDrawAction(activeOwner.id, amount, accountCode);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Draw requested and logged in the ledger.");
       setDrawModalOpen(false);
       router.refresh();
@@ -104,7 +102,11 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
       const formData = new FormData(e.currentTarget);
       const accountCode = formData.get("paymentAssetAccountCode") as string;
 
-      await payCapitalCallAction(activeTxId, accountCode);
+      const result = await payCapitalCallAction(activeTxId, accountCode);
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Capital call payment recorded successfully.");
       setCapitalCallModalOpen(false);
       setActiveTxId(null);
@@ -164,7 +166,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                 </div>
                 <div>
                   <h2 className="text-5xl md:text-7xl font-semibold tracking-tighter text-foreground">
-                    {fmt(data.retainedEarningsBalance)}
+                    {formatMMK(data.retainedEarningsBalance)}
                   </h2>
                   <div className="flex items-center gap-3 mt-4 text-muted-foreground font-medium">
                     <Activity className="w-5 h-5 text-solar" />
@@ -183,7 +185,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                   YTD Net Income
                 </p>
                 <div className="text-4xl font-bold tracking-tight mb-2">
-                  {fmt(data.ytdNetIncome)}
+                  {formatMMK(data.ytdNetIncome)}
                 </div>
                 <div className="flex items-center text-sm font-medium text-green-600 dark:text-green-400 mt-2 bg-green-500/10 w-fit px-3 py-1 rounded-full">
                   <TrendingUp className="w-4 h-4 mr-1.5" />
@@ -248,7 +250,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                           Available Draw
                         </h4>
                         <div className="text-5xl font-bold tracking-tighter text-foreground mb-8">
-                          {fmt(activeOwner.availableDraw)}
+                          {formatMMK(activeOwner.availableDraw)}
                         </div>
                         <Button
                           size="lg"
@@ -268,14 +270,14 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                             YTD Draws
                           </p>
-                          <p className="text-2xl font-bold">{fmt(activeOwner.ytdDraws)}</p>
+                          <p className="text-2xl font-bold">{formatMMK(activeOwner.ytdDraws)}</p>
                         </div>
                         <div className="surface-panel-muted rounded-[2rem] p-6">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                             Capital
                           </p>
                           <p className="text-2xl font-bold">
-                            {fmt(activeOwner.capitalContributed)}
+                            {formatMMK(activeOwner.capitalContributed)}
                           </p>
                         </div>
                       </div>
@@ -332,7 +334,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                               </div>
                               <div className="text-right flex flex-col items-end gap-2">
                                 <p className="text-xl font-bold tracking-tight">
-                                  {fmt(Number(tx.amount))}
+                                  {formatMMK(Number(tx.amount))}
                                 </p>
                                 {tx.status === OWNER_TX_STATUSES.PENDING &&
                                 tx.transactionType === OWNER_TX_TYPES.CAPITAL_CALL_ISSUED ? (
@@ -397,23 +399,20 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                                 Amount
                               </Label>
                               <span className="text-xs font-semibold text-green-500">
-                                Max: {fmt(activeOwner.availableDraw)}
+                                Max: {formatMMK(activeOwner.availableDraw)}
                               </span>
                             </div>
                             <div className="relative">
-                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                                Ks
-                              </span>
                               <Input
                                 id="amount"
                                 name="amount"
                                 type="number"
-                                step="0.01"
+                                step="1"
                                 max={activeOwner.availableDraw}
                                 min="1"
-                                placeholder="0.00"
+                                placeholder="0"
                                 required
-                                className="h-14 text-xl font-medium pl-12 bg-background/50 border-white/10 rounded-xl"
+                                className="h-14 text-xl font-medium pl-4 bg-background/50 border-white/10 rounded-xl"
                               />
                             </div>
                           </div>

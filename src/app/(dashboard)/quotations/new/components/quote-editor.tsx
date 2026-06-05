@@ -64,16 +64,28 @@ export function QuoteEditor({
 }: QuoteEditorProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const {
-    selectedCustomerId,
-    items,
-    discountPercent,
-    taxPercent,
-    notes,
-    validUntil,
-    quotationDate,
-    reset,
-  } = useQuoteBuilderStore();
+  const selectedCustomerId = useQuoteBuilderStore((s) => s.selectedCustomerId);
+  const items = useQuoteBuilderStore((s) => s.items);
+  const discountPercent = useQuoteBuilderStore((s) => s.discountPercent);
+  const taxPercent = useQuoteBuilderStore((s) => s.taxPercent);
+  const notes = useQuoteBuilderStore((s) => s.notes);
+  const validUntil = useQuoteBuilderStore((s) => s.validUntil);
+  const quotationDate = useQuoteBuilderStore((s) => s.quotationDate);
+  const reset = useQuoteBuilderStore((s) => s.reset);
+
+  const snapshot = React.useMemo(
+    () => ({
+      customerId: selectedCustomerId,
+      items,
+      discountPercent,
+      taxPercent,
+      notes,
+      validUntil,
+      quotationDate,
+    }),
+    [selectedCustomerId, items, discountPercent, taxPercent, notes, validUntil, quotationDate],
+  );
+
   const {
     autosaveStatus,
     lastSavedAt,
@@ -86,15 +98,7 @@ export function QuoteEditor({
     mode,
     ...(quotationId ? { quotationId } : {}),
     serverUpdatedAt,
-    snapshot: {
-      customerId: selectedCustomerId,
-      items,
-      discountPercent,
-      taxPercent,
-      notes,
-      validUntil,
-      quotationDate,
-    },
+    snapshot,
   });
 
   React.useEffect(() => {

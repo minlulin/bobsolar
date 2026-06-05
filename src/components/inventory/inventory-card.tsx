@@ -14,7 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -72,7 +72,11 @@ function getItemLabel(item: InventoryItem): string | null {
   return getSpecBrandModel(item);
 }
 
-export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps): React.JSX.Element {
+export const InventoryCard = React.memo(function InventoryCard({
+  item,
+  canEdit,
+  onEdit,
+}: InventoryCardProps): React.JSX.Element {
   const Icon = categoryIcons[item.category];
   const { mutate: updateItem, isPending: isUpdating } = useUpdateInventoryItem();
   const { mutate: deleteItem } = useDeleteInventoryItem();
@@ -97,7 +101,6 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps): Re
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -217,4 +220,4 @@ export function InventoryCard({ item, canEdit, onEdit }: InventoryCardProps): Re
       </Card>
     </motion.div>
   );
-}
+});

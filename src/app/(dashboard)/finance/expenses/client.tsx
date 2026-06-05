@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { CheckCircle2, Clock, Plus, Receipt, Sparkles, WalletCards } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,10 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
     }
   }
 
-  const totalYTD = data.expenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
+  const totalYTD = useMemo(
+    () => data.expenses.reduce((acc, curr) => acc + Number(curr.amount), 0),
+    [data.expenses],
+  );
 
   return (
     <div className="relative min-h-full w-full bg-background overflow-hidden selection:bg-primary/30 pb-20">

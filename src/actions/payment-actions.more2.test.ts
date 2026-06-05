@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/validate", () => ({
-  requireAuth: vi.fn(async () => {
+  requireFinanceAccess: vi.fn(async () => {
     if (state.authFails) throw new Error("auth fail");
     return { userId: "u1", role: "admin" as const };
   }),

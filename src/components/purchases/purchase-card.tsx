@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { FileText, PackageCheck, PackageOpen } from "lucide-react";
 import { motion } from "motion/react";
 import { useRouter } from "next/navigation";
+import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { PurchaseOrderListRow } from "@/hooks/use-purchases";
@@ -14,7 +15,9 @@ interface PurchaseCardProps {
   purchase: PurchaseOrderListRow;
 }
 
-export function PurchaseCard({ purchase }: PurchaseCardProps): React.JSX.Element {
+export const PurchaseCard = React.memo(function PurchaseCard({
+  purchase,
+}: PurchaseCardProps): React.JSX.Element {
   const router = useRouter();
   const detailHref = `/purchases/${purchase.id}`;
 
@@ -23,7 +26,6 @@ export function PurchaseCard({ purchase }: PurchaseCardProps): React.JSX.Element
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -101,4 +103,4 @@ export function PurchaseCard({ purchase }: PurchaseCardProps): React.JSX.Element
       </Card>
     </motion.div>
   );
-}
+});

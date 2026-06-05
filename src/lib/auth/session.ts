@@ -209,7 +209,17 @@ export async function getUserRoleFromDb(userId: string): Promise<UserRole | null
 }
 
 export async function getSessionFromCookie(): Promise<typeof sessions.$inferSelect | null> {
-  const { session } = await getSessionAndRefresh();
+  const cookieStore = await cookies();
+  const sealedValue = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (!sealedValue) return null;
+  assertSessionSecret();
+
+  const unsealed = await unsealSession(sealedValue);
+  if (!unsealed?.sid) return null;
+
+  const session = await getSession(unsealed.sid);
+  if (!session) return null;
+
   return session;
 }
 

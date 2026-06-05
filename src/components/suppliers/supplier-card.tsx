@@ -2,6 +2,7 @@
 
 import { Building2, Edit, Mail, MapPin, MoreVertical, Phone, Trash2 } from "lucide-react";
 import { motion } from "motion/react";
+import * as React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,11 @@ interface SupplierCardProps {
   onDelete?: (id: string) => void;
 }
 
-export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps): React.JSX.Element {
+export const SupplierCard = React.memo(function SupplierCard({
+  supplier,
+  onEdit,
+  onDelete,
+}: SupplierCardProps): React.JSX.Element {
   const { mutate: deleteSupplier } = useDeleteSupplier();
 
   const getInitials = (name: string): string => {
@@ -35,7 +40,6 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps):
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -127,4 +131,4 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps):
       </Card>
     </motion.div>
   );
-}
+});

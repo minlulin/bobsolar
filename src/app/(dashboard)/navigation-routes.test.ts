@@ -15,6 +15,7 @@ const navigationRoutes = [
   { href: "/inventory", routeFile: path.join(appDir, "inventory", "page.tsx") },
   { href: "/finance", routeFile: path.join(appDir, "finance", "page.tsx") },
   { href: "/finance/ledger", routeFile: path.join(appDir, "finance", "ledger", "page.tsx") },
+  { href: "/owner-portal", routeFile: path.join(appDir, "owner-portal", "page.tsx") },
   { href: "/warranty", routeFile: path.join(appDir, "warranty", "page.tsx") },
   { href: "/settings", routeFile: path.join(appDir, "settings", "page.tsx") },
 ] as const;
