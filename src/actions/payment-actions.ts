@@ -3,7 +3,7 @@
 import { startOfMonth, subMonths } from "date-fns";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   journalEntries,
@@ -34,7 +34,7 @@ import { recordPaymentSchema } from "@/lib/validators/payment";
 
 export async function recordPayment(raw: unknown): Promise<ActionResponse<ProjectPayment>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     assertFinanceSsotDrift();
     const data = recordPaymentSchema.parse(raw);
 
@@ -214,7 +214,7 @@ export async function getProjectPayments(
   projectId: string,
 ): Promise<ActionResponse<(ProjectPayment & { paymentMethodName: string })[]>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
     const validatedProjectId = uuidSchema.parse(projectId);
     const rows = await db
       .select({
@@ -239,7 +239,7 @@ export async function getProjectPayments(
 
 export async function getPaymentMethods(): Promise<ActionResponse<PaymentMethod[]>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
     const methods = await db.query.paymentMethods.findMany({
       where: eq(paymentMethods.isActive, true),
       orderBy: [desc(paymentMethods.createdAt)],
@@ -285,7 +285,7 @@ export async function getPaymentFinanceSummary(): Promise<
   }>
 > {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const sixMonthWindowStart = startOfMonth(subMonths(new Date(), 5));
 

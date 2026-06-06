@@ -3,7 +3,7 @@
 import { endOfDay, format, parseISO, startOfDay, subMonths } from "date-fns";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
 import {
@@ -51,7 +51,7 @@ export async function getProfitLossReport(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<ProfitLossReport>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = periodSchema.parse(rawFilters);
     const now = new Date();

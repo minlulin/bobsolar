@@ -3,7 +3,7 @@
 import { endOfDay, format, parseISO, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { and, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 
 import {
@@ -249,7 +249,7 @@ export async function getFinanceSummary(
 ): Promise<ActionResponse<FinanceSummaryCard>> {
   const start = performance.now();
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -368,7 +368,7 @@ export async function getMonthlyTrend(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<MonthlyTrendRow[]>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -427,7 +427,7 @@ export async function getExpenseBreakdown(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<ExpenseBreakdownRow[]>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = periodFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom
@@ -482,7 +482,7 @@ export interface ReceivableRiskInvoice {
 
 export async function getReceivableRiskData(): Promise<ActionResponse<ReceivableRiskInvoice[]>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const rows = await db
       .select({
@@ -560,7 +560,7 @@ export interface DataConsistencyCheck {
 
 export async function getDataConsistencyCheck(): Promise<ActionResponse<DataConsistencyCheck>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const [journalIncomeRow, operationalPaymentsRow, journalExpenseRow, operationalCostsRow] =
       await Promise.all([

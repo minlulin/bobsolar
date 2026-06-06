@@ -17,4 +17,4 @@ DROP INDEX "journal_entries_is_reversed_idx";--> statement-breakpoint
 ALTER TABLE "purchase_orders" ADD COLUMN "bill_date" timestamp;--> statement-breakpoint
 ALTER TABLE "purchase_orders" ADD COLUMN "due_date" timestamp;--> statement-breakpoint
 ALTER TABLE "accounting_periods" ADD CONSTRAINT "accounting_periods_closed_by_users_id_fk" FOREIGN KEY ("closed_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "journal_entries_date_reversed_idx" ON "journal_entries" USING btree ("entry_date","is_reversed");
+CREATE INDEX IF NOT EXISTS "journal_entries_date_reversed_idx" ON "journal_entries" USING btree ("entry_date","is_reversed");

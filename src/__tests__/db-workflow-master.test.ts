@@ -61,7 +61,7 @@ const authState = vi.hoisted(() => ({
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: async (): Promise<{
     userId: string;
-    role: "admin" | "staff";
+    role: "admin" | "owner";
   }> => {
     if (!authState.userId) {
       throw new Error("Auth context not initialized");
@@ -80,7 +80,7 @@ vi.mock("@/lib/auth/validate", () => ({
       role: authState.role,
     });
   },
-  requireFinanceAccess: async (): Promise<{ userId: string; role: "admin" }> => {
+  requireOwner: async (): Promise<{ userId: string; role: "admin" }> => {
     if (!authState.userId) {
       throw new Error("Auth context not initialized");
     }
@@ -149,7 +149,7 @@ describeDb("Master workflow integration: DB + server actions", () => {
         email: staffEmail,
         passwordHash: "test_hash",
         name: "Workflow Staff",
-        role: "staff",
+        role: "owner",
       })
       .returning({ id: users.id });
 

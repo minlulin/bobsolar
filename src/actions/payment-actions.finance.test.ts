@@ -20,7 +20,7 @@ const spies = vi.hoisted(() => ({
 vi.mock("next/cache", () => ({ revalidatePath: spies.revalidatePath }));
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
-  requireFinanceAccess: vi.fn(async () => state.auth),
+  requireOwner: vi.fn(async () => state.auth),
 }));
 vi.mock("@/lib/finance/ledger", () => ({
   assertFinanceSsotDrift: vi.fn(),

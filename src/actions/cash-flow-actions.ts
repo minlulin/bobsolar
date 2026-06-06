@@ -3,7 +3,7 @@
 import { endOfDay, parseISO, startOfDay, startOfMonth, subMonths } from "date-fns";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
 import {
@@ -54,7 +54,7 @@ export async function getCashFlowStatement(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<CashFlowStatement>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = cashFlowFilterSchema.parse(rawFilters);
     const dateFrom = filters.dateFrom

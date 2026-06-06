@@ -1,31 +1,29 @@
 import type { LedgerAccountCode } from "@/lib/domain/finance";
 
 /**
- * Partner Registry SSoT
- * Reads partner config from `SEED_PARTNERS` env var (JSON array).
- * Partners are sorted alphabetically by name and assigned slots A, B, C.
- * Each slot maps to fixed ledger accounts.
+ * Partner Slot → Ledger Accounts (SSoT)
  *
- * Env format (set in .env.local or Vercel env secrets):
- *   SEED_PARTNERS=[{"name":"Author","email":"author@bobsolar.com","ownershipPercent":33.34},{"name":"Arkar","email":"arkar@bobsolar.com","ownershipPercent":33.33},{"name":"Yenyeinaung","email":"yenyeinaung@bobsolar.com","ownershipPercent":33.33}]
+ * Each slot (A, B, C) maps to a fixed set of equity ledger accounts. The
+ * slot is persisted on the `owners` row (assigned automatically at creation
+ * time: the lowest available slot). Slot-to-account mapping is static and
+ * does not change at runtime — renaming an owner does not change their
+ * slot, and archiving an owner frees their slot for the next one.
+ *
+ * If more than 3 owners are ever needed, additional slots (D, E, ...) and
+ * corresponding ledger accounts must be added in a migration.
  */
 
 export type PartnerSlot = "A" | "B" | "C";
 
-export interface PartnerConfig {
-  slot: PartnerSlot;
-  name: string;
-  email: string;
-  ownershipPercent: number;
-  accounts: {
-    capital: LedgerAccountCode;
-    draws: LedgerAccountCode;
-    distributionsPayable: LedgerAccountCode;
-  };
-}
+export const PARTNER_SLOTS: readonly PartnerSlot[] = ["A", "B", "C"] as const;
 
-/** Fixed ledger account mapping per slot. Slots A, B, C correspond to owner_a, owner_b, owner_c accounts. */
-const SLOT_ACCOUNTS: Record<PartnerSlot, PartnerConfig["accounts"]> = {
+export type PartnerAccounts = {
+  capital: LedgerAccountCode;
+  draws: LedgerAccountCode;
+  distributionsPayable: LedgerAccountCode;
+};
+
+const SLOT_ACCOUNTS: Record<PartnerSlot, PartnerAccounts> = {
   A: {
     capital: "owner_a_capital",
     draws: "owner_a_draws",
@@ -43,103 +41,14 @@ const SLOT_ACCOUNTS: Record<PartnerSlot, PartnerConfig["accounts"]> = {
   },
 };
 
-const SLOT_ORDER: PartnerSlot[] = ["A", "B", "C"];
-
-interface SeedPartnerInput {
-  name: string;
-  email: string;
-  ownershipPercent: number;
-}
-
-function parsePartnersFromEnv(): PartnerConfig[] {
-  const raw = process.env["SEED_PARTNERS"]?.trim();
-  if (!raw) return [];
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("SEED_PARTNERS must be a valid JSON array");
+/** Get the ledger accounts for a given slot. Throws if the slot is invalid. */
+export function getPartnerAccountsBySlot(slot: string): PartnerAccounts {
+  const accounts = SLOT_ACCOUNTS[slot as PartnerSlot];
+  if (!accounts) {
+    throw new Error(
+      `Unknown partner slot: "${slot}". Valid slots: ${PARTNER_SLOTS.join(", ")}. ` +
+        `Add the slot's ledger accounts in src/lib/domain/partners.ts before using it.`,
+    );
   }
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("SEED_PARTNERS must be a JSON array");
-  }
-
-  const input: SeedPartnerInput[] = [];
-  for (const item of parsed) {
-    if (typeof item !== "object" || item === null) {
-      throw new Error("Each SEED_PARTNERS entry must be an object");
-    }
-    const entry = item as Record<string, unknown>;
-    if (typeof entry["name"] !== "string") {
-      throw new Error("Each SEED_PARTNERS entry needs 'name' as string");
-    }
-    if (typeof entry["email"] !== "string") {
-      throw new Error("Each SEED_PARTNERS entry needs 'email' as string");
-    }
-    if (typeof entry["ownershipPercent"] !== "number") {
-      throw new Error("Each SEED_PARTNERS entry needs 'ownershipPercent' as number");
-    }
-    input.push({
-      name: entry["name"],
-      email: entry["email"],
-      ownershipPercent: entry["ownershipPercent"],
-    });
-  }
-
-  // Sort alphabetically by name, assign slots A, B, C
-  input.sort((a, b) => a.name.localeCompare(b.name));
-
-  if (input.length > SLOT_ORDER.length) {
-    throw new Error(`Maximum ${SLOT_ORDER.length} partners supported. Got ${input.length}.`);
-  }
-
-  return input.map((item, i) => {
-    const slot = SLOT_ORDER[i];
-    if (!slot) throw new Error(`No slot available for partner index ${i}`);
-    return {
-      slot,
-      name: item.name,
-      email: item.email,
-      ownershipPercent: item.ownershipPercent,
-      accounts: SLOT_ACCOUNTS[slot],
-    };
-  });
-}
-
-/** Partner configuration — loaded from SEED_PARTNERS env var. Empty if not set. */
-export const PARTNERS: PartnerConfig[] = parsePartnersFromEnv();
-
-/** Total ownership must equal 100% (only when partners are configured). */
-if (PARTNERS.length > 0) {
-  const totalPercent = PARTNERS.reduce((sum, p) => sum + p.ownershipPercent, 0);
-  if (Math.round(totalPercent * 100) !== 10000) {
-    throw new Error(`Partner ownership must total 100%. Current total: ${totalPercent}%`);
-  }
-}
-
-/** Lookup a partner by slot. */
-export function getPartnerBySlot(slot: PartnerSlot): PartnerConfig | undefined {
-  return PARTNERS.find((p) => p.slot === slot);
-}
-
-/** Lookup a partner by email. */
-export function getPartnerByEmail(email: string): PartnerConfig | undefined {
-  return PARTNERS.find((p) => p.email === email);
-}
-
-/** Lookup a partner's ledger accounts by email. */
-export function getPartnerAccountsByEmail(email: string): PartnerConfig["accounts"] | undefined {
-  return getPartnerByEmail(email)?.accounts;
-}
-
-/** Distribute an amount across all partners based on ownership %. */
-export function calculateDistributionShares(
-  totalAmount: number,
-): Array<{ partner: PartnerConfig; amount: number }> {
-  return PARTNERS.map((partner) => ({
-    partner,
-    amount: Math.round(totalAmount * (partner.ownershipPercent / 100)),
-  }));
+  return accounts;
 }

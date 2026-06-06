@@ -5,7 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { z } from "zod";
 import { hashPassword } from "@/lib/auth/password";
-import { revokeAllUserSessions } from "@/lib/auth/session";
+import { bumpUserSessionVersion } from "@/lib/auth/session";
 import { requireAdmin, requireAuth } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
@@ -44,7 +44,7 @@ const createUserSchema = z.object({
   name: z.string().min(1),
   email: z.email(),
   password: passwordValidationSchema,
-  role: userRoleSchema.default("staff"),
+  role: userRoleSchema.default("owner"),
 });
 
 function makeTempPassword(): string {
@@ -246,8 +246,9 @@ export async function resetSettingsUserPassword(
     const passwordHash = await hashPassword(temporaryPassword);
     await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
 
-    // Revoke all sessions for this user (force re-login with temp password)
-    await revokeAllUserSessions(userId);
+    // Bump session_version (on the outer `db`) so the next request from any
+    // active sealed cookie is rejected — forces a re-login with the temp password.
+    await bumpUserSessionVersion(userId);
 
     return successResponse({ temporaryPassword });
   } catch (error) {

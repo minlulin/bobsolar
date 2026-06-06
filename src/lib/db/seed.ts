@@ -5,55 +5,16 @@ import { db } from "./index";
 import { companySettings, users, warrantyAlerts } from "./schema";
 import { getSeedAdminCredentials } from "./seed-config";
 
-// Admin and seed data: read only from .env.local (loaded by ./load-env-local)
+// Admin: read only from .env.local (loaded by ./load-env-local).
+// Partners are NOT seeded here — they are created in-app via
+// Settings → Partners after handover.
 const { email: rawEmail, password: SEED_ADMIN_PASSWORD } = getSeedAdminCredentials();
 const SEED_ADMIN_EMAIL = rawEmail?.trim();
 const SEED_COMPANY_EMAIL = process.env["SEED_COMPANY_EMAIL"]?.trim();
 const ALLOW_PROD_SEED = process.env["ALLOW_PROD_SEED"] === "1";
 const SEED_RESET_ALERTS = process.env["SEED_RESET_ALERTS"] === "1";
 
-// Extra users from SEED_USERS JSON array env var
-type SeedUser = {
-  email: string;
-  password: string;
-  name?: string;
-  role?: string;
-};
-function parseExtraUsers(): SeedUser[] {
-  const raw = process.env["SEED_USERS"]?.trim();
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error("SEED_USERS must be a JSON array");
-    const users: SeedUser[] = [];
-    for (const u of parsed) {
-      if (typeof u !== "object" || u === null) {
-        throw new Error("Each SEED_USERS entry must be an object");
-      }
-      const entry = u as Record<string, unknown>;
-      if (typeof entry["email"] !== "string" || typeof entry["password"] !== "string") {
-        throw new Error("Each SEED_USERS entry needs email and password as strings");
-      }
-      const name = typeof entry["name"] === "string" ? entry["name"] : undefined;
-      const role = typeof entry["role"] === "string" ? entry["role"] : undefined;
-      users.push({
-        email: entry["email"],
-        password: entry["password"],
-        ...(name !== undefined ? { name } : {}),
-        ...(role !== undefined ? { role } : {}),
-      });
-    }
-    return users;
-  } catch {
-    console.error("❌ Invalid SEED_USERS format. Expected JSON array:");
-    console.error('   [{"email":"user","password":"pass","name":"Name","role":"staff"}]');
-    process.exit(1);
-  }
-}
-
-const SEED_EXTRA_USERS = parseExtraUsers();
-
-// List of weak/default passwords to reject
+// Weak/default passwords to reject.
 const WEAK_PASSWORDS = ["admin123", "password", "123456", "admin", "qwerty"];
 
 if (process.env.NODE_ENV === "production" && !ALLOW_PROD_SEED) {
@@ -61,27 +22,23 @@ if (process.env.NODE_ENV === "production" && !ALLOW_PROD_SEED) {
 }
 
 async function seed(): Promise<void> {
-  console.log("🌱 Seeding database...");
+  console.log("Seeding database...");
 
   if (!process.env["DATABASE_URL"]?.trim()) {
-    console.error("❌ DATABASE_URL is not set. Add your connection string to .env.local.");
+    console.error("DATABASE_URL is not set. Add your connection string to .env.local.");
     process.exit(1);
   }
 
-  // Validate environment variables
   if (!SEED_ADMIN_EMAIL || !SEED_ADMIN_PASSWORD) {
-    console.error("❌ Missing required environment variables:");
-    console.error("   - SEED_ADMIN_EMAIL");
-    console.error("   - SEED_ADMIN_PASSWORD");
+    console.error("Missing required environment variables:");
+    console.error("  - SEED_ADMIN_EMAIL");
+    console.error("  - SEED_ADMIN_PASSWORD");
     process.exit(1);
   }
 
-  // Reject weak/default passwords
   const lowerPassword = SEED_ADMIN_PASSWORD.toLowerCase();
   if (WEAK_PASSWORDS.includes(lowerPassword) || SEED_ADMIN_PASSWORD.length < 8) {
-    console.error(
-      "❌ Weak or default password detected. Please use a strong password (min 8 chars).",
-    );
+    console.error("Weak or default password detected. Please use a strong password (min 8 chars).");
     process.exit(1);
   }
 
@@ -100,31 +57,7 @@ async function seed(): Promise<void> {
       set: { passwordHash: adminPassword, name: "Admin User" },
     });
 
-  console.log(`✅ Admin user created: ${SEED_ADMIN_EMAIL}`);
-
-  // 1b. Seed Extra Users (from SEED_USERS JSON array)
-  for (const extra of SEED_EXTRA_USERS) {
-    const pwHash = await hashPassword(extra.password);
-    await db
-      .insert(users)
-      .values({
-        email: extra.email.trim(),
-        passwordHash: pwHash,
-        name: extra.name?.trim() || extra.email.trim(),
-        role: (extra.role?.trim() as "admin" | "staff" | undefined) ?? "staff",
-      })
-      .onConflictDoUpdate({
-        target: users.email,
-        set: {
-          passwordHash: pwHash,
-          name: extra.name?.trim() || extra.email.trim(),
-        },
-      });
-    console.log(`  └─ User "${extra.email}" seeded`);
-  }
-  if (SEED_EXTRA_USERS.length > 0) {
-    console.log(`✅ ${SEED_EXTRA_USERS.length} extra user(s) created`);
-  }
+  console.log(`Admin user created: ${SEED_ADMIN_EMAIL}`);
 
   const companyContactEmail = SEED_COMPANY_EMAIL || SEED_ADMIN_EMAIL;
 
@@ -143,15 +76,14 @@ async function seed(): Promise<void> {
     .onConflictDoNothing();
 
   if (SEED_RESET_ALERTS) {
-    // Keep warranty alerts deterministic across repeated seeds.
     await db.delete(warrantyAlerts);
   }
 
-  console.log("✅ Seeding completed!");
+  console.log("Seeding completed! Owners must be added in-app via Settings → Partners.");
   process.exit(0);
 }
 
 seed().catch((err: unknown) => {
-  console.error("❌ Seeding failed:", err);
+  console.error("Seeding failed:", err);
   process.exit(1);
 });

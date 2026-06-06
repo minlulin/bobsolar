@@ -2,13 +2,7 @@
 
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth/password";
-import {
-  clearSessionCookies,
-  createSession,
-  deleteSession,
-  getSessionFromCookie,
-  revokeAllUserSessions,
-} from "@/lib/auth/session";
+import { clearSessionCookies, createSession, getSessionFromCookie } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { authRateLimits, users } from "@/lib/db/schema";
 import {
@@ -54,6 +48,13 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
 
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
+    columns: {
+      id: true,
+      role: true,
+      passwordHash: true,
+      sessionVersion: true,
+      archivedAt: true,
+    },
   });
 
   // Uniform timing: always verify password even if user not found (mitigates timing attacks)
@@ -62,7 +63,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   const hashToVerify = user?.passwordHash ?? dummyHash;
   const isValid = await verifyPassword(password, hashToVerify);
 
-  if (!user || !isValid) {
+  if (!user || !isValid || user.archivedAt !== null) {
     const isWindowExpired = !limitRow || limitRow.lastAttemptAt < windowStart;
     const attempts = isWindowExpired ? 1 : limitRow.attempts + 1;
     const lockedUntil =
@@ -98,7 +99,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   }
 
   try {
-    await createSession(user.id);
+    await createSession(user.id, user.role, user.sessionVersion);
   } catch (error) {
     console.error("[login.createSession]", error);
     return errorResponse(
@@ -111,10 +112,7 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
 }
 
 export async function logout(): Promise<ActionResponse<null>> {
-  const session = await getSessionFromCookie();
-  if (session) {
-    await deleteSession(session.id);
-  }
+  // The cookie is the session. No DB row to delete; just clear the cookie.
   await clearSessionCookies();
   return successResponse(null);
 }
@@ -136,6 +134,7 @@ export async function changePassword(formData: FormData): Promise<ActionResponse
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.userId),
+    columns: { id: true, passwordHash: true, sessionVersion: true },
   });
 
   if (!user) return errorResponse("User not found");
@@ -147,10 +146,16 @@ export async function changePassword(formData: FormData): Promise<ActionResponse
 
   const newHash = await hashPassword(newPassword);
 
-  await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, user.id));
-
-  // Revoke all other sessions for this user (security: force re-login with new password)
-  await revokeAllUserSessions(user.id, session.id);
+  // Bump session_version in the same UPDATE that writes the new password.
+  // Both must land atomically; if the password update succeeds but the bump
+  // fails, the next request would log the user in with the new password
+  // without revoking other devices.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ passwordHash: newHash, sessionVersion: user.sessionVersion + 1 })
+      .where(eq(users.id, user.id));
+  });
 
   return successResponse(null);
 }

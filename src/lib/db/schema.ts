@@ -18,7 +18,7 @@ import {
 
 // --- Enums ---
 
-export const userRoleEnum = pgEnum("user_role", ["admin", "staff"]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "owner"]);
 
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
@@ -181,16 +181,17 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
-  role: userRoleEnum("role").default("staff").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const sessions = pgTable("sessions", {
-  id: text("id").primaryKey(), // crypto.randomUUID()
-  userId: uuid("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
+  role: userRoleEnum("role").default("owner").notNull(),
+  archivedAt: timestamp("archived_at"),
+  /**
+   * Monotonic stamp baked into the sealed session cookie at login time.
+   * Bumped on password change, partner archive, and any other "kill all
+   * sessions" event. Stale cookies still unseal, but the sv mismatch in
+   * `requireAuth` rejects them as "session revoked".
+   *
+   * Replaces the legacy `sessions` row lookup (see migration 0032/0033).
+   */
+  sessionVersion: integer("session_version").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -800,15 +801,24 @@ export const generalExpenses = pgTable(
   ],
 );
 
-export const owners = pgTable("owners", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .references(() => users.id)
-    .notNull()
-    .unique(),
-  ownershipPercentage: decimal("ownership_percentage", { precision: 5, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const owners = pgTable(
+  "owners",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull()
+      .unique(),
+    slot: text("slot").notNull(),
+    ownershipPercentage: decimal("ownership_percentage", { precision: 5, scale: 2 }).notNull(),
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    check("owners_slot_check", sql`${table.slot} IN ('A', 'B', 'C')`),
+    uniqueIndex("owners_active_slot_unique").on(table.slot).where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 export const ownerTransactions = pgTable(
   "owner_transactions",
@@ -837,7 +847,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   projectCosts: many(projectCosts),
   projectRemarks: many(projectRemarks),
   notifications: many(notifications),
-  sessions: many(sessions),
   generalExpenses: many(generalExpenses),
 }));
 

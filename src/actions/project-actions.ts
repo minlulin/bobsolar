@@ -12,7 +12,7 @@ import {
 import type { InferSelectModel } from "drizzle-orm";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { requireAdmin, requireAuth, requireFinanceAccess } from "@/lib/auth/validate";
+import { requireAdmin, requireAuth, requireOwner } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import {
@@ -1072,7 +1072,7 @@ export async function checkProjectCompletionOutstanding(
 
 export async function addProjectCost(raw: unknown): Promise<ActionResponse<ProjectCost[]>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     assertFinanceSsotDrift();
     const data = addProjectCostSchema.parse(raw);
     if (data.itemId) {
@@ -1173,7 +1173,7 @@ export async function consumeProjectInventory(
   raw: unknown,
 ): Promise<ActionResponse<ProjectCost[]>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     assertFinanceSsotDrift();
     const data = consumeProjectInventorySchema.parse(raw);
 
@@ -1253,7 +1253,7 @@ export async function deleteProjectCost(
   costId: string,
 ): Promise<ActionResponse<{ projectId: string }>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     const validatedCostId = uuidSchema.parse(costId);
     const cost = await db.query.projectCosts.findFirst({
       where: eq(projectCosts.id, validatedCostId),

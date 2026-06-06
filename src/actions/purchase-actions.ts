@@ -2,7 +2,7 @@
 
 import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requirePurchaseManagementAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   inventoryItems,
@@ -25,7 +25,7 @@ import { createPurchaseOrderSchema, payPurchaseOrderSchema } from "@/lib/validat
 
 export async function getPurchaseOrders() {
   try {
-    await requirePurchaseManagementAccess();
+    await requireOwner();
     const data = await db.query.purchaseOrders.findMany({
       orderBy: [desc(purchaseOrders.createdAt)],
       limit: 200,
@@ -43,7 +43,7 @@ export async function getPurchaseOrders() {
 
 export async function getPurchaseOrderById(id: string) {
   try {
-    await requirePurchaseManagementAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
     const data = await db.query.purchaseOrders.findFirst({
       where: eq(purchaseOrders.id, validatedId),
@@ -71,7 +71,7 @@ export async function getPurchaseOrderById(id: string) {
 // 1. Create a Draft PO (Warehouse Inbound from Catalog)
 export async function createPurchaseOrder(raw: unknown) {
   try {
-    const user = await requirePurchaseManagementAccess();
+    const user = await requireOwner();
     const validated = createPurchaseOrderSchema.parse(raw);
     const totalAmount = validated.items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
@@ -126,7 +126,7 @@ export async function createPurchaseOrder(raw: unknown) {
 // 2. Receive the PO (Moves to Warehouse Asset, Debits raw_materials, Credits accounts_payable)
 export async function receivePurchaseOrder(id: string) {
   try {
-    const user = await requirePurchaseManagementAccess();
+    const user = await requireOwner();
     const validatedId = uuidSchema.parse(id);
 
     await db.transaction(async (tx) => {
@@ -221,7 +221,7 @@ export async function receivePurchaseOrder(id: string) {
 // 3. Pay Supplier (Debits accounts_payable, Credits Asset/Cash)
 export async function payPurchaseOrder(raw: unknown) {
   try {
-    const user = await requirePurchaseManagementAccess();
+    const user = await requireOwner();
     const validated = payPurchaseOrderSchema.parse(raw);
 
     return await withIdempotency("payPurchaseOrder", user.userId, validated, async () => {

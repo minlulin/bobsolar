@@ -21,7 +21,7 @@ let createdUserId: string | null = null;
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: async (): Promise<{
     userId: string;
-    role: "admin" | "staff";
+    role: "admin" | "owner";
   }> => {
     if (!authUserId) throw new Error("Auth user not initialized");
     return await Promise.resolve({
@@ -36,7 +36,7 @@ vi.mock("@/lib/auth/validate", () => ({
       role: "admin" as const,
     });
   },
-  requireFinanceAccess: async (): Promise<{ userId: string; role: "admin" }> => {
+  requireOwner: async (): Promise<{ userId: string; role: "admin" }> => {
     if (!authUserId) throw new Error("Auth user not initialized");
     return await Promise.resolve({
       userId: authUserId,

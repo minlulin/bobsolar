@@ -14,12 +14,20 @@ export async function GET(request: Request): Promise<Response> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate the session against the DB: check role, session_version stamp
+    // (revocation), and archive status. Single indexed read.
     const user = await db.query.users.findFirst({
       where: eq(users.id, session.userId),
-      columns: { role: true },
+      columns: { role: true, sessionVersion: true, archivedAt: true },
     });
 
-    if (user?.role !== "admin") {
+    if (!user || user.archivedAt !== null) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (user.sessionVersion !== session.sv) {
+      return NextResponse.json({ error: "Session revoked" }, { status: 401 });
+    }
+    if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

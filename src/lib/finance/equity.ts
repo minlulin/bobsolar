@@ -2,35 +2,29 @@ import { eq } from "drizzle-orm";
 import { owners, ownerTransactions } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
 import { OWNER_TX_STATUSES, OWNER_TX_TYPES } from "@/lib/domain/owner-transaction";
-import { getPartnerByEmail, type PartnerConfig } from "@/lib/domain/partners";
+import { getPartnerAccountsBySlot, type PartnerAccounts } from "@/lib/domain/partners";
 import { createBalancedJournalEntry, type DbTransaction } from "./ledger";
 
 /**
- * Resolve a partner's ledger account codes from their DB owner ID.
- * Joins owners → users to get the email, then looks up the partner registry.
+ * Resolve a partner's ledger account codes from their owner ID.
+ * Reads the slot persisted on the owner row and looks up the static
+ * slot → accounts map. This is the SSoT for which accounts a given
+ * owner draws from when issuing distributions, draws, or capital calls.
  */
 export async function resolvePartnerAccounts(
   tx: DbTransaction,
   ownerId: string,
-): Promise<PartnerConfig["accounts"]> {
-  const ownerWithUser = await tx.query.owners.findFirst({
+): Promise<PartnerAccounts> {
+  const owner = await tx.query.owners.findFirst({
     where: eq(owners.id, ownerId),
-    with: { user: { columns: { email: true } } },
+    columns: { slot: true },
   });
 
-  if (!ownerWithUser?.user?.email) {
-    throw new Error(`Owner ${ownerId} not found or has no linked user email.`);
+  if (!owner) {
+    throw new Error(`Owner ${ownerId} not found.`);
   }
 
-  const partner = getPartnerByEmail(ownerWithUser.user.email);
-  if (!partner) {
-    throw new Error(
-      `No partner configured for email: ${ownerWithUser.user.email}. ` +
-        `Set SEED_PARTNERS env var with this partner's details.`,
-    );
-  }
-
-  return partner.accounts;
+  return getPartnerAccountsBySlot(owner.slot);
 }
 
 type DistributeNetIncomeInput = {

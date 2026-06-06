@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
@@ -12,7 +12,7 @@ export async function createCashTransfer(
   raw: unknown,
 ): Promise<ActionResponse<{ entryId: string }>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     const data = cashTransferSchema.parse(raw);
 
     const result = await db.transaction(async (tx) => {

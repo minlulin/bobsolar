@@ -64,7 +64,7 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => state.auth),
-  requireFinanceAccess: vi.fn(async () => state.auth),
+  requireOwner: vi.fn(async () => state.auth),
 }));
 vi.mock("@/lib/notifications/broadcast", () => ({
   notifyAllUsers: spies.notifyAllUsers,

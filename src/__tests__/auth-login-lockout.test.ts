@@ -14,11 +14,15 @@ const state = vi.hoisted(() => ({
     role: "admin",
     passwordHash: "hash",
     email: "admin@example.com",
+    sessionVersion: 0,
+    archivedAt: null,
   } as null | {
     id: string;
     role: string;
     passwordHash: string;
     email: string;
+    sessionVersion: number;
+    archivedAt: Date | null;
   },
   passwordValid: false,
 }));
@@ -67,9 +71,8 @@ vi.mock("@/lib/auth/password", () => ({
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(() => Promise.resolve()),
   clearSessionCookies: vi.fn(),
-  deleteSession: vi.fn(),
   getSessionFromCookie: vi.fn(() => Promise.resolve(null)),
-  revokeAllUserSessions: vi.fn(() => Promise.resolve(0)),
+  bumpUserSessionVersion: vi.fn(() => Promise.resolve(0)),
 }));
 
 describe("login lockout policy", () => {
@@ -81,6 +84,8 @@ describe("login lockout policy", () => {
       role: "admin",
       passwordHash: "hash",
       email: "admin@example.com",
+      sessionVersion: 0,
+      archivedAt: null,
     };
     state.limitRow = null;
   });

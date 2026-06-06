@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  authRole: "admin" as "admin" | "staff",
+  authRole: "admin" as "admin" | "owner",
   authFail: false,
   notificationsRows: [
     {

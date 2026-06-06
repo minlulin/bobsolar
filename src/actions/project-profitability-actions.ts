@@ -2,7 +2,7 @@
 
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   customers,
@@ -56,7 +56,7 @@ export async function getProjectProfitabilityReport(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<ProjectProfitabilityReport>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = projectProfitabilityFilterSchema.parse(rawFilters);
 

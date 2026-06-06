@@ -11,7 +11,7 @@ export default async function SettingsLayout({
 }: Readonly<{ children: React.ReactNode }>): Promise<React.ReactNode> {
   const session = await requireAuth();
 
-  // Only admins can access settings — staff users are redirected to the dashboard
+  // Only admins can access settings — owner role is redirected to the dashboard
   if (session.role !== "admin") {
     redirect("/");
   }

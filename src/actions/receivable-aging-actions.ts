@@ -2,7 +2,7 @@
 
 import { format, startOfDay } from "date-fns";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import type { ProjectStatus } from "@/lib/db/schema";
 import { customers, journalEntries, journalLines, ledgerAccounts, projects } from "@/lib/db/schema";
@@ -41,7 +41,7 @@ export interface ReceivableAgingReport {
 
 export async function getReceivableAgingReport(): Promise<ActionResponse<ReceivableAgingReport>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const now = startOfDay(new Date());
 

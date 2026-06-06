@@ -176,6 +176,7 @@ export const settingsKeys = {
   all: ["settings"] as const,
   company: () => [...settingsKeys.all, "company"] as const,
   users: () => [...settingsKeys.all, "users"] as const,
+  partners: () => [...settingsKeys.all, "partners"] as const,
   backups: () => [...settingsKeys.all, "backups"] as const,
 };
 

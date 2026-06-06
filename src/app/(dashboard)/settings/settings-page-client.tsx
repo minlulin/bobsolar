@@ -20,12 +20,13 @@ import { settingsKeys } from "@/lib/query-keys";
 import { type CompanySettingsInput, companySettingsSchema } from "@/lib/validators/settings";
 import { AccountTab } from "./components/account-tab";
 import { BackupTab } from "./components/backup-tab";
+import { PartnersTab } from "./components/partners-tab";
 import { PreferencesTab } from "./components/preferences-tab";
 import { UserManagementTab } from "./components/user-management-tab";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
-type SettingsTab = "company" | "users" | "preferences" | "account" | "backup";
+type SettingsTab = "company" | "users" | "partners" | "preferences" | "account" | "backup";
 
 type CompanyForm = CompanySettingsInput;
 
@@ -162,6 +163,13 @@ export default function SettingsPage(): React.JSX.Element {
             active={activeTab === "users"}
             onClick={() => {
               setActiveTab("users");
+            }}
+          />
+          <SettingsTabButton
+            label="Partners"
+            active={activeTab === "partners"}
+            onClick={() => {
+              setActiveTab("partners");
             }}
           />
           <SettingsTabButton
@@ -356,6 +364,7 @@ export default function SettingsPage(): React.JSX.Element {
       ) : null}
 
       {activeTab === "users" ? <UserManagementTab /> : null}
+      {activeTab === "partners" ? <PartnersTab /> : null}
       {activeTab === "preferences" ? <PreferencesTab /> : null}
       {activeTab === "account" ? <AccountTab /> : null}
       {activeTab === "backup" ? <BackupTab /> : null}

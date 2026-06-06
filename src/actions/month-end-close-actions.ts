@@ -3,7 +3,7 @@
 import { endOfMonth, format, startOfMonth } from "date-fns";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   accountingPeriods,
@@ -49,7 +49,7 @@ export async function getMonthEndCloseReport(
   rawInput: unknown = {},
 ): Promise<ActionResponse<MonthEndCloseReport>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const input = monthSchema.parse(rawInput);
     const monthStart = startOfMonth(new Date(input.year, input.month));

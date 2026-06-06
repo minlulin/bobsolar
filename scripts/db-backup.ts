@@ -38,7 +38,6 @@ function resolve(p: string): string {
 
 const TABLES = [
   "users",
-  "sessions",
   "auth_rate_limits",
   "customers",
   "inventory_items",

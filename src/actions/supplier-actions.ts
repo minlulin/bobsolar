@@ -2,7 +2,7 @@
 
 import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { requireSupplierManagementAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { type Supplier, suppliers } from "@/lib/db/schema";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
@@ -12,7 +12,7 @@ import { createSupplierSchema, updateSupplierSchema } from "@/lib/validators/sup
 
 export async function getSuppliers(): Promise<ActionResponse<Supplier[]>> {
   try {
-    await requireSupplierManagementAccess();
+    await requireOwner();
     const data = await db
       .select()
       .from(suppliers)
@@ -26,7 +26,7 @@ export async function getSuppliers(): Promise<ActionResponse<Supplier[]>> {
 
 export async function getSupplierById(id: string): Promise<ActionResponse<Supplier>> {
   try {
-    await requireSupplierManagementAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
     const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, validatedId));
     if (!supplier) {
@@ -40,7 +40,7 @@ export async function getSupplierById(id: string): Promise<ActionResponse<Suppli
 
 export async function createSupplier(raw: unknown): Promise<ActionResponse<Supplier>> {
   try {
-    await requireSupplierManagementAccess();
+    await requireOwner();
     const validated = createSupplierSchema.parse(raw);
 
     const [newSupplier] = await db
@@ -68,7 +68,7 @@ export async function createSupplier(raw: unknown): Promise<ActionResponse<Suppl
 
 export async function updateSupplier(id: string, raw: unknown): Promise<ActionResponse<Supplier>> {
   try {
-    await requireSupplierManagementAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
     const updateData = updateSupplierSchema.parse(raw);
 
@@ -94,7 +94,7 @@ export async function updateSupplier(id: string, raw: unknown): Promise<ActionRe
 
 export async function deleteSupplier(id: string): Promise<ActionResponse<null>> {
   try {
-    await requireSupplierManagementAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
 
     const deleted = await db

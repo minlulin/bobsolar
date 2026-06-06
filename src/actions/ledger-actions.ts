@@ -3,7 +3,7 @@
 import { endOfDay, parseISO, startOfDay } from "date-fns";
 import { and, desc, eq, exists, gte, inArray, lte, sql } from "drizzle-orm";
 import { cache } from "react";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import type { JournalSourceType, LedgerAccountType } from "@/lib/db/schema";
 import { journalEntries, journalLines, ledgerAccounts, projects } from "@/lib/db/schema";
@@ -44,7 +44,7 @@ export interface LedgerPage {
 export const getLedgerEntries = cache(
   async (rawFilters: unknown = {}): Promise<ActionResponse<LedgerPage>> => {
     try {
-      await requireFinanceAccess();
+      await requireOwner();
 
       const filters = ledgerFilterSchema.parse(rawFilters);
       const { dateFrom, dateTo, accountCode, projectId, sourceType, page, limit } = filters;
@@ -162,7 +162,7 @@ export interface AccountBalanceRow {
 export const getAccountBalances = cache(
   async (rawFilters: unknown = {}): Promise<ActionResponse<AccountBalanceRow[]>> => {
     try {
-      await requireFinanceAccess();
+      await requireOwner();
 
       const filters = ledgerFilterSchema.parse(rawFilters);
       const { dateFrom, dateTo } = filters;
@@ -219,7 +219,7 @@ export const getAccountBalances = cache(
 export const getLedgerProjects = cache(
   async (): Promise<ActionResponse<{ id: string; projectNumber: string }[]>> => {
     try {
-      await requireFinanceAccess();
+      await requireOwner();
 
       const rows = await db
         .select({

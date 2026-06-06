@@ -218,6 +218,27 @@
       "when": 1780641990783,
       "tag": "0030_milky_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1780734146200,
+      "tag": "0031_elite_war_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1780740967003,
+      "tag": "0032_lyrical_nico_minoru",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1780741632361,
+      "tag": "0033_fluffy_jean_grey",
+      "breakpoints": true
     }
   ]
 }

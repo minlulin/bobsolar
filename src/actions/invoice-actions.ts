@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { eq } from "drizzle-orm";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { projectInvoiceLines, projectInvoices } from "@/lib/db/schema";
 import { canPostInvoice } from "@/lib/domain/invoice";
@@ -15,7 +15,7 @@ export async function createInvoice(
   rawInput: unknown,
 ): Promise<ActionResponse<{ invoiceId: string }>> {
   try {
-    const session = await requireFinanceAccess();
+    const session = await requireOwner();
     const input = createInvoiceSchema.parse(rawInput);
 
     const today = format(new Date(), "yyyyMMdd");
@@ -76,7 +76,7 @@ export async function createInvoice(
 
 export async function postInvoice(rawInput: unknown): Promise<ActionResponse<{ entryId: string }>> {
   try {
-    const session = await requireFinanceAccess();
+    const session = await requireOwner();
     const { invoiceId } = postInvoiceSchema.parse(rawInput);
 
     return await db.transaction(async (tx) => {

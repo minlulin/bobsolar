@@ -2,9 +2,11 @@
  * Handover Reset
  *
  * Purpose:
- * - Remove all existing app data (including your test data)
- * - Recreate schema from current Drizzle definitions
- * - Seed from .env.local via db:seed (admin credentials from env)
+ * - Wipe all existing app data (test data + old production)
+ * - Recreate schema from current Drizzle migrations
+ * - Seed clean state from .env.local (admin + company settings)
+ * - NOTE: partners are NOT seeded — they are created in-app via
+ *   Settings → Partners after handover.
  *
  * Usage:
  *   pnpm db:handover-reset
@@ -12,6 +14,7 @@
  * Safety:
  * - Requires --confirm=HANDOVER_RESET (provided by package.json script)
  * - Production databases require --force-production flag
+ * - Aborts early if required env vars (DATABASE_URL_DIRECT, SEED_ADMIN_*) are missing
  */
 
 import { execSync } from "node:child_process";
@@ -56,11 +59,20 @@ function getDatabaseHost(): string {
 
 if (isProductionDatabase() && !forceProduction) {
   const host = getDatabaseHost();
-  console.error("\n\u274c\u274c\u274c PRODUCTION DATABASE DETECTED \u274c\u274c\u274c");
-  console.error(`\u274c Host: ${host}`);
-  console.error("\u274c This command will DESTROY ALL DATA in production.");
-  console.error("\u274c To proceed, re-run with --force-production flag:");
-  console.error("\u274c   pnpm db:handover-reset --confirm=HANDOVER_RESET --force-production");
+  console.error("\nPRODUCTION DATABASE DETECTED");
+  console.error(`Host: ${host}`);
+  console.error("This command will DESTROY ALL DATA in production.");
+  console.error("To proceed, re-run with --force-production flag:");
+  console.error("  pnpm db:handover-reset --confirm=HANDOVER_RESET --force-production");
+  process.exit(1);
+}
+
+const requiredEnvVars = ["DATABASE_URL_DIRECT", "SEED_ADMIN_EMAIL", "SEED_ADMIN_PASSWORD"] as const;
+const missingEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim());
+if (missingEnvVars.length > 0) {
+  console.error("Missing required env vars in .env.local:");
+  for (const name of missingEnvVars) console.error(`  - ${name}`);
+  console.error("\nAdd the missing values to .env.local and re-run.");
   process.exit(1);
 }
 
@@ -69,29 +81,21 @@ function run(cmd: string, label: string): void {
   execSync(cmd, { cwd: root, stdio: "inherit" });
 }
 
-function hasSeedPartners(): boolean {
-  return Boolean(process.env["SEED_PARTNERS"]?.trim());
-}
-
 console.log("========================================");
 console.log("DB HANDOVER RESET START");
 console.log("========================================");
 
-run("tsx scripts/_exec-drop.ts", "Drop all tables and enums");
-run("pnpm exec drizzle-kit push --force", "Apply schema");
+run("pnpm exec tsx scripts/db-nuke.ts", "Drop public + drizzle schemas (full reset)");
+run("pnpm db:migrate", "Apply all migrations from scratch");
 run(
   "tsx src/lib/db/factory-bootstrap.ts",
-  "Seed factory bootstrap (payment methods + ledger accounts)",
+  "Seed factory bootstrap (company settings + payment methods + ledger accounts)",
 );
-run("pnpm db:seed", "Seed from .env.local (admin + users + company settings)");
-if (hasSeedPartners()) {
-  run("tsx src/lib/db/seed-owners.ts", "Seed owners from SEED_PARTNERS");
-} else {
-  console.log("\n[handover-reset] Skip owner seed (SEED_PARTNERS is not set)");
-}
+run("pnpm db:seed", "Seed from .env.local (admin)");
 run("tsx scripts/db-handover-verify.ts", "Verify fresh handover state");
 
 console.log("\n========================================");
 console.log("DB HANDOVER RESET COMPLETE");
-console.log("Fresh start data is ready.");
+console.log("Log in as the admin user, then go to Settings → Partners");
+console.log("to add the 3 partners (name, email, password, ownership %).");
 console.log("========================================");

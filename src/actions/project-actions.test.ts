@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  auth: { userId: "00000000-0000-4000-8000-000000000001", role: "admin" as "admin" | "staff" },
+  auth: { userId: "00000000-0000-4000-8000-000000000001", role: "admin" as "admin" | "owner" },
   projectStatus: "installation_completed" as
     | "planning"
     | "in_progress"
@@ -145,7 +145,7 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => ({ userId: state.auth.userId, role: "admin" as const })),
-  requireFinanceAccess: vi.fn(async () => ({ userId: state.auth.userId, role: "admin" as const })),
+  requireOwner: vi.fn(async () => ({ userId: state.auth.userId, role: "admin" as const })),
 }));
 
 vi.mock("@/lib/notifications/broadcast", () => ({
@@ -415,7 +415,7 @@ describe("project-actions high-impact branches", () => {
   });
 
   it("blocks status change in updateProject for non-admin", async () => {
-    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "staff" };
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "owner" };
     state.projectStatus = "planning";
 
     const { updateProject } = await import("@/actions/project-actions");
@@ -558,7 +558,7 @@ describe("project-actions high-impact branches", () => {
   });
 
   it("blocks deleting other user remark for staff", async () => {
-    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "staff" };
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "owner" };
     state.remarkRow = {
       id: "r1",
       projectId: "11111111-1111-4111-8111-111111111111",

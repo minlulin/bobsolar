@@ -2,7 +2,7 @@
 
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
   type Budget,
@@ -56,7 +56,7 @@ export async function getBudgetReport(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<BudgetReport>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = budgetFilterSchema.parse(rawFilters);
     const now = new Date();
@@ -173,7 +173,7 @@ export async function getBudgetReport(
 
 export async function createBudget(raw: unknown): Promise<ActionResponse<Budget>> {
   try {
-    const auth = await requireFinanceAccess();
+    const auth = await requireOwner();
     const data = createBudgetSchema.parse(raw);
 
     const [account] = await db
@@ -223,7 +223,7 @@ export async function createBudget(raw: unknown): Promise<ActionResponse<Budget>
 
 export async function updateBudget(id: string, raw: unknown): Promise<ActionResponse<Budget>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
     const data = createBudgetSchema.parse(raw);
 
@@ -249,7 +249,7 @@ export async function updateBudget(id: string, raw: unknown): Promise<ActionResp
 
 export async function deleteBudget(id: string): Promise<ActionResponse<null>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
     const validatedId = uuidSchema.parse(id);
 
     await db.delete(budgets).where(eq(budgets.id, validatedId));

@@ -4,7 +4,7 @@ interface MockInsertPayload {
   name: string;
   email: string;
   passwordHash: string;
-  role: "admin" | "staff";
+  role: "admin" | "owner";
   key?: string;
   value?: string;
 }
@@ -15,14 +15,14 @@ interface MockTx {
 }
 
 const state = vi.hoisted(() => ({
-  auth: { userId: "u1", role: "admin" as "admin" | "staff" },
+  auth: { userId: "u1", role: "admin" as "admin" | "owner" },
   settingsRows: [] as Array<{ key: string; value: string }>,
   users: [] as Array<{
     id: string;
     name: string;
     email: string;
     passwordHash: string;
-    role: "admin" | "staff";
+    role: "admin" | "owner";
   }>,
   revokedUserId: "",
 }));
@@ -51,7 +51,7 @@ vi.mock("@/lib/auth/password", () => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  revokeAllUserSessions: vi.fn(async (userId: string) => {
+  bumpUserSessionVersion: vi.fn(async (userId: string) => {
     state.revokedUserId = userId;
     return 1;
   }),
@@ -170,7 +170,7 @@ describe("settings-actions", () => {
       expect(adminResult.data.users).toHaveLength(2);
     }
 
-    state.auth = { userId: "u2", role: "staff" };
+    state.auth = { userId: "u2", role: "owner" };
     const staffResult = await getSettingsUsers();
     expect(staffResult.success).toBe(true);
     if (staffResult.success) {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  auth: { userId: "u1", role: "staff" as "admin" | "staff" },
+  auth: { userId: "u1", role: "owner" as "admin" | "owner" },
   project: {
     id: "11111111-1111-4111-8111-111111111111",
     status: "planning",
@@ -26,7 +26,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => ({ userId: "u1", role: "admin" as const })),
-  requireFinanceAccess: vi.fn(async () => ({ userId: "u1", role: "admin" as const })),
+  requireOwner: vi.fn(async () => ({ userId: "u1", role: "admin" as const })),
 }));
 vi.mock("@/lib/notifications/broadcast", () => ({
   notifyAllUsers: vi.fn(async () => undefined),
@@ -95,7 +95,7 @@ vi.mock("@/lib/db", () => {
 describe("project-actions guardrails", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    state.auth = { userId: "u1", role: "staff" };
+    state.auth = { userId: "u1", role: "owner" };
     state.project = {
       id: "11111111-1111-4111-8111-111111111111",
       status: "planning",

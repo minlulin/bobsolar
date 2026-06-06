@@ -100,8 +100,7 @@ async function main(): Promise<void> {
     run("tsx src/lib/db/factory-bootstrap.ts", "Seeding minimal bootstrap data");
   } else {
     run("tsx src/lib/db/factory-bootstrap.ts", "Seeding minimal bootstrap data");
-    run("pnpm db:seed", "Seeding full data (admin + users + company settings)");
-    run("tsx src/lib/db/seed-owners.ts", "Seeding owners from SEED_PARTNERS");
+    run("pnpm db:seed", "Seeding full data (admin + company settings)");
   }
 
   console.log(

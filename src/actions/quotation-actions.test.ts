@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  auth: { userId: "00000000-0000-4000-8000-000000000001", role: "admin" as "admin" | "staff" },
+  auth: { userId: "00000000-0000-4000-8000-000000000001", role: "admin" as "admin" | "owner" },
   quote: {
     id: "11111111-1111-4111-8111-111111111111",
     status: "sent",
@@ -361,7 +361,7 @@ describe("quotation-actions high-impact branches", () => {
   });
 
   it("blocks delete when user is not owner and not admin", async () => {
-    state.auth = { userId: "00000000-0000-4000-8000-000000000009", role: "staff" };
+    state.auth = { userId: "00000000-0000-4000-8000-000000000009", role: "owner" };
     state.quote = {
       id: "11111111-1111-4111-8111-111111111111",
       status: "draft",

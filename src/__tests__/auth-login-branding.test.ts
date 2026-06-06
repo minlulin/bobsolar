@@ -17,6 +17,8 @@ vi.mock("@/lib/db", () => ({
           role: "admin",
           passwordHash: "$2a$10$abcdefghijklmnopqrstuv123456789012345678901234567890",
           email: "admin@example.com",
+          sessionVersion: 0,
+          archivedAt: null,
         })),
       },
       authRateLimits: {
@@ -25,6 +27,12 @@ vi.mock("@/lib/db", () => ({
     },
     delete: vi.fn(() => ({
       where: vi.fn(() => []),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => Promise.resolve()),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })),
     })),
     select: vi.fn(() => ({
       from: vi.fn(() => {
@@ -49,9 +57,8 @@ vi.mock("@/lib/auth/session", () => ({
     return undefined;
   }),
   clearSessionCookies: vi.fn(),
-  deleteSession: vi.fn(),
   getSessionFromCookie: vi.fn(() => Promise.resolve(null)),
-  revokeAllUserSessions: vi.fn(() => Promise.resolve(0)),
+  bumpUserSessionVersion: vi.fn(() => Promise.resolve(0)),
 }));
 
 describe("auth and branding resilience", () => {

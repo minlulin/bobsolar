@@ -20,7 +20,7 @@ const authState = vi.hoisted(() => ({
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: async (): Promise<{
     userId: string;
-    role: "admin" | "staff";
+    role: "admin" | "owner";
   }> => {
     if (!authState.userId) {
       throw new Error("Auth context not initialized");

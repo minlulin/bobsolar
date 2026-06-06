@@ -3,7 +3,7 @@
 import { parseISO } from "date-fns";
 import { and, eq, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireFinanceAccess } from "@/lib/auth/validate";
+import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, journalLines, ledgerAccounts } from "@/lib/db/schema";
 import {
@@ -54,7 +54,7 @@ export async function getBalanceSheet(
   rawFilters: unknown = {},
 ): Promise<ActionResponse<BalanceSheetData>> {
   try {
-    await requireFinanceAccess();
+    await requireOwner();
 
     const filters = balanceSheetFilterSchema.parse(rawFilters);
     const dateAsOf = filters.dateAsOf ? parseISO(filters.dateAsOf) : new Date();

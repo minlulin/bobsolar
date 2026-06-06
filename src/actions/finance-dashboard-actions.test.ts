@@ -40,7 +40,7 @@ const metricsSpies = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/validate", () => ({
-  requireFinanceAccess: vi.fn(async () => {
+  requireOwner: vi.fn(async () => {
     if (state.financeFail) throw new Error("Unauthorized");
     return { userId: "u1", role: "admin" as const };
   }),

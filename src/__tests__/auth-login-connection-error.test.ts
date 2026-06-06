@@ -17,9 +17,8 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(() => Promise.resolve()),
   clearSessionCookies: vi.fn(),
-  deleteSession: vi.fn(),
   getSessionFromCookie: vi.fn(() => Promise.resolve(null)),
-  revokeAllUserSessions: vi.fn(() => Promise.resolve(0)),
+  bumpUserSessionVersion: vi.fn(() => Promise.resolve(0)),
 }));
 
 vi.mock("@/lib/auth/password", () => ({

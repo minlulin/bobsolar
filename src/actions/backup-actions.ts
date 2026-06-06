@@ -29,7 +29,6 @@ import {
   purchaseOrders,
   quotationItems,
   quotations,
-  sessions,
   supplierPayments,
   suppliers,
   users,
@@ -44,7 +43,6 @@ type AnyTable = { [Symbol.iterator](): IterableIterator<unknown> };
 
 const TABLE_NAMES = [
   "users",
-  "sessions",
   "auth_rate_limits",
   "customers",
   "inventory_items",
@@ -76,7 +74,6 @@ const TABLE_NAMES = [
 
 const TABLE_MAP: Record<string, AnyTable> = {
   users: users as unknown as AnyTable,
-  sessions: sessions as unknown as AnyTable,
   auth_rate_limits: authRateLimits as unknown as AnyTable,
   customers: customers as unknown as AnyTable,
   inventory_items: inventoryItems as unknown as AnyTable,
