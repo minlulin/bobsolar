@@ -552,9 +552,9 @@ export interface DataConsistencyCheck {
   journalIncome: number;
   operationalPayments: number;
   incomeMatch: boolean;
-  journalExpense: number;
-  operationalCosts: number;
-  expenseMatch: boolean;
+  journalProjectExpense: number;
+  operationalProjectCosts: number;
+  projectExpenseMatch: boolean;
   discrepancies: string[];
 }
 
@@ -612,8 +612,8 @@ export async function getDataConsistencyCheck(): Promise<ActionResponse<DataCons
 
     const journalIncome = Math.round(journalIncomeRow[0]?.sum ?? 0);
     const operationalPayments = Math.round(operationalPaymentsRow[0]?.sum ?? 0);
-    const journalExpense = Math.round(journalExpenseRow[0]?.sum ?? 0);
-    const operationalCosts = Math.round(operationalCostsRow[0]?.sum ?? 0);
+    const journalProjectExpense = Math.round(journalExpenseRow[0]?.sum ?? 0);
+    const operationalProjectCosts = Math.round(operationalCostsRow[0]?.sum ?? 0);
 
     const discrepancies: string[] = [];
     if (journalIncome !== operationalPayments) {
@@ -621,9 +621,9 @@ export async function getDataConsistencyCheck(): Promise<ActionResponse<DataCons
         `Collection mismatch: AR Collection Journal ${journalIncome.toLocaleString()} vs Payment Subledger ${operationalPayments.toLocaleString()}`,
       );
     }
-    if (journalExpense !== operationalCosts) {
+    if (journalProjectExpense !== operationalProjectCosts) {
       discrepancies.push(
-        `Expense mismatch: Journal ${journalExpense.toLocaleString()} vs Costs ${operationalCosts.toLocaleString()}`,
+        `Project expense mismatch: Journal ${journalProjectExpense.toLocaleString()} vs Project Costs ${operationalProjectCosts.toLocaleString()}`,
       );
     }
 
@@ -631,9 +631,9 @@ export async function getDataConsistencyCheck(): Promise<ActionResponse<DataCons
       journalIncome,
       operationalPayments,
       incomeMatch: journalIncome === operationalPayments,
-      journalExpense,
-      operationalCosts,
-      expenseMatch: journalExpense === operationalCosts,
+      journalProjectExpense,
+      operationalProjectCosts,
+      projectExpenseMatch: journalProjectExpense === operationalProjectCosts,
       discrepancies,
     });
   } catch (error) {

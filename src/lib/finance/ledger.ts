@@ -255,11 +255,24 @@ export async function getJournalEntryWithLines(
   };
 }
 
+/**
+ * Reverses a journal entry by creating a new entry with debit/credit swapped.
+ *
+ * Reversal Date Policy:
+ * - By default, reversals are posted with the current date (new Date()).
+ * - This follows the "current-period reversal" accounting policy where corrections
+ *   are recognized in the period they are made, not the original period.
+ * - Callers can override this by providing a `reversalDate` to post the reversal
+ *   in a specific period (e.g., the original entry's period for closed-period adjustments).
+ * - The reversal date is still subject to accounting period lock checks via
+ *   createBalancedJournalEntry.
+ */
 export async function reverseJournalEntry(input: {
   tx: DbTransaction;
   originalEntryId: string;
   memo?: string | null;
   createdBy: string;
+  reversalDate?: Date;
 }): Promise<{ entryId: string }> {
   await assertJournalEntryNotReversed(input.tx, input.originalEntryId);
 
@@ -280,7 +293,7 @@ export async function reverseJournalEntry(input: {
 
   const result = await createBalancedJournalEntry({
     tx: input.tx,
-    entryDate: new Date(),
+    entryDate: input.reversalDate ?? new Date(),
     memo: reversalMemo,
     sourceType: "manual_adjustment",
     sourceId: original.id,

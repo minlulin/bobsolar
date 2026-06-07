@@ -9,6 +9,7 @@ import {
   DollarSign,
   Landmark,
   PieChart,
+  Receipt,
   ShieldCheck,
   TrendingDown,
   TrendingUp,
@@ -162,6 +163,12 @@ export function FinanceDashboardClient({
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/finance/reports">Open Reports</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/finance/expenses">
+              <Receipt className="mr-2 h-4 w-4" />
+              Company Expenses
+            </Link>
           </Button>
           <Select defaultValue="1y" onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-[160px]">
@@ -432,10 +439,10 @@ export function FinanceDashboardClient({
                   isMatch={consistency.incomeMatch}
                 />
                 <ConsistencyRow
-                  label="Expenses"
-                  journalValue={consistency.journalExpense}
-                  operationalValue={consistency.operationalCosts}
-                  isMatch={consistency.expenseMatch}
+                  label="Project Costs"
+                  journalValue={consistency.journalProjectExpense}
+                  operationalValue={consistency.operationalProjectCosts}
+                  isMatch={consistency.projectExpenseMatch}
                 />
 
                 {consistency.discrepancies.length > 0 ? (

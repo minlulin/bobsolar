@@ -18,4 +18,5 @@ export const CACHE_TAGS = {
   FINANCE_REPORTS: "finance:reports",
   LEDGER: "ledger:entries",
   OWNER_PORTAL: "owner:portal",
+  FINANCE: "finance",
 } as const;

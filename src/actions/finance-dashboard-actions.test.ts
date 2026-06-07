@@ -161,7 +161,7 @@ describe("finance-dashboard-actions", () => {
     expect(res.success).toBe(true);
     if (!res.success) return;
     expect(res.data.incomeMatch).toBe(true);
-    expect(res.data.expenseMatch).toBe(false);
+    expect(res.data.projectExpenseMatch).toBe(false);
   });
 
   it("does not record journal failure metric on auth errors", async () => {

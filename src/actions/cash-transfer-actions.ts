@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
@@ -44,9 +44,7 @@ export async function createCashTransfer(
       return entry;
     });
 
-    revalidatePath("/finance/reports/cash-flow");
-    revalidatePath("/finance/ledger");
-    revalidatePath("/finance");
+    await invalidateFinanceCacheForWrite();
 
     return successResponse(result);
   } catch (error) {

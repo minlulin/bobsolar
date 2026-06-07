@@ -1,12 +1,12 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import type { LedgerAccountType } from "@/lib/db/schema";
 import { ledgerAccounts, projects } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleStateError } from "@/lib/utils/error";
@@ -52,9 +52,7 @@ export async function createManualJournalEntry(
           });
         });
 
-        revalidatePath("/finance/ledger");
-        revalidatePath("/finance");
-        revalidatePath("/");
+        await invalidateFinanceCacheForWrite();
 
         return successResponse(entry);
       },

@@ -35,6 +35,7 @@ import {
   warrantyAlerts,
 } from "@/lib/db/schema";
 import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import {
   assertFinanceSsotDrift,
   assertJournalEntryNotReversed,
@@ -1162,6 +1163,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
 
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
+    await invalidateFinanceCacheForWrite();
 
     return successResponse([createdCost]);
   } catch (error) {
@@ -1224,6 +1226,7 @@ export async function consumeProjectInventory(
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
     revalidatePath("/inventory");
+    await invalidateFinanceCacheForWrite();
 
     return successResponse(costs);
   } catch (error) {

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionData } from "@/lib/utils/action-response";
-import { type getExpensesData, submitGeneralExpense } from "./actions";
+import { type getExpensesData, payGeneralExpenseAction, submitGeneralExpense } from "./actions";
 
 type ExpensesData = ActionData<Awaited<ReturnType<typeof getExpensesData>>>;
 
@@ -52,6 +52,7 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPaid, setIsPaid] = useState(true);
+  const [payingExpenseId, setPayingExpenseId] = useState<string | null>(null);
 
   const fmt = (val: string | number) =>
     new Intl.NumberFormat("en-US", {
@@ -68,10 +69,14 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
       const formData = new FormData(e.currentTarget);
       if (!isPaid) {
         formData.delete("paymentMethodId");
-        formData.delete("paymentAssetAccountCode");
       }
 
-      await submitGeneralExpense(formData);
+      const result = await submitGeneralExpense(formData);
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
 
       toast.success("Expense recorded successfully");
       setIsOpen(false);
@@ -83,9 +88,31 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
     }
   }
 
+  async function onPayExpense(expenseId: string, e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPayingExpenseId(expenseId);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await payGeneralExpenseAction(formData);
+
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success("Expense paid successfully");
+    } catch (error) {
+      toast.error("Failed to pay expense");
+      console.error(error);
+    } finally {
+      setPayingExpenseId(null);
+    }
+  }
+
   const totalYTD = useMemo(
-    () => data.expenses.reduce((acc, curr) => acc + Number(curr.amount), 0),
-    [data.expenses],
+    () => data.ytdTotal ?? data.expenses.reduce((acc, curr) => acc + Number(curr.amount), 0),
+    [data.ytdTotal, data.expenses],
   );
 
   return (
@@ -280,14 +307,14 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
                           initial={{ opacity: 0, height: 0, marginTop: 0 }}
                           animate={{ opacity: 1, height: "auto", marginTop: 24 }}
                           exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                          className="grid grid-cols-2 gap-4 overflow-hidden"
+                          className="space-y-4 overflow-hidden"
                         >
                           <div className="space-y-3">
                             <Label
                               htmlFor="paymentMethodId"
                               className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground"
                             >
-                              Method
+                              Payment Method
                             </Label>
                             <Select name="paymentMethodId" required={isPaid}>
                               <SelectTrigger className="h-12 bg-card rounded-lg">
@@ -299,25 +326,6 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
                                     {pm.name}
                                   </SelectItem>
                                 ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-3">
-                            <Label
-                              htmlFor="paymentAssetAccountCode"
-                              className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground"
-                            >
-                              Source Asset
-                            </Label>
-                            <Select name="paymentAssetAccountCode" required={isPaid}>
-                              <SelectTrigger className="h-12 bg-card rounded-lg">
-                                <SelectValue placeholder="Asset Account" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cash_on_hand">Cash on Hand</SelectItem>
-                                <SelectItem value="kbz_banking">KBZ Bank</SelectItem>
-                                <SelectItem value="aya_banking">AYA Bank</SelectItem>
-                                <SelectItem value="cb_banking">CB Bank</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -458,6 +466,96 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
                         : "N/A"}
                     </span>
                   </div>
+
+                  {!expense.isPaid && payingExpenseId === expense.id && (
+                    <div className="col-span-12 md:col-span-12 mt-4 p-4 bg-muted/30 rounded-xl border border-border/50">
+                      <form onSubmit={(e) => onPayExpense(expense.id, e)} className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor={`paymentMethodId-${expense.id}`}
+                              className="text-xs uppercase tracking-widest font-bold text-muted-foreground"
+                            >
+                              Payment Method
+                            </Label>
+                            <Select name="paymentMethodId" required>
+                              <SelectTrigger className="h-12 bg-card rounded-lg">
+                                <SelectValue placeholder="Select method" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {data.paymentMethods.map((pm) => (
+                                  <SelectItem key={pm.id} value={pm.id}>
+                                    {pm.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor={`paymentDate-${expense.id}`}
+                              className="text-xs uppercase tracking-widest font-bold text-muted-foreground"
+                            >
+                              Payment Date
+                            </Label>
+                            <Input
+                              id={`paymentDate-${expense.id}`}
+                              name="paymentDate"
+                              type="date"
+                              defaultValue={format(new Date(), "yyyy-MM-dd")}
+                              required
+                              className="h-12 bg-card border-border/50 rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor={`payReference-${expense.id}`}
+                            className="text-xs uppercase tracking-widest font-bold text-muted-foreground"
+                          >
+                            Reference (Optional)
+                          </Label>
+                          <Input
+                            id={`payReference-${expense.id}`}
+                            name="reference"
+                            placeholder="Payment reference"
+                            className="h-12 bg-card border-border/50 rounded-lg"
+                          />
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <input type="hidden" name="expenseId" value={expense.id} />
+                          <Button
+                            type="submit"
+                            className="flex-1 h-12 rounded-lg font-semibold"
+                            disabled={payingExpenseId !== expense.id}
+                          >
+                            {payingExpenseId === expense.id ? "Processing..." : "Confirm Payment"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-12 rounded-lg"
+                            onClick={() => setPayingExpenseId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {!expense.isPaid && payingExpenseId !== expense.id && (
+                    <div className="col-span-12 md:col-span-12">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full md:w-auto justify-end text-orange-600 border-orange-500/30 hover:bg-orange-500/5"
+                        onClick={() => setPayingExpenseId(expense.id)}
+                      >
+                        Pay Now
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </motion.div>

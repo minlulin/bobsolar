@@ -1,21 +1,24 @@
 "use server";
 
-import { desc } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { desc, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth/validate";
 import { getDb } from "@/lib/db";
 import { generalExpenses } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
 import {
+  CASH_ACCOUNT_CODES,
   OPERATING_EXPENSE_ACCOUNT_CODES,
   type OperatingExpenseAccountCode,
 } from "@/lib/domain/finance";
-import { recordGeneralExpense } from "@/lib/finance/expenses";
+import { mapPaymentMethodToAccount, type PaymentMethodPreset } from "@/lib/domain/payment";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
+import { payGeneralExpense, recordGeneralExpense } from "@/lib/finance/expenses";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
 const expenseAccountCodes = [...OPERATING_EXPENSE_ACCOUNT_CODES] as [string, ...string[]];
+const cashAccountCodes = [...CASH_ACCOUNT_CODES] as [string, ...string[]];
 
 const createExpenseSchema = z.object({
   payeeName: z.string().min(1, "Payee name is required"),
@@ -23,7 +26,15 @@ const createExpenseSchema = z.object({
   expenseAccountCode: z.enum(expenseAccountCodes),
   expenseDate: z.string().optional(),
   paymentMethodId: z.string().nullable().optional(),
-  paymentAssetAccountCode: z.string().nullable().optional(),
+  paymentAssetAccountCode: z.enum(cashAccountCodes).nullable().optional(),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const payExpenseSchema = z.object({
+  expenseId: z.string().uuid(),
+  paymentMethodId: z.string().uuid(),
+  paymentDate: z.string().optional(),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -51,6 +62,7 @@ type ExpenseData = {
     name: string;
     isActive: boolean;
   }>;
+  ytdTotal: number;
 };
 
 export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
@@ -58,28 +70,41 @@ export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
     await requireOwner();
     const db = await getDb();
 
-    const [recentExpenses, expenseAccounts, activePaymentMethods] = await Promise.all([
-      db.query.generalExpenses.findMany({
-        orderBy: [desc(generalExpenses.expenseDate)],
-        limit: 50,
-        with: {
-          account: {
-            columns: { name: true, code: true },
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const [recentExpenses, expenseAccounts, activePaymentMethods, ytdAggregate] = await Promise.all(
+      [
+        db.query.generalExpenses.findMany({
+          orderBy: [desc(generalExpenses.expenseDate)],
+          limit: 50,
+          with: {
+            account: {
+              columns: { name: true, code: true },
+            },
+            paymentMethod: {
+              columns: { name: true },
+            },
           },
-          paymentMethod: {
-            columns: { name: true },
-          },
-        },
-      }),
-      db.query.ledgerAccounts.findMany({
-        where: (accounts, { eq }) => eq(accounts.type, "expense"),
-        orderBy: (accounts, { asc }) => [asc(accounts.name)],
-      }),
-      db.query.paymentMethods.findMany({
-        where: (methods, { eq }) => eq(methods.isActive, true),
-        orderBy: (methods, { asc }) => [asc(methods.name)],
-      }),
-    ]);
+        }),
+        db.query.ledgerAccounts.findMany({
+          where: (accounts, { eq }) => eq(accounts.type, "expense"),
+          orderBy: (accounts, { asc }) => [asc(accounts.name)],
+        }),
+        db.query.paymentMethods.findMany({
+          where: (methods, { eq }) => eq(methods.isActive, true),
+          orderBy: (methods, { asc }) => [asc(methods.name)],
+        }),
+        db
+          .select({
+            sum: sql<number>`coalesce(sum(${generalExpenses.amount}::numeric), 0)`.as("sum"),
+          })
+          .from(generalExpenses)
+          .where(gte(generalExpenses.expenseDate, yearStart)),
+      ],
+    );
+
+    const ytdTotal = Math.round(ytdAggregate[0]?.sum ?? 0);
 
     return successResponse({
       expenses: recentExpenses,
@@ -87,9 +112,43 @@ export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
         (OPERATING_EXPENSE_ACCOUNT_CODES as readonly string[]).includes(a.code),
       ),
       paymentMethods: activePaymentMethods,
+      ytdTotal,
     });
   } catch (error) {
     return handleActionError(error, "getExpensesData", "Failed to fetch expenses data");
+  }
+}
+
+async function resolvePaymentAssetAccount(
+  db: Awaited<ReturnType<typeof getDb>>,
+  paymentMethodId: string | null,
+  paymentAssetAccountCode: LedgerAccountCode | null,
+): Promise<LedgerAccountCode | undefined> {
+  if (!paymentMethodId) return undefined;
+
+  const method = await db.query.paymentMethods.findFirst({
+    where: (pm, { eq }) => eq(pm.id, paymentMethodId),
+    columns: { name: true, isActive: true },
+  });
+
+  if (!method) {
+    throw new Error("Payment method not found");
+  }
+
+  if (!method.isActive) {
+    throw new Error("Payment method is not active");
+  }
+
+  try {
+    return mapPaymentMethodToAccount(method.name as PaymentMethodPreset);
+  } catch {
+    if (
+      paymentAssetAccountCode &&
+      (CASH_ACCOUNT_CODES as readonly string[]).includes(paymentAssetAccountCode)
+    ) {
+      return paymentAssetAccountCode;
+    }
+    throw new Error(`Unsupported payment method: ${method.name}`);
   }
 }
 
@@ -124,6 +183,12 @@ export async function submitGeneralExpense(
 
     const db = await getDb();
 
+    const resolvedAssetAccount = await resolvePaymentAssetAccount(
+      db,
+      parsed.paymentMethodId ?? null,
+      parsed.paymentAssetAccountCode as LedgerAccountCode | null,
+    );
+
     const result = await db.transaction(async (tx) => {
       return recordGeneralExpense({
         tx,
@@ -132,18 +197,74 @@ export async function submitGeneralExpense(
         expenseAccountCode: parsed.expenseAccountCode as OperatingExpenseAccountCode,
         expenseDate: parsed.expenseDate ? new Date(parsed.expenseDate) : new Date(),
         paymentMethodId: parsed.paymentMethodId || null,
-        paymentAssetAccountCode: (parsed.paymentAssetAccountCode || undefined) as
-          | LedgerAccountCode
-          | undefined,
+        paymentAssetAccountCode: resolvedAssetAccount,
         reference: parsed.reference || null,
         notes: parsed.notes || null,
         createdBy: sessionUser.userId,
       });
     });
 
-    revalidatePath("/finance/expenses");
+    await invalidateFinanceCacheForWrite();
     return successResponse(result);
   } catch (error) {
     return handleActionError(error, "submitGeneralExpense", "Failed to submit expense");
+  }
+}
+
+export async function payGeneralExpenseAction(
+  formData: FormData,
+): Promise<ActionResponse<{ journalEntryId: string }>> {
+  try {
+    const sessionUser = await requireOwner();
+
+    const rawData = {
+      expenseId: formData.get("expenseId"),
+      paymentMethodId: formData.get("paymentMethodId"),
+      paymentDate: formData.get("paymentDate"),
+      reference: formData.get("reference"),
+      notes: formData.get("notes"),
+    };
+
+    const parsed = payExpenseSchema.parse({
+      expenseId: typeof rawData.expenseId === "string" ? rawData.expenseId : "",
+      paymentMethodId: typeof rawData.paymentMethodId === "string" ? rawData.paymentMethodId : "",
+      paymentDate: typeof rawData.paymentDate === "string" ? rawData.paymentDate : undefined,
+      reference: typeof rawData.reference === "string" ? rawData.reference : undefined,
+      notes: typeof rawData.notes === "string" ? rawData.notes : undefined,
+    });
+
+    const db = await getDb();
+
+    const method = await db.query.paymentMethods.findFirst({
+      where: (pm, { eq }) => eq(pm.id, parsed.paymentMethodId),
+      columns: { name: true, isActive: true },
+    });
+
+    if (!method) {
+      throw new Error("Payment method not found");
+    }
+
+    if (!method.isActive) {
+      throw new Error("Payment method is not active");
+    }
+
+    const paymentAssetAccountCode = mapPaymentMethodToAccount(method.name as PaymentMethodPreset);
+
+    const result = await db.transaction(async (tx) => {
+      return payGeneralExpense({
+        tx,
+        expenseId: parsed.expenseId,
+        paymentMethodId: parsed.paymentMethodId,
+        paymentAssetAccountCode,
+        paymentDate: parsed.paymentDate ? new Date(parsed.paymentDate) : new Date(),
+        reference: parsed.reference || null,
+        createdBy: sessionUser.userId,
+      });
+    });
+
+    await invalidateFinanceCacheForWrite();
+    return successResponse(result);
+  } catch (error) {
+    return handleActionError(error, "payGeneralExpenseAction", "Failed to pay expense");
   }
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { endOfDay, parseISO, startOfDay, startOfMonth, subMonths } from "date-fns";
+import { endOfDay, parseISO, startOfDay, startOfMonth, subMilliseconds, subMonths } from "date-fns";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth/validate";
@@ -158,6 +158,8 @@ export async function getCashFlowStatement(
           key = "Supplier Payments";
         } else if (entry.sourceType === "project_expense") {
           key = "Project Expenses";
+        } else if (entry.sourceType === "general_expense") {
+          key = "Company Expenses";
         } else if (entry.sourceType === "manual_adjustment") {
           key = "Manual Adjustments / Financing";
         }
@@ -205,7 +207,9 @@ export async function getCashFlowStatement(
 
     const netCashChange = operating.net + investing.net + financing.net;
 
-    // Compute beginning cash (sum of all cash account balances before dateFrom)
+    // Compute beginning cash (sum of all cash account balances strictly before dateFrom)
+    // Use subMilliseconds to exclude entries exactly at the start of dateFrom
+    const beginningCashDate = subMilliseconds(dateFrom, 1);
     const [beginningRow] = await db
       .select({
         balance:
@@ -218,7 +222,7 @@ export async function getCashFlowStatement(
       .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id))
       .where(
         and(
-          lte(journalEntries.entryDate, dateFrom),
+          lte(journalEntries.entryDate, beginningCashDate),
           eq(journalEntries.isReversed, false),
           sql`${ledgerAccounts.code} IN (${sql.join(
             CASH_ACCOUNTS.map((c) => sql`${c}`),

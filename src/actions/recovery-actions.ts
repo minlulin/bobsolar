@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { journalEntries, paymentMethods, projectCosts, projectPayments } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
@@ -190,6 +191,8 @@ export async function repairOrphanPayment(
       });
     });
 
+    await invalidateFinanceCacheForWrite();
+
     return successResponse(result);
   } catch (error) {
     return handleActionError(error, "repairOrphanPayment", "Failed to repair orphan payment");
@@ -259,6 +262,8 @@ export async function repairOrphanCost(
         ],
       });
     });
+
+    await invalidateFinanceCacheForWrite();
 
     return successResponse(result);
   } catch (error) {

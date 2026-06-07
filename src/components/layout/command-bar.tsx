@@ -8,6 +8,7 @@ import {
   Moon,
   Package,
   Plus,
+  Receipt,
   Search,
   Settings,
   ShieldCheck,
@@ -197,6 +198,16 @@ export function CommandBar(): React.JSX.Element {
               >
                 <Wallet className="mr-2 h-4 w-4" />
                 <span>Finance</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => {
+                  runCommand(() => {
+                    router.push("/finance/expenses");
+                  });
+                }}
+              >
+                <Receipt className="mr-2 h-4 w-4" />
+                <span>Company Expenses</span>
               </CommandItem>
               <CommandItem
                 onSelect={() => {

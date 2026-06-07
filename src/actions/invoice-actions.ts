@@ -6,6 +6,7 @@ import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { projectInvoiceLines, projectInvoices } from "@/lib/db/schema";
 import { canPostInvoice } from "@/lib/domain/invoice";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
@@ -118,6 +119,8 @@ export async function postInvoice(rawInput: unknown): Promise<ActionResponse<{ e
           updatedAt: new Date(),
         })
         .where(eq(projectInvoices.id, invoiceId));
+
+      await invalidateFinanceCacheForWrite();
 
       return successResponse({ entryId });
     });

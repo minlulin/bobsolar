@@ -15,9 +15,13 @@ const state = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   createBalancedJournalEntry: vi.fn(async () => ({ entryId: "je1" })),
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: spies.revalidatePath }));
+vi.mock("next/cache", () => ({
+  revalidatePath: spies.revalidatePath,
+  revalidateTag: spies.revalidateTag,
+}));
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireOwner: vi.fn(async () => state.auth),

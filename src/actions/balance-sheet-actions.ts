@@ -1,6 +1,6 @@
 "use server";
 
-import { parseISO } from "date-fns";
+import { endOfDay, parseISO } from "date-fns";
 import { and, eq, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth/validate";
@@ -57,7 +57,7 @@ export async function getBalanceSheet(
     await requireOwner();
 
     const filters = balanceSheetFilterSchema.parse(rawFilters);
-    const dateAsOf = filters.dateAsOf ? parseISO(filters.dateAsOf) : new Date();
+    const dateAsOf = filters.dateAsOf ? endOfDay(parseISO(filters.dateAsOf)) : endOfDay(new Date());
 
     // Fetch all account balances as of the given date
     const accountBalances = await db

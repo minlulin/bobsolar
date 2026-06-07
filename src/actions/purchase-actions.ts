@@ -13,6 +13,7 @@ import {
   suppliers,
 } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import {
   createBalancedJournalEntry,
   mapPaymentMethodNameToAssetAccount,
@@ -211,7 +212,7 @@ export async function receivePurchaseOrder(id: string) {
     revalidatePath(`/purchases/${validatedId}`);
     revalidatePath("/purchases");
     revalidatePath("/suppliers");
-    revalidatePath("/finance");
+    await invalidateFinanceCacheForWrite();
     return successResponse(null);
   } catch (error) {
     return handleActionError(error, "receivePurchaseOrder", "Failed to receive purchase order");
@@ -321,7 +322,7 @@ export async function payPurchaseOrder(raw: unknown) {
       revalidatePath(`/purchases/${validated.purchaseOrderId}`);
       revalidatePath("/purchases");
       revalidatePath("/suppliers");
-      revalidatePath("/finance");
+      await invalidateFinanceCacheForWrite();
       return successResponse(null);
     });
   } catch (error) {

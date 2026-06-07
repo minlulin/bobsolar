@@ -235,6 +235,7 @@ export const OPERATING_SOURCE_TYPES = [
   "supplier_payment",
   "inventory_consumption",
   "project_invoice",
+  "general_expense",
 ] as const satisfies readonly JournalSourceType[];
 
 export const INVESTING_SOURCE_TYPES = [

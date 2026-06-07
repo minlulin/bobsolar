@@ -22,6 +22,7 @@ import {
   PAYMENT_METHOD_PRESETS,
   type PaymentMethodPreset,
 } from "@/lib/domain/payment";
+import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import {
   assertFinanceSsotDrift,
   createBalancedJournalEntry,
@@ -189,6 +190,7 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
 
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
+    await invalidateFinanceCacheForWrite();
 
     return successResponse(payment);
   } catch (error) {

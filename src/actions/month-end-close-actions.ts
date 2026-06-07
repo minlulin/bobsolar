@@ -240,7 +240,7 @@ export async function getMonthEndCloseReport(
         id: "payments-posted",
         label: "All project payments posted",
         description:
-          "Asset-debit side of payment journal entries matches non-reversed operational payment totals",
+          "Asset-debit side of payment journal entries matches non-reversed operational payment totals (project scope)",
         status: incomeMatch ? "pass" : "fail",
         detail: incomeMatch
           ? `Journal: ${postedPaymentsSum.toLocaleString()} = Payments: ${operationalPayments.toLocaleString()}`
@@ -249,7 +249,7 @@ export async function getMonthEndCloseReport(
       {
         id: "costs-posted",
         label: "All project costs posted",
-        description: "Journal expense matches non-reversed operational cost totals",
+        description: "Journal expense matches non-reversed operational cost totals (project scope)",
         status: expenseMatch ? "pass" : "fail",
         detail: expenseMatch
           ? `Journal: ${postedCostsSum.toLocaleString()} = Costs: ${operationalCosts.toLocaleString()}`
