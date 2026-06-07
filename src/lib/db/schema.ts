@@ -158,6 +158,15 @@ export const accountingPeriodStatusEnum = pgEnum("accounting_period_status", [
 
 export type AccountingPeriodStatus = (typeof accountingPeriodStatusEnum.enumValues)[number];
 
+export const auditActionEnum = pgEnum("audit_action", [
+  "password_change",
+  "login",
+  "logout",
+  "session_revoke",
+]);
+
+export type AuditAction = (typeof auditActionEnum.enumValues)[number];
+
 export const ownerTransactionTypeEnum = pgEnum("owner_transaction_type", [
   "distribution",
   "draw",
@@ -1162,6 +1171,27 @@ export const idempotencyKeys = pgTable(
   (table) => [index("idempotency_keys_created_at_idx").on(table.createdAt)],
 );
 
+// --- Audit Logs ---
+
+export const auditLogs = pgTable(
+  "audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id)
+      .notNull(),
+    action: auditActionEnum("action").notNull(),
+    details: jsonb("details"),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("audit_logs_user_id_idx").on(table.userId),
+    index("audit_logs_action_idx").on(table.action),
+    index("audit_logs_created_at_idx").on(table.createdAt),
+  ],
+);
+
 // --- Types ---
 
 export type User = InferSelectModel<typeof users>;
@@ -1256,3 +1286,6 @@ export type NewOwner = InferInsertModel<typeof owners>;
 
 export type OwnerTransaction = InferSelectModel<typeof ownerTransactions>;
 export type NewOwnerTransaction = InferInsertModel<typeof ownerTransactions>;
+
+export type AuditLog = InferSelectModel<typeof auditLogs>;
+export type NewAuditLog = InferInsertModel<typeof auditLogs>;

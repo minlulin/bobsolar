@@ -69,7 +69,8 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
           }
         : {}),
       onSuccess: (response: MutationResponse<TData>) => {
-        if (!response.success) return; // guaranteed by mutationFn throw
+        // Type guard: mutationFn throws on failure, but TS needs this to narrow ActionResponse<TData>
+        if (!response.success) return;
         const msg: string =
           typeof successMessage === "function" && response.data !== undefined
             ? successMessage(response.data)

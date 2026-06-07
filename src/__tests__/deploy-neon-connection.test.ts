@@ -17,13 +17,13 @@ describe("Next.js bundling configuration", () => {
 // ─── Test 2: DB module uses conditional ws (via require, not import) ────────
 
 describe("DB module: conditional ws loading", () => {
-  it("uses require() for ws instead of top-level import", async () => {
+  it("uses dynamic import for ws instead of top-level import", async () => {
     const fs = await import("node:fs");
     const src = fs.readFileSync(require.resolve("../../src/lib/db/index.ts"), "utf-8");
     // Should NOT have top-level `import ws from 'ws'`
     expect(src).not.toMatch(/import ws from 'ws'/);
-    // Should use conditional require()
-    expect(src).toMatch(/require\("ws"\)/);
+    // Should use dynamic import with await import("ws")
+    expect(src).toMatch(/await import\("ws"\)/);
     expect(src).toMatch(/typeof globalThis\.WebSocket/);
   });
 

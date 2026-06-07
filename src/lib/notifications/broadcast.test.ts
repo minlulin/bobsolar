@@ -10,29 +10,31 @@ const spies = vi.hoisted(() => ({
   onConflictDoNothing: vi.fn(),
 }));
 
-vi.mock("@/lib/db", () => {
-  const db = {
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn(async () => state.admins),
-        // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for drizzle query builder
-        then: (resolve: (value: Array<{ id: string }>) => unknown) => resolve(state.users),
-      })),
+const mockDb = {
+  select: vi.fn(() => ({
+    from: vi.fn(() => ({
+      where: vi.fn(async () => state.admins),
+      // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for drizzle query builder
+      then: (resolve: (value: Array<{ id: string }>) => unknown) => resolve(state.users),
     })),
-    insert: vi.fn(() => ({
-      values: vi.fn((payload: unknown) => {
-        spies.values(payload);
-        return {
-          onConflictDoNothing: vi.fn((arg: unknown) => {
-            spies.onConflictDoNothing(arg);
-            return Promise.resolve();
-          }),
-        };
-      }),
-    })),
-  };
-  return { db };
-});
+  })),
+  insert: vi.fn(() => ({
+    values: vi.fn((payload: unknown) => {
+      spies.values(payload);
+      return {
+        onConflictDoNothing: vi.fn((arg: unknown) => {
+          spies.onConflictDoNothing(arg);
+          return Promise.resolve();
+        }),
+      };
+    }),
+  })),
+};
+
+vi.mock("@/lib/db", () => ({
+  getDb: vi.fn(() => Promise.resolve(mockDb)),
+  db: mockDb,
+}));
 
 describe("broadcast notifications", () => {
   beforeEach(() => {

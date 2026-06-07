@@ -18,17 +18,25 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
-function validateServerEnv() {
+let _serverEnv: z.infer<typeof serverEnvSchema> | null = null;
+let _clientEnv: z.infer<typeof clientEnvSchema> | null = null;
+
+export function getServerEnv(): z.infer<typeof serverEnvSchema> {
+  if (_serverEnv) return _serverEnv;
   const parsed = serverEnvSchema.safeParse(process.env);
   if (!parsed.success) {
     console.error("Invalid server environment variables:");
     console.error(parsed.error.format());
-    process.exit(1);
+    throw new Error(
+      `Invalid server environment variables: ${JSON.stringify(parsed.error.format())}`,
+    );
   }
-  return parsed.data;
+  _serverEnv = parsed.data;
+  return _serverEnv;
 }
 
-function validateClientEnv() {
+export function getClientEnv(): z.infer<typeof clientEnvSchema> {
+  if (_clientEnv) return _clientEnv;
   const parsed = clientEnvSchema.safeParse({
     NEXT_PUBLIC_APP_URL: process.env["NEXT_PUBLIC_APP_URL"],
   });
@@ -36,8 +44,18 @@ function validateClientEnv() {
     console.error("Invalid client environment variables:");
     console.error(parsed.error.format());
   }
-  return parsed.data;
+  _clientEnv = parsed.data ?? { NEXT_PUBLIC_APP_URL: undefined };
+  return _clientEnv;
 }
 
-export const serverEnv = validateServerEnv();
-export const clientEnv = validateClientEnv();
+// Backward compatibility getters (will be removed after migration)
+export const serverEnv =
+  process.env.NODE_ENV === "development"
+    ? getServerEnv()
+    : new Proxy({} as z.infer<typeof serverEnvSchema>, {
+        get() {
+          throw new Error("serverEnv accessed at module level - use getServerEnv() instead");
+        },
+      });
+
+export const clientEnv = getClientEnv();

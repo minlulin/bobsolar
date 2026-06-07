@@ -61,6 +61,16 @@ function formatErrorChain(error: unknown, fallback: string): string {
       parts.push(current.message);
       current = current.cause;
       depth += 1;
+    } else if (
+      current &&
+      typeof current === "object" &&
+      "message" in current &&
+      typeof (current as { message: unknown }).message === "string"
+    ) {
+      // Handle plain objects with message property (common in some error responses)
+      parts.push(String((current as { message: string }).message));
+      current = (current as { cause?: unknown }).cause;
+      depth += 1;
     } else {
       break;
     }
@@ -123,8 +133,10 @@ export function handleActionError(
   context: string,
   fallbackMessage: string,
 ): ActionFailure {
+  // Don't re-throw NEXT_REDIRECT when called from server actions invoked by client hooks
+  // redirect() should only be used in Server Components, not in action functions
   if (isNextRedirectError(error)) {
-    throw error;
+    return errorResponse("Redirect requested - this should only happen in Server Components");
   }
 
   const code = getErrorCode(error);

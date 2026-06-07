@@ -1,5 +1,6 @@
 import { eq, inArray } from "drizzle-orm";
-import type { getDb } from "@/lib/db";
+import type { NeonDatabase } from "drizzle-orm/neon-serverless";
+import type * as schema from "@/lib/db/schema";
 import {
   accountingPeriods,
   type CostType,
@@ -21,7 +22,7 @@ import {
   type PaymentMethodPreset,
 } from "@/lib/domain/payment";
 
-export type DbClient = ReturnType<typeof getDb>;
+export type DbClient = NeonDatabase<typeof schema>;
 export type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
 
 type JournalLineInput = {

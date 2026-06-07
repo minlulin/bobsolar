@@ -56,3 +56,10 @@ export async function notifyAdminUsers(payload: BroadcastNotificationInput): Pro
     payload,
   );
 }
+
+export async function notifyUser(
+  userId: string,
+  payload: BroadcastNotificationInput,
+): Promise<void> {
+  await insertNotifications([userId], payload);
+}

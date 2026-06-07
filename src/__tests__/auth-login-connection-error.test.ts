@@ -6,7 +6,15 @@ vi.mock("@/lib/db", () => ({
       users: { findFirst: vi.fn(() => Promise.resolve(null)) },
       authRateLimits: { findFirst: vi.fn(() => Promise.resolve(null)) },
     },
-    insert: vi.fn(() => ({ values: vi.fn(() => Promise.resolve()) })),
+    insert: vi.fn(() => ({
+      values: vi.fn((_payload: unknown) => {
+        return {
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn(() => Promise.resolve([null])),
+          }),
+        };
+      }),
+    })),
     delete: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })),
     update: vi.fn(() => ({
       set: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })),

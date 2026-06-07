@@ -14,7 +14,9 @@ The codebase is well-structured overall with strong typing, good test coverage, 
 
 ## 1. Hidden Bugs
 
-### 1.1 `env.ts` — Module-level `process.exit(1)` crashes builds
+> **Status: ALL RESOLVED ✅** (Last updated: June 7, 2026)
+
+### 1.1 `env.ts` — Module-level `process.exit(1)` crashes builds ✅ FIXED
 
 **File:** `src/lib/env.ts:26-27,42`
 
@@ -35,7 +37,7 @@ export function getServerEnv(): typeof _serverEnv {
 
 ---
 
-### 1.2 `auth-actions.ts` — TOCTOU race condition on rate limiting
+### 1.2 `auth-actions.ts` — TOCTOU race condition on rate limiting ✅ FIXED
 
 **File:** `src/actions/auth-actions.ts:40-98`
 
@@ -56,7 +58,7 @@ const [updated] = await db
 
 ---
 
-### 1.3 `changePassword` destroys current session silently
+### 1.3 `changePassword` destroys current session silently ✅ FIXED
 
 **File:** `src/actions/auth-actions.ts:149-158`
 
@@ -69,15 +71,15 @@ await createSession(user.id, user.role, user.sessionVersion + 1);
 
 ---
 
-### 1.4 `mutation-factory.ts` — Unreachable dead code
+### 1.4 `mutation-factory.ts` — Unreachable dead code ✅ FIXED
 
-**File:** `src/hooks/mutation-factory.ts:81-82`
+**File:** `src/hooks/mutation-factory.ts:71-75`
 
-`mutationFn` already throws on `!result.success` (line 69). The guard `if (!response.success) return` in `onSuccess` is unreachable.
+`mutationFn` already throws on `!result.success` (line 57). The guard `if (!response.success) return` in `onSuccess` is structurally unreachable but **retained as a TypeScript type-narrowing guard** with an explanatory comment, since `ActionResponse<TData>` is a union type and `data` only exists on the success variant.
 
 ---
 
-### 1.5 `dashboard-actions.ts` — `NEXT_REDIRECT` escapes server action → hook boundary
+### 1.5 `dashboard-actions.ts` — `NEXT_REDIRECT` escapes server action → hook boundary ✅ FIXED
 
 **File:** `src/lib/utils/error.ts:100-103`
 
@@ -87,7 +89,7 @@ await createSession(user.id, user.role, user.sessionVersion + 1);
 
 ---
 
-### 1.6 `global-error.tsx` — Missing `<html>` and `<body>` tags (actually present)
+### 1.6 `global-error.tsx` — Missing `<html>` and `<body>` tags (actually present) ✅ N/A
 
 **File:** `src/app/global-error.tsx:17-18`
 
@@ -95,7 +97,7 @@ Global error boundary has `<html>` and `<body>` defined with inline styles. This
 
 ---
 
-### 1.7 `db/index.ts` — Dynamic `require("ws")` incompatible with pure ESM
+### 1.7 `db/index.ts` — Dynamic `require("ws")` incompatible with pure ESM ✅ FIXED
 
 **File:** `src/lib/db/index.ts:11`
 
@@ -103,7 +105,7 @@ Uses CJS `require("ws")` inside an ESM module. Currently works due to mixed modu
 
 ---
 
-### 1.8 `error.ts` — `formatErrorChain` infinite loop risk
+### 1.8 `error.ts` — `formatErrorChain` infinite loop risk ✅ FIXED
 
 **File:** `src/lib/utils/error.ts:58-72`
 
@@ -113,66 +115,63 @@ If `error.cause` is truthy but not an `Error` instance (e.g., a plain object), t
 
 ## 2. Business Logic Failures
 
-### 2.1 Auth rate limiting — No atomic increment (CRITICAL)
+### 2.1 Auth rate limiting — No atomic increment (CRITICAL) ✅ FIXED (Phase 1 — 1.2)
 
-**File:** `src/actions/auth-actions.ts:67-99`
+**File:** `src/actions/auth-actions.ts:58-79`
 
-(Details in 1.2 above.) The read-check-write pattern is not atomic. Concurrent requests bypass the lockout cap.
-
----
-
-### 2.2 `env.ts` — `DATABASE_URL` required but absent at build time
-
-**File:** `src/lib/env.ts:10`
-
-Schema requires `DATABASE_URL: z.string().min(1)`. Not available during `next build` on Vercel. Crashes the build.
+(Details in 1.2 above.) ~~The read-check-write pattern is not atomic. Concurrent requests bypass the lockout cap.~~ Now uses atomic `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` with `sql` increment.
 
 ---
 
-### 2.3 Project status transitions not enforced in `updateProject`
+### 2.2 `env.ts` — `DATABASE_URL` required but absent at build time ✅ FIXED (Phase 1 — 1.1)
 
-**File:** `src/actions/project-actions.ts` (updateProject)
+**File:** `src/lib/env.ts:24-36`
 
-Domain model at `src/lib/domain/project.ts:37` defines strict transitions (`completed` only from `installation_completed`). The `updateProject` action must call `canTransitionProjectStatus()` before allowing a status change.
-
----
-
-### 2.4 Quotation `accepted → draft` leaves orphaned project
-
-**File:** `src/lib/domain/quotation.ts:36`
-
-`QUOTATION_STATUS_TRANSITIONS` allows `accepted → draft`. If a project was created from this quotation, reverting to draft doesn't clean up the associated project, journal entries, or inventory consumption.
-
-**Fix:** Either block the transition when a project exists, or cascade the status change to the linked project.
+~~Schema requires `DATABASE_URL: z.string().min(1)`. Not available during `next build` on Vercel. Crashes the build.~~ Now uses lazy `getServerEnv()` getter; validation runs at first access, not at module import time.
 
 ---
 
-### 2.5 Quotation archive doesn't cascade to related entities
+### 2.3 Project status transitions not enforced in `updateProject` ✅ FIXED
 
-**File:** `src/actions/quotation-actions.ts` (archiveQuotation)
+**File:** `src/actions/project-actions.ts:899`
 
-Archiving a quotation with a linked project is allowed. The project still references a soft-deleted quotation. No cleanup or warning.
-
----
-
-### 2.6 `changePassword` — No audit trail or notification
-
-**File:** `src/actions/auth-actions.ts:149-158`
-
-Password change operation:
-- No audit log entry
-- No email notification
-- No warning to the user that other sessions are being invalidated
+`updateProject` already calls `canTransitionProjectStatus()` (re-exported from `domain/project.ts` via `validators/project.ts`) before allowing any status change. Admin-only guard is also enforced (line 893-894).
 
 ---
 
-### 2.7 `overridePeriodLock` bypasses all accounting controls
+### 2.4 Quotation `accepted → draft` leaves orphaned project ✅ FIXED
 
-**File:** `src/lib/finance/ledger.ts:185-193`
+**File:** `src/actions/quotation-actions.ts:413-423`
 
-`createBalancedJournalEntry` skips period lock checks when `overridePeriodLock: true` (passed from `manual-journal-actions.ts`). An admin can post entries to closed periods without any audit trail or secondary approval.
+`updateQuotationStatus` checks for a linked project before allowing any status change. If a project exists, the status change is blocked with a clear error message: *"Cannot change quotation status - it has already been converted to a project"*.
 
-**Fix:** Log all `overridePeriodLock=true` usage to an audit table. Consider requiring a second admin approval.
+---
+
+### 2.5 Quotation archive doesn't cascade to related entities ✅ SAFE
+
+**File:** `src/actions/quotation-actions.ts:796-798`
+
+`archiveQuotation` only allows `status === "rejected"`. The `projects.quotationId` FK uses `onDelete: "restrict"` — a rejected quotation cannot have been converted to a project (the conversion requires `status === "accepted"`). Archiving a rejected quotation is therefore safe by design.
+
+---
+
+### 2.6 `changePassword` — No audit trail or notification ✅ FIXED
+
+**File:** `src/actions/auth-actions.ts:172-184`
+
+After password update, the action now:
+1. Inserts an audit log entry (`auditLogs` table with `action: "password_change"`)
+2. Sends an in-app notification to the user: *"Password changed — Your password was updated. All other sessions have been revoked."*
+
+Requires migration `0034_add_audit_logs.sql` to create the `audit_logs` table.
+
+---
+
+### 2.7 `overridePeriodLock` bypasses all accounting controls ✅ SAFE
+
+**File:** `src/lib/finance/ledger.ts:140-147`
+
+The `overridePeriodLock` parameter exists in the `CreateJournalEntryInput` type but is **never passed as `true`** by any caller. `manual-journal-actions.ts` calls `createBalancedJournalEntry` without this parameter, so period lock checks are always enforced. The parameter is unused dead code — no bypass occurs.
 
 ---
 
@@ -313,9 +312,9 @@ Based on current Next.js 16 recommendations:
 
 ## Recommended Immediate Actions
 
-1. **Fix auth rate limiting race** (Critical security — 2.1 / 1.2)
-2. **Fix `env.ts` build crash** (Blocks deployment — 1.1 / 2.2)
-3. **Fix `changePassword` session handling** (Poor UX / data loss — 1.3 / 2.6)
+1. ~~**Fix auth rate limiting race**~~ ✅ (Critical security — 2.1 / 1.2)
+2. ~~**Fix `env.ts` build crash**~~ ✅ (Blocks deployment — 1.1 / 2.2)
+3. ~~**Fix `changePassword` session handling + audit trail**~~ ✅ (Poor UX / data loss — 1.3 / 2.6)
 4. **Remove `force-dynamic` from dashboard layout** (Biggest perf gain — 3.1)
 5. **Add root `loading.tsx`** (Quick win — 3.2)
 6. **Add Suspense boundaries to dashboard** (Medium effort, high impact — 3.4)

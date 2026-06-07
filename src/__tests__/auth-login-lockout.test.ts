@@ -52,7 +52,11 @@ vi.mock("@/lib/db", () => ({
     insert: vi.fn(() => ({
       values: vi.fn((payload: unknown) => {
         spies.insertValues(payload);
-        return Promise.resolve();
+        return {
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn(() => Promise.resolve([{ attempts: 5, lockedUntil: new Date() }])),
+          }),
+        };
       }),
     })),
     delete: vi.fn(() => ({
@@ -105,14 +109,9 @@ describe("login lockout policy", () => {
 
     expect(res.success).toBe(false);
     if (res.success) return;
-    expect(res.error).toBe("Invalid credentials");
-    expect(spies.updateSet).toHaveBeenCalledTimes(1);
-    const payload = spies.updateSet.mock.calls[0]?.[0] as {
-      attempts: number;
-      lockedUntil: Date | null;
-    };
-    expect(payload.attempts).toBe(5);
-    expect(payload.lockedUntil).toBeInstanceOf(Date);
+    // The upsert returns a row with lockedUntil set, which triggers the lockout message
+    expect(res.error).toContain("Too many login attempts");
+    expect(spies.insertValues).toHaveBeenCalledTimes(1);
   });
 
   it("blocks login attempts while lock window is active", async () => {
@@ -124,6 +123,19 @@ describe("login lockout policy", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    // Mock returning to return empty array (upsert WHERE clause won't match when already locked)
+    const mockReturning = vi.fn(() => Promise.resolve([]));
+    const mockOnConflictDoUpdate = vi.fn().mockReturnValue({
+      returning: mockReturning,
+    });
+    const mockValues = vi.fn((payload: unknown) => {
+      spies.insertValues(payload);
+      return { onConflictDoUpdate: mockOnConflictDoUpdate };
+    });
+    const mockInsert = vi.fn(() => ({ values: mockValues }));
+
+    // Replace the insert mock for this test (using any cast for test mock)
+    vi.mocked((await import("@/lib/db")).db.insert).mockImplementation(mockInsert as never);
 
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
     const { login } = await import("@/actions/auth-actions");
@@ -134,8 +146,10 @@ describe("login lockout policy", () => {
     expect(res.error).toContain("Too many login attempts");
     expect(setTimeoutSpy).toHaveBeenCalled();
     setTimeoutSpy.mockRestore();
-    expect(spies.updateSet).not.toHaveBeenCalled();
-    expect(spies.insertValues).not.toHaveBeenCalled();
+    expect(mockInsert).toHaveBeenCalled();
+    expect(mockValues).toHaveBeenCalled();
+    expect(mockOnConflictDoUpdate).toHaveBeenCalled();
+    expect(mockReturning).toHaveBeenCalled();
   });
 
   it("clears lock row after successful login", async () => {
