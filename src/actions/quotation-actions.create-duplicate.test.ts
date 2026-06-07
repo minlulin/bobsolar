@@ -17,8 +17,7 @@ const state = vi.hoisted(() => ({
     notes: null,
     validUntil: null,
     items: [],
-    // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  } as any,
+  },
   dbMode: "ok" as "ok" | "lock_busy" | "dup_error",
   firstTxn: true,
   inventoryCostRows: [{ id: "11111111-1111-4111-8111-111111111111", costPrice: "88.40" }],

@@ -4,6 +4,7 @@ import { endOfDay, format, parseISO, startOfDay, startOfMonth, subMonths } from 
 import { and, desc, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { requireOwner } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 
 import {
@@ -241,7 +242,7 @@ const getCachedFinanceSummary = unstable_cache(
     };
   },
   ["finance:summary"],
-  { tags: ["finance"], revalidate: 300 },
+  { tags: [CACHE_TAGS.FINANCE_REPORTS], revalidate: 300 },
 );
 
 export async function getFinanceSummary(
@@ -361,7 +362,7 @@ const getCachedMonthlyTrend = unstable_cache(
     return months;
   },
   ["finance:monthly-trend"],
-  { tags: ["finance"], revalidate: 300 },
+  { tags: [CACHE_TAGS.FINANCE_REPORTS], revalidate: 300 },
 );
 
 export async function getMonthlyTrend(
@@ -420,7 +421,7 @@ const getCachedExpenseBreakdown = unstable_cache(
     }));
   },
   ["finance:expense-breakdown"],
-  { tags: ["finance"], revalidate: 300 },
+  { tags: [CACHE_TAGS.FINANCE_REPORTS], revalidate: 300 },
 );
 
 export async function getExpenseBreakdown(

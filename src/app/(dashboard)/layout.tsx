@@ -45,7 +45,7 @@ export default async function DashboardLayout({
     <div className="bg-background relative min-h-screen">
       <a
         href="#main-content"
-        className="bg-solar text-background sr-only z-[60] rounded-md px-3 py-2 font-semibold focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        className="bg-solar text-background sr-only z-60 rounded-md px-3 py-2 font-semibold focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>

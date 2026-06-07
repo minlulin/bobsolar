@@ -391,8 +391,9 @@ export function FinanceDashboardClient({
           <CardContent>
             {isLoadingRisk ? (
               <div className="space-y-3">
-                {Array.from({ length: 3 }).map(() => (
-                  <Skeleton key={crypto.randomUUID()} className="h-12 w-full" />
+                {Array.from({ length: 3 }, (_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                  <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
             ) : risk.length > 0 ? (

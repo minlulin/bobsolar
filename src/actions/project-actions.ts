@@ -50,6 +50,7 @@ import { type ActionResponse, successResponse } from "@/lib/utils/action-respons
 import { AdvisoryLock } from "@/lib/utils/advisory-lock";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
 import { extractProjectSequence, formatProjectNumber } from "@/lib/utils/project-number";
+import { escapeLikePattern } from "@/lib/utils/search";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   addProjectCostSchema,
@@ -508,7 +509,7 @@ export async function getProjects(
 
     const searchCond = search?.trim()
       ? (() => {
-          const escaped = search.trim().replace(/%/g, "\\%").replace(/_/g, "\\_");
+          const escaped = escapeLikePattern(search.trim());
           return or(
             ilike(projects.projectNumber, `%${escaped}%`),
             sql`exists (

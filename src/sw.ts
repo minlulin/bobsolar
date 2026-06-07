@@ -1,5 +1,5 @@
 import { defaultCache } from "@serwist/next/worker";
-import { CacheFirst, ExpirationPlugin, Serwist, StaleWhileRevalidate } from "serwist";
+import { CacheFirst, ExpirationPlugin, Serwist } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: (string | { url: string; revision: string | null })[] | undefined;
@@ -11,16 +11,6 @@ const staticAssetCache = new CacheFirst({
     new ExpirationPlugin({
       maxEntries: 250,
       maxAgeSeconds: 60 * 60 * 24 * 30,
-    }),
-  ],
-});
-
-const nextDataCache = new StaleWhileRevalidate({
-  cacheName: "bobsolar-next-data-v1",
-  plugins: [
-    new ExpirationPlugin({
-      maxEntries: 80,
-      maxAgeSeconds: 60 * 60,
     }),
   ],
 });
@@ -42,13 +32,6 @@ const serwist = new Serwist({
           url.pathname.endsWith(".css") ||
           url.pathname.endsWith(".woff2")),
       handler: staticAssetCache,
-    },
-    {
-      matcher: ({ request, url }: { request: Request; url: URL }): boolean =>
-        request.method === "GET" &&
-        url.origin === self.location.origin &&
-        url.pathname.startsWith("/_next/data/"),
-      handler: nextDataCache,
     },
   ],
   fallbacks: {

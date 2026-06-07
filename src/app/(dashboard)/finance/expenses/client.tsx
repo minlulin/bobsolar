@@ -118,8 +118,8 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
   return (
     <div className="relative min-h-full w-full bg-background overflow-hidden selection:bg-primary/30 pb-20">
       {/* Decorative Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-background via-background/80 to-transparent z-[1] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[40px_40px] pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-[500px] bg-linear-to-b from-background via-background/80 to-transparent z-1 pointer-events-none" />
 
       <div className="relative z-10 flex flex-col w-full max-w-7xl mx-auto px-6 py-12 md:px-12 md:py-16">
         {/* Header Section */}
@@ -143,7 +143,7 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
             </div>
             <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter text-foreground leading-tight">
               Operating <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground font-light italic">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-foreground to-muted-foreground font-light italic">
                 Expenses
               </span>
             </h1>
@@ -153,7 +153,7 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex items-center gap-6 bg-card/60 backdrop-blur-xl border border-border/50 p-6 rounded-[2rem] shadow-2xl w-full md:w-auto"
+            className="flex items-center gap-6 bg-card/60 backdrop-blur-xl border border-border/50 p-6 rounded-4xl shadow-2xl w-full md:w-auto"
           >
             <div>
               <p className="text-sm font-medium uppercase tracking-widest text-muted-foreground mb-1">
@@ -387,7 +387,7 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
         </div>
 
         {/* Ledger List */}
-        <div className="premium-glass rounded-[2rem] overflow-hidden p-2">
+        <div className="premium-glass rounded-4xl overflow-hidden p-2">
           {data.expenses.length > 0 ? (
             <motion.div
               variants={listVariants}

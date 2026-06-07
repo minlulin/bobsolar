@@ -71,9 +71,9 @@ export default function LoginPage(): React.JSX.Element {
     <div className="bg-background relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div className="pointer-events-none absolute inset-0 z-0">
         <div className="absolute inset-0 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--background)_88%,white)_0%,var(--background)_52%,color-mix(in_oklab,var(--solar)_10%,var(--background))_100%)]" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-solar/50 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-solar/50 to-transparent" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_oklab,var(--solar)_16%,transparent),transparent_42%)]" />
-        <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
+        <div className="absolute inset-0 opacity-[0.035] bg-[linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] bg-size-[44px_44px]" />
       </div>
 
       <motion.div

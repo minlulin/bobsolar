@@ -10,12 +10,15 @@ import {
   budgets,
   companySettings,
   customers,
+  generalExpenses,
   idempotencyKeys,
   inventoryItems,
   journalEntries,
   journalLines,
   ledgerAccounts,
   notifications,
+  owners,
+  ownerTransactions,
   paymentMethods,
   projectCosts,
   projectInvoiceLines,
@@ -70,6 +73,9 @@ const TABLE_NAMES = [
   "budgets",
   "accounting_periods",
   "idempotency_keys",
+  "general_expenses",
+  "owners",
+  "owner_transactions",
 ] as const;
 
 const TABLE_MAP: Record<string, AnyTable> = {
@@ -101,6 +107,9 @@ const TABLE_MAP: Record<string, AnyTable> = {
   budgets: budgets as unknown as AnyTable,
   accounting_periods: accountingPeriods as unknown as AnyTable,
   idempotency_keys: idempotencyKeys as unknown as AnyTable,
+  general_expenses: generalExpenses as unknown as AnyTable,
+  owners: owners as unknown as AnyTable,
+  owner_transactions: ownerTransactions as unknown as AnyTable,
 };
 
 function serializeValue(value: unknown): unknown {
@@ -130,8 +139,10 @@ async function getTableManifest(): Promise<{
           .select({ count: sql<number>`cast(count(*) as int)` })
           .from(table as never);
         return { name, count: row ? Number((row as { count: number }).count) : 0 };
-      } catch {
-        return { name, count: 0 };
+      } catch (err) {
+        throw new Error(
+          `Failed to read table "${name}" for backup manifest: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }),
   );

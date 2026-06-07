@@ -22,7 +22,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({
-  getSessionFromCookie: vi.fn(async () => state.session),
+  getSessionAndRefresh: vi.fn(async () => state.session),
   getCurrentUserFromDb: vi.fn(async () => state.userFromDb),
 }));
 

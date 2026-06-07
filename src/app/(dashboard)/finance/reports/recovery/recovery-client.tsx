@@ -74,7 +74,7 @@ export function RecoveryClient({ initialReport }: RecoveryClientProps): React.JS
           type="button"
           onClick={handleRefresh}
           disabled={isLoading}
-          className="inline-flex items-center gap-2 rounded-md bg-[var(--color-deep-navy)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-deep-navy)]/90 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-(--color-deep-navy) px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-(--color-deep-navy)/90 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           {isLoading ? "Scanning..." : "Scan Now"}
@@ -143,8 +143,9 @@ export function RecoveryClient({ initialReport }: RecoveryClientProps): React.JS
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-10 w-full" />
+              {Array.from({ length: 3 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
           ) : report && report.orphanPayments.length > 0 ? (
@@ -215,8 +216,9 @@ export function RecoveryClient({ initialReport }: RecoveryClientProps): React.JS
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-10 w-full" />
+              {Array.from({ length: 3 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
           ) : report && report.orphanCosts.length > 0 ? (

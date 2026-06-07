@@ -53,7 +53,7 @@ export async function recordGeneralExpense(
 
   let journalEntryId: string | null = null;
 
-  // Double entry logic
+  // Double entry logic — always required for accounting correctness
   if (isPaid) {
     // Immediate Cash Payment (Scenario A)
     // Debit: Operating Expense (e.g. Utilities)

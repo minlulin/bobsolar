@@ -93,7 +93,7 @@ export function CompletedProjectsClient({
           {error instanceof Error ? error.message : "Historical grid offline"}
         </div>
       ) : items.length === 0 ? (
-        <div className="text-muted-foreground border-border/70 rounded-[2rem] border border-dashed py-36 text-center text-sm">
+        <div className="text-muted-foreground border-border/70 rounded-4xl border border-dashed py-36 text-center text-sm">
           No records match · tweak filters?
         </div>
       ) : (

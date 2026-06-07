@@ -8,8 +8,7 @@ const state = vi.hoisted(() => ({
     id: "pay-1",
     projectId: "11111111-1111-4111-8111-111111111111",
     amount: "1000",
-    // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  } as any,
+  },
 }));
 
 const spies = vi.hoisted(() => ({

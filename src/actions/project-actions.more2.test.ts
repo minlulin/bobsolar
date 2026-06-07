@@ -9,10 +9,8 @@ const state = vi.hoisted(() => ({
     total: "100000",
     customer: { address: "Addr", city: "Yangon" },
     project: null as null | { id: string },
-    // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  } as any,
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  projectInsertRow: { id: "p1", projectNumber: "PJ-2026-0001" } as any,
+  },
+  projectInsertRow: { id: "p1", projectNumber: "PJ-2026-0001" },
   quoteItems: [] as Array<{
     itemId: string | null;
     description: string;
@@ -36,18 +34,12 @@ const state = vi.hoisted(() => ({
   txCostSum: "0",
   projectCostInsertValues: [] as unknown[],
   stockUpdates: [] as unknown[],
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  projectsRows: [] as any[],
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  countsRows: [{ count: 0 }] as any[],
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  warrantyRows: [] as any[],
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  projectRow: { id: "p1", projectNumber: "PJ-2026-0001", status: "in_progress" } as any,
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  remarks: [] as any[],
-  // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  alertRow: { id: "wa1", projectId: "p1", description: "Check" } as any,
+  projectsRows: [] as Array<Record<string, unknown>>,
+  countsRows: [{ count: 0 }] as Array<{ count: number }>,
+  warrantyRows: [] as Array<Record<string, unknown>>,
+  projectRow: { id: "p1", projectNumber: "PJ-2026-0001", status: "in_progress" },
+  remarks: [] as Array<Record<string, unknown>>,
+  alertRow: { id: "wa1", projectId: "p1", description: "Check" },
   selectCall: 0,
 }));
 

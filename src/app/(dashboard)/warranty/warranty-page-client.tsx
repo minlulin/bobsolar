@@ -292,7 +292,7 @@ function StatCard({
   tint: string;
 }): React.JSX.Element {
   return (
-    <div className={cn("rounded-[1.5rem] border px-8 py-6 text-center", tint)}>
+    <div className={cn("rounded-3xl border px-8 py-6 text-center", tint)}>
       <p className="text-2xl font-semibold">{emoji}</p>
       <p className="text-muted-foreground mt-4 text-[11px] font-bold tracking-[0.3em] uppercase">
         {label}

@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import { createBackupInternal } from "@/actions/backup-actions";
 
 export async function GET(request: Request): Promise<NextResponse> {
+  const cronSecret = process.env["CRON_SECRET"];
+  if (!cronSecret) {
+    console.error("[cron/backup] CRON_SECRET is not configured. Skipping backup.");
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+
   const authHeader = request.headers.get("authorization");
 
-  if (authHeader !== `Bearer ${process.env["CRON_SECRET"]}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -20,12 +26,9 @@ export async function GET(request: Request): Promise<NextResponse> {
         url: result.url,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      {
-        status: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
+      { status: "error", error: "Backup generation failed" },
       { status: 500 },
     );
   }

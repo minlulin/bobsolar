@@ -13,7 +13,7 @@ export function SkeletonCard({ lines = 3 }: SkeletonCardProps): React.JSX.Elemen
           <Skeleton
             // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton has no stable identifier
             key={index}
-            className="h-4 w-full bg-gradient-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
+            className="h-4 w-full bg-linear-to-r from-amber-400/10 via-amber-200/20 to-amber-400/10"
           />
         ))}
       </div>

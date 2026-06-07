@@ -4,6 +4,14 @@ import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
+import type {
+  InventoryItem,
+  PaymentMethod,
+  PurchaseOrder,
+  PurchaseOrderItem,
+  Supplier,
+  SupplierPayment,
+} from "@/lib/db/schema";
 import {
   inventoryItems,
   paymentMethods,
@@ -18,13 +26,23 @@ import {
   createBalancedJournalEntry,
   mapPaymentMethodNameToAssetAccount,
 } from "@/lib/finance/ledger";
-import { errorResponse, successResponse } from "@/lib/utils/action-response";
+import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 import { withIdempotency } from "@/lib/utils/idempotency";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import { createPurchaseOrderSchema, payPurchaseOrderSchema } from "@/lib/validators/purchase";
 
-export async function getPurchaseOrders() {
+export async function getPurchaseOrders(): Promise<
+  ActionResponse<
+    Array<
+      PurchaseOrder & {
+        supplier: Supplier;
+        items: PurchaseOrderItem[];
+        payments: SupplierPayment[];
+      }
+    >
+  >
+> {
   try {
     await requireOwner();
     const data = await db.query.purchaseOrders.findMany({
@@ -42,7 +60,15 @@ export async function getPurchaseOrders() {
   }
 }
 
-export async function getPurchaseOrderById(id: string) {
+export async function getPurchaseOrderById(id: string): Promise<
+  ActionResponse<
+    PurchaseOrder & {
+      supplier: Supplier;
+      items: (PurchaseOrderItem & { item: InventoryItem })[];
+      payments: (SupplierPayment & { paymentMethod: PaymentMethod })[];
+    }
+  >
+> {
   try {
     await requireOwner();
     const validatedId = uuidSchema.parse(id);
@@ -70,7 +96,7 @@ export async function getPurchaseOrderById(id: string) {
 }
 
 // 1. Create a Draft PO (Warehouse Inbound from Catalog)
-export async function createPurchaseOrder(raw: unknown) {
+export async function createPurchaseOrder(raw: unknown): Promise<ActionResponse<PurchaseOrder>> {
   try {
     const user = await requireOwner();
     const validated = createPurchaseOrderSchema.parse(raw);
@@ -125,19 +151,26 @@ export async function createPurchaseOrder(raw: unknown) {
 }
 
 // 2. Receive the PO (Moves to Warehouse Asset, Debits raw_materials, Credits accounts_payable)
-export async function receivePurchaseOrder(id: string) {
+export async function receivePurchaseOrder(id: string): Promise<ActionResponse<null>> {
   try {
     const user = await requireOwner();
     const validatedId = uuidSchema.parse(id);
 
     await db.transaction(async (tx) => {
-      const po = await tx.query.purchaseOrders.findFirst({
-        where: eq(purchaseOrders.id, validatedId),
-        with: { items: true, supplier: true },
-      });
+      const [po] = await tx
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, validatedId))
+        .for("update");
 
       if (!po) throw new Error("PO not found");
       if (po.status !== "draft") throw new Error("PO is not in draft status");
+
+      const poWithItems = await tx.query.purchaseOrders.findFirst({
+        where: eq(purchaseOrders.id, validatedId),
+        with: { items: true, supplier: true },
+      });
+      if (!poWithItems) throw new Error("PO not found");
 
       // 1. Update PO Status
       await tx
@@ -150,8 +183,7 @@ export async function receivePurchaseOrder(id: string) {
         .where(eq(purchaseOrders.id, validatedId));
 
       // 2. Increase Warehouse Stock in Catalog (Item Master)
-      for (const item of po.items) {
-        // Lock the inventory row to prevent concurrent stock updates (lost-update race)
+      for (const item of poWithItems.items) {
         const [invItem] = await tx
           .select({ stockQty: inventoryItems.stockQty })
           .from(inventoryItems)
@@ -164,7 +196,7 @@ export async function receivePurchaseOrder(id: string) {
 
         await tx
           .update(inventoryItems)
-          .set({ stockQty: invItem.stockQty + Math.floor(Number(item.quantity)) })
+          .set({ stockQty: invItem.stockQty + Number(item.quantity) })
           .where(eq(inventoryItems.id, item.itemId));
       }
 
@@ -173,7 +205,7 @@ export async function receivePurchaseOrder(id: string) {
       await createBalancedJournalEntry({
         tx,
         entryDate: new Date(),
-        memo: `PO Received: ${po.poNumber} from ${po.supplier.name}`,
+        memo: `PO Received: ${po.poNumber} from ${poWithItems.supplier.name}`,
         sourceType: "supplier_purchase",
         sourceId: po.id,
         createdBy: user.userId,
@@ -220,7 +252,7 @@ export async function receivePurchaseOrder(id: string) {
 }
 
 // 3. Pay Supplier (Debits accounts_payable, Credits Asset/Cash)
-export async function payPurchaseOrder(raw: unknown) {
+export async function payPurchaseOrder(raw: unknown): Promise<ActionResponse<null>> {
   try {
     const user = await requireOwner();
     const validated = payPurchaseOrderSchema.parse(raw);
@@ -243,15 +275,20 @@ export async function payPurchaseOrder(raw: unknown) {
         }
 
         // 1. Record Payment
-        await tx.insert(supplierPayments).values({
-          purchaseOrderId: po.id,
-          supplierId: po.supplierId,
-          amount: validated.amount.toString(),
-          paymentMethodId: validated.paymentMethodId,
-          reference: validated.reference,
-          notes: validated.notes,
-          createdBy: user.userId,
-        });
+        const [payment] = await tx
+          .insert(supplierPayments)
+          .values({
+            purchaseOrderId: po.id,
+            supplierId: po.supplierId,
+            amount: validated.amount.toString(),
+            paymentMethodId: validated.paymentMethodId,
+            reference: validated.reference,
+            notes: validated.notes,
+            createdBy: user.userId,
+          })
+          .returning({ id: supplierPayments.id });
+
+        if (!payment) throw new Error("Failed to create supplier payment");
 
         // 2. Update PO Balances
         const newPaid = Math.round(Number(po.paidAmount)) + Math.round(validated.amount);
@@ -306,7 +343,7 @@ export async function payPurchaseOrder(raw: unknown) {
           entryDate: new Date(),
           memo: `Supplier Payment: ${po.poNumber} via ${method.name}`,
           sourceType: "supplier_payment",
-          sourceId: po.id,
+          sourceId: payment.id,
           createdBy: user.userId,
           lines: [
             {

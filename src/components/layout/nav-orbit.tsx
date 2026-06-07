@@ -156,7 +156,7 @@ export function NavOrbit(): React.JSX.Element {
               // Subtle inner glow instead of heavy shadow
               "shadow-inner shadow-primary/20",
               // Add a subtle reflection beneath the dock
-              "after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-gradient-to-t after:from-transparent after:to-primary/5 after:blur-md",
+              "after:absolute after:right-[10%] after:-bottom-4 after:left-[10%] after:-z-10 after:h-4 after:rounded-full after:bg-linear-to-t after:from-transparent after:to-primary/5 after:blur-md",
             )}
             onMouseMove={(e) => {
               mouseX.set(e.pageX);

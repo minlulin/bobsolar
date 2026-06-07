@@ -392,8 +392,9 @@ function JournalLineRow({
           </SelectTrigger>
           <SelectContent>
             {isLoadingAccounts
-              ? Array.from({ length: 5 }).map(() => (
-                  <div key={crypto.randomUUID()} className="p-2">
+              ? Array.from({ length: 5 }, (_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                  <div key={i} className="p-2">
                     <Skeleton className="h-6 w-full" />
                   </div>
                 ))

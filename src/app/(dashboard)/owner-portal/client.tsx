@@ -131,10 +131,10 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
           className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8"
         >
           <div className="relative">
-            <div className="absolute -left-6 top-2 h-full w-1 bg-gradient-to-b from-solar to-transparent hidden md:block" />
+            <div className="absolute -left-6 top-2 h-full w-1 bg-linear-to-b from-solar to-transparent hidden md:block" />
             <h1 className="text-5xl md:text-7xl font-extralight tracking-tighter text-foreground leading-[1.1]">
               Capital <br />
-              <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground">
+              <span className="font-bold text-transparent bg-clip-text bg-linear-to-r from-foreground to-muted-foreground">
                 Reserves
               </span>
             </h1>
@@ -152,8 +152,8 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
           className="grid grid-cols-1 md:grid-cols-12 gap-6"
         >
           <motion.div variants={itemVariants} className="md:col-span-8">
-            <div className="premium-glass rounded-[2rem] p-8 md:p-12 h-full relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-solar/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <div className="premium-glass rounded-4xl p-8 md:p-12 h-full relative overflow-hidden group">
+              <div className="absolute inset-0 bg-linear-to-br from-solar/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <div className="relative z-10 flex flex-col h-full justify-between gap-8">
                 <div className="flex justify-between items-start">
                   <Badge
@@ -178,7 +178,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
           </motion.div>
 
           <motion.div variants={itemVariants} className="md:col-span-4">
-            <div className="premium-glass rounded-[2rem] p-8 md:p-10 h-full flex flex-col justify-between relative overflow-hidden group">
+            <div className="premium-glass rounded-4xl p-8 md:p-10 h-full flex flex-col justify-between relative overflow-hidden group">
               <div className="absolute -right-12 -top-12 w-32 h-32 bg-green-500/10 rounded-full blur-2xl group-hover:bg-green-500/20 transition-all duration-700" />
               <div className="relative z-10">
                 <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6">
@@ -266,13 +266,13 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="surface-panel-muted rounded-[2rem] p-6">
+                        <div className="surface-panel-muted rounded-4xl p-6">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                             YTD Draws
                           </p>
                           <p className="text-2xl font-bold">{formatMMK(activeOwner.ytdDraws)}</p>
                         </div>
-                        <div className="surface-panel-muted rounded-[2rem] p-6">
+                        <div className="surface-panel-muted rounded-4xl p-6">
                           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                             Capital
                           </p>
@@ -283,7 +283,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                       </div>
                     </div>
 
-                    <div className="lg:col-span-2 premium-glass rounded-[2rem] p-8 md:p-10 flex flex-col">
+                    <div className="lg:col-span-2 premium-glass rounded-4xl p-8 md:p-10 flex flex-col">
                       <div className="flex items-center justify-between mb-8">
                         <h4 className="text-2xl font-semibold tracking-tight">Ledger History</h4>
                         <Badge variant="secondary" className="rounded-full px-4 font-mono text-xs">
@@ -366,7 +366,7 @@ export function OwnerPortalClient({ data }: { data: OwnerPortalData }) {
                           ))
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center text-muted-foreground p-12 opacity-60">
-                            <Landmark className="w-16 h-16 mb-4 stroke-[1]" />
+                            <Landmark className="w-16 h-16 mb-4 stroke-1" />
                             <p className="text-lg font-light">
                               No ledger entries found for this owner.
                             </p>

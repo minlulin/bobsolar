@@ -10,16 +10,14 @@ const state = vi.hoisted(() => ({
     systemSizeKwp: "5",
     quotedTotal: "1000",
     startDate: null,
-    // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  } as any,
+  },
   inventoryItem: {
     id: "33333333-3333-4333-8333-333333333333",
     stockQty: 1,
     isActive: true,
     unitPrice: "100",
     name: "Panel",
-    // biome-ignore lint/suspicious/noExplicitAny: test mock state
-  } as any,
+  },
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
@@ -104,16 +102,14 @@ describe("project-actions guardrails", () => {
       systemSizeKwp: "5",
       quotedTotal: "1000",
       startDate: null,
-      // biome-ignore lint/suspicious/noExplicitAny: test mock state
-    } as any;
+    };
     state.inventoryItem = {
       id: "33333333-3333-4333-8333-333333333333",
       stockQty: 1,
       isActive: true,
       unitPrice: "100",
       name: "Panel",
-      // biome-ignore lint/suspicious/noExplicitAny: test mock state
-    } as any;
+    };
   });
 
   it("blocks non-admin status change", async () => {

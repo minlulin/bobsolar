@@ -199,7 +199,7 @@ export default function NewPurchasePage(): React.JSX.Element {
                       control={form.control}
                       name={`items.${index}.itemId`}
                       render={({ field: itemField }) => (
-                        <FormItem className="flex-[2]">
+                        <FormItem className="flex-2">
                           <FormLabel className="text-xs">Catalog Item (SSoT)</FormLabel>
                           <Select
                             onValueChange={(val) => {
@@ -238,7 +238,7 @@ export default function NewPurchasePage(): React.JSX.Element {
                       control={form.control}
                       name={`items.${index}.description`}
                       render={({ field: descField }) => (
-                        <FormItem className="flex-[2]">
+                        <FormItem className="flex-2">
                           <FormLabel className="text-xs">Description</FormLabel>
                           <FormControl>
                             <Input {...descField} />

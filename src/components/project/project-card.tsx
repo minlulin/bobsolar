@@ -146,7 +146,7 @@ export const ProjectCard = React.memo(function ProjectCard({
               <div className="bg-muted mt-2 h-2 overflow-hidden rounded-full">
                 <div
                   style={{ width: `${Math.min(pct, 120)}%` }}
-                  className={cn("h-full bg-gradient-to-r transition-all duration-500", barTone)}
+                  className={cn("h-full bg-linear-to-r transition-all duration-500", barTone)}
                 />
               </div>
               <p className="mt-1 flex justify-between gap-3 text-[11px]">

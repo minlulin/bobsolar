@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { UserRole } from "@/lib/db/schema";
 import { userRoleSchema } from "@/lib/domain/user-roles";
-import { getCurrentUserFromDb, getSessionFromCookie } from "./session";
+import { getCurrentUserFromDb, getSessionAndRefresh } from "./session";
 
 export interface AuthUser {
   userId: string;
@@ -34,7 +34,7 @@ const OPERATIONAL_ROLES: ReadonlySet<UserRole> = new Set(["admin", "owner"]);
  * user missing, or user is soft-archived.
  */
 const resolveCurrentAuth = cache(async (): Promise<AuthUser | null> => {
-  const session = await getSessionFromCookie();
+  const session = await getSessionAndRefresh();
   if (!session) return null;
 
   const dbUser = await getCurrentUserFromDb(session.userId);

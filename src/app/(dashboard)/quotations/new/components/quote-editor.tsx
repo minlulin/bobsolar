@@ -289,7 +289,7 @@ export function QuoteEditor({
               handleSave("sent");
             }}
             disabled={isPending}
-            className="text-foreground bg-gradient-to-r from-amber-500 to-orange-600 px-6 font-bold shadow-lg shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-700"
+            className="text-foreground bg-linear-to-r from-amber-500 to-orange-600 px-6 font-bold shadow-lg shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-700"
           >
             {isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

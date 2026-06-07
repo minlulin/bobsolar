@@ -178,8 +178,9 @@ export function ProjectProfitabilityClient({
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 5 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-8 w-full" />
+              {Array.from({ length: 5 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-8 w-full" />
               ))}
             </div>
           ) : report && report.projects.length > 0 ? (

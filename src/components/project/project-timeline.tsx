@@ -43,7 +43,7 @@ export function ProjectTimeline({ project }: ProjectTimelineProps): React.JSX.El
         {/* Progress line */}
         <div className="bg-muted absolute top-10 right-24 left-24 h-[3px]" />
         <motion.div
-          className="from-solar shadow-glow-solar absolute top-10 left-24 h-[3px] bg-gradient-to-r to-emerald-500"
+          className="from-solar shadow-glow-solar absolute top-10 left-24 h-[3px] bg-linear-to-r to-emerald-500"
           layout
           initial={false}
           animate={{
@@ -74,10 +74,10 @@ export function ProjectTimeline({ project }: ProjectTimelineProps): React.JSX.El
               <motion.div
                 layout
                 className={cn(
-                  "text-foreground relative z-10 mb-6 flex h-20 w-20 items-center justify-center rounded-[2rem] border px-5 text-[10px] font-black tracking-[0.35em] uppercase",
+                  "text-foreground relative z-10 mb-6 flex h-20 w-20 items-center justify-center rounded-4xl border px-5 text-[10px] font-black tracking-[0.35em] uppercase",
                   active ? "shadow-glow border-border/80" : "border-border/60",
                   glow
-                    ? "bg-gradient-to-br from-amber-500 to-orange-600"
+                    ? "bg-linear-to-br from-amber-500 to-orange-600"
                     : active
                       ? "bg-muted/55"
                       : "bg-muted/80",
@@ -86,7 +86,7 @@ export function ProjectTimeline({ project }: ProjectTimelineProps): React.JSX.El
                 {idx + 1}
               </motion.div>
               <p className="text-foreground mb-2 text-[11px] font-bold">{label}</p>
-              <p className="text-muted-foreground min-h-[2.75rem] text-[10px] leading-relaxed whitespace-pre-wrap">
+              <p className="text-muted-foreground min-h-11 text-[10px] leading-relaxed whitespace-pre-wrap">
                 {subtitle}
               </p>
             </div>

@@ -9,6 +9,7 @@ import { type Customer, customers, projects, quotations } from "@/lib/db/schema"
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError, handleStateError } from "@/lib/utils/error";
 import { withIdempotency } from "@/lib/utils/idempotency";
+import { escapeLikePattern } from "@/lib/utils/search";
 import { uuidSchema } from "@/lib/validators/common";
 import {
   createCustomerSchema,
@@ -65,7 +66,7 @@ export async function getCustomers(
     const baseWhere = eq(customers.isArchived, false);
     const searchWhere = search
       ? (() => {
-          const escaped = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
+          const escaped = escapeLikePattern(search);
           return or(
             ilike(customers.name, `%${escaped}%`),
             ilike(customers.phone, `%${escaped}%`),
@@ -216,7 +217,7 @@ export async function searchCustomers(query: string): Promise<ActionResponse<Cus
   try {
     await requireAuth();
     const validatedQuery = customerSearchSchema.parse(query);
-    const escaped = validatedQuery.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    const escaped = escapeLikePattern(validatedQuery);
 
     const items = await db.query.customers.findMany({
       where: and(

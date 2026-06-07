@@ -104,8 +104,8 @@ export function FileUpload({
         onClick={() => inputRef.current?.click()}
       >
         <Upload className="text-muted-foreground mb-3 h-8 w-8" />
-        <p className="text-sm font-medium break-words">Drop logo here or click to browse</p>
-        <p className="text-muted-foreground mt-2 text-xs break-words whitespace-normal">
+        <p className="text-sm font-medium wrap-break-word">Drop logo here or click to browse</p>
+        <p className="text-muted-foreground mt-2 text-xs wrap-break-word whitespace-normal">
           PNG/JPEG/Webp — {DOCUMENT_UPLOAD_MAX_MB} MB max per upload burst
         </p>
 

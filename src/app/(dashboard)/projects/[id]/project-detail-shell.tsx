@@ -21,7 +21,7 @@ const ProjectTimeline = dynamic(
 );
 const ProjectOperationalNotes = dynamic(
   () => import("./components/project-operational-notes").then((mod) => mod.ProjectOperationalNotes),
-  { loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-[2rem]" /> },
+  { loading: () => <div className="h-[250px] animate-pulse bg-muted rounded-4xl" /> },
 );
 const CompletedProjectVouchers = dynamic(
   () => import("./components/completed-vouchers").then((mod) => mod.CompletedProjectVouchers),
@@ -553,7 +553,7 @@ export function ProjectDetailShell({
       <ProjectTimeline project={proj} />
 
       <div className="space-y-6">
-        <div className="bg-muted/50 border-border/70 flex h-auto flex-wrap gap-3 rounded-[2rem] border p-3">
+        <div className="bg-muted/50 border-border/70 flex h-auto flex-wrap gap-3 rounded-4xl border p-3">
           {(["overview", "costs", "remarks", "warranty"] as ProjectTab[]).map((item) => (
             <button
               key={item}
@@ -574,7 +574,7 @@ export function ProjectDetailShell({
         {activeProjectTab === "overview" && (
           <div className="space-y-6">
             {proj.hasMissingInventoryConsumption ? (
-              <div className="bg-amber-500/15 border-amber-500/50 text-amber-200 mb-6 flex items-center gap-3 rounded-[2rem] border px-6 py-4 text-sm font-semibold">
+              <div className="bg-amber-500/15 border-amber-500/50 text-amber-200 mb-6 flex items-center gap-3 rounded-4xl border px-6 py-4 text-sm font-semibold">
                 <span className="text-xl">⚠️</span>
                 Warning: This project has quoted materials (e.g. panels, inverters) but no inventory
                 has been consumed yet. Profitability may be overstated.
@@ -771,7 +771,7 @@ export function ProjectDetailShell({
 
             <div className="grid gap-2 lg:grid-cols-2">
               <motion.div variants={staggerContainer} animate="animate">
-                <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
+                <div className="bg-card border-border space-y-5 rounded-4xl border p-6">
                   <h3 className="text-muted-foreground text-[10px] font-bold uppercase">
                     Site briefing
                   </h3>
@@ -1044,7 +1044,7 @@ export function ProjectDetailShell({
               </p>
             )}
 
-            <div className="bg-card border-border rounded-[2rem] border p-6">
+            <div className="bg-card border-border rounded-4xl border p-6">
               <p className="text-muted-foreground mb-10 text-[10px] font-bold uppercase">
                 Ledger composition
               </p>
@@ -1170,7 +1170,7 @@ export function ProjectDetailShell({
           <div className="space-y-6">
             {canEditOperational ? (
               <form
-                className="bg-card border-border space-y-6 rounded-[2rem] border p-6"
+                className="bg-card border-border space-y-6 rounded-4xl border p-6"
                 onSubmit={handleSubmitRemark}
               >
                 <div className="grid gap-3 md:grid-cols-5">
@@ -1216,14 +1216,14 @@ export function ProjectDetailShell({
               <p className="text-muted-foreground text-sm">Conversation thread is archived.</p>
             )}
 
-            <ScrollArea className="bg-card border-border h-[520px] rounded-[2rem] border p-6">
+            <ScrollArea className="bg-card border-border h-[520px] rounded-4xl border p-6">
               <div className="space-y-4 pr-6">
                 {proj.remarks.map((remark, idx) => (
                   <motion.div
                     key={remark.id}
                     variants={staggerItem}
                     custom={idx}
-                    className="bg-muted/35 border-border/70 rounded-[1.5rem] border p-5"
+                    className="bg-muted/35 border-border/70 rounded-3xl border p-5"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                   >
@@ -1265,7 +1265,7 @@ export function ProjectDetailShell({
 
         {activeProjectTab === "warranty" && (
           <div className="space-y-6">
-            <div className="bg-card border-border flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border px-8 py-6">
+            <div className="bg-card border-border flex flex-wrap items-center justify-between gap-4 rounded-4xl border px-8 py-6">
               <div>
                 <p className="text-foreground text-lg font-semibold tracking-[0.4em] uppercase">
                   Warranty rhythm

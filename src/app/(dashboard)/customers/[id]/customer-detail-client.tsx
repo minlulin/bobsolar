@@ -60,7 +60,7 @@ function TabButton({
       {count !== undefined && count > 0 && (
         <span
           className={cn(
-            "flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+            "flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
             active ? "bg-solar/25 text-solar" : "bg-muted/60 text-muted-foreground",
           )}
         >
@@ -88,7 +88,7 @@ function Field({
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60 mb-0.5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-0.5">
           {label}
         </p>
         <p className="text-sm text-foreground leading-relaxed">{value}</p>
@@ -113,7 +113,7 @@ function SectionLabel({ children }: { children: React.ReactNode }): React.JSX.El
 function Chip({ label, value }: { label: string; value: string | number }): React.JSX.Element {
   return (
     <div className="flex flex-col gap-0.5 rounded-xl border border-border/50 bg-muted/30 px-5 py-3.5">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
         {label}
       </span>
       <span className="text-xl font-bold tracking-tight text-foreground">{value}</span>
@@ -311,7 +311,7 @@ export function CustomerDetailClient({ id }: { id: string }): React.JSX.Element 
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22 }}
-        className="min-h-[28rem]"
+        className="min-h-112"
       >
         {/* OVERVIEW ─────────────────────────────────────────── */}
         {activeTab === "overview" && (

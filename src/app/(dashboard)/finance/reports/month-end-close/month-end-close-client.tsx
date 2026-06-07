@@ -110,7 +110,7 @@ export function MonthEndCloseClient({
             type="button"
             onClick={handleFetch}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-md bg-[var(--color-deep-navy)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-deep-navy)]/90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-(--color-deep-navy) px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-(--color-deep-navy)/90 disabled:opacity-50"
           >
             <ClipboardCheck className="h-4 w-4" />
             {isLoading ? "Loading..." : "Check"}
@@ -152,8 +152,9 @@ export function MonthEndCloseClient({
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
-              {Array.from({ length: 4 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-16 w-full" />
+              {Array.from({ length: 4 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
           ) : report ? (

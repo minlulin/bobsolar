@@ -16,7 +16,7 @@ export function ProjectOperationalNotes({
   const [draft, setDraft] = React.useState(() => initialNotes ?? "");
 
   return (
-    <div className="bg-card border-border space-y-5 rounded-[2rem] border p-6">
+    <div className="bg-card border-border space-y-5 rounded-4xl border p-6">
       <h3 className="text-muted-foreground text-[10px] font-bold uppercase">Operational notes</h3>
       <Textarea
         disabled={disabled}

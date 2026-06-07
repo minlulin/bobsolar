@@ -114,7 +114,7 @@ export function CashMovementReportClient({
             type="button"
             onClick={handleFetch}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-md bg-[var(--color-deep-navy)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-deep-navy)]/90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-(--color-deep-navy) px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-(--color-deep-navy)/90 disabled:opacity-50"
           >
             <Calendar className="h-4 w-4" />
             {isLoading ? "Loading..." : "Apply"}
@@ -170,8 +170,9 @@ export function CashMovementReportClient({
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 5 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-8 w-full" />
+              {Array.from({ length: 5 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-8 w-full" />
               ))}
             </div>
           ) : report && report.byAccount.length > 0 ? (
@@ -237,8 +238,9 @@ export function CashMovementReportClient({
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 3 }).map(() => (
-                <Skeleton key={crypto.randomUUID()} className="h-8 w-full" />
+              {Array.from({ length: 3 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholder
+                <Skeleton key={i} className="h-8 w-full" />
               ))}
             </div>
           ) : report && report.byMethod.length > 0 ? (

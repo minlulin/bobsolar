@@ -18,15 +18,14 @@ export async function GET(): Promise<NextResponse> {
       },
       { status: 200 },
     );
-  } catch (error) {
+  } catch {
     const latencyMs = Date.now() - start;
 
     return NextResponse.json(
       {
-        status: "error",
+        status: "degraded",
         database: "disconnected",
         latencyMs,
-        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date().toISOString(),
       },
       { status: 503 },

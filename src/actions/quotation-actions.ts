@@ -24,6 +24,7 @@ import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils
 import { AdvisoryLock } from "@/lib/utils/advisory-lock";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
 import { extractQuoteSequence, formatQuoteNumber } from "@/lib/utils/quote-number";
+import { escapeLikePattern } from "@/lib/utils/search";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   createQuotationSchema,
@@ -86,7 +87,7 @@ function buildQuotationsWhere({
       ? eq(quotations.isArchived, isArchived)
       : eq(quotations.isArchived, false),
     customerId ? eq(quotations.customerId, customerId) : undefined,
-    search ? ilike(quotations.quoteNumber, `%${search}%`) : undefined,
+    search ? ilike(quotations.quoteNumber, `%${escapeLikePattern(search)}%`) : undefined,
   );
 }
 
@@ -501,7 +502,7 @@ export async function updateQuotation(
 
         const unitPriceMap = new Map<string, number>();
         if (updateItemIds.length > 0) {
-          const invRows = await db
+          const invRows = await tx
             .select({ id: inventoryItems.id, unitPrice: inventoryItems.unitPrice })
             .from(inventoryItems)
             .where(inArray(inventoryItems.id, updateItemIds));

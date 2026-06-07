@@ -82,7 +82,7 @@ export function QuotationsGridClient({
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className="text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm h-9 rounded-lg px-3 font-medium transition-colors"
+                className="text-muted-foreground data-active:bg-background data-active:text-foreground data-active:shadow-sm h-9 rounded-lg px-3 font-medium transition-colors"
               >
                 {tab.label}
               </TabsTrigger>

@@ -53,7 +53,9 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
   > {
     return useMutation({
       mutationFn: async (variables: TVariables) => {
-        return mutationFn(variables);
+        const result = await mutationFn(variables);
+        if (!result.success) throw new Error(result.error ?? errorMessage);
+        return result;
       },
       meta: {
         ...meta,
@@ -67,21 +69,18 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
           }
         : {}),
       onSuccess: (response: MutationResponse<TData>) => {
-        if (response.success) {
-          const msg: string =
-            typeof successMessage === "function" && response.data !== undefined
-              ? successMessage(response.data)
-              : (successMessage as string);
-          toast.success(msg);
-        } else {
-          toast.error(response.error ?? errorMessage);
-        }
+        if (!response.success) return; // guaranteed by mutationFn throw
+        const msg: string =
+          typeof successMessage === "function" && response.data !== undefined
+            ? successMessage(response.data)
+            : (successMessage as string);
+        toast.success(msg);
       },
-      onError: (_error: Error, _variables: TVariables, context: unknown) => {
+      onError: (error: Error, _variables: TVariables, context: unknown) => {
         if (onErrorRollback && context) {
           onErrorRollback(context as TContext | undefined);
         }
-        toast.error(errorMessage);
+        toast.error(error.message || errorMessage);
       },
     });
   };

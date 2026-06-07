@@ -301,7 +301,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
               </thead>
               <tbody className="divide-border/30 divide-y">
                 {displayItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-primary/[0.02] transition-colors">
+                  <tr key={item.id} className="hover:bg-primary/2 transition-colors">
                     <td className="px-8 py-5">
                       {item.category ? (
                         <Badge

@@ -38,7 +38,18 @@ export async function GET(request: Request): Promise<Response> {
       return NextResponse.json({ error: "Missing url parameter" }, { status: 400 });
     }
 
-    if (!blobUrl.includes(`${BACKUP_FOLDER}/`) || !blobUrl.endsWith(".json")) {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(blobUrl);
+    } catch {
+      return NextResponse.json({ error: "Invalid backup URL" }, { status: 400 });
+    }
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (
+      pathParts.length < 2 ||
+      pathParts[0] !== BACKUP_FOLDER ||
+      !pathParts[1]?.endsWith(".json")
+    ) {
       return NextResponse.json({ error: "Invalid backup URL" }, { status: 400 });
     }
 
@@ -49,7 +60,7 @@ export async function GET(request: Request): Promise<Response> {
 
     const result = await get(blobUrl, { access: "private", token });
 
-    if (!result || result.statusCode !== 200) {
+    if (result?.statusCode !== 200) {
       return NextResponse.json({ error: "Backup not found" }, { status: 404 });
     }
 
@@ -62,10 +73,7 @@ export async function GET(request: Request): Promise<Response> {
         "Cache-Control": "no-store",
       },
     });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Download failed" },
-      { status: 500 },
-    );
+  } catch {
+    return NextResponse.json({ error: "Download failed" }, { status: 500 });
   }
 }

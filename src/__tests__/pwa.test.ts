@@ -42,7 +42,7 @@ describe("Service Worker Source", () => {
     expect(content).toContain("runtimeCaching");
     expect(content).toContain("CacheFirst");
     expect(content).toContain("bobsolar-static-assets-v1");
-    expect(content).toContain("bobsolar-next-data-v1");
+    expect(content).not.toContain("bobsolar-next-data-v1");
   });
 });
 

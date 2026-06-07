@@ -11,6 +11,7 @@ import { extractBrandModel } from "@/lib/domain/inventory";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 import { withIdempotency } from "@/lib/utils/idempotency";
+import { escapeLikePattern } from "@/lib/utils/search";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   createInventoryItemSchema,
@@ -27,7 +28,7 @@ const getCachedInventoryPage = unstable_cache(
     limit: number,
   ): Promise<{ items: InventoryItem[]; total: number }> => {
     const offset = (page - 1) * limit;
-    const escapedSearch = search?.replace(/%/g, "\\%").replace(/_/g, "\\_");
+    const escapedSearch = search ? escapeLikePattern(search) : undefined;
     const where = and(
       isActive !== null ? eq(inventoryItems.isActive, isActive) : undefined,
       category ? eq(inventoryItems.category, category) : undefined,

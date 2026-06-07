@@ -5,6 +5,7 @@ import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { requireAuth } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import type { AlertType } from "@/lib/db/schema";
 import {
@@ -427,7 +428,7 @@ const getCachedFinanceQuickView = unstable_cache(
     };
   },
   ["dashboard:finance-quick-view"],
-  { tags: ["dashboard:finance"], revalidate: 60 },
+  { tags: [CACHE_TAGS.DASHBOARD_FINANCE], revalidate: 60 },
 );
 
 export const getFinanceQuickView = cache(async (): Promise<ActionResponse<FinanceQuickView>> => {
