@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const mockDb = {
     query: {
       users: { findFirst: vi.fn(() => Promise.resolve(null)) },
       authRateLimits: { findFirst: vi.fn(() => Promise.resolve(null)) },
@@ -19,8 +19,9 @@ vi.mock("@/lib/db", () => ({
     update: vi.fn(() => ({
       set: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })),
     })),
-  },
-}));
+  };
+  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+});
 
 vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(() => Promise.resolve()),

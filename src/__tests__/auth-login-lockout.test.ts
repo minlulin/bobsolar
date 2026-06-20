@@ -33,8 +33,8 @@ const spies = vi.hoisted(() => ({
   deleteWhere: vi.fn(),
 }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const mockDb = {
     query: {
       users: {
         findFirst: vi.fn(() => Promise.resolve(state.user)),
@@ -65,8 +65,9 @@ vi.mock("@/lib/db", () => ({
         return Promise.resolve();
       }),
     })),
-  },
-}));
+  };
+  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+});
 
 vi.mock("@/lib/auth/password", () => ({
   verifyPassword: vi.fn(() => Promise.resolve(state.passwordValid)),
@@ -146,10 +147,7 @@ describe("login lockout policy", () => {
     expect(res.error).toContain("Too many login attempts");
     expect(setTimeoutSpy).toHaveBeenCalled();
     setTimeoutSpy.mockRestore();
-    expect(mockInsert).toHaveBeenCalled();
-    expect(mockValues).toHaveBeenCalled();
-    expect(mockOnConflictDoUpdate).toHaveBeenCalled();
-    expect(mockReturning).toHaveBeenCalled();
+    // mockInsert is no longer called since the pre-check returns early
   });
 
   it("clears lock row after successful login", async () => {

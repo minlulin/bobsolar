@@ -37,8 +37,8 @@ vi.mock("@/lib/auth/session", () => ({
   createSession: vi.fn(async () => undefined),
   clearSessionCookies: vi.fn(async () => undefined),
 }));
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const mockDb = {
     query: {
       users: {
         findFirst: vi.fn(async () => state.user),
@@ -68,8 +68,9 @@ vi.mock("@/lib/db", () => ({
       };
       return cb(txUpdate);
     }),
-  },
-}));
+  };
+  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+});
 
 const makeSealed = (
   overrides: Partial<{ userId: string; role: "admin" | "owner"; sv: number }> = {},

@@ -53,6 +53,9 @@ export function useQuoteAutosave({
   const [autosaveStatus, setAutosaveStatus] = React.useState<AutosaveStatus>("idle");
   const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
   const [restoreCandidate, setRestoreCandidate] = React.useState<RestoreCandidate | null>(null);
+  const [serverDraftIdState, setServerDraftIdState] = React.useState<string | null>(
+    quotationId ?? null,
+  );
   const serverDraftIdRef = React.useRef<string | null>(quotationId ?? null);
   const restoreDraftRef = React.useRef<ReturnType<typeof buildQuoteAutosaveDraft> | null>(null);
   const timerRef = React.useRef<number | null>(null);
@@ -61,6 +64,11 @@ export function useQuoteAutosave({
   const nextRetryAtRef = React.useRef(0);
   const lastSyncedHashRef = React.useRef<string>("");
   const key = React.useMemo(() => buildQuoteAutosaveKey(mode, quotationId), [mode, quotationId]);
+
+  const updateServerDraftId = React.useCallback((id: string) => {
+    serverDraftIdRef.current = id;
+    setServerDraftIdState(id);
+  }, []);
 
   const flush = React.useCallback(async (): Promise<void> => {
     const draft = buildQuoteAutosaveDraft(mode, snapshot, {
@@ -101,7 +109,7 @@ export function useQuoteAutosave({
           : await updateQuotation(serverDraftIdRef.current ?? quotationId ?? "", syncInput);
 
       if (result.success) {
-        serverDraftIdRef.current = result.data.id;
+        updateServerDraftId(result.data.id);
         retryCountRef.current = 0;
         nextRetryAtRef.current = 0;
         lastSyncedHashRef.current = syncHash;
@@ -120,7 +128,7 @@ export function useQuoteAutosave({
     } finally {
       inFlightRef.current = false;
     }
-  }, [key, mode, quotationId, serverUpdatedAt, snapshot]);
+  }, [key, mode, quotationId, serverUpdatedAt, snapshot, updateServerDraftId]);
 
   React.useEffect(() => {
     const localDraft = readQuoteAutosaveDraft(key);
@@ -201,10 +209,10 @@ export function useQuoteAutosave({
     const draft = restoreDraftRef.current;
     if (!draft) return;
 
-    serverDraftIdRef.current = draft.quotationId ?? serverDraftIdRef.current;
+    updateServerDraftId(draft.quotationId ?? serverDraftIdRef.current ?? "");
     loadFromAutosaveDraft(draft);
     setRestoreCandidate(null);
-  }, [loadFromAutosaveDraft]);
+  }, [loadFromAutosaveDraft, updateServerDraftId]);
 
   const discardDraft = React.useCallback(() => {
     clearQuoteAutosaveDraft(key);
@@ -216,7 +224,7 @@ export function useQuoteAutosave({
     autosaveStatus,
     lastSavedAt,
     restoreCandidate,
-    serverDraftId: serverDraftIdRef.current,
+    serverDraftId: serverDraftIdState,
     restoreDraft,
     discardDraft,
     clearAutosave,

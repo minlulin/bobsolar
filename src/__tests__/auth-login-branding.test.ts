@@ -8,8 +8,8 @@ const sessionState = vi.hoisted(() => ({
   shouldFailSessionCreation: false,
 }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const mockDb = {
     query: {
       users: {
         findFirst: vi.fn(() => ({
@@ -42,8 +42,9 @@ vi.mock("@/lib/db", () => ({
         return [];
       }),
     })),
-  },
-}));
+  };
+  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+});
 
 vi.mock("@/lib/auth/password", () => ({
   verifyPassword: vi.fn(() => Promise.resolve(true)),

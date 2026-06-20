@@ -274,10 +274,10 @@ export function QuoteEditor({
             onClick={() => {
               handleSave("draft");
             }}
-            disabled={isPending}
+            disabled={isPending || autosaveStatus === "saving"}
             className="border-border/70 bg-muted/45 hover:bg-muted/55 transition-all"
           >
-            {isPending ? (
+            {isPending || autosaveStatus === "saving" ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
@@ -288,10 +288,10 @@ export function QuoteEditor({
             onClick={() => {
               handleSave("sent");
             }}
-            disabled={isPending}
+            disabled={isPending || autosaveStatus === "saving"}
             className="text-foreground bg-linear-to-r from-amber-500 to-orange-600 px-6 font-bold shadow-lg shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-700"
           >
-            {isPending ? (
+            {isPending || autosaveStatus === "saving" ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Send className="mr-2 h-4 w-4" />
