@@ -77,6 +77,11 @@ backups/
 .codex
 .cursor
 .vercel
+/.kilo
+/.kilo/
+/.kilo/*    
+/.agents/*
+
 
 # Documentation
 

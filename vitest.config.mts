@@ -1,6 +1,10 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { defineConfig } from "vitest/config";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Ensure `.env.local` is available to tests (TEST_DATABASE_URL, SESSION_SECRET, etc.)
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
