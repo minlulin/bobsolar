@@ -260,6 +260,13 @@
       "when": 1782019404738,
       "tag": "0036_mysterious_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1782060163040,
+      "tag": "0037_powerful_veda",
+      "breakpoints": true
     }
   ]
 }

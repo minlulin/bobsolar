@@ -87,3 +87,65 @@ export const AUTH_LOCK_MS = 15 * 60 * 1000;
 
 /** Minimum response time for auth attempts to prevent timing attacks (ms) */
 export const AUTH_MIN_RESPONSE_MS = 120;
+
+// =============================================================================
+// CHAT RATE LIMITING
+// =============================================================================
+
+/** Chat rate-limit window in milliseconds (1 minute) */
+export const CHAT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+/** Maximum chat messages allowed per rate-limit window */
+export const CHAT_RATE_LIMIT_MAX_REQUESTS = 20;
+
+/** Chat session duration in milliseconds (24 hours) */
+export const CHAT_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Maximum messages per conversation before auto-archiving */
+export const CHAT_MAX_MESSAGES_PER_CONVERSATION = 500;
+
+/** Maximum active sessions per user */
+export const CHAT_MAX_ACTIVE_SESSIONS_PER_USER = 5;
+
+// =============================================================================
+// CHAT COST TRACKING & QUOTAS
+// =============================================================================
+
+/**
+ * Gemini 2.5 Flash pricing per 1M tokens (USD).
+ * Input: $0.15/1M tokens, Output: $0.60/1M tokens.
+ * https://ai.google.dev/gemini-api/docs/pricing
+ */
+export const CHAT_MODEL_INPUT_COST_PER_MILLION_TOKENS = 0.15;
+export const CHAT_MODEL_OUTPUT_COST_PER_MILLION_TOKENS = 0.6;
+
+/** Maximum prompt tokens allowed per individual request */
+export const CHAT_MAX_PROMPT_TOKENS_PER_REQUEST = 100_000;
+
+/** Maximum completion tokens allowed per individual request */
+export const CHAT_MAX_COMPLETION_TOKENS_PER_REQUEST = 8_192;
+
+/** Daily token quota per user (input + output combined) */
+export const CHAT_DAILY_TOKEN_QUOTA = 500_000;
+
+/** Monthly token quota per user (input + output combined) */
+export const CHAT_MAX_MONTHLY_TOKEN_QUOTA = 5_000_000;
+
+/** Daily cost alert threshold in USD — logs warning when a user exceeds this */
+export const CHAT_DAILY_COST_ALERT_THRESHOLD_USD = 5.0;
+
+// =============================================================================
+// CHAT ABUSE THROTTLING
+// =============================================================================
+
+/**
+ * IP-based throttle window in milliseconds (10 seconds).
+ * Prevents rapid-fire requests from a single IP regardless of auth state.
+ */
+export const CHAT_IP_THROTTLE_WINDOW_MS = 10_000;
+
+/** Maximum requests per IP within the throttle window */
+export const CHAT_IP_THROTTLE_MAX_REQUESTS = 3;
+
+/** Global chat cooldown in milliseconds — applied after rate limit hit */
+export const CHAT_GLOBAL_COOLDOWN_MS = 2_000;
