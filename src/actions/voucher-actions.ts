@@ -48,44 +48,40 @@ export async function generateVoucher(raw: unknown): Promise<ActionResponse<Proj
             return handleStateError("Too many concurrent requests – please try again");
           }
 
-          try {
-            const prefix = `VC-${year}-`;
-            const existing = await tx
-              .select({ voucherNumber: projectVouchers.voucherNumber })
-              .from(projectVouchers)
-              .where(sql`${projectVouchers.voucherNumber} ilike ${`${prefix}%`}`)
-              .orderBy(desc(projectVouchers.voucherNumber))
-              .limit(1);
+          const prefix = `VC-${year}-`;
+          const existing = await tx
+            .select({ voucherNumber: projectVouchers.voucherNumber })
+            .from(projectVouchers)
+            .where(sql`${projectVouchers.voucherNumber} ilike ${`${prefix}%`}`)
+            .orderBy(desc(projectVouchers.voucherNumber))
+            .limit(1);
 
-            const seq = extractVoucherSequence(existing[0]?.voucherNumber) + 1;
-            const voucherNumber = formatVoucherNumber(seq, year);
-            const balance = data.totalAmount - data.paidAmount;
+          const seq = extractVoucherSequence(existing[0]?.voucherNumber) + 1;
+          const voucherNumber = formatVoucherNumber(seq, year);
+          const balance = data.totalAmount - data.paidAmount;
 
-            const [voucher] = await tx
-              .insert(projectVouchers)
-              .values({
-                projectId: data.projectId,
-                voucherNumber,
-                voucherType: data.voucherType,
-                totalAmount: String(data.totalAmount),
-                paidAmount: String(data.paidAmount),
-                balanceAmount: String(balance),
-                notes: data.notes ?? null,
-                createdBy: auth.userId,
-              })
-              .returning();
+          const [voucher] = await tx
+            .insert(projectVouchers)
+            .values({
+              projectId: data.projectId,
+              voucherNumber,
+              voucherType: data.voucherType,
+              totalAmount: String(data.totalAmount),
+              paidAmount: String(data.paidAmount),
+              balanceAmount: String(balance),
+              notes: data.notes ?? null,
+              createdBy: auth.userId,
+            })
+            .returning();
 
-            if (!voucher) {
-              return handleStateError("Failed to generate voucher");
-            }
-
-            revalidatePath(`/projects/${data.projectId}`);
-            revalidatePath("/projects/completed");
-
-            return successResponse(voucher);
-          } finally {
-            await lock.release();
+          if (!voucher) {
+            return handleStateError("Failed to generate voucher");
           }
+
+          revalidatePath(`/projects/${data.projectId}`);
+          revalidatePath("/projects/completed");
+
+          return successResponse(voucher);
         });
       } catch (error: unknown) {
         if (

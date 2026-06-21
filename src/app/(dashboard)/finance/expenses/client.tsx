@@ -5,6 +5,7 @@ import { CheckCircle2, Clock, Plus, Receipt, Sparkles, WalletCards } from "lucid
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BackButton } from "@/components/shared/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +123,9 @@ export function ExpensesClient({ data }: { data: ExpensesData }) {
       <div className="absolute top-0 left-0 right-0 h-[500px] bg-linear-to-b from-background via-background/80 to-transparent z-1 pointer-events-none" />
 
       <div className="relative z-10 flex flex-col w-full max-w-7xl mx-auto px-6 py-12 md:px-12 md:py-16">
+        <div className="mb-6">
+          <BackButton />
+        </div>
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-16">
           <motion.div

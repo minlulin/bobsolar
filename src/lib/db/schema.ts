@@ -1289,3 +1289,5 @@ export type NewOwnerTransaction = InferInsertModel<typeof ownerTransactions>;
 
 export type AuditLog = InferSelectModel<typeof auditLogs>;
 export type NewAuditLog = InferInsertModel<typeof auditLogs>;
+
+export * from "./vector-schema";

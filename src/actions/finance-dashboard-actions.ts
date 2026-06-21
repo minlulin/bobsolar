@@ -576,7 +576,7 @@ export async function getDataConsistencyCheck(): Promise<ActionResponse<DataCons
             and(
               eq(journalEntries.sourceType, "project_payment"),
               eq(journalEntries.isReversed, false),
-              eq(ledgerAccounts.code, "accounts_receivable"),
+              inArray(ledgerAccounts.code, ["accounts_receivable", "customer_deposits"]),
             ),
           ),
 
@@ -608,7 +608,8 @@ export async function getDataConsistencyCheck(): Promise<ActionResponse<DataCons
           .select({
             sum: sql<number>`coalesce(sum(${projectCosts.amount}::numeric), 0)`.as("sum"),
           })
-          .from(projectCosts),
+          .from(projectCosts)
+          .where(eq(projectCosts.isReversed, false)),
       ]);
 
     const journalIncome = Math.round(journalIncomeRow[0]?.sum ?? 0);

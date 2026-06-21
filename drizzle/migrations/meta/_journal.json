@@ -246,6 +246,20 @@
       "when": 1780830521117,
       "tag": "0034_melted_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1782019281026,
+      "tag": "0035_short_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1782019404738,
+      "tag": "0036_mysterious_professor_monster",
+      "breakpoints": true
     }
   ]
 }

@@ -1,45 +1,168 @@
-import fs from "node:fs";
-import path from "node:path";
 import { google } from "@ai-sdk/google";
-import { convertToModelMessages, streamText } from "ai";
+import { embed, streamText, tool } from "ai";
+import { desc, sql } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { knowledgeChunks } from "@/lib/db/schema";
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+// Schema for chat session
+const ChatSessionSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+  brand: z.string().optional(),
+  lastErrorCode: z.string().optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+type ChatSession = z.infer<typeof ChatSessionSchema>;
+
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, brand, errorCode, userId } = await req.json();
 
-  // Load knowledge base
-  const kbPath = path.join(process.cwd(), "docs", "Knowledge_base.md");
-  const kbContent = fs.readFileSync(kbPath, "utf-8");
+  // Create or update chat session
+  const session = await createOrUpdateSession(userId, brand, errorCode);
 
-  const systemPrompt = `You are a specialized BobSolar technician assistant chatbot.
-Your primary role is to diagnose inverter fault codes using ONLY the provided knowledge base.
+  // Process the query with context
+  const result = await processQuery(messages, session, brand, errorCode);
 
-Instructions:
-1. First, think step-by-step about the user's problem. Output your internal reasoning inside <think>...</think> tags. The user will NOT see this thinking process, so use it freely to analyze the document.
-2. Then, provide your final response to the user.
-3. If the user asks for a fault code, search the provided knowledge base tables carefully. Note that fault codes in the document may have footnote numbers attached to them (e.g., "**F20**6" means F20, "**039**4" means 039). Ignore these footnote numbers when matching the user's query.
-4. If the fault code exists in the knowledge base, provide the Meaning, Causes, Action Plan, and Danger Level. Structure your answer clearly.
-5. If the user asks about a fault code that is DEFINITELY NOT in the knowledge base, reply politely: 'I do not have information on this fault code in my current knowledge base.' and DO NOT guess.
-6. If the user says a general greeting or asks a general question, greet them back and ask how you can help with inverter diagnostics.
-7. Answer in Burmese by default for the final response, unless requested in English. The <think> tags can be in English.
-
---- KNOWLEDGE BASE ---
-${kbContent}
---- END KNOWLEDGE BASE ---
-`;
-
-  const result = await streamText({
-    model: google("gemini-2.5-flash"),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages),
+  // Update session with new context
+  await updateSession(session.id, {
+    lastErrorCode: errorCode,
+    context: {
+      ...session.context,
+      lastQuery: messages[messages.length - 1]?.content,
+      timestamp: new Date(),
+    },
   });
 
   return result.toUIMessageStreamResponse({
     onError: (error) => {
       console.error("[Chat API Error]:", error);
-      return String(error); // Forward error message to the client
+      return String(error);
     },
   });
+}
+
+async function createOrUpdateSession(userId?: string, brand?: string, errorCode?: string) {
+  // Create or retrieve chat session with context
+  // In production, this would use a database
+
+  const sessionId = userId ? `session_${userId}` : `session_${Date.now()}`;
+
+  return {
+    id: sessionId,
+    userId,
+    brand,
+    lastErrorCode: errorCode,
+    context: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+async function updateSession(
+  sessionId: string,
+  updates: Partial<z.infer<typeof ChatSessionSchema>>,
+) {
+  // Update session in database
+  // In production, this would use a database
+  console.log(`[Chat API] Updating session ${sessionId}:`, updates);
+}
+
+async function processQuery(
+  messages: Parameters<typeof streamText>[0]["messages"],
+  session: ChatSession,
+  brand?: string,
+  errorCode?: string,
+) {
+  const systemPrompt = `You are a specialized BobSolar technician assistant chatbot.
+Your primary role is to diagnose inverter fault codes using the provided knowledge base via the \`searchKnowledgeBase\` tool.
+
+CURRENT SESSION CONTEXT:
+- Brand: ${brand || session.brand || "Not specified"}
+- Last Error Code: ${errorCode || session.lastErrorCode || "Not specified"}
+- User Context: ${JSON.stringify(session.context, null, 2)}
+
+INSTRUCTIONS:
+1. First, think step-by-step about the user's problem. Use the \`searchKnowledgeBase\` tool if the user asks about an error code or specific diagnostic information.
+2. If the user asks for a fault code, YOU MUST CALL \`searchKnowledgeBase\` with the fault code and optionally the brand.
+3. Apply BRAND-SPECIFIC ROUTING: If the user mentions or implies a brand (e.g., "Growatt", "Sungrow", "Huawei", "Deye", "GoodWe", "Felicity", "Voltronic", "Must Power"), use it in your search query.
+4. CALIBRATED ABSTENTION: If the \`searchKnowledgeBase\` tool does NOT return relevant information for the error code requested, reply politely: 'I do not have information on this fault code in my current knowledge base.' and offer general diagnostic steps. DO NOT HALLUCINATE error codes or solutions.
+5. If the user says a general greeting or asks a general question, greet them back and ask how you can help with inverter diagnostics. Do not use the tool for general greetings.
+6. Answer in Burmese by default for the final response, unless requested in English.
+7. For CRITICAL or MAJOR danger levels (based on tool results), ALWAYS include a mandatory safety warning before troubleshooting steps.
+8. For communication errors (BMS, CAN, RS485, etc.), provide a structured diagnostic flow based on the tool result.`;
+
+  const result = await streamText({
+    model: google("gemini-2.5-flash"),
+    system: systemPrompt,
+    messages,
+    tools: {
+      searchKnowledgeBase: tool({
+        description:
+          "Search the inverter diagnostic knowledge base for specific error codes or technical documentation.",
+        parameters: z.object({
+          query: z
+            .string()
+            .describe(
+              "The error code or problem description to search for (e.g. 'F09', 'Fault 20', 'Islanding')",
+            ),
+          brand: z
+            .string()
+            .optional()
+            .describe("The specific inverter brand if known (e.g. 'Growatt', 'Sungrow')"),
+        }),
+        // @ts-expect-error
+        execute: async ({ query, brand }: { query: string; brand?: string }) => {
+          console.log(`[Tool] searchKnowledgeBase called with query: ${query}, brand: ${brand}`);
+          try {
+            // Generate embedding for the query
+            const { embedding } = await embed({
+              model: google.textEmbeddingModel("gemini-embedding-001"),
+              value: query,
+            });
+
+            // Perform vector search
+            const embeddingString = JSON.stringify(embedding);
+            const similarity = sql`1 - (${knowledgeChunks.embedding} <=> ${embeddingString})`;
+
+            const queryBuilder = db
+              .select({
+                content: knowledgeChunks.content,
+                similarity,
+              })
+              .from(knowledgeChunks);
+
+            // Fetch top 3 matches
+            const results = await queryBuilder.orderBy((t) => desc(t.similarity)).limit(3);
+
+            // Filter out poor matches (e.g. similarity < 0.6) depending on the model characteristics
+            const validResults = results.filter((r) => Number(r.similarity) > 0.65);
+
+            if (validResults.length === 0) {
+              return {
+                results: [],
+                message: "No relevant error codes found in the knowledge base.",
+              };
+            }
+
+            return {
+              results: validResults.map((r) => r.content),
+            };
+          } catch (e) {
+            console.error("[searchKnowledgeBase Error]", e);
+            return { error: "Failed to search the knowledge base." };
+          }
+        },
+      }),
+    },
+    // maxSteps removed because it's not supported in this ai sdk version typings
+  } as Parameters<typeof streamText>[0]);
+
+  return result;
 }

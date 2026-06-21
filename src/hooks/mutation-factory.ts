@@ -2,13 +2,7 @@
  * Factory for creating standard CRUD mutation hooks with consistent
  * query invalidation and toast notification patterns.
  */
-import {
-  type QueryKey,
-  type UseMutationResult,
-  type UseQueryResult,
-  useMutation,
-  useQuery,
-} from "@tanstack/react-query";
+import { type QueryKey, type UseMutationResult, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { SolarMutationMeta } from "@/lib/mutation-meta";
 import type { ActionResponse } from "@/lib/utils/action-response";
@@ -83,37 +77,6 @@ export function createMutationHook<TData, TVariables, TContext = unknown>(
         }
         toast.error(error.message || errorMessage);
       },
-    });
-  };
-}
-
-export function createQueryHook<TData, TArgs extends unknown[]>(
-  queryFn: (...args: TArgs) => Promise<{
-    success: boolean;
-    data?: TData;
-    error?: string;
-  }>,
-  queryKeyFactory: (...args: TArgs) => QueryKey,
-  options?: {
-    staleTime?: number;
-    enabled?: boolean | ((...args: TArgs) => boolean);
-  },
-) {
-  const { staleTime = 30_000, enabled: enabledFn } = options ?? {};
-
-  return function useGeneratedQuery(...args: TArgs): UseQueryResult<TData> {
-    const isEnabled = typeof enabledFn === "function" ? enabledFn(...args) : (enabledFn ?? true);
-
-    return useQuery({
-      queryKey: queryKeyFactory(...args),
-      queryFn: async () => {
-        const res = await queryFn(...args);
-        if (!res.success) throw new Error(res.error ?? "Request failed");
-        if (res.data === undefined) throw new Error("Missing response data");
-        return res.data;
-      },
-      staleTime,
-      ...(typeof enabledFn !== "undefined" ? { enabled: isEnabled } : {}),
     });
   };
 }

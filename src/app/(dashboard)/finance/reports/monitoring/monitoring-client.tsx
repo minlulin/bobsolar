@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, AlertTriangle, RefreshCw, Shield, XCircle } from "lucide-react";
+import { Activity, RefreshCw, XCircle } from "lucide-react";
 import { useState } from "react";
 import { BackButton } from "@/components/shared/back-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,33 +76,12 @@ export function MonitoringClient({ initialMetrics }: MonitoringClientProps): Rea
       </div>
 
       {/* Error Metrics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ErrorMetricCard
           label="Journal Post Failures"
           bucket={metrics?.journalPostFailures}
           icon={XCircle}
           color="text-rose-600"
-          isLoading={isLoading}
-        />
-        <ErrorMetricCard
-          label="Imbalance Rejections"
-          bucket={metrics?.imbalanceRejections}
-          icon={AlertTriangle}
-          color="text-amber-600"
-          isLoading={isLoading}
-        />
-        <ErrorMetricCard
-          label="Auth Failures"
-          bucket={metrics?.authFailures}
-          icon={Shield}
-          color="text-orange-600"
-          isLoading={isLoading}
-        />
-        <ErrorMetricCard
-          label="Validation Errors"
-          bucket={metrics?.validationErrors}
-          icon={AlertTriangle}
-          color="text-slate-600"
           isLoading={isLoading}
         />
       </div>
@@ -160,34 +139,23 @@ export function MonitoringClient({ initialMetrics }: MonitoringClientProps): Rea
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { label: "Journal Post Failures", bucket: metrics.journalPostFailures },
-                { label: "Imbalance Rejections", bucket: metrics.imbalanceRejections },
-                { label: "Auth Failures", bucket: metrics.authFailures },
-                { label: "Validation Errors", bucket: metrics.validationErrors },
-              ]
-                .filter((item) => item.bucket.lastError)
-                .map((item) => (
-                  <div key={item.label} className="rounded-lg border border-border p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground">{item.label}</span>
-                      <span className="text-muted-foreground text-xs">
-                        {item.bucket.lastOccurrence
-                          ? new Date(item.bucket.lastOccurrence).toLocaleString()
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground mt-1 font-mono text-xs">
-                      {item.bucket.lastError}
-                    </p>
+              {metrics.journalPostFailures.lastError ? (
+                <div className="rounded-lg border border-border p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      Journal Post Failures
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {metrics.journalPostFailures.lastOccurrence
+                        ? new Date(metrics.journalPostFailures.lastOccurrence).toLocaleString()
+                        : "N/A"}
+                    </span>
                   </div>
-                ))}
-              {![
-                metrics.journalPostFailures.lastError,
-                metrics.imbalanceRejections.lastError,
-                metrics.authFailures.lastError,
-                metrics.validationErrors.lastError,
-              ].some(Boolean) && (
+                  <p className="text-muted-foreground mt-1 font-mono text-xs">
+                    {metrics.journalPostFailures.lastError}
+                  </p>
+                </div>
+              ) : (
                 <p className="text-muted-foreground py-4 text-center text-sm">
                   No errors recorded. System is healthy.
                 </p>

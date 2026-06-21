@@ -40,7 +40,6 @@ vi.mock("@/lib/utils/advisory-lock", () => ({
     async acquire(): Promise<boolean> {
       return state.dbMode !== "lock_busy";
     }
-    async release(): Promise<void> {}
   },
 }));
 

@@ -41,9 +41,4 @@ export class AdvisoryLock {
     this.acquired = row?.locked === true;
     return this.acquired;
   }
-
-  async release(): Promise<void> {
-    // Transaction-scoped locks are automatically released at transaction end
-    this.acquired = false;
-  }
 }

@@ -92,7 +92,7 @@ const getCachedSharedStats = unstable_cache(
           .from(projects),
         db
           .select({
-            pendingQuotes: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent')) as int)`,
+            pendingQuotes: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent') and ${quotations.isArchived} = false) as int)`,
             acceptedThisMonth: sql<number>`cast(count(*) filter (where ${quotations.status} = 'accepted' and ${quotations.updatedAt} >= ${thisMonthStart} and ${quotations.updatedAt} <= ${thisMonthEnd}) as int)`,
             acceptedTotal: sql<number>`cast(count(*) filter (where ${quotations.status} = 'accepted') as int)`,
             sentTotal: sql<number>`cast(count(*) filter (where ${quotations.status} = 'sent') as int)`,
@@ -170,8 +170,8 @@ export const getDashboardPipeline = cache(
         db.select({ total: count() }).from(customers).where(eq(customers.isArchived, false)),
         db
           .select({
-            activeQuoteCount: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent')) as int)`,
-            activeQuoteValue: sql<string>`coalesce(sum(${quotations.total}::numeric) filter (where ${quotations.status} in ('draft', 'sent')), 0)`,
+            activeQuoteCount: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent') and ${quotations.isArchived} = false) as int)`,
+            activeQuoteValue: sql<string>`coalesce(sum(${quotations.total}::numeric) filter (where ${quotations.status} in ('draft', 'sent') and ${quotations.isArchived} = false), 0)`,
           })
           .from(quotations),
         db

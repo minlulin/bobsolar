@@ -21,21 +21,6 @@ const metrics = {
     lastOccurrence: null as Date | null,
     lastError: null as string | null,
   } as MetricBucket,
-  imbalanceRejections: {
-    count: 0,
-    lastOccurrence: null as Date | null,
-    lastError: null as string | null,
-  } as MetricBucket,
-  authFailures: {
-    count: 0,
-    lastOccurrence: null as Date | null,
-    lastError: null as string | null,
-  } as MetricBucket,
-  validationErrors: {
-    count: 0,
-    lastOccurrence: null as Date | null,
-    lastError: null as string | null,
-  } as MetricBucket,
   latency: {
     financeDashboard: { samples: [], totalMs: 0 } as LatencyBucket,
     ledgerPage: { samples: [], totalMs: 0 } as LatencyBucket,
@@ -66,18 +51,6 @@ export function recordJournalPostFailure(error: string): void {
   recordFailure(metrics.journalPostFailures, error);
 }
 
-export function recordImbalanceRejection(reason: string): void {
-  recordFailure(metrics.imbalanceRejections, reason);
-}
-
-export function recordAuthFailure(error: string): void {
-  recordFailure(metrics.authFailures, error);
-}
-
-export function recordValidationError(error: string): void {
-  recordFailure(metrics.validationErrors, error);
-}
-
 export function recordFinanceDashboardLatency(ms: number): void {
   recordLatency(metrics.latency.financeDashboard, ms);
 }
@@ -105,9 +78,6 @@ function p95Latency(bucket: LatencyBucket): number {
 
 export interface FinanceMetricsSnapshot {
   journalPostFailures: MetricBucket;
-  imbalanceRejections: MetricBucket;
-  authFailures: MetricBucket;
-  validationErrors: MetricBucket;
   latency: {
     financeDashboard: { avgMs: number; p95Ms: number; sampleCount: number };
     ledgerPage: { avgMs: number; p95Ms: number; sampleCount: number };
@@ -119,9 +89,6 @@ export interface FinanceMetricsSnapshot {
 export function getFinanceMetrics(): FinanceMetricsSnapshot {
   return {
     journalPostFailures: { ...metrics.journalPostFailures },
-    imbalanceRejections: { ...metrics.imbalanceRejections },
-    authFailures: { ...metrics.authFailures },
-    validationErrors: { ...metrics.validationErrors },
     latency: {
       financeDashboard: {
         avgMs: avgLatency(metrics.latency.financeDashboard),
@@ -145,9 +112,6 @@ export function getFinanceMetrics(): FinanceMetricsSnapshot {
 
 export function resetFinanceMetrics(): void {
   metrics.journalPostFailures = { count: 0, lastOccurrence: null, lastError: null };
-  metrics.imbalanceRejections = { count: 0, lastOccurrence: null, lastError: null };
-  metrics.authFailures = { count: 0, lastOccurrence: null, lastError: null };
-  metrics.validationErrors = { count: 0, lastOccurrence: null, lastError: null };
   metrics.latency.financeDashboard = { samples: [], totalMs: 0 };
   metrics.latency.ledgerPage = { samples: [], totalMs: 0 };
   metrics.latency.mainDashboard = { samples: [], totalMs: 0 };

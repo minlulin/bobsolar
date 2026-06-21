@@ -381,59 +381,55 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
             return handleStateError("Too many concurrent requests – please try again");
           }
 
-          try {
-            // Get next project sequence within the transaction
-            const seq = await nextProjectSequence(year, tx);
-            const projectNumber = formatProjectNumber(seq, year);
+          // Get next project sequence within the transaction
+          const seq = await nextProjectSequence(year, tx);
+          const projectNumber = formatProjectNumber(seq, year);
 
-            // Calculate estimated COGS from quotation items cost snapshots
-            const quoteItems = await tx
-              .select({
-                itemId: quotationItems.itemId,
-                description: quotationItems.description,
-                quantity: quotationItems.quantity,
-                costPrice: quotationItems.costPrice,
-                costTotal: quotationItems.costTotal,
-              })
-              .from(quotationItems)
-              .where(eq(quotationItems.quotationId, quotation.id));
+          // Calculate estimated COGS from quotation items cost snapshots
+          const quoteItems = await tx
+            .select({
+              itemId: quotationItems.itemId,
+              description: quotationItems.description,
+              quantity: quotationItems.quantity,
+              costPrice: quotationItems.costPrice,
+              costTotal: quotationItems.costTotal,
+            })
+            .from(quotationItems)
+            .where(eq(quotationItems.quotationId, quotation.id));
 
-            const estimatedCogs = quoteItems.reduce(
-              (sum, item) => sum + Math.round(Number(item.costTotal)),
-              0,
-            );
+          const estimatedCogs = quoteItems.reduce(
+            (sum, item) => sum + Math.round(Number(item.costTotal)),
+            0,
+          );
 
-            const [created] = await tx
-              .insert(projects)
-              .values({
-                projectNumber,
-                quotationId: quotation.id,
-                customerId: quotation.customerId,
-                status: "planning",
-                siteAddress,
-                systemSizeKwp: systemKwp,
-                quotedTotal: quotation.total,
-                estimatedCogs: toDbDecimal(estimatedCogs),
-                actualTotal: "0",
-                startDate: data.startDate ?? null,
-                targetCompletion: data.targetCompletion ?? null,
-                notes: data.notes ?? null,
-              })
-              .returning();
+          const [created] = await tx
+            .insert(projects)
+            .values({
+              projectNumber,
+              quotationId: quotation.id,
+              customerId: quotation.customerId,
+              status: "planning",
+              siteAddress,
+              systemSizeKwp: systemKwp,
+              quotedTotal: quotation.total,
+              estimatedCogs: toDbDecimal(estimatedCogs),
+              actualTotal: "0",
+              startDate: data.startDate ?? null,
+              targetCompletion: data.targetCompletion ?? null,
+              notes: data.notes ?? null,
+            })
+            .returning();
 
-            if (!created) {
-              return handleStateError("Failed to create project");
-            }
-
-            revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
-            revalidatePath("/projects");
-            revalidatePath(`/quotations/${quotation.id}`);
-            revalidatePath("/quotations");
-
-            return successResponse(created);
-          } finally {
-            await lock.release();
+          if (!created) {
+            return handleStateError("Failed to create project");
           }
+
+          revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
+          revalidatePath("/projects");
+          revalidatePath(`/quotations/${quotation.id}`);
+          revalidatePath("/quotations");
+
+          return successResponse(created);
         });
       } catch (error: unknown) {
         if (

@@ -18,7 +18,6 @@ import {
 } from "@/hooks/use-notifications";
 import type { Notification } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
-import { useNotificationStore } from "@/stores/notification-store";
 
 function isSafeInternalLink(link: string): boolean {
   if (!link.startsWith("/") || link.startsWith("//")) return false;
@@ -36,14 +35,8 @@ export function NotificationBell(): React.JSX.Element {
   const clearAll = useDeleteAllNotifications();
   const deleteOne = useDeleteNotification();
   const router = useRouter();
-  const open = useNotificationStore((s) => s.isOpen);
-  const setOpen = useNotificationStore((s) => s.setOpen);
-  const unreadCount = useNotificationStore((s) => s.unreadCount);
-  const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
-
-  React.useEffect(() => {
-    if (typeof unreadQuery.data === "number") setUnreadCount(unreadQuery.data);
-  }, [unreadQuery.data, setUnreadCount]);
+  const [open, setOpen] = React.useState(false);
+  const unreadCount = typeof unreadQuery.data === "number" ? unreadQuery.data : 0;
 
   const [pulseBadge, setPulseBadge] = React.useState(false);
   const prevUnread = React.useRef(0);

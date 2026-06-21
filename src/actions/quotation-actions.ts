@@ -285,82 +285,78 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
             });
           }
 
-          try {
-            const lastQuote = await tx.query.quotations.findFirst({
-              where: and(sql`${quotations.createdAt} >= ${yearStart}`),
-              orderBy: [desc(quotations.createdAt)],
-            });
+          const lastQuote = await tx.query.quotations.findFirst({
+            where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+            orderBy: [desc(quotations.createdAt)],
+          });
 
-            let nextSequence = 1;
-            if (lastQuote) {
-              nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
-            }
-            const quoteNumber = formatQuoteNumber(nextSequence);
-
-            const [quote] = await tx
-              .insert(quotations)
-              .values({
-                quoteNumber,
-                customerId: validated.customerId,
-                createdBy: auth.userId,
-                subtotal: toDbDecimal(pricing.subtotal),
-                discountPercent: toDbDecimal(validated.discountPercent),
-                discountAmount: toDbDecimal(pricing.discountAmount),
-                taxPercent: toDbDecimal(validated.taxPercent),
-                taxAmount: toDbDecimal(pricing.taxAmount),
-                total: toDbDecimal(pricing.total),
-                notes: validated.notes,
-                validUntil: validated.validUntil,
-                createdAt: validated.quotationDate ?? undefined,
-                status: "draft",
-              })
-              .returning();
-
-            if (!quote) throw new Error("Failed to create quotation record in database");
-
-            // Look up cost prices for inventory-linked items
-            const costLookupItemIds = enrichedItems
-              .map((item) => item.itemId)
-              .filter((id): id is string => id != null);
-
-            const costPriceMap = new Map<string, number>();
-            if (costLookupItemIds.length > 0) {
-              const inventoryRows = await tx
-                .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
-                .from(inventoryItems)
-                .where(inArray(inventoryItems.id, costLookupItemIds));
-              for (const row of inventoryRows) {
-                costPriceMap.set(row.id, Math.round(Number(row.costPrice)));
-              }
-            }
-
-            const itemsToInsert = enrichedItems.map((item, index) => {
-              const itemCostPrice = item.itemId ? (costPriceMap.get(item.itemId) ?? 0) : 0;
-              return {
-                quotationId: quote.id,
-                itemId: item.itemId,
-                description: item.description,
-                quantity: toDbDecimal(item.quantity),
-                unitPrice: toDbDecimal(item.unitPrice),
-                costPrice: toDbDecimal(itemCostPrice),
-                discountPercentage: toDbDecimal(item.discountPercentage),
-                totalPrice: toDbDecimal(
-                  calculateLineItem({
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    discountPercentage: item.discountPercentage,
-                  }),
-                ),
-                costTotal: toDbDecimal(Math.round(itemCostPrice * item.quantity)),
-                sortOrder: index,
-              };
-            });
-
-            await tx.insert(quotationItems).values(itemsToInsert);
-            return quote;
-          } finally {
-            await lock.release();
+          let nextSequence = 1;
+          if (lastQuote) {
+            nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
           }
+          const quoteNumber = formatQuoteNumber(nextSequence);
+
+          const [quote] = await tx
+            .insert(quotations)
+            .values({
+              quoteNumber,
+              customerId: validated.customerId,
+              createdBy: auth.userId,
+              subtotal: toDbDecimal(pricing.subtotal),
+              discountPercent: toDbDecimal(validated.discountPercent),
+              discountAmount: toDbDecimal(pricing.discountAmount),
+              taxPercent: toDbDecimal(validated.taxPercent),
+              taxAmount: toDbDecimal(pricing.taxAmount),
+              total: toDbDecimal(pricing.total),
+              notes: validated.notes,
+              validUntil: validated.validUntil,
+              createdAt: validated.quotationDate ?? undefined,
+              status: "draft",
+            })
+            .returning();
+
+          if (!quote) throw new Error("Failed to create quotation record in database");
+
+          // Look up cost prices for inventory-linked items
+          const costLookupItemIds = enrichedItems
+            .map((item) => item.itemId)
+            .filter((id): id is string => id != null);
+
+          const costPriceMap = new Map<string, number>();
+          if (costLookupItemIds.length > 0) {
+            const inventoryRows = await tx
+              .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
+              .from(inventoryItems)
+              .where(inArray(inventoryItems.id, costLookupItemIds));
+            for (const row of inventoryRows) {
+              costPriceMap.set(row.id, Math.round(Number(row.costPrice)));
+            }
+          }
+
+          const itemsToInsert = enrichedItems.map((item, index) => {
+            const itemCostPrice = item.itemId ? (costPriceMap.get(item.itemId) ?? 0) : 0;
+            return {
+              quotationId: quote.id,
+              itemId: item.itemId,
+              description: item.description,
+              quantity: toDbDecimal(item.quantity),
+              unitPrice: toDbDecimal(item.unitPrice),
+              costPrice: toDbDecimal(itemCostPrice),
+              discountPercentage: toDbDecimal(item.discountPercentage),
+              totalPrice: toDbDecimal(
+                calculateLineItem({
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                  discountPercentage: item.discountPercentage,
+                }),
+              ),
+              costTotal: toDbDecimal(Math.round(itemCostPrice * item.quantity)),
+              sortOrder: index,
+            };
+          });
+
+          await tx.insert(quotationItems).values(itemsToInsert);
+          return quote;
         });
 
         revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
@@ -663,56 +659,52 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
             });
           }
 
-          try {
-            const lastQuote = await tx.query.quotations.findFirst({
-              where: and(sql`${quotations.createdAt} >= ${yearStart}`),
-              orderBy: [desc(quotations.createdAt)],
-            });
+          const lastQuote = await tx.query.quotations.findFirst({
+            where: and(sql`${quotations.createdAt} >= ${yearStart}`),
+            orderBy: [desc(quotations.createdAt)],
+          });
 
-            let nextSequence = 1;
-            if (lastQuote) {
-              nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
-            }
-            const quoteNumber = formatQuoteNumber(nextSequence);
-
-            const [quote] = await tx
-              .insert(quotations)
-              .values({
-                quoteNumber,
-                customerId: original.customerId,
-                createdBy: auth.userId,
-                subtotal: original.subtotal,
-                discountPercent: original.discountPercent,
-                discountAmount: original.discountAmount,
-                taxPercent: original.taxPercent,
-                taxAmount: original.taxAmount,
-                total: original.total,
-                notes: original.notes,
-                validUntil: original.validUntil ? addDays(new Date(), 30) : null,
-                status: "draft",
-              })
-              .returning();
-
-            if (!quote) throw new Error("Failed to create duplicated quotation in database");
-
-            const itemsToInsert = original.items.map((item, index) => ({
-              quotationId: quote.id,
-              itemId: item.itemId,
-              description: item.description,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              costPrice: item.costPrice,
-              discountPercentage: item.discountPercentage,
-              totalPrice: item.totalPrice,
-              costTotal: item.costTotal,
-              sortOrder: index,
-            }));
-
-            await tx.insert(quotationItems).values(itemsToInsert);
-            return quote;
-          } finally {
-            await lock.release();
+          let nextSequence = 1;
+          if (lastQuote) {
+            nextSequence = extractQuoteSequence(lastQuote.quoteNumber) + 1;
           }
+          const quoteNumber = formatQuoteNumber(nextSequence);
+
+          const [quote] = await tx
+            .insert(quotations)
+            .values({
+              quoteNumber,
+              customerId: original.customerId,
+              createdBy: auth.userId,
+              subtotal: original.subtotal,
+              discountPercent: original.discountPercent,
+              discountAmount: original.discountAmount,
+              taxPercent: original.taxPercent,
+              taxAmount: original.taxAmount,
+              total: original.total,
+              notes: original.notes,
+              validUntil: original.validUntil ? addDays(new Date(), 30) : null,
+              status: "draft",
+            })
+            .returning();
+
+          if (!quote) throw new Error("Failed to create duplicated quotation in database");
+
+          const itemsToInsert = original.items.map((item, index) => ({
+            quotationId: quote.id,
+            itemId: item.itemId,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            costPrice: item.costPrice,
+            discountPercentage: item.discountPercentage,
+            totalPrice: item.totalPrice,
+            costTotal: item.costTotal,
+            sortOrder: index,
+          }));
+
+          await tx.insert(quotationItems).values(itemsToInsert);
+          return quote;
         });
 
         revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
