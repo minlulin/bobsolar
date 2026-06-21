@@ -24,6 +24,9 @@ type ChatSession = z.infer<typeof ChatSessionSchema>;
 export async function POST(req: Request) {
   const { messages, brand, errorCode, userId } = await req.json();
 
+  console.log("INCOMING MESSAGES FROM UI:");
+  console.log(JSON.stringify(messages, null, 2));
+
   // Create or update chat session
   const session = await createOrUpdateSession(userId, brand, errorCode);
 
@@ -98,10 +101,18 @@ INSTRUCTIONS:
 7. For CRITICAL or MAJOR danger levels (based on tool results), ALWAYS include a mandatory safety warning before troubleshooting steps.
 8. For communication errors (BMS, CAN, RS485, etc.), provide a structured diagnostic flow based on the tool result.`;
 
+  // biome-ignore lint/suspicious/noExplicitAny: legacy message format support
+  const sanitizedMessages = (messages || []).map((m: any) => {
+    if (!m.parts) {
+      m.parts = [{ type: "text", text: m.content || m.text || "" }];
+    }
+    return m;
+  });
+
   const result = await streamText({
     model: google("gemini-2.5-flash"),
     system: systemPrompt,
-    messages,
+    messages: sanitizedMessages,
     tools: {
       searchKnowledgeBase: tool({
         description:
@@ -109,22 +120,36 @@ INSTRUCTIONS:
         parameters: z.object({
           query: z
             .string()
+            .optional()
             .describe(
               "The error code or problem description to search for (e.g. 'F09', 'Fault 20', 'Islanding')",
             ),
+          fault_code: z.string().optional().describe("The specific fault code"),
           brand: z
             .string()
             .optional()
             .describe("The specific inverter brand if known (e.g. 'Growatt', 'Sungrow')"),
         }),
         // @ts-expect-error
-        execute: async ({ query, brand }: { query: string; brand?: string }) => {
-          console.log(`[Tool] searchKnowledgeBase called with query: ${query}, brand: ${brand}`);
+        execute: async ({
+          query,
+          fault_code,
+          brand,
+        }: {
+          query?: string;
+          fault_code?: string;
+          brand?: string;
+        }) => {
+          const actualQuery = query || fault_code || "";
+          if (!actualQuery) return { error: "No query provided" };
+          console.log(
+            `[Tool] searchKnowledgeBase called with query: ${actualQuery}, brand: ${brand}`,
+          );
           try {
             // Generate embedding for the query
             const { embedding } = await embed({
               model: google.textEmbeddingModel("gemini-embedding-001"),
-              value: query,
+              value: actualQuery,
             });
 
             // Perform vector search
@@ -161,8 +186,8 @@ INSTRUCTIONS:
         },
       }),
     },
-    // maxSteps removed because it's not supported in this ai sdk version typings
-  } as Parameters<typeof streamText>[0]);
+    // We rely on the frontend useChat to handle tool roundtrips
+  });
 
   return result;
 }

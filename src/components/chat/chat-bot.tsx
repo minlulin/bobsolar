@@ -126,14 +126,33 @@ export function ChatBot() {
                         : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm shadow-sm"
                     }`}
                   >
-                    {m.parts.map((part, index) =>
-                      part.type === "text" ? (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: parts array from AI SDK is stable
-                        <div key={`${part.type}-${index}`} className="text-sm whitespace-pre-wrap">
-                          {renderTextWithThink(part.text)}
-                        </div>
-                      ) : null,
-                    )}
+                    {(() => {
+                      if (m.parts) {
+                        return m.parts.map((part) => {
+                          if (part.type !== "text") return null;
+                          return (
+                            <div
+                              key={`${m.id}-${part.type}-${part.text.substring(0, 10)}`}
+                              className="text-sm whitespace-pre-wrap"
+                            >
+                              {renderTextWithThink(part.text)}
+                            </div>
+                          );
+                        });
+                      }
+
+                      // biome-ignore lint/suspicious/noExplicitAny: fallback for older message formats
+                      const msgAny = m as any;
+                      const textToRender = (msgAny.text as string) || (msgAny.content as string);
+                      if (textToRender) {
+                        return (
+                          <div className="text-sm whitespace-pre-wrap">
+                            {renderTextWithThink(textToRender)}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               ))
