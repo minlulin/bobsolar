@@ -74,6 +74,18 @@ This phase addresses critical security, infrastructure, and foundation issues in
 - [x] Add rate limiting headers — `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After` on chat API
 - [x] Create security audit trail — `logSecurityEvent()` with audit logging for login/logout/password_change/session_revoke (`src/lib/security/audit.ts`)
 
+### 1.8 API Key Rotation & Failover
+
+- [x] Implement Gemini API key rotation with 5-key pool (`GEMINI_API_KEY_PRIMARY`, `GEMINI_API_KEY_BACKUP_1`–`BACKUP_4`) — round-robin selection with automatic cooldown on quota errors (`src/lib/chat/key-rotator.ts`)
+- [x] Add failover retry loop in chat route — on HTTP 429 / RESOURCE_EXHAUSTED, automatically retries with next available key (up to `min(5, keyCount)` attempts)
+- [x] Add `isQuotaError()` helper to distinguish quota errors from transient/network errors (non-quota errors fail fast without retry)
+- [x] Track key label in usage logs — `model` field records `gemini-2.5-flash (<keyLabel>)` for per-key cost attribution
+- [x] Add key rotation metrics — `recordKeyFailover()` tracks failover count, timestamps, and source/target key labels (`src/lib/chat/metrics.ts`)
+- [x] Create admin monitoring endpoint — `GET /api/admin/key-status` returns availability and cooldown status for all configured keys (admin auth required)
+- [x] Add key rotation policy constants — `CHAT_KEY_ROTATION_COOLDOWN_MS` (60s), `CHAT_KEY_ROTATION_MAX_RETRIES` (5) in `src/lib/domain/policies.ts`
+- [x] Write key-rotator unit tests — covers round-robin, cooldown, `isQuotaError`, status reporting (`src/lib/chat/key-rotator.test.ts`)
+- [x] Write chat route failover integration tests — covers first-key success, quota failover, all-keys-exhausted 503, non-quota fast-fail (`src/app/api/chat/route.key-rotation.test.ts`)
+
 ## Dependencies & Updates
 
 ### Package Updates
@@ -89,6 +101,7 @@ This phase addresses critical security, infrastructure, and foundation issues in
 ### New Dependencies
 - [x] `@vercel/ai` - Vercel AI SDK for streaming (already in `package.json` as `ai`)
 - [x] `zod` - Request validation (already in `package.json` v4.4.3)
+- [x] `@ai-sdk/google` - Google Generative AI provider with `createGoogleGenerativeAI()` for per-key provider instances (already in `package.json` v3.0.83)
 - [ ] `hono` - Web framework for edge functions (not needed; using Next.js App Router)
 - [ ] `pino` - Structured logging (not needed; using `console.error`/`console.warn` with structured messages)
 - [ ] `@opentelemetry/api` - Distributed tracing (deferred to monitoring phase)

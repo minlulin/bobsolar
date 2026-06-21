@@ -1,14 +1,23 @@
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embed, streamText, tool } from "ai";
 import { desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/validate";
 import { checkIpThrottle } from "@/lib/chat/ip-throttle";
 import {
+  getKeyCount,
+  getMaxRetries,
+  getNextKey,
+  isQuotaError,
+  reportKeyFailure,
+  reportKeySuccess,
+} from "@/lib/chat/key-rotator";
+import {
   recordChatCost,
   recordChatError,
   recordChatLatency,
   recordChatTokens,
+  recordKeyFailover,
 } from "@/lib/chat/metrics";
 import { calculateRequestCost, checkUserQuota } from "@/lib/chat/quota";
 import { checkChatRateLimit } from "@/lib/chat/rate-limit";
@@ -217,152 +226,234 @@ export const POST = withCsrf(async (req: Request) => {
     return m;
   });
 
-  let result: Awaited<ReturnType<typeof streamText>>;
-  try {
-    // @ts-expect-error AI SDK streamText tool types are complex; validated at runtime via Zod
-    result = await streamText({
-      model: google("gemini-2.5-flash"),
-      system: systemPrompt,
-      messages: sanitizedMessages as Parameters<typeof streamText>[0]["messages"],
-      tools: {
-        searchKnowledgeBase: tool({
-          description:
-            "Search the inverter diagnostic knowledge base for specific error codes or technical documentation.",
-          parameters: z.object({
-            query: z
-              .string()
-              .max(500)
-              .optional()
-              .describe(
-                "The error code or problem description to search for (e.g. 'F09', 'Fault 20', 'Islanding')",
-              ),
-            fault_code: z.string().max(100).optional().describe("The specific fault code"),
-            brand: z
-              .string()
-              .max(100)
-              .optional()
-              .describe("The specific inverter brand if known (e.g. 'Growatt', 'Sungrow')"),
-          }),
-          // @ts-expect-error AI SDK tool execute type is complex; validated at runtime via Zod
-          execute: async ({
-            query,
-            fault_code,
-            brand: _toolBrand,
-          }: {
-            query?: string;
-            fault_code?: string;
-            brand?: string;
-          }) => {
-            const actualQuery = query || fault_code || "";
-            if (!actualQuery) return { error: "No query provided" };
-            try {
-              const { embedding } = await embed({
-                model: google.textEmbeddingModel("gemini-embedding-001"),
-                value: actualQuery,
-              });
+  // Key rotation: try each key on quota errors, up to getMaxRetries() attempts.
+  let result: Awaited<ReturnType<typeof streamText>> | null = null;
+  let lastError: unknown = null;
+  let usedKey: string | null = null;
+  let usedKeyLabel: string | null = null;
+  const maxRetries = getMaxRetries();
 
-              const embeddingString = JSON.stringify(embedding);
-              const similarity = sql`1 - (${knowledgeChunks.embedding} <=> ${embeddingString})`;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const keyInfo = getNextKey();
+    if (!keyInfo) {
+      // All keys are on cooldown
+      console.error(
+        `[Chat API] All ${getKeyCount()} Gemini API keys are on cooldown. Retry after ${CHAT_GLOBAL_COOLDOWN_MS / 1000}s.`,
+      );
+      return Response.json(
+        {
+          error: "All API keys are temporarily rate-limited. Please try again shortly.",
+          retryAfterMs: CHAT_GLOBAL_COOLDOWN_MS,
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": String(Math.ceil(CHAT_GLOBAL_COOLDOWN_MS / 1000)) },
+        },
+      );
+    }
 
-              const results = await db
-                .select({
-                  content: knowledgeChunks.content,
-                  similarity,
-                })
-                .from(knowledgeChunks)
-                .orderBy((t) => desc(t.similarity))
-                .limit(3);
+    usedKey = keyInfo.key;
+    usedKeyLabel = keyInfo.label;
 
-              const validResults = results.filter((r) => Number(r.similarity) > 0.65);
+    // Create a Google Generative AI provider instance with the selected key
+    const googleProvider = createGoogleGenerativeAI({ apiKey: keyInfo.key });
 
-              if (validResults.length === 0) {
+    try {
+      // @ts-expect-error AI SDK streamText tool types are complex; validated at runtime via Zod
+      result = await streamText({
+        model: googleProvider("gemini-2.5-flash"),
+        system: systemPrompt,
+        messages: sanitizedMessages as Parameters<typeof streamText>[0]["messages"],
+        tools: {
+          searchKnowledgeBase: tool({
+            description:
+              "Search the inverter diagnostic knowledge base for specific error codes or technical documentation.",
+            parameters: z.object({
+              query: z
+                .string()
+                .max(500)
+                .optional()
+                .describe(
+                  "The error code or problem description to search for (e.g. 'F09', 'Fault 20', 'Islanding')",
+                ),
+              fault_code: z.string().max(100).optional().describe("The specific fault code"),
+              brand: z
+                .string()
+                .max(100)
+                .optional()
+                .describe("The specific inverter brand if known (e.g. 'Growatt', 'Sungrow')"),
+            }),
+            // @ts-expect-error AI SDK tool execute type is complex; validated at runtime via Zod
+            execute: async ({
+              query,
+              fault_code,
+              brand: _toolBrand,
+            }: {
+              query?: string;
+              fault_code?: string;
+              brand?: string;
+            }) => {
+              const actualQuery = query || fault_code || "";
+              if (!actualQuery) return { error: "No query provided" };
+              try {
+                // Use the same rotated key for embedding
+                const { embedding } = await embed({
+                  model: googleProvider.textEmbeddingModel("gemini-embedding-001"),
+                  value: actualQuery,
+                });
+
+                const embeddingString = JSON.stringify(embedding);
+                const similarity = sql`1 - (${knowledgeChunks.embedding} <=> ${embeddingString})`;
+
+                const results = await db
+                  .select({
+                    content: knowledgeChunks.content,
+                    similarity,
+                  })
+                  .from(knowledgeChunks)
+                  .orderBy((t) => desc(t.similarity))
+                  .limit(3);
+
+                const validResults = results.filter((r) => Number(r.similarity) > 0.65);
+
+                if (validResults.length === 0) {
+                  return {
+                    results: [],
+                    message: "No relevant error codes found in the knowledge base.",
+                  };
+                }
+
                 return {
-                  results: [],
-                  message: "No relevant error codes found in the knowledge base.",
+                  results: validResults.map((r) => r.content),
                 };
+              } catch (e) {
+                console.error("[searchKnowledgeBase Error]", e);
+                return { error: "Failed to search the knowledge base." };
               }
+            },
+          }),
+        },
+        onFinish: async ({ usage, finishReason }) => {
+          const latencyMs = Date.now() - startTime;
+          const cost = calculateRequestCost({
+            promptTokens: usage?.inputTokens ?? null,
+            completionTokens: usage?.outputTokens ?? null,
+            totalTokens: usage?.totalTokens ?? null,
+          });
+          try {
+            await logUsage({
+              userId: auth.userId,
+              sessionId,
+              conversationId: conversation.id,
+              messageId: null,
+              model: `gemini-2.5-flash (${usedKeyLabel ?? "unknown"})`,
+              promptTokens: usage?.inputTokens ?? null,
+              completionTokens: usage?.outputTokens ?? null,
+              totalTokens: usage?.totalTokens ?? null,
+              costUsd: cost.totalCostUsd.toFixed(6),
+              latencyMs,
+              errorCode: finishReason === "error" ? "stream_error" : null,
+              ipAddress: clientIp,
+              userAgent,
+            });
 
-              return {
-                results: validResults.map((r) => r.content),
-              };
-            } catch (e) {
-              console.error("[searchKnowledgeBase Error]", e);
-              return { error: "Failed to search the knowledge base." };
+            // Report success so the key's cooldown is cleared
+            if (usedKey) reportKeySuccess(usedKey);
+
+            // Log cost alert if threshold exceeded
+            try {
+              const quotaInfo = await checkUserQuota(auth.userId);
+              if (quotaInfo.dailyCostUsd >= CHAT_DAILY_COST_ALERT_THRESHOLD_USD) {
+                console.warn(
+                  `[Chat API Cost Alert] User ${auth.userId} daily cost $${quotaInfo.dailyCostUsd.toFixed(4)} exceeds threshold $${CHAT_DAILY_COST_ALERT_THRESHOLD_USD}`,
+                );
+              }
+            } catch (quotaErr) {
+              console.error("[Chat API] Cost alert check error:", quotaErr);
             }
-          },
-        }),
-      },
-      onFinish: async ({ usage, finishReason }) => {
-        const latencyMs = Date.now() - startTime;
-        const cost = calculateRequestCost({
-          promptTokens: usage?.inputTokens ?? null,
-          completionTokens: usage?.outputTokens ?? null,
-          totalTokens: usage?.totalTokens ?? null,
-        });
-        try {
-          await logUsage({
+
+            // Record metrics for monitoring dashboard
+            recordChatTokens(usage?.inputTokens ?? 0, usage?.outputTokens ?? 0);
+            recordChatCost(cost.totalCostUsd);
+            recordChatLatency(latencyMs);
+          } catch (logErr) {
+            console.error("[Chat API] Failed to log usage:", logErr);
+          }
+        },
+        onError: (error: unknown) => {
+          console.error("[Chat API Stream Error]:", error);
+          const latencyMs = Date.now() - startTime;
+          recordChatError("stream_error");
+          recordChatLatency(latencyMs);
+
+          // Report key failure for quota errors
+          if (usedKey && isQuotaError(error)) {
+            reportKeyFailure(usedKey);
+          }
+
+          logUsage({
             userId: auth.userId,
             sessionId,
             conversationId: conversation.id,
             messageId: null,
-            model: "gemini-2.5-flash",
-            promptTokens: usage?.inputTokens ?? null,
-            completionTokens: usage?.outputTokens ?? null,
-            totalTokens: usage?.totalTokens ?? null,
-            costUsd: cost.totalCostUsd.toFixed(6),
+            model: `gemini-2.5-flash (${usedKeyLabel ?? "unknown"})`,
+            promptTokens: null,
+            completionTokens: null,
+            totalTokens: null,
+            costUsd: null,
             latencyMs,
-            errorCode: finishReason === "error" ? "stream_error" : null,
+            errorCode: "stream_error",
             ipAddress: clientIp,
             userAgent,
+          }).catch((logErr) => {
+            console.error("[Chat API] Failed to log error usage:", logErr);
           });
+        },
+      });
 
-          // Log cost alert if threshold exceeded
-          try {
-            const quotaInfo = await checkUserQuota(auth.userId);
-            if (quotaInfo.dailyCostUsd >= CHAT_DAILY_COST_ALERT_THRESHOLD_USD) {
-              console.warn(
-                `[Chat API Cost Alert] User ${auth.userId} daily cost $${quotaInfo.dailyCostUsd.toFixed(4)} exceeds threshold $${CHAT_DAILY_COST_ALERT_THRESHOLD_USD}`,
-              );
-            }
-          } catch (quotaErr) {
-            console.error("[Chat API] Cost alert check error:", quotaErr);
-          }
+      // Success — break out of retry loop
+      break;
+    } catch (err) {
+      lastError = err;
 
-          // Record metrics for monitoring dashboard
-          recordChatTokens(usage?.inputTokens ?? 0, usage?.outputTokens ?? 0);
-          recordChatCost(cost.totalCostUsd);
-          recordChatLatency(latencyMs);
-        } catch (logErr) {
-          console.error("[Chat API] Failed to log usage:", logErr);
+      if (isQuotaError(err)) {
+        // Quota error — report failure and try next key
+        if (usedKey) reportKeyFailure(usedKey);
+        // Look up the next key label for tracking
+        const nextKeyInfo = getNextKey();
+        if (nextKeyInfo) {
+          recordKeyFailover(usedKeyLabel ?? "unknown", nextKeyInfo.label);
         }
+        console.warn(
+          `[Chat API] Key "${usedKeyLabel}" hit quota (attempt ${attempt + 1}/${maxRetries}). ${attempt + 1 < maxRetries ? "Retrying with next key..." : "No more keys available."}`,
+        );
+        // Continue to next iteration
+      } else {
+        // Non-quota error — don't retry with another key
+        console.error("[Chat API] Non-quota streamText error:", err);
+        return Response.json({ error: "Failed to process chat request" }, { status: 500 });
+      }
+    }
+  }
+
+  // If we exhausted all retries without a result
+  if (!result) {
+    console.error(
+      "[Chat API] All Gemini API keys exhausted after",
+      maxRetries,
+      "attempts:",
+      lastError,
+    );
+    return Response.json(
+      {
+        error: "All API keys are temporarily rate-limited. Please try again shortly.",
+        retryAfterMs: CHAT_GLOBAL_COOLDOWN_MS,
       },
-      onError: (error: unknown) => {
-        console.error("[Chat API Stream Error]:", error);
-        const latencyMs = Date.now() - startTime;
-        recordChatError("stream_error");
-        recordChatLatency(latencyMs);
-        logUsage({
-          userId: auth.userId,
-          sessionId,
-          conversationId: conversation.id,
-          messageId: null,
-          model: "gemini-2.5-flash",
-          promptTokens: null,
-          completionTokens: null,
-          totalTokens: null,
-          costUsd: null,
-          latencyMs,
-          errorCode: "stream_error",
-          ipAddress: clientIp,
-          userAgent,
-        }).catch((logErr) => {
-          console.error("[Chat API] Failed to log error usage:", logErr);
-        });
+      {
+        status: 503,
+        headers: { "Retry-After": String(Math.ceil(CHAT_GLOBAL_COOLDOWN_MS / 1000)) },
       },
-    });
-  } catch (err) {
-    console.error("[Chat API] streamText error:", err);
-    return Response.json({ error: "Failed to process chat request" }, { status: 500 });
+    );
   }
 
   // ── 9. Update session activity ────────────────────────────────────

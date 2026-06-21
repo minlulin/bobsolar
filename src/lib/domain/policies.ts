@@ -149,3 +149,20 @@ export const CHAT_IP_THROTTLE_MAX_REQUESTS = 3;
 
 /** Global chat cooldown in milliseconds — applied after rate limit hit */
 export const CHAT_GLOBAL_COOLDOWN_MS = 2_000;
+
+// =============================================================================
+// GEMINI API KEY ROTATION
+// =============================================================================
+
+/**
+ * Cooldown period in milliseconds for a Gemini API key after it hits a
+ * quota/rate-limit error. The key becomes available again after this period.
+ * Default: 60 seconds (free-tier per-minute rate limit window).
+ */
+export const CHAT_KEY_ROTATION_COOLDOWN_MS = 60_000;
+
+/**
+ * Maximum number of key-rotation retries per request.
+ * Capped at the number of configured keys to avoid pointless retries.
+ */
+export const CHAT_KEY_ROTATION_MAX_RETRIES = 5;

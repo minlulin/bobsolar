@@ -27,6 +27,13 @@ interface ErrorBucket {
   lastError: string | null;
 }
 
+interface KeyRotationBucket {
+  failoverCount: number;
+  lastFailoverAt: Date | null;
+  lastFailoverFrom: string | null;
+  lastFailoverTo: string | null;
+}
+
 const MAX_LATENCY_SAMPLES = 100;
 
 const metrics = {
@@ -57,6 +64,12 @@ const metrics = {
     lastOccurrence: null as Date | null,
     lastError: null as string | null,
   } as ErrorBucket,
+  keyRotation: {
+    failoverCount: 0,
+    lastFailoverAt: null as Date | null,
+    lastFailoverFrom: null as string | null,
+    lastFailoverTo: null as string | null,
+  } as KeyRotationBucket,
 };
 
 // ── Recording Functions ────────────────────────────────────────────────
@@ -98,6 +111,15 @@ export function recordChatError(errorCode: string): void {
   metrics.errors.lastError = errorCode.slice(0, 500);
 }
 
+// ── Key Rotation Tracking ──────────────────────────────────────────────
+
+export function recordKeyFailover(fromLabel: string, toLabel: string): void {
+  metrics.keyRotation.failoverCount += 1;
+  metrics.keyRotation.lastFailoverAt = new Date();
+  metrics.keyRotation.lastFailoverFrom = fromLabel.slice(0, 100);
+  metrics.keyRotation.lastFailoverTo = toLabel.slice(0, 100);
+}
+
 // ── Aggregation ────────────────────────────────────────────────────────
 
 function avgLatency(): number {
@@ -130,6 +152,7 @@ export interface ChatMetricsSnapshot {
     sampleCount: number;
   };
   errors: ErrorBucket;
+  keyRotation: KeyRotationBucket;
   collectedAt: string;
 }
 
@@ -149,6 +172,7 @@ export function getChatMetrics(): ChatMetricsSnapshot {
       sampleCount: metrics.latency.samples.length,
     },
     errors: { ...metrics.errors },
+    keyRotation: { ...metrics.keyRotation },
     collectedAt: new Date().toISOString(),
   };
 }
@@ -165,4 +189,10 @@ export function resetChatMetrics(): void {
   metrics.cost.monthly = { totalUsd: 0, lastUpdated: null };
   metrics.latency = { samples: [], totalMs: 0 };
   metrics.errors = { count: 0, lastOccurrence: null, lastError: null };
+  metrics.keyRotation = {
+    failoverCount: 0,
+    lastFailoverAt: null,
+    lastFailoverFrom: null,
+    lastFailoverTo: null,
+  };
 }
