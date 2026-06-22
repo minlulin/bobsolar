@@ -199,12 +199,13 @@ describe("settings-actions", () => {
   it("createSettingsUser enforces cap and creates admin user", async () => {
     const { createSettingsUser } = await import("@/actions/settings-actions");
 
-    state.users = [
-      { id: "1", name: "A", email: "a@x.com", passwordHash: "h", role: "admin" },
-      { id: "2", name: "B", email: "b@x.com", passwordHash: "h", role: "admin" },
-      { id: "3", name: "C", email: "c@x.com", passwordHash: "h", role: "admin" },
-      { id: "4", name: "D", email: "d@x.com", passwordHash: "h", role: "admin" },
-    ];
+    state.users = Array.from({ length: 10 }, (_, index) => ({
+      id: String(index + 1),
+      name: `User ${index + 1}`,
+      email: `user${index + 1}@x.com`,
+      passwordHash: "h",
+      role: "admin" as const,
+    }));
 
     const capped = await createSettingsUser({
       name: "E",

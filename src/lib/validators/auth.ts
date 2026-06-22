@@ -21,3 +21,20 @@ export const changePasswordSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+/**
+ * Technician login uses a simple PIN instead of a full password.
+ * The name is for display/identification only.
+ * The PIN is a 4-6 digit code set by the admin when creating the technician account.
+ */
+export const technicianLoginSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100),
+  pin: z
+    .string()
+    .trim()
+    .min(4, "PIN must be at least 4 digits")
+    .max(6, "PIN must be at most 6 digits")
+    .regex(/^\d+$/, "PIN must contain only digits"),
+});
+
+export type TechnicianLoginInput = z.infer<typeof technicianLoginSchema>;

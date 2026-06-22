@@ -57,7 +57,7 @@ export const BUDGET_VARIANCE_THRESHOLD = 1.1;
 // =============================================================================
 
 /** Maximum number of users allowed in the system */
-export const USER_CAP = 4;
+export const USER_CAP = 10;
 
 // =============================================================================
 // API LIMITS
@@ -113,17 +113,28 @@ export const CHAT_MAX_ACTIVE_SESSIONS_PER_USER = 5;
 
 /**
  * Gemini 2.5 Flash pricing per 1M tokens (USD).
- * Input: $0.15/1M tokens, Output: $0.60/1M tokens.
+ * Standard paid tier, text/image/video input and output including thinking.
  * https://ai.google.dev/gemini-api/docs/pricing
  */
-export const CHAT_MODEL_INPUT_COST_PER_MILLION_TOKENS = 0.15;
-export const CHAT_MODEL_OUTPUT_COST_PER_MILLION_TOKENS = 0.6;
+export const CHAT_MODEL_ID = "gemini-2.5-flash";
+export const CHAT_EMBEDDING_MODEL_ID = "gemini-embedding-001";
+export const CHAT_MODEL_INPUT_COST_PER_MILLION_TOKENS = 0.3;
+export const CHAT_MODEL_OUTPUT_COST_PER_MILLION_TOKENS = 2.5;
 
 /** Maximum prompt tokens allowed per individual request */
 export const CHAT_MAX_PROMPT_TOKENS_PER_REQUEST = 100_000;
 
 /** Maximum completion tokens allowed per individual request */
 export const CHAT_MAX_COMPLETION_TOKENS_PER_REQUEST = 8_192;
+
+/** Maximum model steps: one retrieval call plus a final grounded answer. */
+export const CHAT_MAX_TOOL_STEPS = 3;
+
+/** Minimum cosine similarity accepted from semantic knowledge search. */
+export const CHAT_KNOWLEDGE_SIMILARITY_THRESHOLD = 0.65;
+
+/** Maximum knowledge chunks returned to the model per tool call. */
+export const CHAT_KNOWLEDGE_RESULT_LIMIT = 3;
 
 /** Daily token quota per user (input + output combined) */
 export const CHAT_DAILY_TOKEN_QUOTA = 500_000;
@@ -160,9 +171,3 @@ export const CHAT_GLOBAL_COOLDOWN_MS = 2_000;
  * Default: 60 seconds (free-tier per-minute rate limit window).
  */
 export const CHAT_KEY_ROTATION_COOLDOWN_MS = 60_000;
-
-/**
- * Maximum number of key-rotation retries per request.
- * Capped at the number of configured keys to avoid pointless retries.
- */
-export const CHAT_KEY_ROTATION_MAX_RETRIES = 5;

@@ -11,13 +11,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 // Mock the AI SDK before importing the route
-const mockStreamText = vi.fn();
-const mockEmbed = vi.fn();
+const mockStreamText = vi.hoisted(() => vi.fn());
+const mockEmbed = vi.hoisted(() => vi.fn());
 
 vi.mock("ai", () => ({
   streamText: mockStreamText,
   embed: mockEmbed,
   tool: vi.fn((def) => def),
+  stepCountIs: vi.fn((count: number) => ({ count })),
+  convertToModelMessages: vi.fn(async (messages: unknown[]) => messages),
 }));
 
 vi.mock("@ai-sdk/google", () => {
@@ -33,6 +35,7 @@ vi.mock("@ai-sdk/google", () => {
 // Mock auth
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => ({ userId: "test-user-id", role: "admin" as const })),
+  requireChatAccess: vi.fn(async () => ({ userId: "test-user-id", role: "admin" as const })),
 }));
 
 // Mock CSRF
@@ -102,12 +105,14 @@ vi.mock("@/lib/chat/sessions", () => ({
   createConversation: vi.fn(async () => ({ id: "conv-1", userId: "test-user-id" })),
   createSession: vi.fn(async () => ({ id: "sess-1" })),
   getConversation: vi.fn(async () => null),
+  getOrCreateSession: vi.fn(async () => ({ id: "sess-1" })),
   logUsage: vi.fn(async () => {}),
   saveMessage: vi.fn(async () => ({ id: "msg-1" })),
   updateSessionActivity: vi.fn(async () => {}),
 }));
 
 vi.mock("@/lib/chat/validation", () => ({
+  knowledgeSearchInputSchema: {},
   validateChatRequest: vi.fn((_body: unknown) => ({
     messages: [{ role: "user", content: "test" }],
     brand: undefined,
@@ -124,7 +129,7 @@ vi.mock("@/lib/chat/metrics", () => ({
   recordKeyFailover: vi.fn(),
 }));
 
-describe("chat route key rotation failover", () => {
+describe("chat route key rotation", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -176,34 +181,25 @@ describe("chat route key rotation failover", () => {
     expect(mockStreamText).toHaveBeenCalledTimes(1);
   });
 
-  it("retries with next key when first key hits quota error", async () => {
-    // First call: quota error
+  it("does not replay a streaming request when initialization hits a quota error", async () => {
     mockStreamText.mockRejectedValueOnce(new Error("429 RESOURCE_EXHAUSTED"));
-    // Second call: success
-    mockStreamText.mockResolvedValueOnce({
-      toUIMessageStreamResponse: vi.fn(() => new Response("ok")),
-    });
 
     const { POST } = await import("./route");
     const response = await POST(makeRequest());
 
-    expect(response.status).toBe(200);
-    expect(mockStreamText).toHaveBeenCalledTimes(2);
+    expect(response.status).toBe(500);
+    expect(mockStreamText).toHaveBeenCalledTimes(1);
   });
 
-  it("returns 503 when all keys are exhausted", async () => {
-    mockStreamText.mockReset();
-    // All 3 keys fail with quota errors
-    mockStreamText
-      .mockRejectedValueOnce(new Error("429 RESOURCE_EXHAUSTED"))
-      .mockRejectedValueOnce(new Error("429 RESOURCE_EXHAUSTED"))
-      .mockRejectedValueOnce(new Error("429 RESOURCE_EXHAUSTED"));
+  it("returns 503 when all keys are already on cooldown", async () => {
+    const rotator = await import("@/lib/chat/key-rotator");
+    vi.spyOn(rotator, "getNextKey").mockReturnValueOnce(null);
 
     const { POST } = await import("./route");
     const response = await POST(makeRequest());
 
     expect(response.status).toBe(503);
-    expect(mockStreamText).toHaveBeenCalledTimes(3);
+    expect(mockStreamText).not.toHaveBeenCalled();
 
     const body = await response.json();
     expect(body.error).toContain("All API keys are temporarily rate-limited");

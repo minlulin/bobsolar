@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   session: null as null | {
     userId: string;
-    role: "admin" | "owner";
+    role: "admin" | "owner" | "technician";
     sv: number;
     iat: number;
     exp: number;
   },
   userFromDb: null as null | {
-    role: "admin" | "owner";
+    role: "admin" | "owner" | "technician";
     sessionVersion: number;
     archivedAt: Date | null;
   },

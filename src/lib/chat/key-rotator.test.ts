@@ -193,16 +193,4 @@ describe("key-rotator", () => {
       expect(status[2]).toEqual({ label: "backup-2", available: true, cooldownRemainingMs: 0 });
     });
   });
-
-  describe("getMaxRetries", () => {
-    it("returns the configured max retries capped at key count", async () => {
-      setEnvKeys({
-        GEMINI_API_KEY_PRIMARY: "key-1",
-        GEMINI_API_KEY_BACKUP_1: "key-2",
-      });
-      const { getMaxRetries } = await import("./key-rotator");
-      // MAX_RETRIES is 5 but only 2 keys configured, so should return 2
-      expect(getMaxRetries()).toBe(2);
-    });
-  });
 });

@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { USER_CAP } from "@/lib/domain/policies";
+import { USER_ROLES } from "@/lib/domain/user-roles";
 import { settingsKeys } from "@/lib/query-keys";
 
 type EditableUser = {
@@ -46,6 +47,7 @@ export function UserManagementTab(): React.JSX.Element {
     name: "",
     email: "",
     password: "",
+    role: "owner" as "admin" | "owner" | "technician",
   });
 
   const users = usersQuery.data?.users ?? [];
@@ -68,7 +70,7 @@ export function UserManagementTab(): React.JSX.Element {
     if (res.success) {
       toast.success("User created");
       setCreating(false);
-      setNewUser({ name: "", email: "", password: "" });
+      setNewUser({ name: "", email: "", password: "", role: "owner" });
       void usersQuery.refetch();
     } else {
       toast.error(res.error);
@@ -235,6 +237,31 @@ export function UserManagementTab(): React.JSX.Element {
                   setNewUser((p) => ({ ...p, password: e.target.value }));
                 }}
               />
+            </div>
+            <div className="space-y-1">
+              <Label>Role</Label>
+              <select
+                value={newUser.role}
+                onChange={(e) => {
+                  setNewUser((p) => ({
+                    ...p,
+                    role: e.target.value as "admin" | "owner" | "technician",
+                  }));
+                }}
+                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
+              >
+                {USER_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </option>
+                ))}
+              </select>
+              {newUser.role === "technician" ? (
+                <p className="text-muted-foreground text-xs">
+                  Technicians can only use the chatbot for inverter diagnostics. They cannot access
+                  the dashboard.
+                </p>
+              ) : null}
             </div>
           </div>
           <DialogFooter>

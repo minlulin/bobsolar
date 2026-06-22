@@ -1,4 +1,4 @@
-import { and, eq, lt } from "drizzle-orm";
+import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   type ChatConversation,
@@ -23,7 +23,7 @@ import {
 
 export async function createConversation(
   userId: string,
-  data: Pick<NewChatConversation, "title" | "brand" | "lastErrorCode">,
+  data: Pick<NewChatConversation, "title" | "brand" | "lastErrorCode"> & { id?: string },
 ): Promise<ChatConversation> {
   const rows = await db
     .insert(chatConversations)
@@ -104,6 +104,27 @@ export async function createSession(userId: string, conversationId?: string): Pr
     })
     .returning();
   return rows[0] as ChatSession;
+}
+
+export async function getOrCreateSession(
+  userId: string,
+  conversationId: string,
+): Promise<ChatSession> {
+  const existing = await db
+    .select()
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.userId, userId),
+        eq(chatSessions.conversationId, conversationId),
+        eq(chatSessions.status, "active"),
+        gt(chatSessions.expiresAt, new Date()),
+      ),
+    )
+    .orderBy(desc(chatSessions.lastActivityAt))
+    .limit(1);
+
+  return existing[0] ?? createSession(userId, conversationId);
 }
 
 export async function getSession(sessionId: string): Promise<ChatSession | null> {

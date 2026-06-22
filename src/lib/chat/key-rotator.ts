@@ -16,10 +16,7 @@
  * to provide independent quota pools.
  */
 
-import {
-  CHAT_KEY_ROTATION_COOLDOWN_MS,
-  CHAT_KEY_ROTATION_MAX_RETRIES,
-} from "@/lib/domain/policies";
+import { CHAT_KEY_ROTATION_COOLDOWN_MS } from "@/lib/domain/policies";
 
 interface KeyState {
   key: string;
@@ -57,6 +54,7 @@ function loadKeys(): KeyState[] {
 // In serverless (Vercel), each invocation gets its own state, which is
 // acceptable — cooldowns are best-effort and recover quickly.
 let _keys: KeyState[] | null = null;
+let nextKeyIndex = 0;
 
 function getKeys(): KeyState[] {
   if (!_keys) _keys = loadKeys();
@@ -85,23 +83,15 @@ function cooldown(k: KeyState): void {
  */
 export function getNextKey(): { key: string; label: string } | null {
   const keys = getKeys();
-  const available = keys.filter(isAvailable);
-
-  if (available.length === 0) {
-    // All keys on cooldown — try to recover the one that cooled down first
-    const oldest = keys.reduce((a, b) => ((a.cooldownUntil ?? 0) < (b.cooldownUntil ?? 0) ? a : b));
-    if (oldest.cooldownUntil && Date.now() >= oldest.cooldownUntil) {
-      oldest.cooldownUntil = null;
-      return { key: oldest.key, label: oldest.label };
+  for (let offset = 0; offset < keys.length; offset++) {
+    const index = (nextKeyIndex + offset) % keys.length;
+    const candidate = keys[index];
+    if (candidate && isAvailable(candidate)) {
+      nextKeyIndex = (index + 1) % keys.length;
+      return { key: candidate.key, label: candidate.label };
     }
-    return null;
   }
-
-  // Round-robin: pick the first available key.
-  // As keys cycle through cooldown, natural rotation occurs.
-  const first = available[0];
-  if (!first) return null;
-  return { key: first.key, label: first.label };
+  return null;
 }
 
 /**
@@ -169,11 +159,4 @@ export function getKeyStatus(): Array<{
  */
 export function getKeyCount(): number {
   return getKeys().length;
-}
-
-/**
- * Get the max retry count for key rotation.
- */
-export function getMaxRetries(): number {
-  return Math.min(CHAT_KEY_ROTATION_MAX_RETRIES, getKeys().length);
 }

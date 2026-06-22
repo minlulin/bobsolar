@@ -1,12 +1,11 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { embed, streamText, tool } from "ai";
-import { desc, sql } from "drizzle-orm";
+import { convertToModelMessages, embed, stepCountIs, streamText, tool, type UIMessage } from "ai";
+import { and, desc, ilike, sql } from "drizzle-orm";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth/validate";
+import { requireChatAccess } from "@/lib/auth/validate";
 import { checkIpThrottle } from "@/lib/chat/ip-throttle";
 import {
   getKeyCount,
-  getMaxRetries,
   getNextKey,
   isQuotaError,
   reportKeyFailure,
@@ -17,24 +16,29 @@ import {
   recordChatError,
   recordChatLatency,
   recordChatTokens,
-  recordKeyFailover,
 } from "@/lib/chat/metrics";
 import { calculateRequestCost, checkUserQuota } from "@/lib/chat/quota";
 import { checkChatRateLimit } from "@/lib/chat/rate-limit";
 import {
   createConversation,
-  createSession,
   getConversation,
+  getOrCreateSession,
   logUsage,
   saveMessage,
   updateSessionActivity,
 } from "@/lib/chat/sessions";
-import { validateChatRequest } from "@/lib/chat/validation";
+import { knowledgeSearchInputSchema, validateChatRequest } from "@/lib/chat/validation";
 import { db } from "@/lib/db";
 import { knowledgeChunks } from "@/lib/db/schema";
 import {
   CHAT_DAILY_COST_ALERT_THRESHOLD_USD,
+  CHAT_EMBEDDING_MODEL_ID,
   CHAT_GLOBAL_COOLDOWN_MS,
+  CHAT_KNOWLEDGE_RESULT_LIMIT,
+  CHAT_KNOWLEDGE_SIMILARITY_THRESHOLD,
+  CHAT_MAX_COMPLETION_TOKENS_PER_REQUEST,
+  CHAT_MAX_TOOL_STEPS,
+  CHAT_MODEL_ID,
 } from "@/lib/domain/policies";
 import { withCsrf } from "@/lib/security/csrf";
 
@@ -61,13 +65,28 @@ function getClientIp(req: Request): string {
   return "unknown";
 }
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
+function getMessageText(message: Pick<UIMessage, "parts">): string {
+  return message.parts
+    .filter(
+      (part): part is Extract<(typeof message.parts)[number], { type: "text" }> =>
+        part.type === "text",
+    )
+    .map((part) => part.text)
+    .join("")
+    .trim();
+}
+
 export const POST = withCsrf(async (req: Request) => {
   const startTime = Date.now();
 
   // ── 1. Authentication ─────────────────────────────────────────────
-  let auth: Awaited<ReturnType<typeof requireAuth>>;
+  let auth: Awaited<ReturnType<typeof requireChatAccess>>;
   try {
-    auth = await requireAuth();
+    auth = await requireChatAccess();
   } catch {
     return Response.json({ error: "Authentication required" }, { status: 401 });
   }
@@ -91,11 +110,17 @@ export const POST = withCsrf(async (req: Request) => {
     }
   } catch (err) {
     console.error("[Chat API] IP throttle check error:", err);
-    // Fail open: allow the request if the throttle check itself errors.
+    return Response.json({ error: "Chat service is temporarily unavailable" }, { status: 503 });
   }
 
   // ── 3. Per-user rate limiting ─────────────────────────────────────
-  const rateLimit = await checkChatRateLimit(auth.userId);
+  let rateLimit: Awaited<ReturnType<typeof checkChatRateLimit>>;
+  try {
+    rateLimit = await checkChatRateLimit(auth.userId);
+  } catch (err) {
+    console.error("[Chat API] Rate-limit check error:", err);
+    return Response.json({ error: "Chat service is temporarily unavailable" }, { status: 503 });
+  }
   if (!rateLimit.allowed) {
     return Response.json(
       { error: "Rate limit exceeded. Please wait before sending more messages." },
@@ -147,7 +172,7 @@ export const POST = withCsrf(async (req: Request) => {
     }
   } catch (err) {
     console.error("[Chat API] Quota check error:", err);
-    // Fail open: allow the request if the quota check itself errors.
+    return Response.json({ error: "Chat service is temporarily unavailable" }, { status: 503 });
   }
 
   // ── 5. Request validation ─────────────────────────────────────────
@@ -170,19 +195,40 @@ export const POST = withCsrf(async (req: Request) => {
 
   const { messages, brand, errorCode, conversationId } = validated;
 
-  // ── 6. Session & conversation management ──────────────────────────
+  // ── 6. Normalize UI messages before any persistence ───────────────
+  const uiMessages: UIMessage[] = messages.map((message, index) => ({
+    id: message.id ?? `server-${index}`,
+    role: message.role,
+    parts: message.parts ?? [{ type: "text", text: message.content ?? "" }],
+  }));
+
+  let modelMessages: Awaited<ReturnType<typeof convertToModelMessages>>;
+  try {
+    modelMessages = await convertToModelMessages(uiMessages);
+  } catch (conversionError) {
+    console.error("[Chat API] Message conversion error:", conversionError);
+    return Response.json({ error: "Invalid message format. Please try again." }, { status: 400 });
+  }
+
+  // ── 7. Session & conversation management ──────────────────────────
   let conversation: Awaited<ReturnType<typeof createConversation>>;
   let sessionId: string;
 
   try {
     if (conversationId) {
       const existing = await getConversation(conversationId, auth.userId);
-      if (!existing) {
-        return Response.json({ error: "Conversation not found" }, { status: 404 });
-      }
-      conversation = existing;
+      conversation =
+        existing ??
+        (await createConversation(auth.userId, {
+          id: conversationId,
+          title:
+            getMessageText(uiMessages[0] ?? uiMessages.at(-1) ?? { parts: [] }).slice(0, 80) ||
+            "New conversation",
+          brand,
+          lastErrorCode: errorCode,
+        }));
     } else {
-      const firstContent = messages[0]?.content ?? "";
+      const firstContent = uiMessages[0] ? getMessageText(uiMessages[0]) : "";
       conversation = await createConversation(auth.userId, {
         title: firstContent.slice(0, 80) || "New conversation",
         brand,
@@ -190,17 +236,16 @@ export const POST = withCsrf(async (req: Request) => {
       });
     }
 
-    const session = await createSession(auth.userId, conversation.id);
+    const session = await getOrCreateSession(auth.userId, conversation.id);
     sessionId = session.id;
   } catch (err) {
     console.error("[Chat API] Session setup error:", err);
     return Response.json({ error: "Failed to initialize chat session" }, { status: 500 });
   }
 
-  // ── 7. Save user message to DB ────────────────────────────────────
-  const lastMessage = messages[messages.length - 1];
-  const userContent =
-    lastMessage?.content ?? lastMessage?.parts?.find((p) => p.type === "text")?.text ?? "";
+  // ── 8. Save user message to DB ────────────────────────────────────
+  const lastMessage = uiMessages.at(-1);
+  const userContent = lastMessage ? getMessageText(lastMessage) : "";
 
   try {
     await saveMessage({
@@ -216,105 +261,80 @@ export const POST = withCsrf(async (req: Request) => {
     console.error("[Chat API] Failed to save user message:", err);
   }
 
-  // ── 8. Process the query with the AI SDK ──────────────────────────
+  // ── 9. Process the query with the AI SDK ──────────────────────────
   const systemPrompt = buildSystemPrompt(brand, errorCode);
+  const keyInfo = getNextKey();
+  if (!keyInfo) {
+    console.error(
+      `[Chat API] All ${getKeyCount()} Gemini API keys are on cooldown. Retry after ${CHAT_GLOBAL_COOLDOWN_MS / 1000}s.`,
+    );
+    return Response.json(
+      {
+        error: "All API keys are temporarily rate-limited. Please try again shortly.",
+        retryAfterMs: CHAT_GLOBAL_COOLDOWN_MS,
+      },
+      {
+        status: 503,
+        headers: { "Retry-After": String(Math.ceil(CHAT_GLOBAL_COOLDOWN_MS / 1000)) },
+      },
+    );
+  }
 
-  const sanitizedMessages = messages.map((m) => {
-    if (!m.parts) {
-      return { ...m, parts: [{ type: "text" as const, text: m.content || "" }] };
-    }
-    return m;
-  });
+  const googleProvider = createGoogleGenerativeAI({ apiKey: keyInfo.key });
 
-  // Key rotation: try each key on quota errors, up to getMaxRetries() attempts.
-  let result: Awaited<ReturnType<typeof streamText>> | null = null;
-  let lastError: unknown = null;
-  let usedKey: string | null = null;
-  let usedKeyLabel: string | null = null;
-  const maxRetries = getMaxRetries();
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const keyInfo = getNextKey();
-    if (!keyInfo) {
-      // All keys are on cooldown
-      console.error(
-        `[Chat API] All ${getKeyCount()} Gemini API keys are on cooldown. Retry after ${CHAT_GLOBAL_COOLDOWN_MS / 1000}s.`,
-      );
-      return Response.json(
-        {
-          error: "All API keys are temporarily rate-limited. Please try again shortly.",
-          retryAfterMs: CHAT_GLOBAL_COOLDOWN_MS,
-        },
-        {
-          status: 503,
-          headers: { "Retry-After": String(Math.ceil(CHAT_GLOBAL_COOLDOWN_MS / 1000)) },
-        },
-      );
-    }
-
-    usedKey = keyInfo.key;
-    usedKeyLabel = keyInfo.label;
-
-    // Create a Google Generative AI provider instance with the selected key
-    const googleProvider = createGoogleGenerativeAI({ apiKey: keyInfo.key });
-
+  const result = await (async () => {
     try {
-      // @ts-expect-error AI SDK streamText tool types are complex; validated at runtime via Zod
-      result = await streamText({
-        model: googleProvider("gemini-2.5-flash"),
+      return await streamText({
+        model: googleProvider(CHAT_MODEL_ID),
         system: systemPrompt,
-        messages: sanitizedMessages as Parameters<typeof streamText>[0]["messages"],
+        messages: modelMessages,
+        maxOutputTokens: CHAT_MAX_COMPLETION_TOKENS_PER_REQUEST,
+        stopWhen: stepCountIs(CHAT_MAX_TOOL_STEPS),
         tools: {
           searchKnowledgeBase: tool({
             description:
-              "Search the inverter diagnostic knowledge base for specific error codes or technical documentation.",
-            parameters: z.object({
-              query: z
-                .string()
-                .max(500)
-                .optional()
-                .describe(
-                  "The error code or problem description to search for (e.g. 'F09', 'Fault 20', 'Islanding')",
-                ),
-              fault_code: z.string().max(100).optional().describe("The specific fault code"),
-              brand: z
-                .string()
-                .max(100)
-                .optional()
-                .describe("The specific inverter brand if known (e.g. 'Growatt', 'Sungrow')"),
-            }),
-            // @ts-expect-error AI SDK tool execute type is complex; validated at runtime via Zod
-            execute: async ({
-              query,
-              fault_code,
-              brand: _toolBrand,
-            }: {
-              query?: string;
-              fault_code?: string;
-              brand?: string;
-            }) => {
-              const actualQuery = query || fault_code || "";
+              "Search the inverter diagnostic knowledge base. Supply the brand and exact fault code whenever the user provides them.",
+            inputSchema: knowledgeSearchInputSchema,
+            execute: async ({ query, faultCode, brand: toolBrand }) => {
+              const actualQuery = [toolBrand, faultCode, query].filter(Boolean).join(" ").trim();
               if (!actualQuery) return { error: "No query provided" };
               try {
-                // Use the same rotated key for embedding
                 const { embedding } = await embed({
-                  model: googleProvider.textEmbeddingModel("gemini-embedding-001"),
+                  model: googleProvider.textEmbeddingModel(CHAT_EMBEDDING_MODEL_ID),
                   value: actualQuery,
                 });
 
                 const embeddingString = JSON.stringify(embedding);
                 const similarity = sql`1 - (${knowledgeChunks.embedding} <=> ${embeddingString})`;
+                const filters = [];
+                if (toolBrand) {
+                  filters.push(
+                    ilike(knowledgeChunks.brand, `%${escapeLikePattern(toolBrand.trim())}%`),
+                  );
+                }
+                if (faultCode) {
+                  filters.push(
+                    ilike(knowledgeChunks.errorCode, `%${escapeLikePattern(faultCode.trim())}%`),
+                  );
+                }
 
                 const results = await db
                   .select({
                     content: knowledgeChunks.content,
+                    brand: knowledgeChunks.brand,
+                    errorCode: knowledgeChunks.errorCode,
+                    dangerLevel: knowledgeChunks.dangerLevel,
+                    category: knowledgeChunks.category,
                     similarity,
                   })
                   .from(knowledgeChunks)
+                  .where(filters.length > 0 ? and(...filters) : sql`true`)
                   .orderBy((t) => desc(t.similarity))
-                  .limit(3);
+                  .limit(CHAT_KNOWLEDGE_RESULT_LIMIT);
 
-                const validResults = results.filter((r) => Number(r.similarity) > 0.65);
+                const validResults = results.filter(
+                  (row) => Number(row.similarity) >= CHAT_KNOWLEDGE_SIMILARITY_THRESHOLD,
+                );
 
                 if (validResults.length === 0) {
                   return {
@@ -324,7 +344,13 @@ export const POST = withCsrf(async (req: Request) => {
                 }
 
                 return {
-                  results: validResults.map((r) => r.content),
+                  results: validResults.map((row) => ({
+                    brand: row.brand,
+                    errorCode: row.errorCode,
+                    dangerLevel: row.dangerLevel,
+                    category: row.category,
+                    content: row.content,
+                  })),
                 };
               } catch (e) {
                 console.error("[searchKnowledgeBase Error]", e);
@@ -346,7 +372,7 @@ export const POST = withCsrf(async (req: Request) => {
               sessionId,
               conversationId: conversation.id,
               messageId: null,
-              model: `gemini-2.5-flash (${usedKeyLabel ?? "unknown"})`,
+              model: `${CHAT_MODEL_ID} (${keyInfo.label})`,
               promptTokens: usage?.inputTokens ?? null,
               completionTokens: usage?.outputTokens ?? null,
               totalTokens: usage?.totalTokens ?? null,
@@ -357,8 +383,9 @@ export const POST = withCsrf(async (req: Request) => {
               userAgent,
             });
 
-            // Report success so the key's cooldown is cleared
-            if (usedKey) reportKeySuccess(usedKey);
+            if (finishReason !== "error") {
+              reportKeySuccess(keyInfo.key);
+            }
 
             // Log cost alert if threshold exceeded
             try {
@@ -380,15 +407,15 @@ export const POST = withCsrf(async (req: Request) => {
             console.error("[Chat API] Failed to log usage:", logErr);
           }
         },
-        onError: (error: unknown) => {
+        onError: ({ error }: { error: unknown }) => {
           console.error("[Chat API Stream Error]:", error);
           const latencyMs = Date.now() - startTime;
           recordChatError("stream_error");
           recordChatLatency(latencyMs);
 
           // Report key failure for quota errors
-          if (usedKey && isQuotaError(error)) {
-            reportKeyFailure(usedKey);
+          if (isQuotaError(error)) {
+            reportKeyFailure(keyInfo.key);
           }
 
           logUsage({
@@ -396,7 +423,7 @@ export const POST = withCsrf(async (req: Request) => {
             sessionId,
             conversationId: conversation.id,
             messageId: null,
-            model: `gemini-2.5-flash (${usedKeyLabel ?? "unknown"})`,
+            model: `${CHAT_MODEL_ID} (${keyInfo.label})`,
             promptTokens: null,
             completionTokens: null,
             totalTokens: null,
@@ -410,69 +437,50 @@ export const POST = withCsrf(async (req: Request) => {
           });
         },
       });
-
-      // Success — break out of retry loop
-      break;
     } catch (err) {
-      lastError = err;
-
+      console.error("[Chat API] Failed to initialize model stream:", err);
       if (isQuotaError(err)) {
-        // Quota error — report failure and try next key
-        if (usedKey) reportKeyFailure(usedKey);
-        // Look up the next key label for tracking
-        const nextKeyInfo = getNextKey();
-        if (nextKeyInfo) {
-          recordKeyFailover(usedKeyLabel ?? "unknown", nextKeyInfo.label);
-        }
-        console.warn(
-          `[Chat API] Key "${usedKeyLabel}" hit quota (attempt ${attempt + 1}/${maxRetries}). ${attempt + 1 < maxRetries ? "Retrying with next key..." : "No more keys available."}`,
-        );
-        // Continue to next iteration
-      } else {
-        // Non-quota error — don't retry with another key
-        console.error("[Chat API] Non-quota streamText error:", err);
-        return Response.json({ error: "Failed to process chat request" }, { status: 500 });
+        reportKeyFailure(keyInfo.key);
       }
+      return null;
     }
-  }
+  })();
 
-  // If we exhausted all retries without a result
   if (!result) {
-    console.error(
-      "[Chat API] All Gemini API keys exhausted after",
-      maxRetries,
-      "attempts:",
-      lastError,
-    );
-    return Response.json(
-      {
-        error: "All API keys are temporarily rate-limited. Please try again shortly.",
-        retryAfterMs: CHAT_GLOBAL_COOLDOWN_MS,
-      },
-      {
-        status: 503,
-        headers: { "Retry-After": String(Math.ceil(CHAT_GLOBAL_COOLDOWN_MS / 1000)) },
-      },
-    );
+    return Response.json({ error: "Failed to process chat request" }, { status: 500 });
   }
 
-  // ── 9. Update session activity ────────────────────────────────────
+  // ── 10. Update session activity ───────────────────────────────────
   try {
     await updateSessionActivity(sessionId);
   } catch (err) {
     console.error("[Chat API] Failed to update session activity:", err);
   }
 
-  // ── 10. Return streaming response ─────────────────────────────────
+  // ── 11. Return streaming response ─────────────────────────────────
   return result.toUIMessageStreamResponse({
+    originalMessages: uiMessages,
     headers: {
       "X-Chat-Session-Id": sessionId,
       "X-Chat-Conversation-Id": conversation.id,
       "X-RateLimit-Remaining": String(rateLimit.remaining),
     },
-    onError: (error: unknown) => {
-      console.error("[Chat API Response Error]:", error);
-      return String(error);
+    onFinish: async ({ responseMessage }) => {
+      const assistantContent = getMessageText(responseMessage);
+      if (!assistantContent) return;
+      try {
+        await saveMessage({
+          conversationId: conversation.id,
+          userId: auth.userId,
+          role: "assistant",
+          content: assistantContent,
+          parts: responseMessage.parts,
+          parentMessageId: null,
+          metadata: { brand, errorCode },
+        });
+      } catch (err) {
+        console.error("[Chat API] Failed to save assistant message:", err);
+      }
     },
   });
 });
@@ -487,11 +495,11 @@ CURRENT SESSION CONTEXT:
 
 INSTRUCTIONS:
 1. First, think step-by-step about the user's problem. Use the \`searchKnowledgeBase\` tool if the user asks about an error code or specific diagnostic information.
-2. If the user asks for a fault code, YOU MUST CALL \`searchKnowledgeBase\` with the fault code and optionally the brand.
+2. If the user asks for a fault code, YOU MUST CALL \`searchKnowledgeBase\` with the exact fault code and brand when known.
 3. Apply BRAND-SPECIFIC ROUTING: If the user mentions or implies a brand (e.g., "Growatt", "Sungrow", "Huawei", "Deye", "GoodWe", "Felicity", "Voltronic", "Must Power"), use it in your search query.
 4. CALIBRATED ABSTENTION: If the \`searchKnowledgeBase\` tool does NOT return relevant information for the error code requested, reply politely: 'I do not have information on this fault code in my current knowledge base.' and offer general diagnostic steps. DO NOT HALLUCINATE error codes or solutions.
 5. If the user says a general greeting or asks a general question, greet them back and ask how you can help with inverter diagnostics. Do not use the tool for general greetings.
 6. Answer in Burmese by default for the final response, unless requested in English.
-7. For CRITICAL or MAJOR danger levels (based on tool results), ALWAYS include a mandatory safety warning before troubleshooting steps.
+7. Read the tool's structured \`dangerLevel\`. For CRITICAL or MAJOR results, ALWAYS include a mandatory safety warning before troubleshooting steps.
 8. For communication errors (BMS, CAN, RS485, etc.), provide a structured diagnostic flow based on the tool result.`;
 }

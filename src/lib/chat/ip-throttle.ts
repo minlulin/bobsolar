@@ -38,9 +38,9 @@ export async function checkIpThrottle(ipAddress: string): Promise<IpThrottleResu
     .from(chatUsageLogs)
     .where(and(gte(chatUsageLogs.createdAt, windowStart), eq(chatUsageLogs.ipAddress, ipAddress)));
 
-  const count = rows[0]?.count ?? 0;
-  const remaining = Math.max(0, CHAT_IP_THROTTLE_MAX_REQUESTS - count);
+  const count = Number(rows[0]?.count ?? 0);
   const allowed = count < CHAT_IP_THROTTLE_MAX_REQUESTS;
+  const remaining = Math.max(0, CHAT_IP_THROTTLE_MAX_REQUESTS - count - (allowed ? 1 : 0));
 
   return {
     allowed,

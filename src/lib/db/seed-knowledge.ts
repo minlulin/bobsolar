@@ -16,6 +16,7 @@ import { resolve } from "node:path";
 import "./load-env-local";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embed } from "ai";
+import { CHAT_EMBEDDING_MODEL_ID } from "../domain/policies";
 import { db } from "./index";
 import { knowledgeChunks } from "./schema";
 
@@ -207,7 +208,7 @@ async function seedKnowledge(): Promise<void> {
 
     try {
       const { embedding } = await embed({
-        model: provider.textEmbeddingModel("gemini-embedding-001"),
+        model: provider.textEmbeddingModel(CHAT_EMBEDDING_MODEL_ID),
         value: chunk.content,
       });
 

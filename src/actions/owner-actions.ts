@@ -76,7 +76,7 @@ export async function createOwner(
     const passwordHash = await hashPassword(input.password);
 
     const { ownerId, slot } = await db.transaction(async (tx) => {
-      // Hard cap: 1 admin + max 3 owners = USER_CAP (4) total users.
+      // Hard cap: admin + owners + technicians = USER_CAP (10) total users.
       const [userCount] = await tx
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(users);

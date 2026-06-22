@@ -81,6 +81,7 @@ backups/
 /.kilo/
 /.kilo/*    
 /.agents/*
+.vscode
 
 
 # Documentation

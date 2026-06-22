@@ -1,8 +1,9 @@
 "use client";
 
 import { type UIMessage, useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, isTextUIPart } from "ai";
 import { Bot, Copy, MessageCircle, RotateCcw, Send, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ interface ChatMessageLike {
 // ── Local Storage ──────────────────────────────────────────────────────
 
 const STORAGE_KEY = "bobsolar-chat-history";
+const CONVERSATION_STORAGE_KEY = "bobsolar-chat-conversation-id";
 
 function loadInitialMessages(): UIMessage[] {
   if (typeof window === "undefined") return [];
@@ -59,17 +61,6 @@ function stripThinkTags(text: string): string {
     .trim();
 }
 
-/**
- * Render message text with basic markdown-like formatting.
- * Supports:
- *   - **bold** → <strong>
- *   - *italic* → <em>
- *   - `inline code` → <code>
- *   - line breaks → <br>
- *
- * This is intentionally lightweight — no heavy markdown parser needed
- * for the assistant's current output format.
- */
 /**
  * Render message text with basic markdown-like formatting.
  * Supports:
@@ -214,8 +205,30 @@ export function ChatBot(): React.ReactElement {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const conversationIdRef = useRef<string | null>(null);
 
-  const { messages, sendMessage, status, setMessages, error } = useChat();
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: {
+            ...body,
+            conversationId: conversationIdRef.current,
+            messages: messages.flatMap((message) => {
+              if (message.role !== "user" && message.role !== "assistant") return [];
+              const parts = message.parts
+                .filter(isTextUIPart)
+                .filter((part) => part.text.trim().length > 0)
+                .map((part) => ({ type: "text" as const, text: part.text }));
+              return parts.length > 0 ? [{ id: message.id, role: message.role, parts }] : [];
+            }),
+          },
+        }),
+      }),
+    [],
+  );
+
+  const { messages, sendMessage, status, setMessages, error } = useChat({ transport });
   const isLoading = status === "submitted" || status === "streaming";
 
   const handleSubmit = useCallback(
@@ -233,18 +246,27 @@ export function ChatBot(): React.ReactElement {
     setMessages([]);
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY);
+      conversationIdRef.current = crypto.randomUUID();
+      localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationIdRef.current);
     }
   }, [setMessages]);
 
   const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedId(text.slice(0, 20));
-      setTimeout(() => setCopiedId(null), 2000);
-    });
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopiedId(text.slice(0, 20));
+        setTimeout(() => setCopiedId(null), 2000);
+      })
+      .catch(() => setCopiedId(null));
   }, []);
 
   // Load saved messages on mount
   useEffect(() => {
+    const savedConversationId = localStorage.getItem(CONVERSATION_STORAGE_KEY);
+    conversationIdRef.current = savedConversationId || crypto.randomUUID();
+    localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationIdRef.current);
+
     const initial = loadInitialMessages();
     if (initial.length > 0) {
       setMessages(initial);

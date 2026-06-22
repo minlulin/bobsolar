@@ -33,18 +33,14 @@ function getOriginFromHeader(req: NextRequest): string | null {
 
 /** Determine the expected origin from the request URL. */
 function getExpectedOrigin(req: NextRequest): string {
-  const host = req.headers.get("host") ?? "localhost";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  return `${protocol}://${host}`;
+  return req.nextUrl.origin;
 }
 
 /** Check whether the request origin matches the expected origin. */
 function isSameOrigin(req: NextRequest): boolean {
   const requestOrigin = getOriginFromHeader(req);
   if (!requestOrigin) {
-    // No Origin/Referer header — could be a native client or privacy browser.
-    // We allow these but could also block depending on security posture.
-    return true;
+    return false;
   }
   return requestOrigin === getExpectedOrigin(req);
 }

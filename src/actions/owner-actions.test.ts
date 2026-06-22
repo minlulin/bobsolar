@@ -5,7 +5,7 @@ interface MockUser {
   name: string;
   email: string;
   passwordHash: string;
-  role: "admin" | "owner";
+  role: "admin" | "owner" | "technician";
   archivedAt?: Date | null;
 }
 
@@ -402,7 +402,7 @@ describe("owner-actions", () => {
       }
     });
 
-    it("rejects when USER_CAP is reached (4 users)", async () => {
+    it("rejects when USER_CAP is reached (10 users)", async () => {
       const { createOwner } = await import("@/actions/owner-actions");
 
       state.users = [
@@ -410,13 +410,19 @@ describe("owner-actions", () => {
         { id: "2", name: "b", email: "b@x.com", passwordHash: "h", role: "owner" },
         { id: "3", name: "c", email: "c@x.com", passwordHash: "h", role: "owner" },
         { id: "4", name: "d", email: "d@x.com", passwordHash: "h", role: "owner" },
+        { id: "5", name: "e", email: "e@x.com", passwordHash: "h", role: "technician" },
+        { id: "6", name: "f", email: "f@x.com", passwordHash: "h", role: "technician" },
+        { id: "7", name: "g", email: "g@x.com", passwordHash: "h", role: "technician" },
+        { id: "8", name: "h", email: "h@x.com", passwordHash: "h", role: "technician" },
+        { id: "9", name: "i", email: "i@x.com", passwordHash: "h", role: "technician" },
+        { id: "10", name: "j", email: "j@x.com", passwordHash: "h", role: "technician" },
       ];
       const result = await createOwner(validInput);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error).toMatch(/user limit|4 max/i);
+        expect(result.error).toMatch(/user limit|10 max/i);
       }
-      expect(state.users).toHaveLength(4);
+      expect(state.users).toHaveLength(10);
     });
 
     it("rejects when all 3 partner slots are held", async () => {
