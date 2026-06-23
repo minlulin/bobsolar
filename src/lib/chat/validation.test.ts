@@ -44,7 +44,11 @@ describe("chat request validation", () => {
       });
 
       expect(result.messages[0]?.parts).toHaveLength(1);
-      expect(result.messages[0]?.parts?.[0]?.text).toBe("Hello from parts");
+      const part = result.messages[0]?.parts?.[0];
+      expect(part?.type).toBe("text");
+      if (part?.type === "text") {
+        expect(part.text).toBe("Hello from parts");
+      }
     });
 
     it("accepts optional brand field", async () => {
@@ -115,9 +119,9 @@ describe("chat request validation", () => {
       ).toThrow();
     });
 
-    it("rejects content exceeding 10,000 characters", async () => {
+    it("rejects content exceeding 50,000 characters", async () => {
       const { validateChatRequest } = await import("./validation");
-      const longContent = "a".repeat(10_001);
+      const longContent = "a".repeat(50_001);
       expect(() =>
         validateChatRequest({
           messages: [{ role: "user", content: longContent }],
@@ -125,14 +129,14 @@ describe("chat request validation", () => {
       ).toThrow();
     });
 
-    it("accepts content at exactly 10,000 characters", async () => {
+    it("accepts content at exactly 50,000 characters", async () => {
       const { validateChatRequest } = await import("./validation");
-      const maxContent = "a".repeat(10_000);
+      const maxContent = "a".repeat(50_000);
       const result = validateChatRequest({
         messages: [{ role: "user", content: maxContent }],
       });
 
-      expect(result.messages[0]?.content).toHaveLength(10_000);
+      expect(result.messages[0]?.content).toHaveLength(50_000);
     });
 
     it("rejects more than 100 messages", async () => {
@@ -176,9 +180,9 @@ describe("chat request validation", () => {
       ).toThrow();
     });
 
-    it("rejects parts with more than 20 items", async () => {
+    it("rejects parts with more than 100 items", async () => {
       const { validateChatRequest } = await import("./validation");
-      const manyParts = Array.from({ length: 21 }, () => ({
+      const manyParts = Array.from({ length: 101 }, () => ({
         type: "text" as const,
         text: "part",
       }));
@@ -189,7 +193,7 @@ describe("chat request validation", () => {
       ).toThrow();
     });
 
-    it("rejects parts with non-text type", async () => {
+    it("rejects parts with unrecognized type", async () => {
       const { validateChatRequest } = await import("./validation");
       expect(() =>
         validateChatRequest({
@@ -201,6 +205,98 @@ describe("chat request validation", () => {
           ],
         }),
       ).toThrow();
+    });
+
+    it("accepts tool parts in assistant messages", async () => {
+      const { validateChatRequest } = await import("./validation");
+      const result = validateChatRequest({
+        messages: [
+          { role: "user", content: "What does error E001 mean?" },
+          {
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-searchKnowledgeBase",
+                toolCallId: "call-123",
+                state: "result",
+                input: { query: "E001", faultCode: "E001" },
+                output: { results: [] },
+              },
+              { type: "text", text: "Based on the search..." },
+            ],
+          },
+          { role: "user", content: "Tell me more" },
+        ],
+      });
+
+      expect(result.messages).toHaveLength(3);
+      expect(result.messages[1]?.parts).toHaveLength(2);
+    });
+
+    it("accepts reasoning parts", async () => {
+      const { validateChatRequest } = await import("./validation");
+      const result = validateChatRequest({
+        messages: [
+          { role: "user", content: "Hello" },
+          {
+            role: "assistant",
+            parts: [
+              { type: "reasoning", text: "Let me think about this..." },
+              { type: "text", text: "Here is my answer." },
+            ],
+          },
+          { role: "user", content: "Thanks" },
+        ],
+      });
+
+      expect(result.messages[1]?.parts?.[0]).toEqual({
+        type: "reasoning",
+        text: "Let me think about this...",
+      });
+    });
+
+    it("accepts step-start parts", async () => {
+      const { validateChatRequest } = await import("./validation");
+      const result = validateChatRequest({
+        messages: [
+          { role: "user", content: "Hello" },
+          {
+            role: "assistant",
+            parts: [{ type: "step-start" }, { type: "text", text: "Step 1 done." }],
+          },
+          { role: "user", content: "Continue" },
+        ],
+      });
+
+      expect(result.messages[1]?.parts?.[0]).toEqual({ type: "step-start" });
+    });
+
+    it("accepts dynamic-tool parts", async () => {
+      const { validateChatRequest } = await import("./validation");
+      const result = validateChatRequest({
+        messages: [
+          { role: "user", content: "Hello" },
+          {
+            role: "assistant",
+            parts: [
+              {
+                type: "dynamic-tool",
+                toolName: "searchKnowledgeBase",
+                toolCallId: "call-456",
+                state: "result",
+                input: {},
+                output: {},
+              },
+            ],
+          },
+          { role: "user", content: "Thanks" },
+        ],
+      });
+
+      expect(result.messages[1]?.parts?.[0]).toMatchObject({
+        type: "dynamic-tool",
+        toolName: "searchKnowledgeBase",
+      });
     });
 
     it("rejects completely invalid input (no messages field)", async () => {

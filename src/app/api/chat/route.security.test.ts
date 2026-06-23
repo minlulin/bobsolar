@@ -20,7 +20,11 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("@ai-sdk/google", () => ({
-  createGoogleGenerativeAI: vi.fn(() => () => ({ model: "test" })),
+  createGoogleGenerativeAI: vi.fn(() =>
+    Object.assign(() => ({ model: "test" }), {
+      embedding: vi.fn(() => ({ model: "gemini-embedding-001" })),
+    }),
+  ),
 }));
 
 vi.mock("@/lib/auth/validate", () => ({

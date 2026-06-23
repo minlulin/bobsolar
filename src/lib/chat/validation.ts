@@ -12,24 +12,98 @@ export const knowledgeSearchInputSchema = z.object({
 
 export type KnowledgeSearchInput = z.infer<typeof knowledgeSearchInputSchema>;
 
-const chatTextPartSchema = z.object({
+const textPartSchema = z.object({
   type: z.literal("text"),
-  text: z.string().max(10_000),
+  text: z.string().max(50000),
+  state: z.enum(["streaming", "done"]).optional(),
 });
+
+const reasoningPartSchema = z.object({
+  type: z.literal("reasoning"),
+  text: z.string().max(50000),
+  state: z.enum(["streaming", "done"]).optional(),
+});
+
+const stepStartPartSchema = z.object({
+  type: z.literal("step-start"),
+});
+
+const sourceUrlPartSchema = z.object({
+  type: z.literal("source-url"),
+  sourceId: z.string().max(200),
+  url: z.string().max(2000),
+  title: z.string().max(500).optional(),
+});
+
+const sourceDocumentPartSchema = z.object({
+  type: z.literal("source-document"),
+  sourceId: z.string().max(200),
+  mediaType: z.string().max(100),
+  title: z.string().max(500),
+  filename: z.string().max(200).optional(),
+});
+
+const filePartSchema = z.object({
+  type: z.literal("file"),
+  mediaType: z.string().max(100),
+  url: z.string().max(5000),
+  filename: z.string().max(200).optional(),
+});
+
+const toolPartSchema = z
+  .object({
+    type: z.string().regex(/^tool-.+$/),
+    toolCallId: z.string().max(200),
+    state: z.string().max(50).optional(),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    errorText: z.string().max(5000).optional(),
+    title: z.string().max(500).optional(),
+  })
+  .passthrough();
+
+const dynamicToolPartSchema = z
+  .object({
+    type: z.literal("dynamic-tool"),
+    toolName: z.string().max(200),
+    toolCallId: z.string().max(200),
+    state: z.string().max(50).optional(),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    errorText: z.string().max(5000).optional(),
+  })
+  .passthrough();
+
+const dataPartSchema = z
+  .object({
+    type: z.string().regex(/^data-.+$/),
+    id: z.string().max(200).optional(),
+    data: z.unknown(),
+  })
+  .passthrough();
+
+const uiMessagePartSchema = z.union([
+  textPartSchema,
+  reasoningPartSchema,
+  stepStartPartSchema,
+  sourceUrlPartSchema,
+  sourceDocumentPartSchema,
+  filePartSchema,
+  toolPartSchema,
+  dynamicToolPartSchema,
+  dataPartSchema,
+]);
 
 const chatMessageSchema = z
   .object({
     id: z.string().max(100).optional(),
-    role: z.enum(["user", "assistant"]),
-    content: z.string().max(10_000).optional(),
-    parts: z.array(chatTextPartSchema).max(20).optional(),
+    role: z.enum(["user", "assistant", "data", "tool"]),
+    content: z.string().max(50000).optional(),
+    parts: z.array(uiMessagePartSchema).max(100).optional(),
+    toolInvocations: z.any().optional(),
+    annotations: z.any().optional(),
   })
-  .refine(
-    (message) =>
-      (message.content?.trim().length ?? 0) > 0 ||
-      message.parts?.some((part) => part.text.trim().length > 0) === true,
-    "Message must contain text",
-  );
+  .passthrough();
 
 /**
  * Request body schema for POST /api/chat.

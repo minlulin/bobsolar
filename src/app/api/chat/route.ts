@@ -39,6 +39,7 @@ import {
   CHAT_MAX_COMPLETION_TOKENS_PER_REQUEST,
   CHAT_MAX_TOOL_STEPS,
   CHAT_MODEL_ID,
+  CHAT_QUERY_EMBEDDING_TASK,
 } from "@/lib/domain/policies";
 import { withCsrf } from "@/lib/security/csrf";
 
@@ -69,15 +70,29 @@ function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-function getMessageText(message: Pick<UIMessage, "parts">): string {
-  return message.parts
-    .filter(
-      (part): part is Extract<(typeof message.parts)[number], { type: "text" }> =>
-        part.type === "text",
-    )
-    .map((part) => part.text)
-    .join("")
-    .trim();
+function getMessageText(
+  message: { parts?: unknown[]; content?: string } | Partial<UIMessage>,
+): string {
+  if (message.parts && message.parts.length > 0) {
+    return (message.parts as unknown[])
+      .filter((part): part is { type: "text"; text: string } => {
+        return (
+          part != null &&
+          typeof part === "object" &&
+          "type" in part &&
+          (part as Record<string, unknown>)["type"] === "text" &&
+          "text" in part &&
+          typeof (part as Record<string, unknown>)["text"] === "string"
+        );
+      })
+      .map((part) => part.text)
+      .join("")
+      .trim();
+  }
+  if ("content" in message && typeof message.content === "string") {
+    return message.content.trim();
+  }
+  return "";
 }
 
 export const POST = withCsrf(async (req: Request) => {
@@ -188,6 +203,7 @@ export const POST = withCsrf(async (req: Request) => {
     validated = validateChatRequest(body);
   } catch (err) {
     if (err instanceof z.ZodError) {
+      console.warn("[Chat API] Validation failed:", JSON.stringify(err.issues, null, 2));
       return Response.json({ error: "Validation failed", details: err.issues }, { status: 422 });
     }
     throw err;
@@ -196,11 +212,15 @@ export const POST = withCsrf(async (req: Request) => {
   const { messages, brand, errorCode, conversationId } = validated;
 
   // ── 6. Normalize UI messages before any persistence ───────────────
-  const uiMessages: UIMessage[] = messages.map((message, index) => ({
-    id: message.id ?? `server-${index}`,
-    role: message.role,
-    parts: message.parts ?? [{ type: "text", text: message.content ?? "" }],
-  }));
+  const uiMessages: UIMessage[] = messages.map((message, index) => {
+    const parts =
+      message.parts ?? (message.content ? [{ type: "text", text: message.content }] : []);
+    return {
+      id: message.id ?? `server-${index}`,
+      role: message.role as UIMessage["role"],
+      parts: parts as UIMessage["parts"],
+    };
+  });
 
   let modelMessages: Awaited<ReturnType<typeof convertToModelMessages>>;
   try {
@@ -222,8 +242,10 @@ export const POST = withCsrf(async (req: Request) => {
         (await createConversation(auth.userId, {
           id: conversationId,
           title:
-            getMessageText(uiMessages[0] ?? uiMessages.at(-1) ?? { parts: [] }).slice(0, 80) ||
-            "New conversation",
+            getMessageText(uiMessages[0] ?? uiMessages.at(-1) ?? { parts: [], content: "" }).slice(
+              0,
+              80,
+            ) || "New conversation",
           brand,
           lastErrorCode: errorCode,
         }));
@@ -300,8 +322,9 @@ export const POST = withCsrf(async (req: Request) => {
               if (!actualQuery) return { error: "No query provided" };
               try {
                 const { embedding } = await embed({
-                  model: googleProvider.textEmbeddingModel(CHAT_EMBEDDING_MODEL_ID),
+                  model: googleProvider.embedding(CHAT_EMBEDDING_MODEL_ID),
                   value: actualQuery,
+                  providerOptions: { google: { taskType: CHAT_QUERY_EMBEDDING_TASK } },
                 });
 
                 const embeddingString = JSON.stringify(embedding);

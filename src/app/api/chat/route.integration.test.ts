@@ -23,9 +23,9 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("@ai-sdk/google", () => {
-  const textEmbeddingModel = vi.fn(() => ({ model: "gemini-embedding-001" }));
+  const embedding = vi.fn(() => ({ model: "gemini-embedding-001" }));
   const mockProvider = Object.assign((model: string) => ({ model, provider: "google" }), {
-    textEmbeddingModel,
+    embedding,
   });
   return {
     createGoogleGenerativeAI: vi.fn(() => mockProvider),
@@ -201,6 +201,7 @@ describe("chat API integration tests", () => {
       mockStreamText.mockResolvedValueOnce({
         toUIMessageStreamResponse: vi.fn(() => new Response("ok")),
       });
+      mockEmbed.mockResolvedValueOnce({ embedding: [0.1, 0.2] });
 
       const { POST } = await import("./route");
       const response = await POST(makeRequest());
@@ -213,6 +214,11 @@ describe("chat API integration tests", () => {
               searchKnowledgeBase?: {
                 inputSchema?: unknown;
                 parameters?: unknown;
+                execute?: (input: {
+                  query?: string;
+                  faultCode?: string;
+                  brand?: string;
+                }) => Promise<unknown>;
               };
             };
           }
@@ -220,6 +226,12 @@ describe("chat API integration tests", () => {
       expect(config?.stopWhen).toEqual({ count: 3 });
       expect(config?.tools?.searchKnowledgeBase?.inputSchema).toBeDefined();
       expect(config?.tools?.searchKnowledgeBase?.parameters).toBeUndefined();
+      await config?.tools?.searchKnowledgeBase?.execute?.({ query: "Fault 09" });
+      expect(mockEmbed).toHaveBeenCalledWith(
+        expect.objectContaining({
+          providerOptions: { google: { taskType: "RETRIEVAL_QUERY" } },
+        }),
+      );
     });
 
     it("persists the completed assistant response", async () => {

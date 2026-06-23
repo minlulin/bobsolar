@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { knowledgeChunks } from "@/lib/db/schema";
+import { CHAT_DOCUMENT_EMBEDDING_TASK, CHAT_EMBEDDING_MODEL_ID } from "@/lib/domain/policies";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +137,7 @@ function parseMarkdownToChunks(content: string): ParsedChunk[] {
  *   file - The .md file to upload
  *   clearExisting - "true" to clear existing chunks before importing (optional, default: true)
  */
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<Response> {
   try {
     await requireAdmin();
 
@@ -181,50 +182,45 @@ export async function POST(request: Request) {
       );
     }
 
-    // Clear existing chunks if requested
-    if (clearExisting) {
-      await db.delete(knowledgeChunks);
-    }
-
-    // Generate embeddings and insert
+    // Generate every embedding before touching existing knowledge.
     const provider = getEmbeddingModel();
-    let successCount = 0;
-    let failCount = 0;
-    const errors: string[] = [];
+    const embeddedChunks: Array<ParsedChunk & { embedding: number[] }> = [];
 
     for (const chunk of chunks) {
       try {
         const { embedding } = await embed({
-          model: provider.textEmbeddingModel("gemini-embedding-001"),
+          model: provider.embedding(CHAT_EMBEDDING_MODEL_ID),
           value: chunk.content,
+          providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
         });
-
-        await db.insert(knowledgeChunks).values({
-          content: chunk.content,
-          brand: chunk.brand,
-          errorCode: chunk.errorCode,
-          dangerLevel: chunk.dangerLevel,
-          category: chunk.category,
-          embedding,
-        });
-
-        successCount++;
+        embeddedChunks.push({ ...chunk, embedding });
       } catch (err) {
-        failCount++;
         const label = chunk.errorCode ? `${chunk.brand} ${chunk.errorCode}` : chunk.category;
-        errors.push(label);
         console.error(`Failed to import chunk: ${label}:`, err);
+        return Response.json(
+          {
+            success: false,
+            error: `Failed to generate embedding for ${label}. Existing knowledge was not changed.`,
+          },
+          { status: 502 },
+        );
       }
     }
+
+    await db.transaction(async (tx) => {
+      if (clearExisting) {
+        await tx.delete(knowledgeChunks);
+      }
+      await tx.insert(knowledgeChunks).values(embeddedChunks);
+    });
 
     revalidateTag(CACHE_TAGS.KNOWLEDGE_CHUNKS, "max");
 
     return Response.json({
       success: true,
-      count: successCount,
-      failed: failCount,
+      count: embeddedChunks.length,
+      failed: 0,
       total: chunks.length,
-      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (err) {
     console.error("Knowledge upload failed:", err);

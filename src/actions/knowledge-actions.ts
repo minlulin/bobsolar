@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { knowledgeChunks } from "@/lib/db/schema";
-import { CHAT_EMBEDDING_MODEL_ID } from "@/lib/domain/policies";
+import { CHAT_DOCUMENT_EMBEDDING_TASK, CHAT_EMBEDDING_MODEL_ID } from "@/lib/domain/policies";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 import {
@@ -70,8 +70,9 @@ export async function createKnowledgeChunk(
     // Generate embedding for the content
     const provider = getEmbeddingModel();
     const { embedding } = await embed({
-      model: provider.textEmbeddingModel(CHAT_EMBEDDING_MODEL_ID),
+      model: provider.embedding(CHAT_EMBEDDING_MODEL_ID),
       value: parsed.content,
+      providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
     });
 
     const [row] = await db
@@ -109,8 +110,9 @@ export async function updateKnowledgeChunk(
     // Regenerate embedding since content may have changed
     const provider = getEmbeddingModel();
     const { embedding } = await embed({
-      model: provider.textEmbeddingModel(CHAT_EMBEDDING_MODEL_ID),
+      model: provider.embedding(CHAT_EMBEDDING_MODEL_ID),
       value: parsed.content,
+      providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
     });
 
     const [row] = await db

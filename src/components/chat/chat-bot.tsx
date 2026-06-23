@@ -1,7 +1,7 @@
 "use client";
 
 import { type UIMessage, useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isTextUIPart } from "ai";
+import { DefaultChatTransport } from "ai";
 import { Bot, Copy, MessageCircle, RotateCcw, Send, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -207,26 +207,28 @@ export function ChatBot(): React.ReactElement {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const conversationIdRef = useRef<string | null>(null);
 
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        prepareSendMessagesRequest: ({ messages, body }) => ({
-          body: {
-            ...body,
-            conversationId: conversationIdRef.current,
-            messages: messages.flatMap((message) => {
-              if (message.role !== "user" && message.role !== "assistant") return [];
-              const parts = message.parts
-                .filter(isTextUIPart)
-                .filter((part) => part.text.trim().length > 0)
-                .map((part) => ({ type: "text" as const, text: part.text }));
-              return parts.length > 0 ? [{ id: message.id, role: message.role, parts }] : [];
-            }),
-          },
-        }),
+  const transport = useMemo(() => {
+    return new DefaultChatTransport({
+      fetch: async (input, init) => {
+        const response = await fetch(input, init);
+        const conversationId = response.headers.get("X-Chat-Conversation-Id");
+        if (conversationId) {
+          conversationIdRef.current = conversationId;
+          if (typeof window !== "undefined") {
+            localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationId);
+          }
+        }
+        return response;
+      },
+      prepareSendMessagesRequest: ({ messages, body }) => ({
+        body: {
+          ...body,
+          conversationId: conversationIdRef.current,
+          messages,
+        },
       }),
-    [],
-  );
+    });
+  }, []);
 
   const { messages, sendMessage, status, setMessages, error } = useChat({ transport });
   const isLoading = status === "submitted" || status === "streaming";
@@ -241,6 +243,20 @@ export function ChatBot(): React.ReactElement {
     },
     [input, isLoading, sendMessage],
   );
+
+  const handleRetry = useCallback(() => {
+    if (isLoading) return;
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUserMsg) return;
+    const text =
+      lastUserMsg.parts
+        ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+        .map((p) => p.text)
+        .join("") ?? "";
+    if (text) {
+      sendMessage({ text });
+    }
+  }, [messages, isLoading, sendMessage]);
 
   const handleClear = useCallback(() => {
     setMessages([]);
@@ -344,7 +360,7 @@ export function ChatBot(): React.ReactElement {
           </header>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 bg-zinc-50 dark:bg-zinc-950">
+          <ScrollArea className="min-h-0 flex-1 bg-zinc-50 p-4 dark:bg-zinc-950">
             <div className="space-y-4" role="log" aria-live="polite" aria-label="Chat messages">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-zinc-400 space-y-3 py-12">
@@ -369,6 +385,13 @@ export function ChatBot(): React.ReactElement {
                 <div className="flex justify-start" role="alert" aria-live="assertive">
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
                     <p className="text-sm">Error: {error.message}</p>
+                    <button
+                      type="button"
+                      onClick={handleRetry}
+                      className="mt-1.5 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 underline"
+                    >
+                      Retry
+                    </button>
                   </div>
                 </div>
               )}

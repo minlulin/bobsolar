@@ -23,9 +23,9 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("@ai-sdk/google", () => {
-  const textEmbeddingModel = vi.fn(() => ({ model: "gemini-embedding-001" }));
+  const embedding = vi.fn(() => ({ model: "gemini-embedding-001" }));
   const mockProvider = Object.assign((model: string) => ({ model, provider: "google" }), {
-    textEmbeddingModel,
+    embedding,
   });
   return {
     createGoogleGenerativeAI: vi.fn(() => mockProvider),
