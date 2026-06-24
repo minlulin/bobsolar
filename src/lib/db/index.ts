@@ -64,8 +64,3 @@ const handler: ProxyHandler<DbInstance> = {
 };
 
 export const db = new Proxy<DbInstance>({} as DbInstance, handler);
-
-// Backward compatibility for files that already use await getDb()
-export async function getDb(): Promise<DbInstance> {
-  return db;
-}

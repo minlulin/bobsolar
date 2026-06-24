@@ -4,7 +4,7 @@ import { count, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import ws from "ws";
 import { createQuotation } from "@/actions/quotation-actions";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { customers, quotations, users } from "@/lib/db/schema";
 
 const databaseUrl = process.env["DATABASE_URL"] ?? "";
@@ -48,14 +48,12 @@ vi.mock("@/lib/auth/validate", () => ({
 neonConfig.webSocketConstructor = ws;
 
 async function getQuotationCount(): Promise<number> {
-  const db = await getDb();
   const rows = await db.select({ total: count() }).from(quotations);
   return rows[0]?.total ?? 0;
 }
 
 describeDb("DB ugly paths: constraint failures", () => {
   beforeAll(async () => {
-    const db = await getDb();
     try {
       await db.execute("select 1");
     } catch (error) {
@@ -86,8 +84,6 @@ describeDb("DB ugly paths: constraint failures", () => {
 
   afterAll(async () => {
     if (!authUserId) return;
-    const db = await getDb();
-
     if (insertedCustomerId) {
       await db.delete(customers).where(eq(customers.id, insertedCustomerId));
     }

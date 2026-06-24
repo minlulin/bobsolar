@@ -42,6 +42,7 @@ import {
   CHAT_QUERY_EMBEDDING_TASK,
 } from "@/lib/domain/policies";
 import { withCsrf } from "@/lib/security/csrf";
+import { escapeLikePattern } from "@/lib/utils/search";
 
 export const maxDuration = 30;
 
@@ -64,10 +65,6 @@ function getClientIp(req: Request): string {
     return realIp.trim();
   }
   return "unknown";
-}
-
-function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
 }
 
 function getMessageText(
@@ -317,8 +314,11 @@ export const POST = withCsrf(async (req: Request) => {
             description:
               "Search the inverter diagnostic knowledge base. Supply the brand and exact fault code whenever the user provides them.",
             inputSchema: knowledgeSearchInputSchema,
-            execute: async ({ query, faultCode, brand: toolBrand }) => {
-              const actualQuery = [toolBrand, faultCode, query].filter(Boolean).join(" ").trim();
+            execute: async ({ query, faultCode, brand: toolBrand, model, capacity, category }) => {
+              const actualQuery = [toolBrand, model, capacity, category, faultCode, query]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
               if (!actualQuery) return { error: "No query provided" };
               try {
                 const { embedding } = await embed({
@@ -340,11 +340,28 @@ export const POST = withCsrf(async (req: Request) => {
                     ilike(knowledgeChunks.errorCode, `%${escapeLikePattern(faultCode.trim())}%`),
                   );
                 }
+                if (model) {
+                  filters.push(
+                    ilike(knowledgeChunks.model, `%${escapeLikePattern(model.trim())}%`),
+                  );
+                }
+                if (capacity) {
+                  filters.push(
+                    ilike(knowledgeChunks.capacity, `%${escapeLikePattern(capacity.trim())}%`),
+                  );
+                }
+                if (category) {
+                  filters.push(
+                    ilike(knowledgeChunks.category, `%${escapeLikePattern(category.trim())}%`),
+                  );
+                }
 
                 const results = await db
                   .select({
                     content: knowledgeChunks.content,
                     brand: knowledgeChunks.brand,
+                    model: knowledgeChunks.model,
+                    capacity: knowledgeChunks.capacity,
                     errorCode: knowledgeChunks.errorCode,
                     dangerLevel: knowledgeChunks.dangerLevel,
                     category: knowledgeChunks.category,
@@ -369,6 +386,8 @@ export const POST = withCsrf(async (req: Request) => {
                 return {
                   results: validResults.map((row) => ({
                     brand: row.brand,
+                    model: row.model,
+                    capacity: row.capacity,
                     errorCode: row.errorCode,
                     dangerLevel: row.dangerLevel,
                     category: row.category,

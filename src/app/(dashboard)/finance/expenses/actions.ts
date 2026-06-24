@@ -3,7 +3,7 @@
 import { desc, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth/validate";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { generalExpenses } from "@/lib/db/schema";
 import type { LedgerAccountCode } from "@/lib/domain/finance";
 import {
@@ -68,8 +68,6 @@ type ExpenseData = {
 export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
   try {
     await requireOwner();
-    const db = await getDb();
-
     const now = new Date();
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
@@ -120,13 +118,13 @@ export async function getExpensesData(): Promise<ActionResponse<ExpenseData>> {
 }
 
 async function resolvePaymentAssetAccount(
-  db: Awaited<ReturnType<typeof getDb>>,
+  database: typeof db,
   paymentMethodId: string | null,
   paymentAssetAccountCode: LedgerAccountCode | null,
 ): Promise<LedgerAccountCode | undefined> {
   if (!paymentMethodId) return undefined;
 
-  const method = await db.query.paymentMethods.findFirst({
+  const method = await database.query.paymentMethods.findFirst({
     where: (pm, { eq }) => eq(pm.id, paymentMethodId),
     columns: { name: true, isActive: true },
   });
@@ -181,8 +179,6 @@ export async function submitGeneralExpense(
       notes: typeof rawData.notes === "string" ? rawData.notes : undefined,
     });
 
-    const db = await getDb();
-
     const resolvedAssetAccount = await resolvePaymentAssetAccount(
       db,
       parsed.paymentMethodId ?? null,
@@ -232,8 +228,6 @@ export async function payGeneralExpenseAction(
       reference: typeof rawData.reference === "string" ? rawData.reference : undefined,
       notes: typeof rawData.notes === "string" ? rawData.notes : undefined,
     });
-
-    const db = await getDb();
 
     const method = await db.query.paymentMethods.findFirst({
       where: (pm, { eq }) => eq(pm.id, parsed.paymentMethodId),

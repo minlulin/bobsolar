@@ -32,6 +32,8 @@ export async function getKnowledgeChunks(): Promise<
       id: string;
       content: string;
       brand: string | null;
+      model: string | null;
+      capacity: string | null;
       errorCode: string | null;
       dangerLevel: string | null;
       category: string | null;
@@ -46,6 +48,8 @@ export async function getKnowledgeChunks(): Promise<
         id: knowledgeChunks.id,
         content: knowledgeChunks.content,
         brand: knowledgeChunks.brand,
+        model: knowledgeChunks.model,
+        capacity: knowledgeChunks.capacity,
         errorCode: knowledgeChunks.errorCode,
         dangerLevel: knowledgeChunks.dangerLevel,
         category: knowledgeChunks.category,
@@ -80,6 +84,8 @@ export async function createKnowledgeChunk(
       .values({
         content: parsed.content,
         brand: parsed.brand || null,
+        model: parsed.model || null,
+        capacity: parsed.capacity || null,
         errorCode: parsed.errorCode || null,
         dangerLevel: parsed.dangerLevel || null,
         category: parsed.category || null,
@@ -120,6 +126,8 @@ export async function updateKnowledgeChunk(
       .set({
         content: parsed.content,
         brand: parsed.brand || null,
+        model: parsed.model || null,
+        capacity: parsed.capacity || null,
         errorCode: parsed.errorCode || null,
         dangerLevel: parsed.dangerLevel || null,
         category: parsed.category || null,

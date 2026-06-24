@@ -111,7 +111,6 @@ Use these `pnpm` scripts to keep code, tests, and DB checks green before deploym
 - `pnpm green:code`: Runs code-only gate: strict typecheck, Biome linting/formatting, and non-DB unit tests.
 - `pnpm green:db`: Runs DB gate on test database via `pnpm test:db`.
 - `pnpm green`: Full local CI gate: `green:code` → `green:db` → production build.
-- `pnpm green:quick`: Alias of `green:code` for faster iteration.
 
 ### Lint & Formatting
 
@@ -147,7 +146,7 @@ bobsolar/
 │   ├── hooks/         # Typed TanStack Query data synchronization wrappers
 │   ├── lib/           # Core configuration helpers: auth, db, pricing, validators
 │   └── stores/        # Zustand global interface settings stores
-├── docs/              # System architecture, roadmaps, and design guidelines
+├── docs/              # CODE_WIKI.md
 ├── drizzle/           # Serialized SQL schema migrations
 └── public/            # Standalone static media and PWA launcher icons
 ```

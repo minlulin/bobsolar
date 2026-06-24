@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { type TechnicianLoginInput, technicianLoginSchema } from "@/lib/validators/auth";
@@ -23,8 +23,6 @@ export async function technicianLogin(data: TechnicianLoginInput): Promise<Actio
   }
 
   const { name, pin } = result.data;
-
-  const db = await getDb();
 
   // Fetch all technicians and match by name (case-insensitive)
   // since Drizzle doesn't support case-insensitive comparison directly

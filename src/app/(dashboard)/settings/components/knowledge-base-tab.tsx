@@ -40,6 +40,8 @@ type Chunk = {
   id: string;
   content: string;
   brand: string | null;
+  model: string | null;
+  capacity: string | null;
   errorCode: string | null;
   dangerLevel: string | null;
   category: string | null;
@@ -77,6 +79,8 @@ export function KnowledgeBaseTab(): React.JSX.Element {
   const [formData, setFormData] = React.useState<KnowledgeChunkInput>({
     content: "",
     brand: "",
+    model: "",
+    capacity: "",
     errorCode: "",
     dangerLevel: "",
     category: "",
@@ -97,7 +101,15 @@ export function KnowledgeBaseTab(): React.JSX.Element {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   function openCreate() {
-    setFormData({ content: "", brand: "", errorCode: "", dangerLevel: "", category: "" });
+    setFormData({
+      content: "",
+      brand: "",
+      model: "",
+      capacity: "",
+      errorCode: "",
+      dangerLevel: "",
+      category: "",
+    });
     setCreating(true);
   }
 
@@ -105,6 +117,8 @@ export function KnowledgeBaseTab(): React.JSX.Element {
     setFormData({
       content: chunk.content,
       brand: chunk.brand ?? "",
+      model: chunk.model ?? "",
+      capacity: chunk.capacity ?? "",
       errorCode: chunk.errorCode ?? "",
       dangerLevel: chunk.dangerLevel ?? "",
       category: chunk.category ?? "",
@@ -468,6 +482,16 @@ export function KnowledgeBaseTab(): React.JSX.Element {
                             {chunk.brand}
                           </span>
                         ) : null}
+                        {chunk.model ? (
+                          <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium">
+                            {chunk.model}
+                          </span>
+                        ) : null}
+                        {chunk.capacity ? (
+                          <span className="bg-secondary rounded-md px-2 py-0.5 text-xs font-medium">
+                            {chunk.capacity}
+                          </span>
+                        ) : null}
                         {chunk.errorCode ? (
                           <span className="bg-accent text-accent-foreground rounded-md px-2 py-0.5 text-xs font-medium">
                             {chunk.errorCode}
@@ -549,6 +573,26 @@ export function KnowledgeBaseTab(): React.JSX.Element {
                   value={formData.brand}
                   onChange={(e) => setFormData((p) => ({ ...p, brand: e.target.value }))}
                   placeholder="e.g. Growatt, Sungrow, Huawei"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="kb-model">Model</Label>
+                <Input
+                  id="kb-model"
+                  value={formData.model}
+                  onChange={(e) => setFormData((p) => ({ ...p, model: e.target.value }))}
+                  placeholder="e.g. IVEM5048-LV"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="kb-capacity">Capacity</Label>
+                <Input
+                  id="kb-capacity"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData((p) => ({ ...p, capacity: e.target.value }))}
+                  placeholder="e.g. 5KVA"
                 />
               </div>
               <div className="space-y-1">

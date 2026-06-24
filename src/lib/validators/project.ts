@@ -2,16 +2,8 @@ import { z } from "zod";
 import { alertTypeSchema } from "@/lib/domain/alert-types";
 import { costTypeSchema } from "@/lib/domain/cost-types";
 import { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "@/lib/domain/policies";
-import {
-  canTransitionProjectStatus,
-  isProjectStatus,
-  permittedNextStatuses,
-  projectStatusSchema,
-} from "@/lib/domain/project";
+import { projectStatusSchema } from "@/lib/domain/project";
 import { remarkTypeSchema } from "@/lib/domain/remark-types";
-
-// Re-export for backwards compatibility
-export { canTransitionProjectStatus, isProjectStatus, permittedNextStatuses };
 
 export const convertToProjectSchema = z.object({
   quotationId: z.uuid(),

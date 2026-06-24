@@ -32,7 +32,7 @@ import {
   reopenWarrantyAlert,
   resolveWarrantyAlert,
 } from "@/actions/warranty-actions";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import {
   customers,
   inventoryItems,
@@ -122,7 +122,6 @@ describeDb("Master workflow integration: DB + server actions", () => {
   let warrantyAlertId = "";
 
   beforeAll(async () => {
-    const db = await getDb();
     try {
       await db.execute("select 1");
     } catch (error) {
@@ -165,7 +164,6 @@ describeDb("Master workflow integration: DB + server actions", () => {
   });
 
   afterAll(async () => {
-    const db = await getDb();
     if (projectId) {
       await db.delete(projectRemarks).where(eq(projectRemarks.projectId, projectId));
       await db.delete(projectCosts).where(eq(projectCosts.projectId, projectId));
@@ -211,7 +209,6 @@ describeDb("Master workflow integration: DB + server actions", () => {
   });
 
   it("runs the business workflow from customer to completed project", async () => {
-    const db = await getDb();
     const createdCustomer = unwrap(
       await createCustomer({
         name: `${runTag} Customer`,

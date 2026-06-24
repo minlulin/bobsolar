@@ -3,7 +3,7 @@
 import { eq, sql } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth/password";
 import { clearSessionCookies, createSession, getSessionFromCookie } from "@/lib/auth/session";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import { auditLogs, authRateLimits, users } from "@/lib/db/schema";
 import {
   AUTH_ATTEMPT_WINDOW_MS,
@@ -38,7 +38,6 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
   const now = new Date();
   const windowStart = new Date(now.getTime() - AUTH_ATTEMPT_WINDOW_MS);
 
-  const db = await getDb();
   const user = await db.query.users.findFirst({
     where: eq(users.email, email),
     columns: {
@@ -154,7 +153,6 @@ export async function changePassword(formData: FormData): Promise<ActionResponse
   }
   const { currentPassword, newPassword } = parsed.data;
 
-  const db = await getDb();
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.userId),
     columns: { id: true, passwordHash: true, sessionVersion: true, email: true, role: true },

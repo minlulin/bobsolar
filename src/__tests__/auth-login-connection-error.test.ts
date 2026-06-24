@@ -20,7 +20,7 @@ vi.mock("@/lib/db", () => {
       set: vi.fn(() => ({ where: vi.fn(() => Promise.resolve()) })),
     })),
   };
-  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+  return { db: mockDb };
 });
 
 vi.mock("@/lib/auth/session", () => ({

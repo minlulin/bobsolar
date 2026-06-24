@@ -43,7 +43,7 @@ vi.mock("@/lib/db", () => {
       }),
     })),
   };
-  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+  return { db: mockDb };
 });
 
 vi.mock("@/lib/auth/password", () => ({

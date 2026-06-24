@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/validate";
-import { getDb } from "@/lib/db";
+import { db } from "@/lib/db";
 import {
   journalEntries,
   journalLines,
@@ -47,8 +47,6 @@ export const getOwnerPortalData = cache(async function getOwnerPortalData(): Pro
 > {
   try {
     await requireAuth();
-    const db = await getDb();
-
     const currentYearStart = new Date(new Date().getFullYear(), 0, 1);
 
     const [reAccount, ytdNetIncomeResult, allOwners, ownerStatsResult, txs] = await Promise.all([
@@ -152,8 +150,6 @@ export async function requestOwnerDrawAction(
 ): Promise<ActionResponse<{ transactionId: string; journalEntryId: string }>> {
   try {
     const auth = await requireAuth();
-    const db = await getDb();
-
     const { ownerId, amount, paymentAssetAccountCode } = z
       .object({
         ownerId: z.string().uuid(),
@@ -250,8 +246,6 @@ export async function payCapitalCallAction(
 ): Promise<ActionResponse<{ journalEntryId: string }>> {
   try {
     const auth = await requireAuth();
-    const db = await getDb();
-
     const { paymentAssetAccountCode } = z
       .object({
         paymentAssetAccountCode: z.enum(LEDGER_ACCOUNT_CODES),

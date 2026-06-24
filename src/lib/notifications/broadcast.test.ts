@@ -32,7 +32,6 @@ const mockDb = {
 };
 
 vi.mock("@/lib/db", () => ({
-  getDb: vi.fn(() => Promise.resolve(mockDb)),
   db: mockDb,
 }));
 

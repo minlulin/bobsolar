@@ -1,21 +1,18 @@
+import { setTimeout } from "node:timers/promises";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { embed } from "ai";
+import { embedMany } from "ai";
 import { revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import { knowledgeChunks } from "@/lib/db/schema";
 import { CHAT_DOCUMENT_EMBEDDING_TASK, CHAT_EMBEDDING_MODEL_ID } from "@/lib/domain/policies";
+import { type ParsedKnowledgeChunk, parseKnowledgeMarkdown } from "@/lib/knowledge/markdown";
 
 export const dynamic = "force-dynamic";
-
-interface ParsedChunk {
-  content: string;
-  brand: string | null;
-  errorCode: string | null;
-  dangerLevel: string | null;
-  category: string;
-}
+export const maxDuration = 300;
+const EMBEDDING_BATCH_SIZE = 100;
+const EMBEDDING_BATCH_DELAY_MS = 61_000;
 
 function getEmbeddingModel() {
   const apiKey = process.env["GEMINI_API_KEY_PRIMARY"] ?? process.env["GEMINI_API_KEY"];
@@ -23,107 +20,6 @@ function getEmbeddingModel() {
     throw new Error("No Gemini API key configured for embedding");
   }
   return createGoogleGenerativeAI({ apiKey });
-}
-
-/**
- * Parse markdown content into structured knowledge chunks.
- * Extracts table rows from markdown tables where each row represents
- * a diagnostic entry with brand, error code, meaning, causes, action plan, etc.
- */
-function parseMarkdownToChunks(content: string): ParsedChunk[] {
-  const chunks: ParsedChunk[] = [];
-  const lines = content.split("\n");
-
-  let currentCategory = "General";
-  let inTable = false;
-  let tableHeaders: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]?.trim() ?? "";
-
-    // Detect section headers (## headers become categories)
-    if (line.startsWith("## ")) {
-      currentCategory = line
-        .replace(/^##\s+\*\*/, "")
-        .replace(/\*\*$/, "")
-        .replace(/\\&/g, "&")
-        .trim();
-      inTable = false;
-      continue;
-    }
-
-    // Detect table start (header row with Brand and Code columns)
-    if (line.startsWith("|") && line.includes("Brand") && line.includes("Code")) {
-      inTable = true;
-      tableHeaders = line
-        .split("|")
-        .map((h) => h.trim().toLowerCase())
-        .filter(Boolean);
-      continue;
-    }
-
-    // Skip table separator line
-    if (inTable && line.startsWith("|") && line.match(/^\|[\s-:|]+\|$/)) {
-      continue;
-    }
-
-    // Parse table data rows
-    if (inTable && line.startsWith("|")) {
-      const cells = line
-        .split("|")
-        .map((c) => c.trim())
-        .filter(Boolean);
-
-      if (cells.length < 3) {
-        inTable = false;
-        continue;
-      }
-
-      // Map cells to headers
-      const row: Record<string, string> = {};
-      for (let j = 0; j < Math.min(tableHeaders.length, cells.length); j++) {
-        const header = tableHeaders[j];
-        if (header) {
-          row[header] = cells[j] ?? "";
-        }
-      }
-
-      const brand = row["brand & series"]?.replace(/\*\*/g, "").trim() || null;
-      const errorCode = row["code & description"]?.replace(/\*\*/g, "").trim() || null;
-      const meaning =
-        row["meaning (english & burmese translation)"]?.replace(/\*\*/g, "").trim() || "";
-      const causes = row["causes & trigger mechanisms"]?.replace(/\*\*/g, "").trim() || "";
-      const actionPlan =
-        row["safety-first action plan for technicians"]?.replace(/\*\*/g, "").trim() || "";
-      const dangerLevel = row["danger level & source"]?.replace(/\*\*/g, "").trim() || null;
-
-      // Build rich searchable content
-      const contentParts: string[] = [];
-      if (meaning) contentParts.push(`Meaning: ${meaning}`);
-      if (causes) contentParts.push(`Causes: ${causes}`);
-      if (actionPlan) contentParts.push(`Action Plan: ${actionPlan}`);
-
-      const fullContent = contentParts.join("\n\n");
-
-      if (fullContent.length > 20) {
-        chunks.push({
-          content: fullContent,
-          brand,
-          errorCode,
-          dangerLevel,
-          category: currentCategory,
-        });
-      }
-      continue;
-    }
-
-    // End of table
-    if (inTable && !line.startsWith("|")) {
-      inTable = false;
-    }
-  }
-
-  return chunks;
 }
 
 /**
@@ -169,14 +65,13 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     // Parse chunks from markdown
-    const chunks = parseMarkdownToChunks(content);
+    const chunks = parseKnowledgeMarkdown(content);
 
     if (chunks.length === 0) {
       return Response.json(
         {
           success: false,
-          error:
-            "No diagnostic tables found in the file. Make sure the .md file contains tables with Brand, Code, Meaning, Causes, and Action Plan columns.",
+          error: "No Markdown tables found in the file.",
         },
         { status: 400 },
       );
@@ -184,27 +79,56 @@ export async function POST(request: Request): Promise<Response> {
 
     // Generate every embedding before touching existing knowledge.
     const provider = getEmbeddingModel();
-    const embeddedChunks: Array<ParsedChunk & { embedding: number[] }> = [];
-
-    for (const chunk of chunks) {
-      try {
-        const { embedding } = await embed({
+    let embeddings: number[][];
+    try {
+      embeddings = [];
+      for (let index = 0; index < chunks.length; index += EMBEDDING_BATCH_SIZE) {
+        const batch = chunks.slice(index, index + EMBEDDING_BATCH_SIZE);
+        const result = await embedMany({
           model: provider.embedding(CHAT_EMBEDDING_MODEL_ID),
-          value: chunk.content,
+          values: batch.map((chunk) => chunk.content),
           providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
         });
-        embeddedChunks.push({ ...chunk, embedding });
-      } catch (err) {
-        const label = chunk.errorCode ? `${chunk.brand} ${chunk.errorCode}` : chunk.category;
-        console.error(`Failed to import chunk: ${label}:`, err);
+        embeddings.push(...result.embeddings);
+        if (index + EMBEDDING_BATCH_SIZE < chunks.length) {
+          await setTimeout(EMBEDDING_BATCH_DELAY_MS);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to generate knowledge embeddings:", err);
+      return Response.json(
+        {
+          success: false,
+          error: "Failed to generate embeddings. Existing knowledge was not changed.",
+        },
+        { status: 502 },
+      );
+    }
+
+    if (embeddings.length !== chunks.length) {
+      return Response.json(
+        {
+          success: false,
+          error: "Embedding count mismatch. Existing knowledge was not changed.",
+        },
+        { status: 502 },
+      );
+    }
+
+    const embeddedChunks: Array<ParsedKnowledgeChunk & { embedding: number[] }> = [];
+    for (let index = 0; index < chunks.length; index++) {
+      const chunk = chunks[index];
+      const embedding = embeddings[index];
+      if (!chunk || !embedding) {
         return Response.json(
           {
             success: false,
-            error: `Failed to generate embedding for ${label}. Existing knowledge was not changed.`,
+            error: "Embedding count mismatch. Existing knowledge was not changed.",
           },
           { status: 502 },
         );
       }
+      embeddedChunks.push({ ...chunk, embedding });
     }
 
     await db.transaction(async (tx) => {

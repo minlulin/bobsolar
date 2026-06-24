@@ -14,15 +14,3 @@ export const STALE_TIME = {
   /** Reference data: payment methods, ledger accounts, settings */
   LONG: 5 * 60_000,
 } as const;
-
-/** Retry policy for queries — don't retry 4xx errors */
-export function queryRetryFn(failureCount: number, error: Error): boolean {
-  if (
-    error.message.includes("401") ||
-    error.message.includes("403") ||
-    error.message.includes("404")
-  ) {
-    return false;
-  }
-  return failureCount < 2;
-}

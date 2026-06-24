@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
 }));
 
 const spies = vi.hoisted(() => ({
-  embed: vi.fn(),
+  embedMany: vi.fn(),
   revalidateTag: vi.fn(),
   transaction: vi.fn(),
 }));
@@ -18,7 +18,7 @@ vi.mock("@ai-sdk/google", () => ({
 }));
 
 vi.mock("ai", () => ({
-  embed: spies.embed,
+  embedMany: spies.embedMany,
 }));
 
 vi.mock("next/cache", () => ({
@@ -83,7 +83,7 @@ describe("POST /api/admin/knowledge/upload", () => {
   });
 
   it("replaces knowledge in one transaction after embeddings succeed", async () => {
-    spies.embed.mockResolvedValue({ embedding: [0.1, 0.2] });
+    spies.embedMany.mockResolvedValue({ embeddings: [[0.1, 0.2]] });
     const { POST } = await import("./route");
 
     const response = await POST(makeRequest());
@@ -95,7 +95,7 @@ describe("POST /api/admin/knowledge/upload", () => {
     expect(state.inserted).toHaveLength(1);
     expect(spies.transaction).toHaveBeenCalledOnce();
     expect(spies.revalidateTag).toHaveBeenCalledOnce();
-    expect(spies.embed).toHaveBeenCalledWith(
+    expect(spies.embedMany).toHaveBeenCalledWith(
       expect.objectContaining({
         providerOptions: { google: { taskType: "RETRIEVAL_DOCUMENT" } },
       }),
@@ -103,7 +103,7 @@ describe("POST /api/admin/knowledge/upload", () => {
   });
 
   it("preserves existing knowledge when embedding generation fails", async () => {
-    spies.embed.mockRejectedValue(new Error("Gemini unavailable"));
+    spies.embedMany.mockRejectedValue(new Error("Gemini unavailable"));
     const { POST } = await import("./route");
 
     const response = await POST(makeRequest());

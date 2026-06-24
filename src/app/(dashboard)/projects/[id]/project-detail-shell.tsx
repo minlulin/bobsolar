@@ -71,6 +71,7 @@ import {
 import type { AlertType, CostType, ProjectStatus, RemarkType } from "@/lib/db/schema";
 import { COST_FILTERS } from "@/lib/domain/cost-types";
 import type { PaymentType } from "@/lib/domain/payment";
+import { isProjectStatus } from "@/lib/domain/project";
 import { REMARK_TYPE_ICONS } from "@/lib/domain/remark-types";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { cn, formatMMK } from "@/lib/utils";
@@ -78,7 +79,6 @@ import {
   addProjectCostSchema,
   consumeProjectInventorySchema,
   createWarrantyAlertSchema,
-  isProjectStatus,
 } from "@/lib/validators/project";
 
 function statusBadgeTone(status: ProjectStatus): string {

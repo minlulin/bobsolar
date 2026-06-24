@@ -274,6 +274,13 @@
       "when": 1782116510503,
       "tag": "0038_abandoned_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1782276164039,
+      "tag": "0039_lying_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

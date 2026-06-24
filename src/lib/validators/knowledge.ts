@@ -6,6 +6,8 @@ export const knowledgeChunkSchema = z.object({
     .min(10, "Content must be at least 10 characters")
     .max(10_000, "Content must be under 10,000 characters"),
   brand: z.string().max(100, "Brand name too long").optional().default(""),
+  model: z.string().max(200, "Model name too long").optional().default(""),
+  capacity: z.string().max(100, "Capacity too long").optional().default(""),
   errorCode: z.string().max(100, "Error code too long").optional().default(""),
   dangerLevel: z.string().max(50, "Danger level too long").optional().default(""),
   category: z.string().max(200, "Category too long").optional().default(""),

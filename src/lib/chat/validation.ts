@@ -8,6 +8,9 @@ export const knowledgeSearchInputSchema = z.object({
     .describe("The problem description or diagnostic phrase to search for"),
   faultCode: z.string().max(100).optional().describe("The exact inverter fault code"),
   brand: z.string().max(100).optional().describe("The inverter or battery brand"),
+  model: z.string().max(200).optional().describe("The exact inverter model or series"),
+  capacity: z.string().max(100).optional().describe("The inverter capacity, such as 6KVA"),
+  category: z.string().max(200).optional().describe("The diagnostic category"),
 });
 
 export type KnowledgeSearchInput = z.infer<typeof knowledgeSearchInputSchema>;

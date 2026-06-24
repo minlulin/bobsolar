@@ -1,7 +1,7 @@
 /**
  * Knowledge Base Seeder
  *
- * Parses docs/Knowledge_Base.md and seeds knowledge_chunks table with embeddings.
+ * Parses the bundled knowledge documents and seeds knowledge_chunks with embeddings.
  * Each table row becomes a knowledge chunk. Section headers become category context.
  *
  * Usage: pnpm tsx src/lib/db/seed-knowledge.ts
@@ -13,135 +13,105 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { setTimeout } from "node:timers/promises";
 import "./load-env-local";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { embed } from "ai";
+import { embedMany } from "ai";
+import { isQuotaError } from "../chat/key-rotator";
 import { CHAT_DOCUMENT_EMBEDDING_TASK, CHAT_EMBEDDING_MODEL_ID } from "../domain/policies";
+import {
+  type KnowledgeDocumentDefaults,
+  type ParsedKnowledgeChunk,
+  parseKnowledgeMarkdown,
+} from "../knowledge/markdown";
 import { db } from "./index";
 import { knowledgeChunks } from "./schema";
 
-const KNOWLEDGE_FILE = resolve(process.cwd(), "docs", "Knowledge_Base.md");
+const EMBEDDING_BATCH_SIZE = 100;
+const EMBEDDING_BATCH_DELAY_MS = 61_000;
+const KNOWLEDGE_DIRECTORY = resolve(process.cwd(), "src", "lib", "knowledge", "data");
+const KNOWLEDGE_DOCUMENTS: Array<{
+  file: string;
+  defaults?: KnowledgeDocumentDefaults;
+}> = [
+  { file: "Knowledge_Base.md" },
+  {
+    file: "Fault_Codes_and_Troubleshooting_3KVA_5KVA.md",
+    defaults: {
+      brand: "Felicity",
+      model: "IVEM3048-LV, IVEM5048-LV",
+      capacity: "3KVA, 5KVA",
+    },
+  },
+  {
+    file: "Fault_Codes_and_Troubleshooting_6KVA.md",
+    defaults: { brand: "Felicity", model: "IVEM Series", capacity: "6KVA" },
+  },
+  {
+    file: "Fault_Codes_and_Troubleshooting_8KVA_12KVA.md",
+    defaults: {
+      brand: "Felicity",
+      model: "IVEM8048-II, IVEM12048-II",
+      capacity: "8KVA, 12KVA",
+    },
+  },
+  {
+    file: "Growatt_SPF_3500_5000_ES_Fault_Codes.md",
+    defaults: { brand: "Growatt", model: "SPF 3500 ES, SPF 5000 ES", capacity: "3.5KVA, 5KVA" },
+  },
+  {
+    file: "Growatt_SPF_3000TL_LVM_ES_Fault_Codes.md",
+    defaults: { brand: "Growatt", model: "SPF 3000TL LVM-ES", capacity: "3KVA" },
+  },
+  {
+    file: "Growatt_SPF_3000T_HVM_G2_Fault_Codes.md",
+    defaults: { brand: "Growatt", model: "SPF 3000T HVM-G2", capacity: "3KVA" },
+  },
+  {
+    file: "Growatt_SPF_4000_12000T_DVM_US_Fault_Codes.md",
+    defaults: {
+      brand: "Growatt",
+      model: "SPF 4000T-12000T DVM-US MPV",
+      capacity: "4KVA, 5KVA, 6KVA, 8KVA, 10KVA, 12KVA",
+    },
+  },
+];
 
-interface ParsedChunk {
-  content: string;
-  brand: string | null;
-  errorCode: string | null;
-  dangerLevel: string | null;
-  category: string;
+function getEmbeddingProviders(): Array<{
+  key: string;
+  label: string;
+  provider: ReturnType<typeof createGoogleGenerativeAI>;
+}> {
+  const envKeys = [
+    ["GEMINI_API_KEY_PRIMARY", "primary"],
+    ["GEMINI_API_KEY_BACKUP_1", "backup-1"],
+    ["GEMINI_API_KEY_BACKUP_2", "backup-2"],
+    ["GEMINI_API_KEY_BACKUP_3", "backup-3"],
+    ["GEMINI_API_KEY_BACKUP_4", "backup-4"],
+  ] as const;
+  const providers = envKeys.flatMap(([envKey, label]) => {
+    const key = process.env[envKey]?.trim();
+    return key ? [{ key, label, provider: createGoogleGenerativeAI({ apiKey: key }) }] : [];
+  });
+
+  if (providers.length === 0) {
+    throw new Error("No Gemini API key configured.");
+  }
+  return providers;
 }
 
-function getEmbeddingModel() {
-  const apiKey = process.env["GEMINI_API_KEY_PRIMARY"] ?? process.env["GEMINI_API_KEY"];
-  if (!apiKey) {
-    throw new Error("No Gemini API key configured. Set GEMINI_API_KEY_PRIMARY or GEMINI_API_KEY.");
-  }
-  return createGoogleGenerativeAI({ apiKey });
-}
-
-/**
- * Parse the markdown knowledge base file into structured chunks.
- *
- * Strategy:
- * - Each table row becomes one knowledge chunk
- * - The "Meaning" column provides the primary searchable content
- * - "Causes" and "Action Plan" are appended for richer context
- * - Section headers become the category
- * - Brand and error code are extracted for filtering
- */
-function parseKnowledgeBase(content: string): ParsedChunk[] {
-  const chunks: ParsedChunk[] = [];
-  const lines = content.split("\n");
-
-  let currentCategory = "General";
-  let inTable = false;
-  let tableHeaders: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]?.trim() ?? "";
-
-    // Detect section headers (## headers become categories)
-    if (line.startsWith("## ")) {
-      currentCategory = line
-        .replace(/^##\s+\*\*/, "")
-        .replace(/\*\*$/, "")
-        .replace(/\\&/g, "&")
-        .trim();
-      inTable = false;
-      continue;
-    }
-
-    // Detect table start
-    if (line.startsWith("|") && line.includes("Brand") && line.includes("Code")) {
-      inTable = true;
-      tableHeaders = line
-        .split("|")
-        .map((h) => h.trim().toLowerCase())
-        .filter(Boolean);
-      continue;
-    }
-
-    // Skip table separator line
-    if (inTable && line.startsWith("|") && line.match(/^\|[\s-:|]+\|$/)) {
-      continue;
-    }
-
-    // Parse table data rows
-    if (inTable && line.startsWith("|")) {
-      const cells = line
-        .split("|")
-        .map((c) => c.trim())
-        .filter(Boolean);
-
-      if (cells.length < 3) {
-        inTable = false;
-        continue;
-      }
-
-      // Map cells to headers
-      const row: Record<string, string> = {};
-      for (let j = 0; j < Math.min(tableHeaders.length, cells.length); j++) {
-        const header = tableHeaders[j];
-        if (header) {
-          row[header] = cells[j] ?? "";
-        }
-      }
-
-      const brand = row["brand & series"]?.replace(/\*\*/g, "").trim() || null;
-      const errorCode = row["code & description"]?.replace(/\*\*/g, "").trim() || null;
-      const meaning =
-        row["meaning (english & burmese translation)"]?.replace(/\*\*/g, "").trim() || "";
-      const causes = row["causes & trigger mechanisms"]?.replace(/\*\*/g, "").trim() || "";
-      const actionPlan =
-        row["safety-first action plan for technicians"]?.replace(/\*\*/g, "").trim() || "";
-      const dangerLevel = row["danger level & source"]?.replace(/\*\*/g, "").trim() || null;
-
-      // Build rich searchable content
-      const contentParts: string[] = [];
-      if (meaning) contentParts.push(`Meaning: ${meaning}`);
-      if (causes) contentParts.push(`Causes: ${causes}`);
-      if (actionPlan) contentParts.push(`Action Plan: ${actionPlan}`);
-
-      const fullContent = contentParts.join("\n\n");
-
-      if (fullContent.length > 20) {
-        chunks.push({
-          content: fullContent,
-          brand,
-          errorCode,
-          dangerLevel,
-          category: currentCategory,
-        });
-      }
-      continue;
-    }
-
-    // End of table
-    if (inTable && !line.startsWith("|")) {
-      inTable = false;
-    }
-  }
-
-  return chunks;
+function chunkKey(
+  chunk: Omit<ParsedKnowledgeChunk, "category"> & { category: string | null },
+): string {
+  return JSON.stringify([
+    chunk.content,
+    chunk.brand,
+    chunk.model,
+    chunk.capacity,
+    chunk.errorCode,
+    chunk.dangerLevel,
+    chunk.category,
+  ]);
 }
 
 async function seedKnowledge(): Promise<void> {
@@ -153,19 +123,19 @@ async function seedKnowledge(): Promise<void> {
     process.exit(1);
   }
 
-  // Read the knowledge base file
-  let fileContent: string;
-  try {
-    fileContent = readFileSync(KNOWLEDGE_FILE, "utf-8");
-    console.log(`Read knowledge base: ${KNOWLEDGE_FILE}`);
-  } catch (err) {
-    console.error(`Failed to read ${KNOWLEDGE_FILE}:`, err);
-    process.exit(1);
+  const chunks: ParsedKnowledgeChunk[] = [];
+  for (const document of KNOWLEDGE_DOCUMENTS) {
+    const filePath = resolve(KNOWLEDGE_DIRECTORY, document.file);
+    const parsed = parseKnowledgeMarkdown(
+      readFileSync(filePath, "utf-8"),
+      document.defaults,
+    ).filter(
+      (chunk) => document.file !== "Knowledge_Base.md" || !chunk.brand?.startsWith("Growatt"),
+    );
+    chunks.push(...parsed);
+    console.log(`Parsed ${parsed.length} chunks from ${document.file}`);
   }
-
-  // Parse chunks
-  const chunks = parseKnowledgeBase(fileContent);
-  console.log(`Parsed ${chunks.length} knowledge chunks from markdown`);
+  console.log(`Parsed ${chunks.length} knowledge chunks total`);
 
   if (chunks.length === 0) {
     console.error("No chunks parsed. Check the markdown file format.");
@@ -190,55 +160,97 @@ async function seedKnowledge(): Promise<void> {
     console.log(`  ${brand}: ${count}`);
   }
 
-  // Clear existing knowledge chunks
-  console.log("\nClearing existing knowledge chunks...");
-  await db.delete(knowledgeChunks);
-  console.log("Cleared.");
+  const existingChunks = await db
+    .select({
+      content: knowledgeChunks.content,
+      brand: knowledgeChunks.brand,
+      model: knowledgeChunks.model,
+      capacity: knowledgeChunks.capacity,
+      errorCode: knowledgeChunks.errorCode,
+      dangerLevel: knowledgeChunks.dangerLevel,
+      category: knowledgeChunks.category,
+      embedding: knowledgeChunks.embedding,
+    })
+    .from(knowledgeChunks);
+  const reusableEmbeddings = new Map(
+    existingChunks.map((chunk) => [chunkKey(chunk), chunk.embedding]),
+  );
+  const chunksToEmbed = chunks.filter((chunk) => !reusableEmbeddings.has(chunkKey(chunk)));
 
-  // Generate embeddings and insert
-  const provider = getEmbeddingModel();
-  let successCount = 0;
-  let failCount = 0;
+  // Generate every missing embedding before replacing existing knowledge.
+  const providers = getEmbeddingProviders();
+  let providerIndex = 0;
+  console.log(
+    `\nReusing ${chunks.length - chunksToEmbed.length} embeddings; generating ${chunksToEmbed.length}...`,
+  );
 
-  console.log(`\nGenerating embeddings and inserting ${chunks.length} chunks...`);
+  const embeddings: number[][] = [];
+  let lastEmbeddingError: unknown;
+  for (let index = 0; index < chunksToEmbed.length; index += EMBEDDING_BATCH_SIZE) {
+    const batch = chunksToEmbed.slice(index, index + EMBEDDING_BATCH_SIZE);
+    console.log(`Embedding new-content batch ${index / EMBEDDING_BATCH_SIZE + 1}...`);
+    let embedded = false;
+    for (let attempt = 0; attempt < providers.length; attempt++) {
+      const currentIndex = (providerIndex + attempt) % providers.length;
+      const current = providers[currentIndex];
+      if (!current) continue;
 
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    if (!chunk) continue;
-
-    try {
-      const { embedding } = await embed({
-        model: provider.embedding(CHAT_EMBEDDING_MODEL_ID),
-        value: chunk.content,
-        providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
+      try {
+        const result = await embedMany({
+          model: current.provider.embedding(CHAT_EMBEDDING_MODEL_ID),
+          values: batch.map((chunk) => chunk.content),
+          providerOptions: { google: { taskType: CHAT_DOCUMENT_EMBEDDING_TASK } },
+        });
+        embeddings.push(...result.embeddings);
+        providerIndex = (currentIndex + 1) % providers.length;
+        embedded = true;
+        break;
+      } catch (error: unknown) {
+        lastEmbeddingError = error;
+        const reason = isQuotaError(error) ? "quota-limited" : "unavailable";
+        console.warn(`Embedding key ${current.label} is ${reason}; trying the next key.`);
+      }
+    }
+    if (!embedded) {
+      throw new Error("All configured Gemini embedding keys failed.", {
+        cause: lastEmbeddingError,
       });
-
-      await db.insert(knowledgeChunks).values({
-        content: chunk.content,
-        brand: chunk.brand,
-        errorCode: chunk.errorCode,
-        dangerLevel: chunk.dangerLevel,
-        category: chunk.category,
-        embedding,
-      });
-
-      successCount++;
-      const progress = `[${i + 1}/${chunks.length}]`;
-      const label = chunk.errorCode ? `${chunk.brand} ${chunk.errorCode}` : chunk.category;
-      console.log(`  ${progress} ✓ ${label}`);
-    } catch (err) {
-      failCount++;
-      console.error(
-        `  [${i + 1}/${chunks.length}] ✗ Failed: ${chunk.brand} ${chunk.errorCode}:`,
-        err,
-      );
+    }
+    if (index + EMBEDDING_BATCH_SIZE < chunksToEmbed.length) {
+      console.log("Waiting for embedding quota window...");
+      await setTimeout(EMBEDDING_BATCH_DELAY_MS);
     }
   }
+  if (embeddings.length !== chunksToEmbed.length) {
+    throw new Error("Embedding count mismatch; existing knowledge was not changed.");
+  }
+  const generatedEmbeddings = new Map<string, number[]>();
+  for (let index = 0; index < chunksToEmbed.length; index++) {
+    const chunk = chunksToEmbed[index];
+    const embedding = embeddings[index];
+    if (!chunk || !embedding) {
+      throw new Error("Embedding count mismatch; existing knowledge was not changed.");
+    }
+    generatedEmbeddings.set(chunkKey(chunk), embedding);
+  }
+
+  const embeddedChunks: Array<ParsedKnowledgeChunk & { embedding: number[] }> = [];
+  for (const chunk of chunks) {
+    const embedding =
+      reusableEmbeddings.get(chunkKey(chunk)) ?? generatedEmbeddings.get(chunkKey(chunk));
+    if (!embedding) {
+      throw new Error("Missing embedding; existing knowledge was not changed.");
+    }
+    embeddedChunks.push({ ...chunk, embedding });
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(knowledgeChunks);
+    await tx.insert(knowledgeChunks).values(embeddedChunks);
+  });
 
   console.log(`\n=== Seeding Complete ===`);
-  console.log(`Success: ${successCount}`);
-  console.log(`Failed: ${failCount}`);
-  console.log(`Total: ${chunks.length}`);
+  console.log(`Inserted: ${embeddedChunks.length}`);
 
   process.exit(0);
 }

@@ -33,9 +33,8 @@ describe("DB module: conditional ws loading", () => {
     expect(src).toMatch(/connectionTimeoutMillis/);
   });
 
-  it("getDb and db proxy are exported", async () => {
+  it("exports the lazy db proxy", async () => {
     const mod = await import("@/lib/db");
-    expect(mod.getDb).toBeInstanceOf(Function);
     expect(mod.db).toBeDefined();
   });
 });

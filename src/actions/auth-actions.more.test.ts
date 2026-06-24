@@ -69,7 +69,7 @@ vi.mock("@/lib/db", () => {
       return cb(txUpdate);
     }),
   };
-  return { db: mockDb, getDb: vi.fn(() => Promise.resolve(mockDb)) };
+  return { db: mockDb };
 });
 
 const makeSealed = (

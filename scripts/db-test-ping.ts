@@ -38,8 +38,10 @@ async function main(): Promise<void> {
     const databaseName = infoResult.rows[0]?.current_database ?? "unknown";
     const userName = infoResult.rows[0]?.current_user ?? "unknown";
 
+    await pool.query("create extension if not exists vector");
+
     console.log(
-      `DB ping ok: connected to "${databaseName}" as "${userName}" using TEST_DATABASE_URL`,
+      `DB test setup ok: connected to "${databaseName}" as "${userName}" with vector enabled`,
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

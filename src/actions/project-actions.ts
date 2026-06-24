@@ -35,6 +35,7 @@ import {
   warrantyAlerts,
 } from "@/lib/db/schema";
 import { BUDGET_VARIANCE_THRESHOLD } from "@/lib/domain/policies";
+import { canTransitionProjectStatus, isProjectStatus } from "@/lib/domain/project";
 import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import {
   assertFinanceSsotDrift,
@@ -55,11 +56,9 @@ import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   addProjectCostSchema,
   addProjectRemarkSchema,
-  canTransitionProjectStatus,
   consumeProjectInventorySchema,
   convertToProjectSchema,
   createWarrantyAlertSchema,
-  isProjectStatus,
   projectListFilterSchema,
   updateProjectSchema,
 } from "@/lib/validators/project";

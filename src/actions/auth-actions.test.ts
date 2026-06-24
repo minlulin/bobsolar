@@ -68,7 +68,7 @@ vi.mock("@/lib/db", () => {
       }),
     })),
   };
-  return { getDb: vi.fn(async () => mockDb), db: mockDb };
+  return { db: mockDb };
 });
 
 describe("auth-actions login", () => {

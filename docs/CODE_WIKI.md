@@ -40,7 +40,7 @@ bobsolar/
 ├── drizzle/           # SQL migrations + journal
 ├── public/            # Static assets + built service worker
 ├── scripts/           # Operational scripts (run via tsx)
-└── docs/              # Product/engineering docs (this wiki lives here)
+└── docs/              # CODE_WIKI.md only
 ```
 
 ## Architecture
@@ -147,9 +147,7 @@ The README describes the operational “Solar Flow” (Customers → Inventory �
 - Provides a Neon serverless connection pool and Drizzle client and defines the schema.
 
 **Key files and functions**
-- Drizzle client factory (memoized singleton):
-  - [getDb](file:///c:/bobsolar/src/lib/db/index.ts#L19-L31)
-  - `db` proxy for backwards-compatible imports: [db proxy](file:///c:/bobsolar/src/lib/db/index.ts#L33-L38)
+- Lazy Drizzle client: [`db`](file:///c:/bobsolar/src/lib/db/index.ts)
 - Schema:
   - Central schema definitions: [schema.ts](file:///c:/bobsolar/src/lib/db/schema.ts)
 - Seeding:
@@ -271,7 +269,7 @@ At a conceptual level, the system’s core entities are:
 ## Running Locally
 
 ### Prerequisites
-- Node.js v20+
+- Node.js v24+
 - pnpm v11+ (repo is pinned via `packageManager` in [package.json](file:///c:/bobsolar/package.json#L5))
 - A Postgres database (Neon recommended)
 
@@ -292,7 +290,7 @@ Copy-Item .\.env.example .\.env.local
 3) Configure `.env.local`
 
 See required keys in [.env.example](file:///c:/bobsolar/.env.example). The most important are:
-- `DATABASE_URL` (required by [getDb](file:///c:/bobsolar/src/lib/db/index.ts#L19-L31))
+- `DATABASE_URL` (required by [db](file:///c:/bobsolar/src/lib/db/index.ts))
 - `SESSION_SECRET` (required by [session.ts](file:///c:/bobsolar/src/lib/auth/session.ts#L12-L18))
 - `BLOB_READ_WRITE_TOKEN` (used for Vercel Blob-based uploads)
 
@@ -342,7 +340,6 @@ pnpm green
 Scripts in [scripts](file:///c:/bobsolar/scripts) are invoked with `tsx` (see [package.json](file:///c:/bobsolar/package.json#L19-L27)). Common ones include:
 - DB reset: [db-reset.ts](file:///c:/bobsolar/scripts/db-reset.ts)
 - Handover reset/verify: [db-handover-reset.ts](file:///c:/bobsolar/scripts/db-handover-reset.ts), [db-handover-verify.ts](file:///c:/bobsolar/scripts/db-handover-verify.ts)
-- Promote staff to admin: [promote-staff-admin.ts](file:///c:/bobsolar/scripts/promote-staff-admin.ts)
 
 ## Where To Start Reading
 
@@ -354,4 +351,3 @@ Scripts in [scripts](file:///c:/bobsolar/scripts) are invoked with `tsx` (see [p
   - Projects + costing + inventory consumption: [project-actions.ts](file:///c:/bobsolar/src/actions/project-actions.ts)
   - Payments: [payment-actions.ts](file:///c:/bobsolar/src/actions/payment-actions.ts)
 - Finance engine: [ledger.ts](file:///c:/bobsolar/src/lib/finance/ledger.ts)
-
