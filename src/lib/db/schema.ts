@@ -1479,5 +1479,3 @@ export type NewChatSession = InferInsertModel<typeof chatSessions>;
 
 export type ChatUsageLog = InferSelectModel<typeof chatUsageLogs>;
 export type NewChatUsageLog = InferInsertModel<typeof chatUsageLogs>;
-
-export * from "./vector-schema";

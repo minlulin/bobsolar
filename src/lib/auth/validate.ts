@@ -13,14 +13,11 @@ export interface AuthUser {
  * Access policy (current role model):
  * - admin: full access, including partner management (add/remove owners)
  * - owner: shared-partner access to all operational screens
- * - technician: chat-only access for inverter fault code diagnostics
  *
  * Use `requireAdmin()` for partner-management features.
  * Use `requireOwner()` for operational screens (finance, suppliers, etc.).
- * Use `requireChatAccess()` for the chat endpoint (admin, owner, technician).
  */
 const OPERATIONAL_ROLES: ReadonlySet<UserRole> = new Set(["admin", "owner"]);
-const CHAT_ROLES: ReadonlySet<UserRole> = new Set(["admin", "owner", "technician"]);
 
 /**
  * Resolve the current authenticated user, deduped across the React Server
@@ -81,18 +78,6 @@ export async function requireAdmin(): Promise<AuthUser> {
 export async function requireOwner(): Promise<AuthUser> {
   const auth = await requireAuth();
   if (!OPERATIONAL_ROLES.has(auth.role)) {
-    redirect("/unauthorized");
-  }
-  return auth;
-}
-
-/**
- * Gate for chat access. Allows admin, owner, and technician roles.
- * Technicians can only access the chat endpoint, not the dashboard.
- */
-export async function requireChatAccess(): Promise<AuthUser> {
-  const auth = await requireAuth();
-  if (!CHAT_ROLES.has(auth.role)) {
     redirect("/unauthorized");
   }
   return auth;

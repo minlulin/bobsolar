@@ -1,0 +1,888 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fzebbern%2Fknowledge-assistant
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=zebbern%2Fknowledge-assistant
+            - button "Appearance settings" [ref=e58] [cursor=pointer]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "zebbern" [ref=e70] [cursor=pointer]:
+            - /url: /zebbern
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "knowledge-assistant" [ref=e73] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fzebbern%2Fknowledge-assistant
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 3" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fzebbern%2Fknowledge-assistant
+                - img [ref=e82]
+                - text: Fork
+                - generic "3" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fzebbern%2Fknowledge-assistant
+                - img [ref=e88]
+                - text: Star
+                - generic "12 users starred this repository" [ref=e90]: "12"
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues" [ref=e99] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+          - listitem [ref=e104]:
+            - link "Pull requests" [ref=e105] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/pulls
+              - img [ref=e106]
+              - generic [ref=e108]: Pull requests
+          - listitem [ref=e109]:
+            - link "Actions" [ref=e110] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/actions
+              - img [ref=e111]
+              - generic [ref=e113]: Actions
+          - listitem [ref=e114]:
+            - link "Projects" [ref=e115] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/projects
+              - img [ref=e116]
+              - generic [ref=e118]: Projects
+          - listitem [ref=e119]:
+            - link "Security and quality" [ref=e120] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/security
+              - img [ref=e121]
+              - generic [ref=e123]: Security and quality
+          - listitem [ref=e124]:
+            - link "Insights" [ref=e125] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/pulse
+              - img [ref=e126]
+              - generic [ref=e128]: Insights
+    - generic [ref=e141]:
+      - heading "zebbern/knowledge-assistant" [level=1] [ref=e143]
+      - generic [ref=e144]:
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - button "main branch" [ref=e151] [cursor=pointer]:
+                - generic [ref=e152]:
+                  - generic [ref=e154]:
+                    - img [ref=e156]
+                    - generic [ref=e159]: main
+                  - generic:
+                    - img
+              - generic [ref=e160]:
+                - link "1 Branch" [ref=e161] [cursor=pointer]:
+                  - /url: /zebbern/knowledge-assistant/branches
+                  - generic [ref=e162]:
+                    - generic:
+                      - img
+                    - generic [ref=e164]:
+                      - strong [ref=e165]: "1"
+                      - text: Branch
+                - link "0 Tags" [ref=e166] [cursor=pointer]:
+                  - /url: /zebbern/knowledge-assistant/tags
+                  - generic [ref=e167]:
+                    - generic:
+                      - img
+                    - generic [ref=e169]:
+                      - strong [ref=e170]: "0"
+                      - text: Tags
+            - generic [ref=e171]:
+              - generic [ref=e175]:
+                - img [ref=e177]
+                - combobox "Go to file" [ref=e179]
+              - button "Code" [ref=e180] [cursor=pointer]:
+                - generic [ref=e181]:
+                  - generic:
+                    - img
+                  - generic [ref=e182]: Code
+                  - generic:
+                    - img
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - heading "Folders and files" [level=2] [ref=e185]
+              - table "Folders and files" [ref=e186]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e187]:
+                  - row "Latest commit zebbern commits by zebbern updated readme success Commit 6a03a6c · Jan 21, 20265 months ago History 16 Commits" [ref=e188]:
+                    - cell "Latest commit zebbern commits by zebbern updated readme success Commit 6a03a6c · Jan 21, 20265 months ago History 16 Commits" [ref=e189]:
+                      - generic [ref=e190]:
+                        - heading "Latest commit" [level=2] [ref=e191]
+                        - generic [ref=e192]:
+                          - generic [ref=e194]:
+                            - link "zebbern" [ref=e195] [cursor=pointer]:
+                              - /url: /zebbern
+                              - img "zebbern" [ref=e196]
+                            - link "commits by zebbern" [ref=e197] [cursor=pointer]:
+                              - /url: /zebbern/knowledge-assistant/commits?author=zebbern
+                              - text: zebbern
+                          - generic [ref=e198]:
+                            - link "updated readme" [ref=e201] [cursor=pointer]:
+                              - /url: /zebbern/knowledge-assistant/commit/6a03a6c654135234b7d21d63026061447b5e97c0
+                            - button "success" [ref=e202] [cursor=pointer]:
+                              - img [ref=e203]
+                        - generic [ref=e205]:
+                          - generic [ref=e207]:
+                            - link "Commit 6a03a6c" [ref=e208] [cursor=pointer]:
+                              - /url: /zebbern/knowledge-assistant/commit/6a03a6c654135234b7d21d63026061447b5e97c0
+                              - text: 6a03a6c
+                            - text: ·
+                            - generic "Jan 21, 2026, 2:15 AM GMT+6:30" [ref=e209]: Jan 21, 20265 months ago
+                          - generic [ref=e210]:
+                            - heading "History" [level=2] [ref=e211]
+                            - link "16 Commits" [ref=e212] [cursor=pointer]:
+                              - /url: /zebbern/knowledge-assistant/commits/main/
+                              - generic [ref=e213]:
+                                - generic:
+                                  - img
+                                - generic [ref=e214]: 16 Commits
+                  - row "app, (Directory) Add settings modal with temperature slider and custom system prompt Jan 21, 20265 months ago" [ref=e215]:
+                    - cell "app, (Directory)" [ref=e216]:
+                      - generic [ref=e217]:
+                        - img [ref=e218]
+                        - link "app, (Directory)" [ref=e223] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/tree/main/app
+                          - text: app
+                    - cell "Add settings modal with temperature slider and custom system prompt" [ref=e224]:
+                      - link "Add settings modal with temperature slider and custom system prompt" [ref=e227] [cursor=pointer]:
+                        - /url: /zebbern/knowledge-assistant/commit/776b3a5de089de4bb98d2d0e6cae4c37d6b73de9
+                    - cell "Jan 21, 20265 months ago" [ref=e228]:
+                      - generic [ref=e229]: Jan 21, 20265 months ago
+                  - row "components, (Directory) Add settings modal with temperature slider and custom system prompt Jan 21, 20265 months ago" [ref=e230]:
+                    - cell "components, (Directory)" [ref=e231]:
+                      - generic [ref=e232]:
+                        - img [ref=e233]
+                        - link "components, (Directory)" [ref=e238] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/tree/main/components
+                          - text: components
+                    - cell "Add settings modal with temperature slider and custom system prompt" [ref=e239]:
+                      - link "Add settings modal with temperature slider and custom system prompt" [ref=e242] [cursor=pointer]:
+                        - /url: /zebbern/knowledge-assistant/commit/776b3a5de089de4bb98d2d0e6cae4c37d6b73de9
+                    - cell "Jan 21, 20265 months ago" [ref=e243]:
+                      - generic [ref=e244]: Jan 21, 20265 months ago
+                  - row "content, (Directory) Keep only verified working models (Mimo, Llama) Jan 21, 20265 months ago" [ref=e245]:
+                    - cell "content, (Directory)" [ref=e246]:
+                      - generic [ref=e247]:
+                        - img [ref=e248]
+                        - link "content, (Directory)" [ref=e253] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/tree/main/content
+                          - text: content
+                    - cell "Keep only verified working models (Mimo, Llama)" [ref=e254]:
+                      - link "Keep only verified working models (Mimo, Llama)" [ref=e257] [cursor=pointer]:
+                        - /url: /zebbern/knowledge-assistant/commit/7b00e75fd1fe7a4e764365fec1dd7aab0613f43e
+                    - cell "Jan 21, 20265 months ago" [ref=e258]:
+                      - generic [ref=e259]: Jan 21, 20265 months ago
+                  - 'row "lib, (Directory) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e260]':
+                    - cell "lib, (Directory)" [ref=e261]:
+                      - generic [ref=e262]:
+                        - img [ref=e263]
+                        - link "lib, (Directory)" [ref=e268] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/tree/main/lib
+                          - text: lib
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e269]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e272] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e273]:
+                      - generic [ref=e274]: Jan 20, 20265 months ago
+                  - 'row ".env.example, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e275]':
+                    - cell ".env.example, (File)" [ref=e276]:
+                      - generic [ref=e277]:
+                        - img [ref=e278]
+                        - link ".env.example, (File)" [ref=e283] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/.env.example
+                          - text: .env.example
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e284]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e287] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e288]:
+                      - generic [ref=e289]: Jan 20, 20265 months ago
+                  - 'row ".gitignore, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e290]':
+                    - cell ".gitignore, (File)" [ref=e291]:
+                      - generic [ref=e292]:
+                        - img [ref=e293]
+                        - link ".gitignore, (File)" [ref=e298] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/.gitignore
+                          - text: .gitignore
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e299]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e302] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e303]:
+                      - generic [ref=e304]: Jan 20, 20265 months ago
+                  - row "README.md, (File) updated readme Jan 21, 20265 months ago" [ref=e305]:
+                    - cell "README.md, (File)" [ref=e306]:
+                      - generic [ref=e307]:
+                        - img [ref=e308]
+                        - link "README.md, (File)" [ref=e313] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/README.md
+                          - text: README.md
+                    - cell "updated readme" [ref=e314]:
+                      - link "updated readme" [ref=e317] [cursor=pointer]:
+                        - /url: /zebbern/knowledge-assistant/commit/6a03a6c654135234b7d21d63026061447b5e97c0
+                    - cell "Jan 21, 20265 months ago" [ref=e318]:
+                      - generic [ref=e319]: Jan 21, 20265 months ago
+                  - 'row "next.config.mjs, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e320]':
+                    - cell "next.config.mjs, (File)" [ref=e321]:
+                      - generic [ref=e322]:
+                        - img [ref=e323]
+                        - link "next.config.mjs, (File)" [ref=e328] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/next.config.mjs
+                          - text: next.config.mjs
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e329]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e332] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e333]:
+                      - generic [ref=e334]: Jan 20, 20265 months ago
+                  - 'row "package-lock.json, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e335]':
+                    - cell "package-lock.json, (File)" [ref=e336]:
+                      - generic [ref=e337]:
+                        - img [ref=e338]
+                        - link "package-lock.json, (File)" [ref=e343] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/package-lock.json
+                          - text: package-lock.json
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e344]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e347] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e348]:
+                      - generic [ref=e349]: Jan 20, 20265 months ago
+                  - 'row "package.json, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e350]':
+                    - cell "package.json, (File)" [ref=e351]:
+                      - generic [ref=e352]:
+                        - img [ref=e353]
+                        - link "package.json, (File)" [ref=e358] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/package.json
+                          - text: package.json
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e359]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e362] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e363]:
+                      - generic [ref=e364]: Jan 20, 20265 months ago
+                  - 'row "postcss.config.mjs, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e365]':
+                    - cell "postcss.config.mjs, (File)" [ref=e366]:
+                      - generic [ref=e367]:
+                        - img [ref=e368]
+                        - link "postcss.config.mjs, (File)" [ref=e373] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/postcss.config.mjs
+                          - text: postcss.config.mjs
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e374]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e377] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e378]:
+                      - generic [ref=e379]: Jan 20, 20265 months ago
+                  - 'row "tailwind.config.ts, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e380]':
+                    - cell "tailwind.config.ts, (File)" [ref=e381]:
+                      - generic [ref=e382]:
+                        - img [ref=e383]
+                        - link "tailwind.config.ts, (File)" [ref=e388] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/tailwind.config.ts
+                          - text: tailwind.config.ts
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e389]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e392] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e393]:
+                      - generic [ref=e394]: Jan 20, 20265 months ago
+                  - 'row "tsconfig.json, (File) Initial commit: Knowledge AI chat interface with n8n workflow generation Jan 20, 20265 months ago" [ref=e395]':
+                    - cell "tsconfig.json, (File)" [ref=e396]:
+                      - generic [ref=e397]:
+                        - img [ref=e398]
+                        - link "tsconfig.json, (File)" [ref=e403] [cursor=pointer]:
+                          - /url: /zebbern/knowledge-assistant/blob/main/tsconfig.json
+                          - text: tsconfig.json
+                    - 'cell "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e404]':
+                      - 'link "Initial commit: Knowledge AI chat interface with n8n workflow generation" [ref=e407] [cursor=pointer]':
+                        - /url: /zebbern/knowledge-assistant/commit/28a08bdc9cc9dc33e5fdbd9348aa17d62faddfc2
+                    - cell "Jan 20, 20265 months ago" [ref=e408]:
+                      - generic [ref=e409]: Jan 20, 20265 months ago
+            - generic [ref=e411]:
+              - generic [ref=e412]:
+                - heading "Repository files navigation" [level=2] [ref=e413]
+                - navigation "Repository files" [ref=e414]:
+                  - list [ref=e415]:
+                    - listitem [ref=e416]:
+                      - link "README" [ref=e417] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e419]
+                        - generic [ref=e421]: README
+                - button "Outline" [ref=e422] [cursor=pointer]:
+                  - img [ref=e423]
+              - article [ref=e426]:
+                - generic [ref=e427]:
+                  - generic [ref=e428]:
+                    - heading "Knowledge-Assistant" [level=2] [ref=e429]
+                    - 'link "Permalink: Knowledge-Assistant" [ref=e430] [cursor=pointer]':
+                      - /url: "#knowledge-assistant"
+                      - img [ref=e431]
+                  - generic [ref=e433]:
+                    - heading "A lightweight, free, file-based chat agent that answers questions from your custom knowledge files. No vector databases, no embeddings, no complex setup - just drop in your markdown files and start chatting." [level=4] [ref=e434]
+                    - 'link "Permalink: A lightweight, free, file-based chat agent that answers questions from your custom knowledge files. No vector databases, no embeddings, no complex setup - just drop in your markdown files and start chatting." [ref=e435] [cursor=pointer]':
+                      - /url: "#a-lightweight-free-file-based-chat-agent-that-answers-questions-from-your-custom-knowledge-files-no-vector-databases-no-embeddings-no-complex-setup---just-drop-in-your-markdown-files-and-start-chatting"
+                      - img [ref=e436]
+                  - paragraph [ref=e438]:
+                    - generic [ref=e439]: "env variables needed: OPENROUTER_API_KEY, NEXT_PUBLIC_SITE_URL"
+                  - link "image" [ref=e440] [cursor=pointer]:
+                    - /url: https://private-user-images.githubusercontent.com/185730623/538200369-1f95191f-4118-4a71-9d5a-842154711408.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODIzNjU5ODcsIm5iZiI6MTc4MjM2NTY4NywicGF0aCI6Ii8xODU3MzA2MjMvNTM4MjAwMzY5LTFmOTUxOTFmLTQxMTgtNGE3MS05ZDVhLTg0MjE1NDcxMTQwOC5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwNjI1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDYyNVQwNTM0NDdaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT1lMzkxMTE0MTYxMjIwZjJkYzk0MjAwOWYxMzA2NmM5NGE0OGI5MjEyY2QzYmNjMmZhZWMyMGZmMDIzZjM4MWM4JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.RxzTmZW6PeqKRJ66z4NAI2ncKgxZDM43aJQBthrEsko
+                    - img "image" [ref=e441]
+                  - link "image" [ref=e442] [cursor=pointer]:
+                    - /url: https://private-user-images.githubusercontent.com/185730623/538157167-eed43d7b-1406-45f2-a5e9-3fab43dd76f2.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODIzNjU5ODcsIm5iZiI6MTc4MjM2NTY4NywicGF0aCI6Ii8xODU3MzA2MjMvNTM4MTU3MTY3LWVlZDQzZDdiLTE0MDYtNDVmMi1hNWU5LTNmYWI0M2RkNzZmMi5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwNjI1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDYyNVQwNTM0NDdaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05OWRmZWNmMDg4NTA1YWNlZDllM2FmMzgwNTc5Y2QwYWE2NmNiNDQ5ZGEzNWVmZTFhNmI0MjQyYTFhZjMzOGZjJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.uGtn88Um19aRbOHmFa7oKfBCa6FQsUvInj-OZyofAYs
+                    - img "image" [ref=e443]
+                  - link "image" [ref=e444] [cursor=pointer]:
+                    - /url: https://private-user-images.githubusercontent.com/185730623/538157964-f99bead4-f62a-4b5b-bdb0-c196d15beaee.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODIzNjU5ODcsIm5iZiI6MTc4MjM2NTY4NywicGF0aCI6Ii8xODU3MzA2MjMvNTM4MTU3OTY0LWY5OWJlYWQ0LWY2MmEtNGI1Yi1iZGIwLWMxOTZkMTViZWFlZS5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjYwNjI1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI2MDYyNVQwNTM0NDdaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT00NTcwNjA2ZmRmYTY3YmJmNWNiMjA2ZGU5MTRlYjc0ODNmZDlkMWMzMDMyMmRiMDM2OTI1YzJiZWI1YWY0NWZiJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZyZXNwb25zZS1jb250ZW50LXR5cGU9aW1hZ2UlMkZwbmcifQ.RpFGkyVi8Yd58DHWGKKRRfvMQwSkw-_BvOXYreJV66U
+                    - img "image" [ref=e445]
+                - generic [ref=e446]:
+                  - heading "Why Lightweight?" [level=2] [ref=e447]
+                  - 'link "Permalink: Why Lightweight?" [ref=e448] [cursor=pointer]':
+                    - /url: "#why-lightweight"
+                    - img [ref=e449]
+                - paragraph [ref=e451]: "Unlike heavyweight RAG solutions that require:"
+                - list [ref=e452]:
+                  - listitem [ref=e453]: Vector databases (Pinecone, Weaviate, Chroma)
+                  - listitem [ref=e454]: Embedding models and preprocessing
+                  - listitem [ref=e455]: Complex chunking strategies
+                  - listitem [ref=e456]: Database hosting and maintenance
+                - paragraph [ref=e457]: "Knowledge-Assistant takes a simpler approach:"
+                - list [ref=e458]:
+                  - listitem [ref=e459]:
+                    - strong [ref=e460]: Just files
+                    - text: "- Drop"
+                    - code [ref=e461]: .md
+                    - text: or
+                    - code [ref=e462]: .txt
+                    - text: files in a folder
+                  - listitem [ref=e463]:
+                    - strong [ref=e464]: No preprocessing
+                    - text: "- Files are read at request time"
+                  - listitem [ref=e465]:
+                    - strong [ref=e466]: No database
+                    - text: "- Context goes directly to the LLM"
+                  - listitem [ref=e467]:
+                    - strong [ref=e468]: Free models
+                    - text: "- Uses OpenRouter's free tier (Llama, Mimo, DeepSeek)"
+                - paragraph [ref=e469]: "Perfect for: documentation sites, GitHub repos, personal knowledge bases, and projects where simplicity beats complexity."
+                - generic [ref=e470]:
+                  - heading "Key Features" [level=3] [ref=e471]
+                  - 'link "Permalink: Key Features" [ref=e472] [cursor=pointer]':
+                    - /url: "#key-features"
+                    - img [ref=e473]
+                - list [ref=e475]:
+                  - listitem [ref=e476]:
+                    - strong [ref=e477]: Multiple Free Models
+                    - text: "- Choose from Llama 3.3, Mimo, DeepSeek R1, Devstral, GLM"
+                  - listitem [ref=e478]:
+                    - strong [ref=e479]: Temperature Control
+                    - text: "- Adjust creativity (0 = precise, 2 = creative)"
+                  - listitem [ref=e480]:
+                    - strong [ref=e481]: Custom System Prompts
+                    - text: "- Add your own AI personality and instructions"
+                  - listitem [ref=e482]:
+                    - strong [ref=e483]: Streaming Responses
+                    - text: "- Real-time token-by-token output"
+                  - listitem [ref=e484]:
+                    - strong [ref=e485]: Markdown Rendering
+                    - text: "- Full markdown with syntax highlighting"
+                  - listitem [ref=e486]:
+                    - strong [ref=e487]: Mermaid Diagrams
+                    - text: "- Live diagram rendering in chat"
+                  - listitem [ref=e488]:
+                    - strong [ref=e489]: Code Blocks
+                    - text: "- Syntax-highlighted with copy functionality"
+                  - listitem [ref=e490]:
+                    - strong [ref=e491]: Persistent Sessions
+                    - text: "- Conversations stored in localStorage"
+                  - listitem [ref=e492]:
+                    - strong [ref=e493]: Export Chat
+                    - text: "- Download conversations as markdown"
+                - separator [ref=e494]
+                - paragraph [ref=e495]:
+                  - text: Knowledge AI loads markdown files from a
+                  - code [ref=e496]: content/
+                  - text: directory and uses them as context for AI responses. This approach provides accurate, domain-specific answers without the complexity of vector databases or embeddings.
+                - region "mermaid rendered output container" [ref=e497]:
+                  - generic [ref=e498]:
+                    - generic [ref=e499]:
+                      - group [ref=e500]:
+                        - button "Open dialog" [ref=e501] [cursor=pointer]:
+                          - img [ref=e502]
+                      - button "Copy mermaid code" [ref=e504] [cursor=pointer]:
+                        - img [ref=e505]
+                    - iframe [ref=e509]:
+                      - generic [active] [ref=f1e1]:
+                        - img [ref=f1e6]
+                        - generic [ref=f1e7]:
+                          - button "Zoom in" [ref=f1e8] [cursor=pointer]:
+                            - img [ref=f1e9]
+                          - button "Zoom out" [ref=f1e12] [cursor=pointer]:
+                            - img [ref=f1e13]
+                          - button "Reset view" [ref=f1e16] [cursor=pointer]:
+                            - img [ref=f1e17]
+                          - button "Pan up" [ref=f1e19] [cursor=pointer]:
+                            - img [ref=f1e20]
+                          - button "Pan down" [ref=f1e22] [cursor=pointer]:
+                            - img [ref=f1e23]
+                          - button "Pan left" [ref=f1e25] [cursor=pointer]:
+                            - img [ref=f1e26]
+                          - button "Pan right" [ref=f1e28] [cursor=pointer]:
+                            - img [ref=f1e29]
+                  - generic [ref=e510]:
+                    - img [ref=e511]
+                    - generic [ref=e514]: Loading
+                - generic [ref=e515]:
+                  - heading "Quick Start" [level=2] [ref=e516]
+                  - 'link "Permalink: Quick Start" [ref=e517] [cursor=pointer]':
+                    - /url: "#quick-start"
+                    - img [ref=e518]
+                - generic [ref=e520]:
+                  - heading "Prerequisites" [level=3] [ref=e521]
+                  - 'link "Permalink: Prerequisites" [ref=e522] [cursor=pointer]':
+                    - /url: "#prerequisites"
+                    - img [ref=e523]
+                - list [ref=e525]:
+                  - listitem [ref=e526]: Node.js 18+
+                  - listitem [ref=e527]:
+                    - text: OpenRouter API key (
+                    - link "get one free" [ref=e528] [cursor=pointer]:
+                      - /url: https://openrouter.ai
+                    - text: )
+                - generic [ref=e529]:
+                  - heading "Installation" [level=3] [ref=e530]
+                  - 'link "Permalink: Installation" [ref=e531] [cursor=pointer]':
+                    - /url: "#installation"
+                    - img [ref=e532]
+                - generic [ref=e534]:
+                  - generic [ref=e535]: cd knowledge-assistance npm install cp .env.example .env.local
+                  - button "Copy code to clipboard" [ref=e537] [cursor=pointer]:
+                    - img [ref=e538]
+                - paragraph [ref=e541]:
+                  - text: Edit
+                  - code [ref=e542]: .env.local
+                  - text: "with your API key:"
+                - generic [ref=e543]:
+                  - generic [ref=e544]: OPENROUTER_API_KEY=your_api_key_here NEXT_PUBLIC_SITE_URL=http://localhost:3000
+                  - button "Copy code to clipboard" [ref=e546] [cursor=pointer]:
+                    - img [ref=e547]
+                - generic [ref=e550]:
+                  - heading "Running" [level=3] [ref=e551]
+                  - 'link "Permalink: Running" [ref=e552] [cursor=pointer]':
+                    - /url: "#running"
+                    - img [ref=e553]
+                - generic [ref=e555]:
+                  - generic [ref=e556]:
+                    - text: npm run dev
+                    - generic [ref=e557]: "# Development"
+                    - text: npm run build
+                    - generic [ref=e558]: "# Production build"
+                    - text: npm start
+                    - generic [ref=e559]: "# Start production server"
+                  - button "Copy code to clipboard" [ref=e561] [cursor=pointer]:
+                    - img [ref=e562]
+                - paragraph [ref=e565]:
+                  - text: Access the application at
+                  - code [ref=e566]: http://localhost:3000
+                - generic [ref=e567]:
+                  - heading "Architecture" [level=2] [ref=e568]
+                  - 'link "Permalink: Architecture" [ref=e569] [cursor=pointer]':
+                    - /url: "#architecture"
+                    - img [ref=e570]
+                - region "mermaid rendered output container" [ref=e572]:
+                  - generic [ref=e573]:
+                    - generic [ref=e574]:
+                      - group [ref=e575]:
+                        - button "Open dialog" [ref=e576] [cursor=pointer]:
+                          - img [ref=e577]
+                      - button "Copy mermaid code" [ref=e579] [cursor=pointer]:
+                        - img [ref=e580]
+                    - iframe [ref=e584]:
+                      - generic [active] [ref=f2e1]:
+                        - img [ref=f2e6]
+                        - generic [ref=f2e7]:
+                          - button "Zoom in" [ref=f2e8] [cursor=pointer]:
+                            - img [ref=f2e9]
+                          - button "Zoom out" [ref=f2e12] [cursor=pointer]:
+                            - img [ref=f2e13]
+                          - button "Reset view" [ref=f2e16] [cursor=pointer]:
+                            - img [ref=f2e17]
+                          - button "Pan up" [ref=f2e19] [cursor=pointer]:
+                            - img [ref=f2e20]
+                          - button "Pan down" [ref=f2e22] [cursor=pointer]:
+                            - img [ref=f2e23]
+                          - button "Pan left" [ref=f2e25] [cursor=pointer]:
+                            - img [ref=f2e26]
+                          - button "Pan right" [ref=f2e28] [cursor=pointer]:
+                            - img [ref=f2e29]
+                  - generic [ref=e585]:
+                    - img [ref=e586]
+                    - generic [ref=e589]: Loading
+                - generic [ref=e590]:
+                  - heading "Knowledge System" [level=2] [ref=e591]
+                  - 'link "Permalink: Knowledge System" [ref=e592] [cursor=pointer]':
+                    - /url: "#knowledge-system"
+                    - img [ref=e593]
+                - paragraph [ref=e595]:
+                  - text: Add knowledge by placing markdown files in the
+                  - code [ref=e596]: content/
+                  - text: "directory:"
+                - generic [ref=e597]:
+                  - code [ref=e599]: "content/ knowledge.md # General domain knowledge n8n-workflow-guide.md # n8n workflow JSON reference n8n-ai-nodes.md # AI/LangChain node examples n8n-patterns.md # Common workflow patterns mermaid-syntax.md # Mermaid diagram reference"
+                  - button "Copy code to clipboard" [ref=e601] [cursor=pointer]:
+                    - img [ref=e602]
+                - paragraph [ref=e605]:
+                  - text: The AI reads all
+                  - code [ref=e606]: .md
+                  - text: and
+                  - code [ref=e607]: .txt
+                  - text: files at request time and uses them as context for responses.
+                - generic [ref=e608]:
+                  - heading "Knowledge File Structure" [level=3] [ref=e609]
+                  - 'link "Permalink: Knowledge File Structure" [ref=e610] [cursor=pointer]':
+                    - /url: "#knowledge-file-structure"
+                    - img [ref=e611]
+                - paragraph [ref=e613]: "Each knowledge file should be focused on a specific topic:"
+                - generic [ref=e614]:
+                  - generic [ref=e615]:
+                    - generic [ref=e616]: "# Topic Title"
+                    - text: Brief overview of the topic.
+                    - generic [ref=e617]: "## Section 1"
+                    - text: Detailed information with examples.
+                    - generic [ref=e618]: "## Section 2"
+                    - text: Code examples in fenced blocks.
+                  - button "Copy code to clipboard" [ref=e620] [cursor=pointer]:
+                    - img [ref=e621]
+                - generic [ref=e624]:
+                  - heading "Project Structure" [level=2] [ref=e625]
+                  - 'link "Permalink: Project Structure" [ref=e626] [cursor=pointer]':
+                    - /url: "#project-structure"
+                    - img [ref=e627]
+                - generic [ref=e629]:
+                  - code [ref=e631]: "knowledge-assistance/ app/ api/ chat/ route.ts # Non-streaming endpoint stream/ route.ts # Streaming endpoint layout.tsx page.tsx globals.css components/ chat.tsx # Main chat interface mermaid.tsx # Mermaid and code block rendering ui/ # Shadcn UI components content/ # Knowledge files lib/ utils.ts"
+                  - button "Copy code to clipboard" [ref=e633] [cursor=pointer]:
+                    - img [ref=e634]
+                - generic [ref=e637]:
+                  - heading "API Endpoints" [level=2] [ref=e638]
+                  - 'link "Permalink: API Endpoints" [ref=e639] [cursor=pointer]':
+                    - /url: "#api-endpoints"
+                    - img [ref=e640]
+                - generic [ref=e642]:
+                  - heading "POST /api/chat/stream" [level=3] [ref=e643]
+                  - 'link "Permalink: POST /api/chat/stream" [ref=e644] [cursor=pointer]':
+                    - /url: "#post-apichatstream"
+                    - img [ref=e645]
+                - paragraph [ref=e647]: Streaming chat endpoint using Server-Sent Events.
+                - paragraph [ref=e648]:
+                  - strong [ref=e649]: "Request:"
+                - generic [ref=e650]:
+                  - generic [ref=e651]:
+                    - text: "{ \"message\":"
+                    - generic [ref=e652]: "\"User message\""
+                    - text: ", \"messages\": [ { \"role\":"
+                    - generic [ref=e653]: "\"user\""
+                    - text: ", \"content\":"
+                    - generic [ref=e654]: "\"Previous message\""
+                    - text: "}, { \"role\":"
+                    - generic [ref=e655]: "\"assistant\""
+                    - text: ", \"content\":"
+                    - generic [ref=e656]: "\"Previous response\""
+                    - text: "} ] }"
+                  - button "Copy code to clipboard" [ref=e658] [cursor=pointer]:
+                    - img [ref=e659]
+                - paragraph [ref=e662]:
+                  - strong [ref=e663]: "Response:"
+                  - text: SSE stream with chunked content
+                - generic [ref=e664]:
+                  - heading "POST /api/chat" [level=3] [ref=e665]
+                  - 'link "Permalink: POST /api/chat" [ref=e666] [cursor=pointer]':
+                    - /url: "#post-apichat"
+                    - img [ref=e667]
+                - paragraph [ref=e669]: Non-streaming chat endpoint.
+                - paragraph [ref=e670]:
+                  - strong [ref=e671]: "Request:"
+                  - text: Same as streaming endpoint
+                - paragraph [ref=e672]:
+                  - strong [ref=e673]: "Response:"
+                - generic [ref=e674]:
+                  - generic [ref=e675]:
+                    - text: "{ \"response\":"
+                    - generic [ref=e676]: "\"Complete AI response\""
+                    - text: "}"
+                  - button "Copy code to clipboard" [ref=e678] [cursor=pointer]:
+                    - img [ref=e679]
+                - generic [ref=e682]:
+                  - heading "Configuration" [level=2] [ref=e683]
+                  - 'link "Permalink: Configuration" [ref=e684] [cursor=pointer]':
+                    - /url: "#configuration"
+                    - img [ref=e685]
+                - generic [ref=e687]:
+                  - heading "Model Selection" [level=3] [ref=e688]
+                  - 'link "Permalink: Model Selection" [ref=e689] [cursor=pointer]':
+                    - /url: "#model-selection"
+                    - img [ref=e690]
+                - paragraph [ref=e692]:
+                  - text: The default model can be changed in
+                  - code [ref=e693]: app/api/chat/stream/route.ts
+                  - text: ":"
+                - generic [ref=e694]:
+                  - generic [ref=e695]: "model: \"xiaomi/mimo-v2-flash:free\", // or any OpenRouter model"
+                  - button "Copy code to clipboard" [ref=e697] [cursor=pointer]:
+                    - img [ref=e698]
+                - generic [ref=e701]:
+                  - heading "Token Limits" [level=3] [ref=e702]
+                  - 'link "Permalink: Token Limits" [ref=e703] [cursor=pointer]':
+                    - /url: "#token-limits"
+                    - img [ref=e704]
+                - paragraph [ref=e706]: "Adjust response length:"
+                - generic [ref=e707]:
+                  - generic [ref=e708]: "max_tokens: 4096,"
+                  - button "Copy code to clipboard" [ref=e710] [cursor=pointer]:
+                    - img [ref=e711]
+                - generic [ref=e714]:
+                  - heading "Data Flow" [level=2] [ref=e715]
+                  - 'link "Permalink: Data Flow" [ref=e716] [cursor=pointer]':
+                    - /url: "#data-flow"
+                    - img [ref=e717]
+                - region "mermaid rendered output container" [ref=e719]:
+                  - generic [ref=e720]:
+                    - generic [ref=e721]:
+                      - group [ref=e722]:
+                        - button "Open dialog" [ref=e723] [cursor=pointer]:
+                          - img [ref=e724]
+                      - button "Copy mermaid code" [ref=e726] [cursor=pointer]:
+                        - img [ref=e727]
+                    - iframe [ref=e731]:
+                      - generic [active] [ref=f3e1]:
+                        - img [ref=f3e6]
+                        - generic [ref=f3e7]:
+                          - button "Zoom in" [ref=f3e8] [cursor=pointer]:
+                            - img [ref=f3e9]
+                          - button "Zoom out" [ref=f3e12] [cursor=pointer]:
+                            - img [ref=f3e13]
+                          - button "Reset view" [ref=f3e16] [cursor=pointer]:
+                            - img [ref=f3e17]
+                          - button "Pan up" [ref=f3e19] [cursor=pointer]:
+                            - img [ref=f3e20]
+                          - button "Pan down" [ref=f3e22] [cursor=pointer]:
+                            - img [ref=f3e23]
+                          - button "Pan left" [ref=f3e25] [cursor=pointer]:
+                            - img [ref=f3e26]
+                          - button "Pan right" [ref=f3e28] [cursor=pointer]:
+                            - img [ref=f3e29]
+                  - generic [ref=e732]:
+                    - img [ref=e733]
+                    - generic [ref=e736]: Loading
+        - generic [ref=e740]:
+          - generic [ref=e743]:
+            - heading "About" [level=2] [ref=e744]
+            - paragraph [ref=e745]: A lightweight, no-cost, chat agent that answers questions from custom knowledge files. No vector databases, no embeddings, no complex setup - drop in your md files and start chatting
+            - generic [ref=e746]:
+              - img [ref=e747]
+              - link "tryassistant.vercel.app/" [ref=e750] [cursor=pointer]:
+                - /url: https://tryassistant.vercel.app/
+            - heading "Topics" [level=3] [ref=e751]
+            - generic [ref=e753]:
+              - link "chat" [ref=e754] [cursor=pointer]:
+                - /url: /topics/chat
+              - link "ai" [ref=e755] [cursor=pointer]:
+                - /url: /topics/ai
+              - link "project-management" [ref=e756] [cursor=pointer]:
+                - /url: /topics/project-management
+              - link "knowledge-base" [ref=e757] [cursor=pointer]:
+                - /url: /topics/knowledge-base
+              - link "chat-bot" [ref=e758] [cursor=pointer]:
+                - /url: /topics/chat-bot
+              - link "knowledge-management" [ref=e759] [cursor=pointer]:
+                - /url: /topics/knowledge-management
+              - link "knowledge-representation" [ref=e760] [cursor=pointer]:
+                - /url: /topics/knowledge-representation
+              - link "knowledge-sharing" [ref=e761] [cursor=pointer]:
+                - /url: /topics/knowledge-sharing
+              - link "ai-chatbot-framework" [ref=e762] [cursor=pointer]:
+                - /url: /topics/ai-chatbot-framework
+              - link "ai-chatbot" [ref=e763] [cursor=pointer]:
+                - /url: /topics/ai-chatbot
+              - link "ai-chatbots" [ref=e764] [cursor=pointer]:
+                - /url: /topics/ai-chatbots
+              - link "ai-assistant" [ref=e765] [cursor=pointer]:
+                - /url: /topics/ai-assistant
+              - link "llm" [ref=e766] [cursor=pointer]:
+                - /url: /topics/llm
+              - link "ai-chatbot-project" [ref=e767] [cursor=pointer]:
+                - /url: /topics/ai-chatbot-project
+              - link "ai-2001-development" [ref=e768] [cursor=pointer]:
+                - /url: /topics/ai-2001-development
+              - link "project-ai-chatbot" [ref=e769] [cursor=pointer]:
+                - /url: /topics/project-ai-chatbot
+              - link "free-ai-tools" [ref=e770] [cursor=pointer]:
+                - /url: /topics/free-ai-tools
+              - link "ai-chat-interface" [ref=e771] [cursor=pointer]:
+                - /url: /topics/ai-chat-interface
+              - link "ai-chatbot-development-companies" [ref=e772] [cursor=pointer]:
+                - /url: /topics/ai-chatbot-development-companies
+              - link "ai-chat-app" [ref=e773] [cursor=pointer]:
+                - /url: /topics/ai-chat-app
+            - heading "Resources" [level=3] [ref=e774]
+            - link "Readme" [ref=e776] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+              - img [ref=e777]
+              - text: Readme
+            - link "Activity" [ref=e780] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/activity
+              - img [ref=e781]
+              - text: Activity
+            - heading "Stars" [level=3] [ref=e783]
+            - link "12 stars" [ref=e785] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/stargazers
+              - img [ref=e786]
+              - strong [ref=e788]: "12"
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e789]
+            - link "0 watching" [ref=e791] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/watchers
+              - img [ref=e792]
+              - strong [ref=e794]: "0"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e795]
+            - link "3 forks" [ref=e797] [cursor=pointer]:
+              - /url: /zebbern/knowledge-assistant/forks
+              - img [ref=e798]
+              - strong [ref=e800]: "3"
+              - text: forks
+            - link "Report repository" [ref=e802] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fzebbern%2Fknowledge-assistant&report=zebbern+%28user%29
+          - generic [ref=e804]:
+            - heading "Releases" [level=2] [ref=e805]:
+              - link "Releases" [ref=e806] [cursor=pointer]:
+                - /url: /zebbern/knowledge-assistant/releases
+            - generic [ref=e807]: No releases published
+          - generic [ref=e809]:
+            - heading "Packages" [level=2] [ref=e810]:
+              - link "Packages" [ref=e811] [cursor=pointer]:
+                - /url: /users/zebbern/packages?repo_name=knowledge-assistant
+            - generic [ref=e812]: No packages published
+          - generic [ref=e814]:
+            - heading "Contributors 1" [level=2] [ref=e815]:
+              - link "Contributors 1" [ref=e816] [cursor=pointer]:
+                - /url: /zebbern/knowledge-assistant/graphs/contributors
+                - text: Contributors
+                - generic "1" [ref=e817]
+            - list [ref=e818]:
+              - listitem [ref=e819]:
+                - link "@zebbern" [ref=e820] [cursor=pointer]:
+                  - /url: https://github.com/zebbern
+                  - img "@zebbern" [ref=e821]
+                - link "zebbern" [ref=e823] [cursor=pointer]:
+                  - /url: https://github.com/zebbern
+                  - strong [ref=e824]: zebbern
+          - generic [ref=e826]:
+            - heading "Languages" [level=2] [ref=e827]
+            - list [ref=e833]:
+              - listitem [ref=e834]:
+                - link "TypeScript 96.8%" [ref=e835] [cursor=pointer]:
+                  - /url: /zebbern/knowledge-assistant/search?l=typescript
+                  - img [ref=e836]
+                  - generic [ref=e838]: TypeScript
+                  - generic [ref=e839]: 96.8%
+              - listitem [ref=e840]:
+                - link "CSS 2.9%" [ref=e841] [cursor=pointer]:
+                  - /url: /zebbern/knowledge-assistant/search?l=css
+                  - img [ref=e842]
+                  - generic [ref=e844]: CSS
+                  - generic [ref=e845]: 2.9%
+              - listitem [ref=e846]:
+                - link "JavaScript 0.3%" [ref=e847] [cursor=pointer]:
+                  - /url: /zebbern/knowledge-assistant/search?l=javascript
+                  - img [ref=e848]
+                  - generic [ref=e850]: JavaScript
+                  - generic [ref=e851]: 0.3%
+  - contentinfo [ref=e853]:
+    - heading "Footer" [level=2] [ref=e854]
+    - generic [ref=e855]:
+      - generic [ref=e856]:
+        - link "GitHub Homepage" [ref=e857] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e858]
+        - generic [ref=e860]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e861]:
+        - heading "Footer navigation" [level=3] [ref=e862]
+        - list "Footer navigation" [ref=e863]:
+          - listitem [ref=e864]:
+            - link "Terms" [ref=e865] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e866]:
+            - link "Privacy" [ref=e867] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e868]:
+            - link "Security" [ref=e869] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e870]:
+            - link "Status" [ref=e871] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e872]:
+            - link "Community" [ref=e873] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e874]:
+            - link "Docs" [ref=e875] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e876]:
+            - link "Contact" [ref=e877] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e878]:
+            - button "Manage cookies" [ref=e880] [cursor=pointer]
+          - listitem [ref=e881]:
+            - button "Do not share my personal information" [ref=e883] [cursor=pointer]

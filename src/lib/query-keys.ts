@@ -180,11 +180,6 @@ export const settingsKeys = {
   backups: () => [...settingsKeys.all, "backups"] as const,
 };
 
-export const knowledgeKeys = {
-  all: ["knowledge"] as const,
-  list: () => [...knowledgeKeys.all, "list"] as const,
-};
-
 export const manualJournalKeys = {
   all: ["manual-journal"] as const,
   accounts: () => [...manualJournalKeys.all, "accounts"] as const,

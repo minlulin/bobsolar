@@ -1,156 +1,35 @@
 "use client";
 
-import { type UIMessage, useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { Bot, Copy, MessageCircle, RotateCcw, Send, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Bot, Copy, MessageCircle, Send, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-// ── Types ──────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 
-interface ChatMessagePart {
-  type: string;
-  text: string;
-}
-
-interface ChatMessageLike {
+interface ChatMessage {
   id: string;
-  role: string;
-  parts?: ChatMessagePart[];
-  content?: string;
+  role: "user" | "assistant";
+  content: string;
 }
 
-// ── Local Storage ──────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "bobsolar-chat-history";
-const CONVERSATION_STORAGE_KEY = "bobsolar-chat-conversation-id";
-
-function loadInitialMessages(): UIMessage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return [];
-    const parsed: unknown = JSON.parse(saved);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as UIMessage[];
-  } catch {
-    return [];
-  }
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function persistMessages(messages: UIMessage[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  } catch {
-    // Storage full or unavailable — silently degrade.
-  }
-}
-
-// ── Text Rendering ────────────────────────────────────────────────────
-
-/**
- * Strip <think>…</think> blocks from streamed responses.
- * Also removes an incomplete trailing <think> tag.
- */
-function stripThinkTags(text: string): string {
-  return text
-    .replace(/<think>[\s\S]*?<\/think>/gi, "")
-    .replace(/<think>[\s\S]*$/gi, "")
-    .trim();
-}
-
-/**
- * Render message text with basic markdown-like formatting.
- * Supports:
- *   - **bold** → <strong>
- *   - *italic* → <em>
- *   - `inline code` → <code>
- *   - line breaks → <br>
- *
- * This is intentionally lightweight — no heavy markdown parser needed
- * for the assistant's current output format.
- *
- * Keys use content-based identifiers (line number + match offset + type prefix)
- * which are stable within a single render pass since the input text is immutable.
- */
-function renderFormattedText(text: string): React.ReactNode[] {
-  const lines = text.split("\n");
-  const result: React.ReactNode[] = [];
-
-  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
-    const line = lines[lineIdx];
-    if (line === undefined) continue;
-
-    const segments: React.ReactNode[] = [];
-    const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null = regex.exec(line);
-
-    while (match !== null) {
-      if (match.index > lastIndex) {
-        segments.push(
-          <span key={`${lineIdx}-t-${match.index}`}>{line.slice(lastIndex, match.index)}</span>,
-        );
-      }
-
-      if (match[2]) {
-        segments.push(
-          <strong key={`${lineIdx}-b-${match.index}`} className="font-semibold">
-            {match[2]}
-          </strong>,
-        );
-      } else if (match[3]) {
-        segments.push(
-          <em key={`${lineIdx}-i-${match.index}`} className="italic">
-            {match[3]}
-          </em>,
-        );
-      } else if (match[4]) {
-        segments.push(
-          <code
-            key={`${lineIdx}-c-${match.index}`}
-            className="bg-muted rounded px-1.5 py-0.5 font-mono text-[0.8em]"
-          >
-            {match[4]}
-          </code>,
-        );
-      }
-
-      lastIndex = match.index + match[0].length;
-      match = regex.exec(line);
-    }
-
-    if (lastIndex < line.length) {
-      segments.push(<span key={`${lineIdx}-e-${lastIndex}`}>{line.slice(lastIndex)}</span>);
-    }
-
-    if (segments.length > 0) {
-      result.push(...segments);
-    } else {
-      result.push(line);
-    }
-
-    if (lineIdx < lines.length - 1) {
-      result.push(<br key={`${lineIdx}-br`} />);
-    }
-  }
-
-  return result;
-}
-
-// ── Message Bubble ─────────────────────────────────────────────────────
+// ── Message Bubble ─────────────────────────────────────────────────────────
 
 interface MessageBubbleProps {
-  message: ChatMessageLike;
+  message: ChatMessage;
   onCopy: (text: string) => void;
 }
 
 function MessageBubble({ message, onCopy }: MessageBubbleProps): React.ReactElement {
   const isUser = message.role === "user";
-  const rawText = extractText(message);
-  const displayText = stripThinkTags(rawText);
 
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
@@ -162,13 +41,19 @@ function MessageBubble({ message, onCopy }: MessageBubbleProps): React.ReactElem
             : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm",
         )}
       >
-        <div className="whitespace-pre-wrap break-words">{renderFormattedText(displayText)}</div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-blockquote:my-2 prose-pre:my-2 prose-code:text-[0.85em]">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+          </div>
+        )}
 
         {/* Copy button — visible on hover */}
-        {!isUser && displayText.length > 0 && (
+        {!isUser && message.content.length > 0 && (
           <button
             type="button"
-            onClick={() => onCopy(displayText)}
+            onClick={() => onCopy(message.content)}
             className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
             aria-label="Copy message"
             title="Copy message"
@@ -181,91 +66,115 @@ function MessageBubble({ message, onCopy }: MessageBubbleProps): React.ReactElem
   );
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────
-
-function extractText(message: ChatMessageLike): string {
-  if (message.parts && message.parts.length > 0) {
-    return message.parts
-      .filter((p): p is ChatMessagePart => p.type === "text" && typeof p.text === "string")
-      .map((p) => p.text)
-      .join("");
-  }
-  if (typeof message.content === "string") {
-    return message.content;
-  }
-  return "";
-}
-
-// ── Main Component ─────────────────────────────────────────────────────
+// ── Main Component ─────────────────────────────────────────────────────────
 
 export function ChatBot(): React.ReactElement {
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const conversationIdRef = useRef<string | null>(null);
-
-  const transport = useMemo(() => {
-    return new DefaultChatTransport({
-      fetch: async (input, init) => {
-        const response = await fetch(input, init);
-        const conversationId = response.headers.get("X-Chat-Conversation-Id");
-        if (conversationId) {
-          conversationIdRef.current = conversationId;
-          if (typeof window !== "undefined") {
-            localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationId);
-          }
-        }
-        return response;
-      },
-      prepareSendMessagesRequest: ({ messages, body }) => ({
-        body: {
-          ...body,
-          conversationId: conversationIdRef.current,
-          messages,
-        },
-      }),
-    });
-  }, []);
-
-  const { messages, sendMessage, status, setMessages, error } = useChat({ transport });
-  const isLoading = status === "submitted" || status === "streaming";
+  const abortRef = useRef<AbortController | null>(null);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       const trimmed = input.trim();
       if (!trimmed || isLoading) return;
-      sendMessage({ text: trimmed });
-      setInput("");
-    },
-    [input, isLoading, sendMessage],
-  );
 
-  const handleRetry = useCallback(() => {
-    if (isLoading) return;
-    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-    if (!lastUserMsg) return;
-    const text =
-      lastUserMsg.parts
-        ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-        .map((p) => p.text)
-        .join("") ?? "";
-    if (text) {
-      sendMessage({ text });
-    }
-  }, [messages, isLoading, sendMessage]);
+      const userMessage: ChatMessage = {
+        id: generateId(),
+        role: "user",
+        content: trimmed,
+      };
+
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setInput("");
+      setIsLoading(true);
+      setError(null);
+
+      // Abort any in-flight request
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: newMessages }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throw new Error(errorBody.error || `Request failed with status ${response.status}`);
+        }
+
+        if (!response.body) {
+          throw new Error("No response body");
+        }
+
+        // Read the SSE stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let assistantContent = "";
+        const assistantId = generateId();
+
+        // Add empty assistant message that we'll fill
+        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine?.startsWith("data: ")) continue;
+
+            const data = trimmedLine.slice(6).trim();
+            if (data === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed?.["delta"] ?? parsed?.["choices"]?.[0]?.["delta"]?.["content"];
+              if (delta) {
+                assistantContent += delta;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === assistantId ? { ...m, content: assistantContent } : m)),
+                );
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        const message = err instanceof Error ? err.message : "An unexpected error occurred";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [input, isLoading, messages],
+  );
 
   const handleClear = useCallback(() => {
     setMessages([]);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-      conversationIdRef.current = crypto.randomUUID();
-      localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationIdRef.current);
-    }
-  }, [setMessages]);
+    setError(null);
+    abortRef.current?.abort();
+  }, []);
 
   const handleCopy = useCallback((text: string) => {
     void navigator.clipboard
@@ -277,25 +186,10 @@ export function ChatBot(): React.ReactElement {
       .catch(() => setCopiedId(null));
   }, []);
 
-  // Load saved messages on mount
+  // Hydration guard
   useEffect(() => {
-    const savedConversationId = localStorage.getItem(CONVERSATION_STORAGE_KEY);
-    conversationIdRef.current = savedConversationId || crypto.randomUUID();
-    localStorage.setItem(CONVERSATION_STORAGE_KEY, conversationIdRef.current);
-
-    const initial = loadInitialMessages();
-    if (initial.length > 0) {
-      setMessages(initial);
-    }
     setIsMounted(true);
-  }, [setMessages]);
-
-  // Persist messages on change
-  useEffect(() => {
-    if (isMounted) {
-      persistMessages(messages);
-    }
-  }, [messages, isMounted]);
+  }, []);
 
   // Auto-scroll to bottom
   // biome-ignore lint/correctness/useExhaustiveDependencies: auto-scroll needs to trigger on messages change
@@ -375,47 +269,40 @@ export function ChatBot(): React.ReactElement {
                   </div>
                 </div>
               ) : (
-                messages.map((m) => {
-                  const msg = m as ChatMessageLike;
-                  return <MessageBubble key={m.id} message={msg} onCopy={handleCopy} />;
-                })
+                messages.map((m) => <MessageBubble key={m.id} message={m} onCopy={handleCopy} />)
               )}
 
               {error && (
                 <div className="flex justify-start" role="alert" aria-live="assertive">
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
-                    <p className="text-sm">Error: {error.message}</p>
-                    <button
-                      type="button"
-                      onClick={handleRetry}
-                      className="mt-1.5 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200 underline"
-                    >
-                      Retry
-                    </button>
+                    <p className="text-sm">Error: {error}</p>
                   </div>
                 </div>
               )}
 
-              {isLoading && (
-                <div className="flex justify-start" role="status" aria-live="polite">
-                  <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-                    <div className="flex space-x-1.5 h-5 items-center">
-                      <div
-                        className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      />
-                      <div
-                        className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      />
-                      <div
-                        className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      />
+              {isLoading &&
+                messages.length > 0 &&
+                messages[messages.length - 1]?.role === "assistant" &&
+                !messages[messages.length - 1]?.content && (
+                  <div className="flex justify-start" role="status" aria-live="polite">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                      <div className="flex space-x-1.5 h-5 items-center">
+                        <div
+                          className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <div
+                          className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        />
+                        <div
+                          className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div ref={messagesEndRef} />
             </div>
@@ -428,7 +315,7 @@ export function ChatBot(): React.ReactElement {
               role="status"
             >
               <span className="flex items-center gap-1">
-                <RotateCcw className="w-3 h-3" /> Copied
+                <Copy className="w-3 h-3" /> Copied
               </span>
             </div>
           )}
