@@ -281,6 +281,13 @@
       "when": 1782276164039,
       "tag": "0039_lying_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1782378100894,
+      "tag": "0040_loose_ravenous",
+      "breakpoints": true
     }
   ]
 }
