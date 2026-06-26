@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { eq } from "drizzle-orm";
 import { requireOwner } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
-import { projectInvoiceLines, projectInvoices } from "@/lib/db/schema";
+import { projectInvoiceLines, projectInvoices, projects } from "@/lib/db/schema";
 import { canPostInvoice } from "@/lib/domain/invoice";
 import { invalidateFinanceCacheForWrite } from "@/lib/finance/cache-invalidation";
 import { createBalancedJournalEntry } from "@/lib/finance/ledger";
@@ -33,11 +33,21 @@ export async function createInvoice(
     const total = subtotal + taxAmount;
 
     const invoiceId = await db.transaction(async (tx) => {
+      // Fetch project to derive customer and validate existence.
+      const [project] = await tx
+        .select({ customerId: projects.customerId })
+        .from(projects)
+        .where(eq(projects.id, input.projectId))
+        .for("update");
+      if (!project) {
+        throw new Error("Project not found.");
+      }
+
       const [invoice] = await tx
         .insert(projectInvoices)
         .values({
           projectId: input.projectId,
-          customerId: input.customerId,
+          customerId: project.customerId,
           invoiceNumber,
           invoiceDate: new Date(input.invoiceDate),
           dueDate: new Date(input.dueDate),
@@ -93,6 +103,22 @@ export async function postInvoice(rawInput: unknown): Promise<ActionResponse<{ e
 
       if (!canPostInvoice(invoice.status)) {
         throw new Error(`Cannot post invoice in status: ${invoice.status}`);
+      }
+
+      // Verify the project is completed before recognizing revenue.
+      // Revenue must only be recognized for completed projects.
+      const [project] = await tx
+        .select({ status: projects.status })
+        .from(projects)
+        .where(eq(projects.id, invoice.projectId))
+        .for("update");
+      if (!project) {
+        throw new Error("Project not found for this invoice.");
+      }
+      if (project.status !== "completed") {
+        throw new Error(
+          `Cannot post invoice: project status is '${project.status}', expected 'completed'.`,
+        );
       }
 
       const totalAmount = Number(invoice.total);

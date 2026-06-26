@@ -27,7 +27,7 @@ export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, ProjectStatus[]> 
   on_hold: ["in_progress", "installation_completed", "cancelled"],
   installation_completed: ["completed", "cancelled"],
   completed: [],
-  cancelled: ["planning"],
+  cancelled: [],
 };
 
 /** Check if a project status transition is valid */

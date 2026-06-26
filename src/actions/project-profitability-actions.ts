@@ -60,10 +60,10 @@ export async function getProjectProfitabilityReport(
 
     const filters = projectProfitabilityFilterSchema.parse(rawFilters);
 
-    const statusFilter =
-      filters.status === "completed"
-        ? eq(projects.status, "completed")
-        : inArray(projects.status, ["completed", "installation_completed", "in_progress"]);
+    // Only completed projects are included in the profitability report.
+    // Non-completed projects (in_progress, installation_completed) are pipeline/WIP
+    // and must not contribute to recognized revenue/profit metrics.
+    const statusFilter = eq(projects.status, "completed");
 
     const dateFrom = filters.dateFrom ? new Date(filters.dateFrom) : undefined;
     const dateTo = filters.dateTo ? new Date(filters.dateTo) : undefined;

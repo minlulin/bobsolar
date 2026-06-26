@@ -186,7 +186,7 @@ describe("Phase 7: Project Lifecycle", () => {
     expect(canTransitionProjectStatus("installation_completed", "completed")).toBe(true);
     expect(canTransitionProjectStatus("completed", "in_progress")).toBe(false);
     expect(canTransitionProjectStatus("completed", "planning")).toBe(false);
-    expect(canTransitionProjectStatus("cancelled", "planning")).toBe(true);
+    expect(canTransitionProjectStatus("cancelled", "planning")).toBe(false);
     expect(canTransitionProjectStatus("planning", "completed")).toBe(false);
   });
 });

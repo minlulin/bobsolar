@@ -139,10 +139,10 @@ export type ProjectDetail = BaseProjectDetail & {
     cogs: number;
     inventoryConsumedCost: number;
     additionalCosts: number;
-    grossProfit: number;
-    netProfit: number;
-    grossMarginPercent: number;
-    netMarginPercent: number;
+    grossProfit: number | null;
+    netProfit: number | null;
+    grossMarginPercent: number | null;
+    netMarginPercent: number | null;
   };
 };
 
@@ -665,12 +665,20 @@ export async function getProject(id: string): Promise<ActionResponse<ProjectDeta
     );
     const cogs = inventoryConsumedCost;
     const additionalCosts = actualTotalComputed - inventoryConsumedCost;
-    const grossProfit = invoicedRevenue - cogs;
-    const netProfit = grossProfit - additionalCosts;
+
+    // Only compute recognized profitability for completed projects.
+    // For non-completed projects, profitability is null (estimated/WIP).
+    const isCompleted = row.status === "completed";
+    const grossProfit = isCompleted ? invoicedRevenue - cogs : null;
+    const netProfit = isCompleted && grossProfit !== null ? grossProfit - additionalCosts : null;
     const grossMarginPercent =
-      invoicedRevenue > 0 ? Math.round((grossProfit / invoicedRevenue) * 100) : 0;
+      isCompleted && invoicedRevenue > 0 && grossProfit !== null
+        ? Math.round((grossProfit / invoicedRevenue) * 100)
+        : null;
     const netMarginPercent =
-      invoicedRevenue > 0 ? Math.round((netProfit / invoicedRevenue) * 100) : 0;
+      isCompleted && invoicedRevenue > 0 && netProfit !== null
+        ? Math.round((netProfit / invoicedRevenue) * 100)
+        : null;
 
     const hasQuotedStock =
       row.quotation?.items.some(
@@ -762,7 +770,7 @@ async function applyProjectCompletion(
         .where(
           and(
             eq(quotationItems.quotationId, projectRow.quotationId),
-            inArray(inventoryItems.category, ["panel", "inverter", "service"]),
+            inArray(inventoryItems.category, ["panel", "inverter"]),
           ),
         );
 
@@ -770,15 +778,7 @@ async function applyProjectCompletion(
       let inverterAlertAdded = false;
 
       for (const item of items) {
-        if (item.category === "service" && item.durationMonths > 0) {
-          alertsToInsert.push({
-            projectId: projectRow.id,
-            alertType: "maintenance_due",
-            description: `Service Due: ${item.name}`,
-            dueDate: addMonths(now, item.durationMonths),
-            isResolved: false,
-          });
-        } else if (item.category === "panel" && !panelAlertAdded) {
+        if (item.category === "panel" && !panelAlertAdded) {
           const months = item.durationMonths > 0 ? item.durationMonths : 12;
           alertsToInsert.push({
             projectId: projectRow.id,

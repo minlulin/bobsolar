@@ -1,7 +1,5 @@
-import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { ChatBot } from "@/components/chat/chat-bot";
 import { Providers } from "@/components/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { assertSessionSecretAtStartup } from "@/lib/auth/session";
@@ -102,8 +100,6 @@ export default function RootLayout({
         <Providers>
           <TooltipProvider>{children}</TooltipProvider>
         </Providers>
-        <ChatBot />
-        <Analytics />
       </body>
     </html>
   );

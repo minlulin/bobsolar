@@ -44,7 +44,5 @@ export const STOCK_WARNING_THRESHOLDS: Record<InventoryCategory | "default", num
   cable: 100, // meters
   accessory: 20,
   protection: 10,
-  labor: 0,
-  service: 0,
   default: 10,
 };

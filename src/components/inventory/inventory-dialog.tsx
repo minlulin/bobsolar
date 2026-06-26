@@ -450,19 +450,6 @@ function renderSpecificationFields(
     );
   }
 
-  if (category === "labor" || category === "service") {
-    return (
-      <SpecTextInput
-        label="Description / Note (Optional)"
-        placeholder="e.g. Installation labor for 3kWp system"
-        record={currentSpecs}
-        fieldKey="note"
-        onSet={setSpecValue}
-        className="md:col-span-2"
-      />
-    );
-  }
-
   // biome-ignore lint/complexity/noUselessFragments: Needed because React.JSX.Element doesn't accept null here
   return <></>;
 }
@@ -629,8 +616,6 @@ export function InventoryDialog({
                           "cable",
                           "accessory",
                           "protection",
-                          "labor",
-                          "service",
                         ].map((cat) => (
                           <SelectItem key={cat} value={cat}>
                             {cat.charAt(0).toUpperCase() + cat.slice(1)}

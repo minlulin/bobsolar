@@ -27,9 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useDeleteInventoryItem, useUpdateInventoryItem } from "@/hooks/use-inventory";
 import type { InventoryItem } from "@/lib/db/schema";
@@ -50,6 +48,16 @@ const categoryIcons: Record<string, LucideIcon> = {
   cable: Box,
   accessory: Wrench,
   protection: Shield,
+};
+
+const categoryAccentColors: Record<string, string> = {
+  panel: "text-amber-500 bg-amber-500/8",
+  inverter: "text-sky-500 bg-sky-500/8",
+  battery: "text-emerald-500 bg-emerald-500/8",
+  mounting: "text-slate-500 bg-slate-500/8",
+  cable: "text-violet-500 bg-violet-500/8",
+  accessory: "text-orange-500 bg-orange-500/8",
+  protection: "text-rose-500 bg-rose-500/8",
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -84,6 +92,8 @@ export const InventoryCard = React.memo(function InventoryCard({
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [price, setPrice] = useState(item.unitPrice);
   const specSummary = formatInventorySpecSummary(item);
+  const itemLabel = getItemLabel(item);
+  const accentColor = categoryAccentColors[item.category] ?? "text-muted-foreground bg-muted/40";
 
   const handlePriceSave = (): void => {
     const val = parseFloat(price);
@@ -101,123 +111,120 @@ export const InventoryCard = React.memo(function InventoryCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.15 }}
     >
-      <Card className="glass group relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-2 opacity-0 transition-opacity group-hover:opacity-100">
-          {canEdit && (
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Edit ${item.name}`}
-                className="h-8 w-8"
-                onClick={() => {
-                  onEdit(item);
-                }}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Delete ${item.name}`}
-                    className="text-destructive h-8 w-8"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone and will permanently remove {item.name}.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        deleteItem(item.id);
-                      }}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+      <div className="group relative flex items-center gap-3 rounded-lg border border-transparent px-3 py-2.5 transition-colors hover:border-border/60 hover:bg-muted/30">
+        {/* Category icon */}
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+            accentColor,
+          )}
+        >
+          {Icon ? <Icon className="h-4 w-4" /> : <Box className="h-4 w-4" />}
+        </div>
+
+        {/* Name + spec */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium leading-tight">{item.name}</span>
+            <span className="text-muted-foreground/60 hidden text-[10px] font-medium uppercase tracking-wider sm:inline">
+              {getInventoryCategoryLabel(item.category)}
+            </span>
+          </div>
+          {(itemLabel || specSummary) && (
+            <p className="text-muted-foreground mt-0.5 truncate text-xs">
+              {itemLabel && specSummary
+                ? `${itemLabel} · ${specSummary}`
+                : (itemLabel ?? specSummary)}
+            </p>
           )}
         </div>
 
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="bg-solar/10 text-solar-amber rounded-xl p-3">
-              {Icon ? <Icon className="h-6 w-6" /> : <Box className="h-6 w-6" />}
+        {/* Price */}
+        <div className="flex shrink-0 items-center gap-2">
+          {isEditingPrice ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                className="h-7 w-28 text-right font-mono text-sm"
+                value={price}
+                onChange={(e) => {
+                  setPrice(e.target.value);
+                }}
+                onBlur={handlePriceSave}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handlePriceSave();
+                }}
+              />
+              {isUpdating && <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />}
             </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-heading mb-1 truncate text-lg leading-none font-semibold">
-                {item.name}
-              </h3>
-              <p className="text-muted-foreground truncate text-sm">{getItemLabel(item) ?? ""}</p>
-              {specSummary && (
-                <p className="text-muted-foreground mt-1 truncate text-xs">{specSummary}</p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (canEdit) setIsEditingPrice(true);
+              }}
+              className={cn(
+                "font-mono text-sm font-semibold tabular-nums transition-colors",
+                canEdit && "cursor-pointer hover:text-solar-amber",
               )}
-            </div>
-          </div>
+            >
+              {formatMMK(item.unitPrice)}
+            </button>
+          )}
+        </div>
 
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">Unit Price</span>
-              <div className="relative flex items-center gap-2">
-                {isEditingPrice ? (
-                  <div className="flex items-center gap-1">
-                    <Input
-                      autoFocus
-                      className="h-8 w-32 text-right font-mono"
-                      value={price}
-                      onChange={(e) => {
-                        setPrice(e.target.value);
-                      }}
-                      onBlur={handlePriceSave}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handlePriceSave();
-                      }}
-                    />
-                    {isUpdating && (
-                      <Loader2 className="text-muted-foreground h-3 w-3 animate-spin" />
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
+        {/* Actions */}
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label={`Edit ${item.name}`}
+              className="h-7 w-7"
+              onClick={() => {
+                onEdit(item);
+              }}
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Delete ${item.name}`}
+                  className="text-destructive h-7 w-7"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone and will permanently remove {item.name}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
                     onClick={() => {
-                      if (canEdit) setIsEditingPrice(true);
+                      deleteItem(item.id);
                     }}
-                    className={cn(
-                      "hover:text-solar-amber font-mono text-lg font-bold transition-colors",
-                      canEdit && "cursor-pointer",
-                    )}
                   >
-                    {formatMMK(item.unitPrice)}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-sm">Category</span>
-              <Badge variant="secondary">{getInventoryCategoryLabel(item.category)}</Badge>
-            </div>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </motion.div>
   );
 });

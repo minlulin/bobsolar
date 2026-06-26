@@ -574,7 +574,7 @@ describe("project-actions high-impact branches", () => {
   it("returns project detail with profitability", async () => {
     state.receivedTotal = "25000";
     state.projectDetailRow = {
-      ...makeProject("in_progress"),
+      ...makeProject("completed"),
       customer: {
         id: "c1",
         name: "Customer",

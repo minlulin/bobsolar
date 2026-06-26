@@ -21,7 +21,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("http://localhost/api/chat", {
+      const req = new NextRequest("http://localhost/api/upload", {
         method: "GET",
       });
 
@@ -35,7 +35,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("http://localhost/api/chat", {
+      const req = new NextRequest("http://localhost/api/upload", {
         method: "HEAD",
       });
 
@@ -49,7 +49,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("http://localhost/api/chat", {
+      const req = new NextRequest("http://localhost/api/upload", {
         method: "OPTIONS",
       });
 
@@ -65,7 +65,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("http://localhost/api/chat", {
+      const req = new NextRequest("http://localhost/api/upload", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ test: true }),
@@ -83,7 +83,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("https://bobsolar.com/api/chat", {
+      const req = new NextRequest("https://bobsolar.com/api/upload", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -105,7 +105,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("https://bobsolar.com/api/chat", {
+      const req = new NextRequest("https://bobsolar.com/api/upload", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -127,7 +127,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("https://bobsolar.com/api/chat", {
+      const req = new NextRequest("https://bobsolar.com/api/upload", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -149,7 +149,7 @@ describe("CSRF protection", () => {
       const handler = vi.fn(async () => new Response("ok"));
       const wrapped = withCsrf(handler);
 
-      const req = new NextRequest("https://bobsolar.com/api/chat", {
+      const req = new NextRequest("https://bobsolar.com/api/upload", {
         method: "POST",
         headers: {
           "content-type": "application/json",

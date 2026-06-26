@@ -7,24 +7,21 @@ interface ListGridSkeletonProps {
   count?: number;
 }
 
-export function ListGridSkeleton({ count = 8 }: ListGridSkeletonProps): React.JSX.Element {
+export function ListGridSkeleton({ count = 12 }: ListGridSkeletonProps): React.JSX.Element {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="divide-y divide-border/40 rounded-lg border border-border/40 bg-card/30">
       {Array.from({ length: count }).map((_, index) => (
         <div
           // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton has no stable identifier
           key={`skeleton-${index}`}
-          className="bg-muted/40 border-border/60 rounded-xl border p-3.5"
+          className="flex items-center gap-3 px-3 py-2.5"
         >
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <Skeleton className="h-6 w-6 rounded-full" />
+          <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
+          <div className="min-w-0 flex-1">
+            <Skeleton className="mb-1 h-4 w-36" />
+            <Skeleton className="h-3 w-24" />
           </div>
-          <Skeleton className="mb-2 h-5 w-40" />
-          <Skeleton className="mb-5 h-4 w-28" />
-          <Skeleton className="mb-2 h-4 w-full" />
-          <Skeleton className="mb-2 h-4 w-11/12" />
-          <Skeleton className="h-4 w-9/12" />
+          <Skeleton className="h-4 w-20 shrink-0" />
         </div>
       ))}
     </div>

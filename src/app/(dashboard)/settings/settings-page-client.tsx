@@ -19,24 +19,14 @@ import { COMPANY_SETTING_KEYS } from "@/lib/domain/settings-keys";
 import { settingsKeys } from "@/lib/query-keys";
 import { type CompanySettingsInput, companySettingsSchema } from "@/lib/validators/settings";
 import { AccountTab } from "./components/account-tab";
-import { ApiKeyStatusModal } from "./components/api-key-status-modal";
 import { BackupTab } from "./components/backup-tab";
-import { KnowledgeBaseTab } from "./components/knowledge-base-tab";
 import { PartnersTab } from "./components/partners-tab";
 import { PreferencesTab } from "./components/preferences-tab";
 import { UserManagementTab } from "./components/user-management-tab";
 
 const LOGO_KEY = COMPANY_SETTING_KEYS.LOGO_URL;
 
-type SettingsTab =
-  | "company"
-  | "users"
-  | "partners"
-  | "preferences"
-  | "account"
-  | "backup"
-  | "apiKeys"
-  | "knowledge";
+type SettingsTab = "company" | "users" | "partners" | "preferences" | "account" | "backup";
 
 type CompanyForm = CompanySettingsInput;
 
@@ -201,20 +191,6 @@ export default function SettingsPage(): React.JSX.Element {
             active={activeTab === "backup"}
             onClick={() => {
               setActiveTab("backup");
-            }}
-          />
-          <SettingsTabButton
-            label="API Keys"
-            active={activeTab === "apiKeys"}
-            onClick={() => {
-              setActiveTab("apiKeys");
-            }}
-          />
-          <SettingsTabButton
-            label="Knowledge Base"
-            active={activeTab === "knowledge"}
-            onClick={() => {
-              setActiveTab("knowledge");
             }}
           />
         </div>
@@ -392,77 +368,6 @@ export default function SettingsPage(): React.JSX.Element {
       {activeTab === "preferences" ? <PreferencesTab /> : null}
       {activeTab === "account" ? <AccountTab /> : null}
       {activeTab === "backup" ? <BackupTab /> : null}
-      {activeTab === "apiKeys" ? (
-        <section className="border-border bg-card max-w-3xl space-y-6 rounded-xl border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-[11px] font-bold tracking-[0.3em] uppercase">
-                Gemini API Key Rotation
-              </Label>
-              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                Monitor the status of your configured Gemini API keys. When a key hits its quota,
-                the system automatically fails over to the next available key.
-              </p>
-            </div>
-            <ApiKeyStatusModal />
-          </div>
-
-          <div className="space-y-4 rounded-lg border border-dashed p-4">
-            <p className="text-muted-foreground text-xs font-semibold">Configuration Guide</p>
-            <div className="space-y-3 text-sm">
-              <div className="flex gap-3">
-                <span className="text-muted-foreground font-mono text-xs">1.</span>
-                <p className="text-muted-foreground">
-                  Add all 5 API keys as environment variables in Vercel:{" "}
-                  <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                    GEMINI_API_KEY_PRIMARY
-                  </code>
-                  ,{" "}
-                  <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                    GEMINI_API_KEY_BACKUP_1
-                  </code>
-                  ,{" "}
-                  <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                    GEMINI_API_KEY_BACKUP_2
-                  </code>
-                  ,{" "}
-                  <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                    GEMINI_API_KEY_BACKUP_3
-                  </code>
-                  ,{" "}
-                  <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                    GEMINI_API_KEY_BACKUP_4
-                  </code>
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-muted-foreground font-mono text-xs">2.</span>
-                <p className="text-muted-foreground">
-                  Each key should be from a separate Google account for independent quota pools.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-muted-foreground font-mono text-xs">3.</span>
-                <p className="text-muted-foreground">
-                  When a key hits quota, it enters a 60-second cooldown. The system automatically
-                  rotates to the next available key.
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <span className="text-muted-foreground font-mono text-xs">4.</span>
-                <p className="text-muted-foreground">
-                  If all keys are on cooldown, the API returns a 503 with a Retry-After header.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : null}
-      {activeTab === "knowledge" ? (
-        <section className="border-border bg-card max-w-4xl rounded-xl border p-6">
-          <KnowledgeBaseTab />
-        </section>
-      ) : null}
     </div>
   );
 }

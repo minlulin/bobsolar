@@ -7,14 +7,18 @@ export const invoiceLineSchema = z.object({
   taxAmount: z.number().min(0).default(0),
 });
 
-export const createInvoiceSchema = z.object({
-  projectId: z.string().uuid("Invalid project ID"),
-  customerId: z.string().uuid("Invalid customer ID"),
-  invoiceDate: z.string().datetime(),
-  dueDate: z.string().datetime(),
-  lines: z.array(invoiceLineSchema).min(1, "At least one line item is required"),
-  notes: z.string().optional(),
-});
+export const createInvoiceSchema = z
+  .object({
+    projectId: z.string().uuid("Invalid project ID"),
+    invoiceDate: z.string().datetime(),
+    dueDate: z.string().datetime(),
+    lines: z.array(invoiceLineSchema).min(1, "At least one line item is required"),
+    notes: z.string().optional(),
+  })
+  .refine((data) => new Date(data.dueDate) >= new Date(data.invoiceDate), {
+    message: "Due date must be on or after invoice date",
+    path: ["dueDate"],
+  });
 export type CreateInvoiceInput = z.input<typeof createInvoiceSchema>;
 export type CreateInvoiceParsed = z.output<typeof createInvoiceSchema>;
 

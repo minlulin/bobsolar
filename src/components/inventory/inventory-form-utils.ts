@@ -34,13 +34,6 @@ export function deriveInventoryName(
   ) {
     return specifications["sizeCrossSection"].trim();
   }
-  if (
-    (category === "labor" || category === "service") &&
-    typeof specifications["note"] === "string" &&
-    specifications["note"].trim().length > 0
-  ) {
-    return specifications["note"].trim();
-  }
   return trimmedFallback.length > 0 ? trimmedFallback : `${category} item`;
 }
 

@@ -288,6 +288,13 @@
       "when": 1782378100894,
       "tag": "0040_loose_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1782463980051,
+      "tag": "0041_colorful_giant_girl",
+      "breakpoints": true
     }
   ]
 }

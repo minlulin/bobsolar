@@ -258,8 +258,7 @@ export function UserManagementTab(): React.JSX.Element {
               </select>
               {newUser.role === "technician" ? (
                 <p className="text-muted-foreground text-xs">
-                  Technicians can only use the chatbot for inverter diagnostics. They cannot access
-                  the dashboard.
+                  Technicians can access inverter diagnostic tools but cannot access the dashboard.
                 </p>
               ) : null}
             </div>

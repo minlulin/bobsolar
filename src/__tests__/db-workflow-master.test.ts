@@ -278,7 +278,66 @@ describeDb("Master workflow integration: DB + server actions", () => {
     );
     projectId = createdProject.id;
 
-    // Create and post an invoice to recognize revenue for the project
+    // Create and post an invoice to recognize revenue for the project.
+    // The project must be completed before posting an invoice (revenue recognition).
+    const methods0 = unwrap(await getPaymentMethods());
+    const defaultMethod0 = methods0[0];
+    if (!defaultMethod0) throw new Error("No default payment method found");
+    const defaultMethodId0 = defaultMethod0.id;
+    expect(defaultMethodId0).toBeTruthy();
+
+    const consumedCosts = unwrap(
+      await consumeProjectInventory({
+        projectId,
+        inventoryItemId: inventoryId,
+        paymentMethodId: defaultMethodId0 ?? "",
+        quantity: 2,
+        description: `${runTag} panel consumption`,
+        incurredDate: new Date(),
+      }),
+    );
+    expect(consumedCosts.length).toBeGreaterThan(0);
+
+    const costs = unwrap(
+      await addProjectCost({
+        projectId,
+        paymentMethodId: defaultMethodId0 ?? "",
+        description: `${runTag} install labor`,
+        amount: 100000,
+        costType: "labor",
+        incurredDate: new Date(),
+      }),
+    );
+    expect(costs.length).toBeGreaterThan(0);
+
+    // Verify paymentMethodId is stored in the database
+    const dbCosts = await db.query.projectCosts.findMany({
+      where: eq(projectCosts.projectId, projectId),
+    });
+    const laborCost = dbCosts.find((c) => c.costType === "labor");
+    expect(laborCost).toBeTruthy();
+    expect(laborCost?.paymentMethodId).toBe(defaultMethodId0);
+
+    const materialCost = dbCosts.find((c) => c.costType === "material");
+    expect(materialCost).toBeTruthy();
+    expect(materialCost?.paymentMethodId).toBeNull();
+
+    // Advance project to completed before posting invoice (revenue recognition
+    // is only allowed for completed projects).
+    unwrap(
+      await updateProject({
+        id: projectId,
+        status: "in_progress",
+      }),
+    );
+    unwrap(
+      await updateProject({
+        id: projectId,
+        status: "installation_completed",
+      }),
+    );
+    unwrap(await markProjectCompleted(projectId));
+
     const invoiceResult = unwrap(
       await createInvoice({
         projectId,
@@ -340,42 +399,6 @@ describeDb("Master workflow integration: DB + server actions", () => {
     const defaultMethodId = defaultMethod.id;
     expect(defaultMethodId).toBeTruthy();
 
-    const consumedCosts = unwrap(
-      await consumeProjectInventory({
-        projectId,
-        inventoryItemId: inventoryId,
-        paymentMethodId: defaultMethodId ?? "",
-        quantity: 2,
-        description: `${runTag} panel consumption`,
-        incurredDate: new Date(),
-      }),
-    );
-    expect(consumedCosts.length).toBeGreaterThan(0);
-
-    const costs = unwrap(
-      await addProjectCost({
-        projectId,
-        paymentMethodId: defaultMethodId ?? "",
-        description: `${runTag} install labor`,
-        amount: 100000,
-        costType: "labor",
-        incurredDate: new Date(),
-      }),
-    );
-    expect(costs.length).toBeGreaterThan(0);
-
-    // Verify paymentMethodId is stored in the database
-    const dbCosts = await db.query.projectCosts.findMany({
-      where: eq(projectCosts.projectId, projectId),
-    });
-    const laborCost = dbCosts.find((c) => c.costType === "labor");
-    expect(laborCost).toBeTruthy();
-    expect(laborCost?.paymentMethodId).toBe(defaultMethodId);
-
-    const materialCost = dbCosts.find((c) => c.costType === "material");
-    expect(materialCost).toBeTruthy();
-    expect(materialCost?.paymentMethodId).toBeNull();
-
     const stockRow = await db.query.inventoryItems.findFirst({
       where: eq(inventoryItems.id, inventoryId),
       columns: { stockQty: true },
@@ -423,8 +446,7 @@ describeDb("Master workflow integration: DB + server actions", () => {
     expect(projectDetail.profitability.inventoryConsumedCost).toBe(400000);
     expect(projectDetail.profitability.additionalCosts).toBe(100000);
 
-    unwrap(await updateProject({ id: projectId, status: "in_progress" }));
-    unwrap(await updateProject({ id: projectId, status: "installation_completed" }));
+    // Project is already completed from earlier in the workflow; record final payment.
     unwrap(
       await recordPayment({
         projectId,
@@ -440,7 +462,6 @@ describeDb("Master workflow integration: DB + server actions", () => {
         ],
       }),
     );
-    unwrap(await markProjectCompleted(projectId));
 
     // Verify that the month-end close checks pass
     const currentYear = new Date().getFullYear();

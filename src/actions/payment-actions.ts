@@ -44,6 +44,24 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
     });
     if (!project) return handleNotFoundError("Project", data.projectId);
 
+    // Enforce project status rules for payments.
+    // Final payments require a completed project; advances require an active project.
+    if (data.paymentType === "final") {
+      if (project.status !== "completed") {
+        return handleStateError(
+          `Final payments can only be recorded on completed projects. Current status: ${project.status}.`,
+        );
+      }
+    } else {
+      // advance
+      const allowedStatuses = ["in_progress", "on_hold", "installation_completed", "completed"];
+      if (!allowedStatuses.includes(project.status)) {
+        return handleStateError(
+          `Advance payments cannot be recorded on projects with status '${project.status}'.`,
+        );
+      }
+    }
+
     const method = await db.query.paymentMethods.findFirst({
       where: eq(paymentMethods.id, data.paymentMethodId),
     });
@@ -159,9 +177,21 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
           const [invoice] = await tx
             .select()
             .from(projectInvoices)
-            .where(eq(projectInvoices.id, alloc.invoiceId))
+            .where(
+              and(
+                eq(projectInvoices.id, alloc.invoiceId),
+                eq(projectInvoices.projectId, data.projectId),
+              ),
+            )
             .for("update");
-          if (!invoice) continue;
+          if (!invoice) {
+            throw new Error("invoice_not_found_or_mismatched_project");
+          }
+
+          const currentBalanceDue = Math.round(Number(invoice.balanceDue));
+          if (Math.round(alloc.amount) > currentBalanceDue) {
+            throw new Error("allocation_exceeds_invoice_balance");
+          }
 
           await tx.insert(projectPaymentAllocations).values({
             paymentId: created.id,
@@ -169,15 +199,15 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
             amount: String(alloc.amount),
           });
 
-          const newPaidAmount = Number(invoice.paidAmount) + alloc.amount;
-          const newBalanceDue = Math.max(0, Number(invoice.total) - newPaidAmount);
-          const newStatus = newBalanceDue === 0 ? "paid" : "partial";
+          const newPaidAmount = Math.round(Number(invoice.paidAmount)) + Math.round(alloc.amount);
+          const newBalanceDue = Math.round(Number(invoice.total)) - newPaidAmount;
+          const newStatus = newBalanceDue <= 0 ? "paid" : "partial";
 
           await tx
             .update(projectInvoices)
             .set({
               paidAmount: String(newPaidAmount),
-              balanceDue: String(newBalanceDue),
+              balanceDue: String(Math.max(0, newBalanceDue)),
               status: newStatus,
               updatedAt: new Date(),
             })
@@ -206,6 +236,16 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
       return handleStateError(
         "A payment with the same date, method, and reference already exists for this project. " +
           "Please add a unique reference number to distinguish this payment.",
+      );
+    }
+    if (error instanceof Error && error.message === "invoice_not_found_or_mismatched_project") {
+      return handleStateError(
+        "One or more allocated invoices were not found or do not belong to this project.",
+      );
+    }
+    if (error instanceof Error && error.message === "allocation_exceeds_invoice_balance") {
+      return handleStateError(
+        "An allocation amount exceeds the remaining balance due on one of the invoices.",
       );
     }
     return handleActionError(error, "recordPayment", "Failed to record payment");

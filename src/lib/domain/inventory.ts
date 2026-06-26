@@ -34,8 +34,6 @@ export const DEFAULT_SPECIFICATIONS_BY_CATEGORY: Record<string, unknown> = {
   cable: { cableType: "dc_cable", sizeCrossSection: "", unitOfMeasurement: "" },
   accessory: { type: "" },
   protection: { type: "" },
-  labor: { note: "" },
-  service: { note: "" },
 };
 
 export const PANEL_CELL_TYPE_LABELS: Record<string, string> = {
@@ -74,8 +72,6 @@ export const INVENTORY_CATEGORY_LABELS: Record<InventoryCategory, string> = {
   cable: "Cable",
   accessory: "Accessory",
   protection: "Protection",
-  labor: "Labor",
-  service: "Service",
 };
 
 export type BrandModelResult = {
@@ -185,9 +181,6 @@ export function formatInventorySpecSummary({
       ];
       return parts.filter((part): part is string => part !== null).join(" / ") || null;
     }
-    case "labor":
-    case "service":
-      return stringifySpec(specifications["note"]);
   }
 }
 

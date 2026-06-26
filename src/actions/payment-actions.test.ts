@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   auth: { userId: "u1", role: "admin" as const },
-  project: { id: "11111111-1111-4111-8111-111111111111", status: "in_progress" },
+  project: { id: "11111111-1111-4111-8111-111111111111", status: "completed" },
   method: { id: "22222222-2222-4222-8222-222222222222", name: "Cash" },
   // biome-ignore lint/suspicious/noExplicitAny: test mock state
   paymentRows: [] as Array<any>,
@@ -88,7 +88,7 @@ vi.mock("@/lib/db", () => {
 describe("payment-actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    state.project = { id: "11111111-1111-4111-8111-111111111111", status: "in_progress" };
+    state.project = { id: "11111111-1111-4111-8111-111111111111", status: "completed" };
     state.method = { id: "22222222-2222-4222-8222-222222222222", name: "Cash" };
     state.paymentRows = [];
     state.selectQueue = [];

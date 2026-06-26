@@ -13,7 +13,7 @@ import {
   journalEntries,
   journalLines,
   ledgerAccounts,
-  projectPayments,
+  projectInvoices,
   projects,
   quotations,
   users,
@@ -84,12 +84,15 @@ const getCachedSharedStats = unstable_cache(
       await Promise.all([
         db
           .select({
-            totalRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed'), 0)`,
+            // Revenue: recognized revenue from posted invoices (unreversed, non-voided)
+            totalRevenue: sql<string>`coalesce(sum(${projectInvoices.total}::numeric) filter (where ${projectInvoices.status} in ('unpaid', 'partial', 'paid') and exists (select 1 from ${journalEntries} je where je.source_type = 'project_invoice' and je.source_id = ${projectInvoices.id} and je.is_reversed = false)), 0)`,
             activeProjects: sql<number>`cast(count(*) filter (where ${projects.status} in ('planning', 'in_progress', 'on_hold')) as int)`,
-            thisMonthRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${thisMonthStart} and ${projects.actualCompletion} <= ${thisMonthEnd}), 0)`,
-            prevMonthRevenue: sql<string>`coalesce(sum(${projects.quotedTotal}::numeric) filter (where ${projects.status} = 'completed' and ${projects.actualCompletion} >= ${prevMonthStart} and ${projects.actualCompletion} <= ${prevMonthEnd}), 0)`,
+            thisMonthRevenue: sql<string>`coalesce(sum(${projectInvoices.total}::numeric) filter (where ${projectInvoices.status} in ('unpaid', 'partial', 'paid') and exists (select 1 from ${journalEntries} je where je.source_type = 'project_invoice' and je.source_id = ${projectInvoices.id} and je.is_reversed = false) and ${journalEntries.entryDate} >= ${thisMonthStart} and ${journalEntries.entryDate} <= ${thisMonthEnd}), 0)`,
+            prevMonthRevenue: sql<string>`coalesce(sum(${projectInvoices.total}::numeric) filter (where ${projectInvoices.status} in ('unpaid', 'partial', 'paid') and exists (select 1 from ${journalEntries} je where je.source_type = 'project_invoice' and je.source_id = ${projectInvoices.id} and je.is_reversed = false) and ${journalEntries.entryDate} >= ${prevMonthStart} and ${journalEntries.entryDate} <= ${prevMonthEnd}), 0)`,
           })
-          .from(projects),
+          .from(projects)
+          .leftJoin(projectInvoices, eq(projectInvoices.projectId, projects.id))
+          .leftJoin(journalEntries, eq(journalEntries.sourceId, projectInvoices.id)),
         db
           .select({
             pendingQuotes: sql<number>`cast(count(*) filter (where ${quotations.status} in ('draft', 'sent') and ${quotations.isArchived} = false) as int)`,
@@ -386,33 +389,19 @@ const getCachedFinanceQuickView = unstable_cache(
       db
         .select({
           arCount: sql<number>`cast(count(*) filter (
-            where (
-              cast(${projects.quotedTotal} as numeric) - coalesce((
-                select sum(cast(${projectPayments.amount} as numeric))
-                from ${projectPayments}
-                where ${projectPayments.projectId} = ${projects.id}
-              ), 0)
-            ) > 0
+            where ${projectInvoices.status} in ('unpaid', 'partial')
+            and ${projectInvoices.balanceDue} > 0
+            and exists (select 1 from ${journalEntries} je where je.source_type = 'project_invoice' and je.source_id = ${projectInvoices.id} and je.is_reversed = false)
           ) as int)`.as("ar_count"),
-          arAmount: sql<string>`coalesce(sum(greatest(
-            cast(${projects.quotedTotal} as numeric) - coalesce((
-              select sum(cast(${projectPayments.amount} as numeric))
-              from ${projectPayments}
-              where ${projectPayments.projectId} = ${projects.id}
-            ), 0),
-            0
-          )), 0)`.as("ar_amount"),
+          arAmount: sql<string>`coalesce(sum(
+            cast(${projectInvoices.balanceDue} as numeric)
+          ) filter (
+            where ${projectInvoices.status} in ('unpaid', 'partial')
+            and ${projectInvoices.balanceDue} > 0
+            and exists (select 1 from ${journalEntries} je where je.source_type = 'project_invoice' and je.source_id = ${projectInvoices.id} and je.is_reversed = false)
+          ), 0)`.as("ar_amount"),
         })
-        .from(projects)
-        .where(
-          inArray(projects.status, [
-            "planning",
-            "in_progress",
-            "on_hold",
-            "installation_completed",
-            "completed",
-          ]),
-        ),
+        .from(projectInvoices),
     ]);
 
     const financeRow = financeRows[0];

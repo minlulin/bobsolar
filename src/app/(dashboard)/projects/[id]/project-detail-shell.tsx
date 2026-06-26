@@ -649,12 +649,20 @@ export function ProjectDetailShell({
                   <p
                     className={cn(
                       "font-mono text-base font-bold",
-                      proj.profitability.netProfit >= 0 ? "text-emerald-300" : "text-rose-400",
+                      proj.profitability.netProfit !== null && proj.profitability.netProfit >= 0
+                        ? "text-emerald-300"
+                        : "text-rose-400",
                     )}
                   >
-                    {formatMMK(proj.profitability.netProfit)}
+                    {proj.profitability.netProfit !== null
+                      ? formatMMK(proj.profitability.netProfit)
+                      : "—"}
                     <span className="text-muted-foreground ml-2 text-[10px] font-normal">
-                      ({proj.profitability.netMarginPercent}%)
+                      (
+                      {proj.profitability.netMarginPercent !== null
+                        ? `${proj.profitability.netMarginPercent}%`
+                        : "—"}
+                      )
                     </span>
                   </p>
                 </div>

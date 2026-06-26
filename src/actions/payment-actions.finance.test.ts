@@ -35,7 +35,11 @@ vi.mock("@/lib/finance/ledger", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
-      projects: { findFirst: vi.fn(async () => (state.projectExists ? { id: "p1" } : null)) },
+      projects: {
+        findFirst: vi.fn(async () =>
+          state.projectExists ? { id: "p1", status: "completed" } : null,
+        ),
+      },
       paymentMethods: {
         findFirst: vi.fn(async () =>
           state.methodName ? { id: "pm1", name: state.methodName } : null,

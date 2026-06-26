@@ -23,7 +23,7 @@ export default function TechnicianLoginPage(): React.JSX.Element {
       if (!result.success) {
         toast.error(result.error);
       } else {
-        router.push("/chat");
+        router.push("/");
       }
     } catch (err) {
       console.error("[technician-login]", err);
@@ -39,7 +39,7 @@ export default function TechnicianLoginPage(): React.JSX.Element {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Technician Access</CardTitle>
           <CardDescription className="text-center">
-            Enter your name and PIN to use the inverter diagnostic chatbot
+            Enter your name and PIN to access the inverter diagnostic tool
           </CardDescription>
         </CardHeader>
         <CardContent>

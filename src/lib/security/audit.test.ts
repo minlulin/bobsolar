@@ -123,20 +123,20 @@ describe("security audit trail", () => {
       mockValues.mockResolvedValueOnce(undefined);
 
       const { logSecurityEvent } = await import("./audit");
-      await logSecurityEvent("user-1", "csrf_blocked", { path: "/api/chat" });
+      await logSecurityEvent("user-1", "csrf_blocked", { path: "/api/upload" });
 
       expect(mockValues).toHaveBeenCalledTimes(1);
       const callArg = getAuditInsert();
       // Custom events map to "login" action enum, real type in details
       expect(callArg.details["eventType"]).toBe("csrf_blocked");
-      expect(callArg.details["path"]).toBe("/api/chat");
+      expect(callArg.details["path"]).toBe("/api/upload");
     });
 
     it("logs rate_limit_hit event", async () => {
       mockValues.mockResolvedValueOnce(undefined);
 
       const { logSecurityEvent } = await import("./audit");
-      await logSecurityEvent("user-1", "rate_limit_hit", { endpoint: "/api/chat" });
+      await logSecurityEvent("user-1", "rate_limit_hit", { endpoint: "/api/upload" });
 
       expect(mockValues).toHaveBeenCalledTimes(1);
       const callArg = getAuditInsert();

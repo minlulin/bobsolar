@@ -30,8 +30,6 @@ export const inventoryCategoryEnum = pgEnum("inventory_category", [
   "cable",
   "accessory",
   "protection",
-  "labor",
-  "service",
 ]);
 
 export type InventoryCategory = (typeof inventoryCategoryEnum.enumValues)[number];
@@ -182,18 +180,6 @@ export const ownerTransactionStatusEnum = pgEnum("owner_transaction_status", [
 ]);
 
 export type OwnerTransactionStatus = (typeof ownerTransactionStatusEnum.enumValues)[number];
-
-// --- Chat Enums ---
-
-export const chatSessionStatusEnum = pgEnum("chat_session_status", [
-  "active",
-  "expired",
-  "revoked",
-]);
-
-export type ChatSessionStatus = (typeof chatSessionStatusEnum.enumValues)[number];
-
-// --- Tables ---
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -859,126 +845,12 @@ export const ownerTransactions = pgTable(
   ],
 );
 
-// --- Chat Tables ---
-
-export const chatConversations = pgTable(
-  "chat_conversations",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
-      .notNull(),
-    title: text("title"),
-    brand: text("brand"),
-    lastErrorCode: text("last_error_code"),
-    metadata: jsonb("metadata"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("chat_conversations_user_id_idx").on(table.userId),
-    index("chat_conversations_updated_at_idx").on(table.updatedAt),
-  ],
-);
-
-export const chatMessages = pgTable(
-  "chat_messages",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    conversationId: uuid("conversation_id")
-      .references(() => chatConversations.id, { onDelete: "cascade" })
-      .notNull(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
-      .notNull(),
-    role: text("role").notNull(),
-    content: text("content").notNull(),
-    parts: jsonb("parts"),
-    parentMessageId: uuid("parent_message_id"),
-    metadata: jsonb("metadata"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("chat_messages_conversation_id_idx").on(table.conversationId),
-    index("chat_messages_user_id_idx").on(table.userId),
-    index("chat_messages_parent_message_id_idx").on(table.parentMessageId),
-    index("chat_messages_created_at_idx").on(table.createdAt),
-  ],
-);
-
-export const chatSessions = pgTable(
-  "chat_sessions",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
-      .notNull(),
-    conversationId: uuid("conversation_id").references(() => chatConversations.id, {
-      onDelete: "set null",
-    }),
-    status: chatSessionStatusEnum("status").default("active").notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    expiresAt: timestamp("expires_at").notNull(),
-    lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("chat_sessions_user_id_idx").on(table.userId),
-    index("chat_sessions_conversation_id_idx").on(table.conversationId),
-    index("chat_sessions_status_idx").on(table.status),
-    index("chat_sessions_expires_at_idx").on(table.expiresAt),
-  ],
-);
-
-export const chatUsageLogs = pgTable(
-  "chat_usage_logs",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
-      .references(() => users.id, { onDelete: "cascade" })
-      .notNull(),
-    sessionId: uuid("session_id").references(() => chatSessions.id, {
-      onDelete: "set null",
-    }),
-    conversationId: uuid("conversation_id").references(() => chatConversations.id, {
-      onDelete: "set null",
-    }),
-    messageId: uuid("message_id").references(() => chatMessages.id, {
-      onDelete: "set null",
-    }),
-    model: text("model").notNull(),
-    promptTokens: integer("prompt_tokens"),
-    completionTokens: integer("completion_tokens"),
-    totalTokens: integer("total_tokens"),
-    costUsd: decimal("cost_usd", { precision: 10, scale: 6 }),
-    latencyMs: integer("latency_ms"),
-    errorCode: text("error_code"),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("chat_usage_logs_user_id_idx").on(table.userId),
-    index("chat_usage_logs_session_id_idx").on(table.sessionId),
-    index("chat_usage_logs_conversation_id_idx").on(table.conversationId),
-    index("chat_usage_logs_created_at_idx").on(table.createdAt),
-    index("chat_usage_logs_ip_address_idx").on(table.ipAddress),
-  ],
-);
-
-// --- Relations ---
-
 export const usersRelations = relations(users, ({ many }) => ({
   quotations: many(quotations),
   projectCosts: many(projectCosts),
   projectRemarks: many(projectRemarks),
   notifications: many(notifications),
   generalExpenses: many(generalExpenses),
-  chatConversations: many(chatConversations),
-  chatMessages: many(chatMessages),
-  chatSessions: many(chatSessions),
-  chatUsageLogs: many(chatUsageLogs),
 }));
 
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -1281,60 +1153,6 @@ export const ownerTransactionsRelations = relations(ownerTransactions, ({ one })
   }),
 }));
 
-// --- Chat Relations ---
-
-export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
-  user: one(users, {
-    fields: [chatConversations.userId],
-    references: [users.id],
-  }),
-  messages: many(chatMessages),
-  sessions: many(chatSessions),
-  usageLogs: many(chatUsageLogs),
-}));
-
-export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-  conversation: one(chatConversations, {
-    fields: [chatMessages.conversationId],
-    references: [chatConversations.id],
-  }),
-  user: one(users, {
-    fields: [chatMessages.userId],
-    references: [users.id],
-  }),
-}));
-
-export const chatSessionsRelations = relations(chatSessions, ({ one, many }) => ({
-  user: one(users, {
-    fields: [chatSessions.userId],
-    references: [users.id],
-  }),
-  conversation: one(chatConversations, {
-    fields: [chatSessions.conversationId],
-    references: [chatConversations.id],
-  }),
-  usageLogs: many(chatUsageLogs),
-}));
-
-export const chatUsageLogsRelations = relations(chatUsageLogs, ({ one }) => ({
-  user: one(users, {
-    fields: [chatUsageLogs.userId],
-    references: [users.id],
-  }),
-  session: one(chatSessions, {
-    fields: [chatUsageLogs.sessionId],
-    references: [chatSessions.id],
-  }),
-  conversation: one(chatConversations, {
-    fields: [chatUsageLogs.conversationId],
-    references: [chatConversations.id],
-  }),
-  message: one(chatMessages, {
-    fields: [chatUsageLogs.messageId],
-    references: [chatMessages.id],
-  }),
-}));
-
 // --- Idempotency ---
 
 export const idempotencyKeys = pgTable(
@@ -1465,17 +1283,3 @@ export type NewOwnerTransaction = InferInsertModel<typeof ownerTransactions>;
 
 export type AuditLog = InferSelectModel<typeof auditLogs>;
 export type NewAuditLog = InferInsertModel<typeof auditLogs>;
-
-// --- Chat Types ---
-
-export type ChatConversation = InferSelectModel<typeof chatConversations>;
-export type NewChatConversation = InferInsertModel<typeof chatConversations>;
-
-export type ChatMessage = InferSelectModel<typeof chatMessages>;
-export type NewChatMessage = InferInsertModel<typeof chatMessages>;
-
-export type ChatSession = InferSelectModel<typeof chatSessions>;
-export type NewChatSession = InferInsertModel<typeof chatSessions>;
-
-export type ChatUsageLog = InferSelectModel<typeof chatUsageLogs>;
-export type NewChatUsageLog = InferInsertModel<typeof chatUsageLogs>;

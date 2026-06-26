@@ -72,19 +72,6 @@ const protectionSpecificationsSchema = z
   })
   .strict();
 
-// Labor & Service: simple note field, no technical specs required
-const laborSpecificationsSchema = z
-  .object({
-    note: z.string().optional(),
-  })
-  .strict();
-
-const serviceSpecificationsSchema = z
-  .object({
-    note: z.string().optional(),
-  })
-  .strict();
-
 const inventorySpecificationsSchemaByCategory = {
   panel: panelSpecificationsSchema,
   inverter: inverterSpecificationsSchema,
@@ -93,8 +80,6 @@ const inventorySpecificationsSchemaByCategory = {
   cable: cableSpecificationsSchema,
   accessory: accessorySpecificationsSchema,
   protection: protectionSpecificationsSchema,
-  labor: laborSpecificationsSchema,
-  service: serviceSpecificationsSchema,
 } as const;
 
 const specificationsByCategorySchema = z.discriminatedUnion("category", [
@@ -125,14 +110,6 @@ const specificationsByCategorySchema = z.discriminatedUnion("category", [
   z.object({
     category: z.literal("protection"),
     specifications: protectionSpecificationsSchema,
-  }),
-  z.object({
-    category: z.literal("labor"),
-    specifications: laborSpecificationsSchema,
-  }),
-  z.object({
-    category: z.literal("service"),
-    specifications: serviceSpecificationsSchema,
   }),
 ]);
 
