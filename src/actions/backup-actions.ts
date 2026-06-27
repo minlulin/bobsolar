@@ -37,7 +37,7 @@ import {
   users,
   warrantyAlerts,
 } from "@/lib/db/schema";
-import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
+import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
 
 const BACKUP_FOLDER = "backups";
@@ -127,6 +127,18 @@ function serializeValue(value: unknown): unknown {
   return value;
 }
 
+/** Strip sensitive fields that should never appear in backup exports. */
+function stripSensitiveFields(
+  tableName: string,
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  if (tableName === "users") {
+    const { passwordHash: _pw, ...rest } = row;
+    return rest;
+  }
+  return row;
+}
+
 async function getTableManifest(): Promise<{
   manifest: Record<string, number>;
   totalRows: number;
@@ -207,7 +219,8 @@ function createBackupPayloadStream({
           );
 
           for (const [rowIndex, row] of rows.entries()) {
-            const serialized = serializeValue(row);
+            const sanitized = stripSensitiveFields(name, row as Record<string, unknown>);
+            const serialized = serializeValue(sanitized);
             enqueueJsonChunk(
               controller,
               counter,
@@ -317,6 +330,22 @@ export async function deleteBackup(url: string): Promise<ActionResponse<null>> {
   try {
     await requireAdmin();
     const token = requireBlobToken();
+
+    // Validate the URL points to a backup file (same check as download route)
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return errorResponse("Invalid backup URL");
+    }
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (
+      pathParts.length < 2 ||
+      pathParts[0] !== BACKUP_FOLDER ||
+      !pathParts[1]?.endsWith(".json")
+    ) {
+      return errorResponse("Invalid backup URL");
+    }
 
     await del(url, { token });
 

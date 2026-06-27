@@ -3,7 +3,7 @@ import { sealData, unsealData } from "iron-session";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { db } from "@/lib/db";
-import { type UserRole, users } from "@/lib/db/schema";
+import { type UserRole, userRoleEnum, users } from "@/lib/db/schema";
 import { SESSION_TTL_MS, SESSION_TTL_SECONDS } from "@/lib/domain/policies";
 
 /**
@@ -53,11 +53,20 @@ function assertSessionSecret(): string {
 
 /**
  * Validate SESSION_SECRET at app boot. Called from `src/app/layout.tsx`.
- * Only enforces in production — dev can run without it (tests don't care).
+ * In production, throws if the secret is missing or too short.
+ * In other environments, warns but does not block startup (tests don't care).
  */
 export function assertSessionSecretAtStartup(): void {
   if (process.env.NODE_ENV === "production") {
     assertSessionSecret();
+  } else {
+    const secret = process.env["SESSION_SECRET"];
+    if (!secret || secret.trim().length < 32) {
+      console.warn(
+        "[Auth] SESSION_SECRET is not set or too short (< 32 chars). " +
+          "Session cookies will be insecure. Set a strong secret before deploying.",
+      );
+    }
   }
 }
 
@@ -92,12 +101,15 @@ async function sealSessionCookie(
   });
 }
 
+const VALID_SESSION_ROLES = new Set(userRoleEnum.enumValues) as Set<string>;
+
 function isSealedSession(value: unknown): value is SealedSession {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
     typeof v["userId"] === "string" &&
-    (v["role"] === "admin" || v["role"] === "owner") &&
+    typeof v["role"] === "string" &&
+    VALID_SESSION_ROLES.has(v["role"]) &&
     typeof v["sv"] === "number" &&
     typeof v["iat"] === "number" &&
     typeof v["exp"] === "number"

@@ -202,7 +202,7 @@ describe("Phase 8: Warranty & Business Policies", () => {
     expect(ALERT_TYPES).toContain("follow_up");
   });
 
-  it("validates integer math in pricing engine", () => {
+  it("validates currency-precision math in pricing engine", () => {
     const result = calculateQuotation(
       [
         { quantity: 3, unitPrice: 100000 },
@@ -212,10 +212,12 @@ describe("Phase 8: Warranty & Business Policies", () => {
       5.5,
     );
 
-    expect(Number.isInteger(result.subtotal)).toBe(true);
-    expect(Number.isInteger(result.discountAmount)).toBe(true);
-    expect(Number.isInteger(result.taxAmount)).toBe(true);
-    expect(Number.isInteger(result.total)).toBe(true);
+    // All results should be rounded to 2 decimal places (cents)
+    const isCents = (n: number) => Number.isInteger(Math.round(n * 100));
+    expect(isCents(result.subtotal)).toBe(true);
+    expect(isCents(result.discountAmount)).toBe(true);
+    expect(isCents(result.taxAmount)).toBe(true);
+    expect(isCents(result.total)).toBe(true);
 
     // Total = subtotal - discount + tax
     expect(result.total).toBe(result.subtotal - result.discountAmount + result.taxAmount);
@@ -260,8 +262,10 @@ describe("Phase 10: Security", () => {
 describe("Phase 11: Build & Deployment Checks", () => {
   it("no floating point in pricing engine calculations", () => {
     const engineSrc = readFileSync(resolve(process.cwd(), "src/lib/pricing/engine.ts"), "utf-8");
-    const roundMatches = (engineSrc.match(/Math\.round/g) || []).length;
-    expect(roundMatches).toBeGreaterThanOrEqual(3);
+    // roundCurrency wraps Math.round for 2-decimal-place currency rounding
+    const roundCurrencyMatches = (engineSrc.match(/roundCurrency/g) || []).length;
+    const mathRoundMatches = (engineSrc.match(/Math\.round/g) || []).length;
+    expect(roundCurrencyMatches + mathRoundMatches).toBeGreaterThanOrEqual(3);
     expect(engineSrc.includes(".toFixed(")).toBe(false);
   });
 });

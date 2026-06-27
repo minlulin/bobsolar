@@ -7,19 +7,20 @@ type AdvisoryLockDb = {
 /**
  * PostgreSQL advisory lock helper.
  *
- * IMPORTANT — connection semantics:
- *   `pg_try_advisory_lock` is **session-scoped**. The lock lives on the
- *   connection that took it, and a pooled `db` handle may hand back a
- *   different connection on the next call. Callers MUST therefore pass a
- *   transaction handle (`tx` from `db.transaction(async tx => …)`) so the
- *   acquire / work / release sequence all runs on the same connection.
+ * IMPORTANT — connection & transaction semantics:
+ *   This class uses `pg_try_advisory_xact_lock` which is **transaction-scoped**.
+ *   The lock is automatically released when the transaction commits or rolls
+ *   back — there is no explicit `release()` call needed. This is the correct
+ *   behavior for atomic sequences (quote numbering, etc.).
+ *
+ *   Callers MUST pass a transaction handle (`tx` from `db.transaction(async tx => …)`)
+ *   so the acquire / work sequence all runs on the same connection.
  *
  * Usage:
  *   await db.transaction(async (tx) => {
  *     const lock = new AdvisoryLock(tx, BigInt(0x42_4f_42_53));
  *     if (await lock.acquire()) {
- *       // critical section
- *       await lock.release();
+ *       // critical section — lock auto-releases on tx commit/rollback
  *     }
  *   });
  */

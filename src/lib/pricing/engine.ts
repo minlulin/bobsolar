@@ -16,14 +16,19 @@ export interface PricingResult {
   total: number;
 }
 
+/** Round to 2 decimal places (cents) to avoid floating-point drift. */
+function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export function calculateLineItem(item: LineItem): number {
-  return Math.round(calculateLineItemPrecise(item));
+  return roundCurrency(calculateLineItemPrecise(item));
 }
 
 function calculateLineItemPrecise(item: LineItem): number {
   const { quantity, unitPrice, discountPercentage = 0 } = item;
-  const basePrice = quantity * unitPrice;
-  const discount = basePrice * (discountPercentage / 100);
+  const basePrice = roundCurrency(quantity * unitPrice);
+  const discount = roundCurrency(basePrice * (discountPercentage / 100));
   return basePrice - discount;
 }
 
@@ -36,9 +41,9 @@ export function calculateQuotation(
   // Each line item is already rounded; subtotal is their exact displayed sum.
   const subtotal = items.reduce((sum, item) => sum + calculateLineItem(item), 0);
 
-  const discountAmount = Math.round(subtotal * (globalDiscountPercentage / 100));
+  const discountAmount = roundCurrency(subtotal * (globalDiscountPercentage / 100));
   const taxableBase = subtotal - discountAmount;
-  const taxAmount = Math.round(taxableBase * (taxPercentage / 100));
+  const taxAmount = roundCurrency(taxableBase * (taxPercentage / 100));
   const total = subtotal - discountAmount + taxAmount;
 
   return {

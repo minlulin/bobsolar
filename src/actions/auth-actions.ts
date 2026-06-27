@@ -2,7 +2,8 @@
 
 import { eq, sql } from "drizzle-orm";
 import { verifyPassword } from "@/lib/auth/password";
-import { clearSessionCookies, createSession, getSessionFromCookie } from "@/lib/auth/session";
+import { clearSessionCookies, createSession } from "@/lib/auth/session";
+import { requireAuth } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import { auditLogs, authRateLimits, users } from "@/lib/db/schema";
 import {
@@ -14,6 +15,7 @@ import {
 
 import { notifyUser } from "@/lib/notifications/broadcast";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
+import { handleActionError } from "@/lib/utils/error";
 import { changePasswordSchema, type LoginInput, loginSchema } from "@/lib/validators/auth";
 
 async function applyMinAuthDelay(startMs: number): Promise<void> {
@@ -139,63 +141,66 @@ export async function logout(): Promise<ActionResponse<null>> {
 }
 
 export async function changePassword(formData: FormData): Promise<ActionResponse<null>> {
-  const session = await getSessionFromCookie();
-  if (!session) return errorResponse("Unauthorized");
+  try {
+    const auth = await requireAuth();
 
-  const parsed = changePasswordSchema.safeParse({
-    currentPassword: formData.get("currentPassword"),
-    newPassword: formData.get("newPassword"),
-  });
+    const parsed = changePasswordSchema.safeParse({
+      currentPassword: formData.get("currentPassword"),
+      newPassword: formData.get("newPassword"),
+    });
 
-  if (!parsed.success) {
-    const firstIssue = parsed.error.issues[0];
-    return errorResponse(firstIssue?.message ?? "Invalid input");
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      return errorResponse(firstIssue?.message ?? "Invalid input");
+    }
+    const { currentPassword, newPassword } = parsed.data;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, auth.userId),
+      columns: { id: true, passwordHash: true, sessionVersion: true, email: true, role: true },
+    });
+
+    if (!user) return errorResponse("User not found");
+
+    const { hashPassword } = await import("@/lib/auth/password");
+
+    const isValid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isValid) return errorResponse("Incorrect current password");
+
+    const newHash = await hashPassword(newPassword);
+    const newSessionVersion = user.sessionVersion + 1;
+
+    // Bump session_version in the same UPDATE that writes the new password.
+    // Both must land atomically; if the password update succeeds but the bump
+    // fails, the next request would log the user in with the new password
+    // without revoking other devices.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ passwordHash: newHash, sessionVersion: newSessionVersion })
+        .where(eq(users.id, user.id));
+    });
+
+    // Re-create session with new sessionVersion so current device stays logged in
+    // while all other devices are invalidated.
+    await createSession(user.id, user.role, newSessionVersion);
+
+    // Audit log: record password change
+    await db.insert(auditLogs).values({
+      userId: user.id,
+      action: "password_change",
+      details: { email: user.email },
+    });
+
+    // Notify user that their password was changed and other sessions were revoked
+    await notifyUser(user.id, {
+      title: "Password changed",
+      message: "Your password was updated. All other sessions have been revoked.",
+      type: "warning",
+    });
+
+    return successResponse(null);
+  } catch (error) {
+    return handleActionError(error, "changePassword", "Failed to change password");
   }
-  const { currentPassword, newPassword } = parsed.data;
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.userId),
-    columns: { id: true, passwordHash: true, sessionVersion: true, email: true, role: true },
-  });
-
-  if (!user) return errorResponse("User not found");
-
-  const { hashPassword } = await import("@/lib/auth/password");
-
-  const isValid = await verifyPassword(currentPassword, user.passwordHash);
-  if (!isValid) return errorResponse("Incorrect current password");
-
-  const newHash = await hashPassword(newPassword);
-  const newSessionVersion = user.sessionVersion + 1;
-
-  // Bump session_version in the same UPDATE that writes the new password.
-  // Both must land atomically; if the password update succeeds but the bump
-  // fails, the next request would log the user in with the new password
-  // without revoking other devices.
-  await db.transaction(async (tx) => {
-    await tx
-      .update(users)
-      .set({ passwordHash: newHash, sessionVersion: newSessionVersion })
-      .where(eq(users.id, user.id));
-  });
-
-  // Re-create session with new sessionVersion so current device stays logged in
-  // while all other devices are invalidated.
-  await createSession(user.id, user.role, newSessionVersion);
-
-  // Audit log: record password change
-  await db.insert(auditLogs).values({
-    userId: user.id,
-    action: "password_change",
-    details: { email: user.email },
-  });
-
-  // Notify user that their password was changed and other sessions were revoked
-  await notifyUser(user.id, {
-    title: "Password changed",
-    message: "Your password was updated. All other sessions have been revoked.",
-    type: "warning",
-  });
-
-  return successResponse(null);
 }

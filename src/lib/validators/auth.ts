@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
   email: z.string().trim().email("Invalid email").min(1, "Email is required"),
-  password: z.string().trim().min(1, "Password is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 /** Shared password validation rules — SSoT for all password fields. */
@@ -15,7 +15,7 @@ export const passwordValidationSchema = z
   .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
 
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().trim().min(1, "Current password is required"),
+  currentPassword: z.string().min(1, "Current password is required"),
   newPassword: passwordValidationSchema,
 });
 

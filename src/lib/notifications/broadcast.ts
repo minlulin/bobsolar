@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { type NotificationType, notifications, users } from "@/lib/db/schema";
 
@@ -38,7 +38,7 @@ async function insertNotifications(
 }
 
 export async function notifyAllUsers(payload: BroadcastNotificationInput): Promise<void> {
-  const allUsers = await db.select({ id: users.id }).from(users);
+  const allUsers = await db.select({ id: users.id }).from(users).where(isNull(users.archivedAt));
   if (allUsers.length === 0) return;
 
   await insertNotifications(

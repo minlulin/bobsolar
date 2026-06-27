@@ -91,14 +91,29 @@ describe("backup-actions", () => {
 
   describe("deleteBackup", () => {
     it("deletes a backup", async () => {
-      const res = await deleteBackup("url1");
+      const res = await deleteBackup("https://blob.store/backups/backup-2026.json");
       expect(res.success).toBe(true);
-      expect(spies.del).toHaveBeenCalledWith("url1", expect.any(Object));
+      expect(spies.del).toHaveBeenCalledWith(
+        "https://blob.store/backups/backup-2026.json",
+        expect.any(Object),
+      );
     });
 
     it("fails if not admin", async () => {
       state.role = "standard";
+      const res = await deleteBackup("https://blob.store/backups/backup-2026.json");
+      expect(res.success).toBe(false);
+      expect(spies.del).not.toHaveBeenCalled();
+    });
+
+    it("rejects invalid backup URL", async () => {
       const res = await deleteBackup("url1");
+      expect(res.success).toBe(false);
+      expect(spies.del).not.toHaveBeenCalled();
+    });
+
+    it("rejects non-backup path", async () => {
+      const res = await deleteBackup("https://blob.store/logos/logo.png");
       expect(res.success).toBe(false);
       expect(spies.del).not.toHaveBeenCalled();
     });

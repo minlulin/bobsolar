@@ -33,9 +33,26 @@ vi.mock("@/lib/auth/password", () => ({
 }));
 vi.mock("@/lib/auth/session", () => ({
   getSessionFromCookie: vi.fn(async () => state.session),
+  getSessionAndRefresh: vi.fn(async () => state.session),
   bumpUserSessionVersion: spies.bumpUserSessionVersion,
   createSession: vi.fn(async () => undefined),
   clearSessionCookies: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/lib/auth/validate", () => ({
+  requireAuth: vi.fn(async () => {
+    if (!state.session) throw new Error("REDIRECT:/login");
+    return { userId: state.session.userId, role: state.session.role };
+  }),
+  requireAdmin: vi.fn(async () => {
+    if (!state.session) throw new Error("REDIRECT:/login");
+    if (state.session.role !== "admin") throw new Error("REDIRECT:/unauthorized");
+    return { userId: state.session.userId, role: state.session.role };
+  }),
+  requireOwner: vi.fn(async () => {
+    if (!state.session) throw new Error("REDIRECT:/login");
+    return { userId: state.session.userId, role: state.session.role };
+  }),
 }));
 vi.mock("@/lib/db", () => {
   const mockDb = {

@@ -89,6 +89,7 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/auth/validate", () => ({
   requireAuth: vi.fn(async () => state.auth),
   requireAdmin: vi.fn(async () => state.auth),
+  requireOwner: vi.fn(async () => state.auth),
 }));
 
 vi.mock("@/lib/notifications/broadcast", () => ({
@@ -407,6 +408,11 @@ describe("quotation-actions high-impact branches", () => {
   });
 
   it("restores archived quotation", async () => {
+    state.quote = {
+      ...state.quote,
+      isArchived: true,
+      archivedAt: new Date(),
+    } as typeof state.quote;
     const { restoreQuotation } = await import("@/actions/quotation-actions");
     const res = await restoreQuotation("11111111-1111-4111-8111-111111111111");
     expect(res.success).toBe(true);

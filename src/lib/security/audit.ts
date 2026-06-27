@@ -36,8 +36,9 @@ function toAuditAction(eventType: SecurityEventType): AuditAction {
       return "session_revoke";
     default:
       // Map security events that don't have a dedicated enum value
-      // to "login" — the real type is captured in details.eventType.
-      return "login";
+      // to "session_revoke" (closest security-related action).
+      // The real type is captured in details.eventType.
+      return "session_revoke";
   }
 }
 

@@ -3,7 +3,7 @@
 import { addDays } from "date-fns";
 import { and, count, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
-import { requireAdmin, requireAuth } from "@/lib/auth/validate";
+import { requireAdmin, requireAuth, requireOwner } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import {
@@ -214,7 +214,7 @@ export async function getQuotation(id: string): Promise<
 
 export async function createQuotation(raw: unknown): Promise<ActionResponse<Quotation>> {
   try {
-    const auth = await requireAuth();
+    const auth = await requireOwner();
 
     const validated = createQuotationSchema.parse(raw);
     const customer = await db.query.customers.findFirst({
@@ -634,7 +634,7 @@ export async function updateQuotation(
 
 export async function duplicateQuotation(id: string): Promise<ActionResponse<Quotation>> {
   try {
-    const auth = await requireAuth();
+    const auth = await requireOwner();
     const validatedId = uuidSchema.parse(id);
 
     const original = await db.query.quotations.findFirst({
@@ -813,6 +813,9 @@ export async function restoreQuotation(id: string): Promise<ActionResponse<null>
       where: eq(quotations.id, validatedId),
     });
     if (!quote) return handleNotFoundError("Quotation", validatedId);
+    if (!quote.isArchived) {
+      return handleStateError("Quotation is not archived — nothing to restore");
+    }
 
     await db
       .update(quotations)

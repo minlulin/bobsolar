@@ -13,7 +13,7 @@ const spies = vi.hoisted(() => ({
 const mockDb = {
   select: vi.fn(() => ({
     from: vi.fn(() => ({
-      where: vi.fn(async () => state.admins),
+      where: vi.fn(async () => state.users),
       // biome-ignore lint/suspicious/noThenProperty: intentional thenable mock for drizzle query builder
       then: (resolve: (value: Array<{ id: string }>) => unknown) => resolve(state.users),
     })),
@@ -57,7 +57,7 @@ describe("broadcast notifications", () => {
   });
 
   it("notifies only admins", async () => {
-    state.admins = [{ id: "a1" }];
+    state.users = [{ id: "a1" }];
     const { notifyAdminUsers } = await import("@/lib/notifications/broadcast");
     await notifyAdminUsers({ title: "t", message: "m", type: "action" });
     expect(spies.values).toHaveBeenCalled();

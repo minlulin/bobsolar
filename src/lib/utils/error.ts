@@ -140,10 +140,18 @@ export function handleActionError(
   }
 
   const code = getErrorCode(error);
-  const message =
-    process.env.NODE_ENV === "development"
-      ? formatErrorChain(error, fallbackMessage)
-      : formatErrorMessage(error, fallbackMessage);
+
+  // Only expose full error chain in local development (localhost).
+  // Shared non-prod environments (staging/preview) should use the safe format
+  // to avoid leaking DB connection strings, SQL queries, etc.
+  const isLocalDev =
+    process.env.NODE_ENV === "development" &&
+    !process.env["VERCEL_URL"] &&
+    !process.env["HOSTNAME"];
+
+  const message = isLocalDev
+    ? formatErrorChain(error, fallbackMessage)
+    : formatErrorMessage(error, fallbackMessage);
 
   logError(context, error, { code, userMessage: message });
 
