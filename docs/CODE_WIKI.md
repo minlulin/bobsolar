@@ -1,279 +1,262 @@
 # BOB Solar Code Wiki
 
-This document describes the project architecture, major modules, key functions, dependency relationships, and how to run the system locally.
+This document describes the project layout, architecture, runtime flow, key modules, developer workflows, and precise steps to run and test the codebase locally.
+
+**Maintainers:** keep this file concise and update when file locations or scripts change.
 
 ## Table of Contents
 
-- [Repository Overview](#repository-overview)
-- [Architecture](#architecture)
-- [Runtime Flow](#runtime-flow)
-- [Module Reference](#module-reference)
-- [Dependency Map](#dependency-map)
-- [Data Model (Database)](#data-model-database)
-- [Running Locally](#running-locally)
-- [Testing & Quality Gates](#testing--quality-gates)
-- [Operational Scripts](#operational-scripts)
-- [Where To Start Reading](#where-to-start-reading)
+- Repository layout
+- Architecture overview
+- Runtime flow (feature mapping)
+- Key modules and responsibilities
+- Development: run, test, lint, and DB tasks
+- Helpful file links (quick jump)
+- Where to start reading
 
-## Repository Overview
+## Repository layout
 
-**Tech stack**
-- Next.js App Router (full-stack): [src/app](file:///c:/bobsolar/src/app)
-- TypeScript: [tsconfig.json](file:///c:/bobsolar/tsconfig.json)
-- Database: PostgreSQL (Neon serverless) via Drizzle ORM: [src/lib/db](file:///c:/bobsolar/src/lib/db)
-- Auth: DB-backed sessions + iron-session cookie sealing: [session.ts](file:///c:/bobsolar/src/lib/auth/session.ts)
-- Client data fetching: TanStack Query hooks: [src/hooks](file:///c:/bobsolar/src/hooks)
-- Client state: Zustand stores: [src/stores](file:///c:/bobsolar/src/stores)
-- PWA/service worker: Serwist + Next integration: [next.config.mjs](file:///c:/bobsolar/next.config.mjs), [sw.ts](file:///c:/bobsolar/src/sw.ts)
+Top-level files and folders (high level):
 
-**High-level repository map**
+- `src/` — application code (Next.js App Router, Server Actions, components, hooks, lib, stores)
+- `drizzle/` — SQL migrations and migration journal
+- `public/` — static assets and built service worker
+- `scripts/` — operational scripts (TSX runners)
+- `docs/` — repository documentation
+- `package.json`, `pnpm-lock.yaml`, `tsconfig.json`, `next.config.mjs` — workspace configuration
 
-```text
-bobsolar/
-├── src/
-│   ├── app/           # Next.js routes/layouts, server components, API routes
-│   ├── actions/       # Server Actions (transactional business logic)
-│   ├── components/    # Reusable UI components (client and server)
-│   ├── hooks/         # TanStack Query wrappers around server actions
-│   ├── lib/           # Auth, db, domain constants, finance, utils, validators
-│   └── stores/        # Zustand stores
-├── drizzle/           # SQL migrations + journal
-├── public/            # Static assets + built service worker
-├── scripts/           # Operational scripts (run via tsx)
-└── docs/              # CODE_WIKI.md only
+Project conventions:
+
+- `Server Actions` live under `src/actions/` and act as the application service layer (authorization → validation → DB → side-effects).
+- `src/lib/` contains infrastructure and domain helpers (db client, auth, finance, pricing, validators).
+- Client data layer uses TanStack Query hooks in `src/hooks/` and local state is in `src/stores/` (Zustand).
+- UI routes and layouts are in `src/app/` and follow Next.js App Router patterns.
+
+## Architecture overview
+
+- Layered design: UI (routes + components) → Hooks (client data) → Server Actions (use-cases) → Lib (db/auth/finance)
+- Mutations perform input validation with Zod, run DB transactions via Drizzle when required, and call `revalidateTag` / `revalidatePath` to keep caches consistent.
+- Concurrency-sensitive sequences (quote/project numbers) use advisory locks via DB helper utilities (implementation may live in db or utils helpers).
+- Finance operations always aim to write balanced double-entry journal entries via `src/lib/finance/ledger.ts`.
+
+## Runtime flow (feature mapping)
+
+Common domain flows and their primary entry points:
+
+- Customers: `src/actions/customer-actions.ts` and routes under `src/app/(dashboard)/customers`
+- Inventory: `src/actions/inventory-actions.ts` and `src/app/(dashboard)/inventory`
+- Quotations: `src/actions/quotation-actions.ts` and `src/app/(dashboard)/quotations`
+- Projects: `src/actions/project-actions.ts` and `src/app/(dashboard)/projects`
+- Finance reports and ledgers: `src/actions/*-actions.ts` and `src/lib/finance`
+- Warranty workflows: `src/actions/warranty-actions.ts` and `src/app/(dashboard)/warranty`
+
+Server Actions pattern:
+
+1. Permission guard (e.g. `requireAuth`, `requireAdmin`) — `src/lib/auth/validate.ts`
+2. Input validation (Zod schemas in `src/lib/validators/`)
+3. DB queries/transactions via the Drizzle client (`src/lib/db`)
+4. Side-effects (ledger entries, notifications)
+5. Cache invalidation (`revalidateTag` / `revalidatePath`)
+
+## Key modules and responsibilities
+
+- `src/app/` — route handlers, layouts, error/loading boundaries, and server-side rendering orchestration.
+- `src/actions/` — business logic exposed as Server Actions. Each file implements validation, DB transactions, side-effects and returns `ActionResponse`-style results.
+- `src/lib/auth/` — session lifecycle and guards (`session.ts`, `validate.ts`).
+- `src/lib/db/` — Drizzle client bootstrap and schema definitions (`index.ts`, `schema.ts`).
+- `src/lib/finance/` — ledger engine and helpers (`ledger.ts`).
+- `src/lib/pricing/` — pure pricing engine used to compute quotation totals (`engine.ts`).
+- `src/lib/notifications/` — notification insertion and broadcast helpers.
+- `src/lib/validators/` — Zod schemas for inputs and primitives (UUID, amounts).
+- `src/hooks/` — TanStack Query wrappers and mutation helpers (`mutation-factory.ts`).
+- `src/components/`, `src/stores/` — UI components and client state (Zustand).
+
+## Development: run, test, lint, DB tasks
+
+Prerequisites
+
+- Node.js v24+ (recommended)
+- pnpm v7+ (project uses `packageManager` in `package.json`)
+- Local Postgres (Neon or local PG) for DB-dependent tests and migrations
+
+Common commands (copy/paste):
+
+- Install dependencies:
+
+```bash
+pnpm install
 ```
 
-## Architecture
+- Start dev server:
 
-BOB Solar is a full-stack Next.js application. The architecture is intentionally layered so that:
-- UI routes are thin and mostly focus on rendering and orchestration
-- Server Actions are the main “use-case” layer (permissions + validation + transactions + cache revalidation)
-- `src/lib/**` holds reusable domain and infrastructure modules (db/auth/ledger/pricing/etc.)
-- Client hooks provide a stable API to the UI for calling Server Actions and managing cache invalidation
-
-### Layered view
-
-```mermaid
-flowchart TB
-  UI["App Router (routes/layouts/pages)\nsrc/app"] --> HOOKS["Client data hooks\nsrc/hooks"]
-  HOOKS --> ACTIONS["Server Actions\nsrc/actions"]
-  UI --> ACTIONS
-
-  ACTIONS --> AUTH["Auth/session\nsrc/lib/auth"]
-  ACTIONS --> DB["DB + schema\nsrc/lib/db"]
-  ACTIONS --> VALIDATORS["Zod validators\nsrc/lib/validators"]
-  ACTIONS --> DOMAIN["Domain constants/types\nsrc/lib/domain"]
-  ACTIONS --> FIN["Double-entry ledger\nsrc/lib/finance"]
-  ACTIONS --> NOTIF["Notifications\nsrc/lib/notifications"]
-  ACTIONS --> PRICING["Pricing engine\nsrc/lib/pricing"]
-
-  DB --> PG[(Neon Postgres)]
+```bash
+pnpm dev
 ```
 
-### Key architectural conventions
+- Typecheck and lint:
 
-- **Server Actions as the application service layer**: feature modules expose `export async function ...` entry points (often returning an `ActionResponse`) and are protected via auth gates (e.g. [requireAuth](file:///c:/bobsolar/src/lib/auth/validate.ts#L41-L47)).
-- **Validation-first**: inputs are parsed using Zod validators under [src/lib/validators](file:///c:/bobsolar/src/lib/validators) and `uuidSchema` parsing under [common validators](file:///c:/bobsolar/src/lib/validators/common.ts).
-- **Transactional invariants**: operations that touch inventory, projects, and finance are typically implemented in DB transactions in the relevant Server Action modules (e.g. [project-actions.ts](file:///c:/bobsolar/src/actions/project-actions.ts)).
-- **Caching with explicit invalidation**: list reads often use `unstable_cache` with tags, and mutations call `revalidateTag` / `revalidatePath` (example in [quotation-actions.ts](file:///c:/bobsolar/src/actions/quotation-actions.ts#L47-L65)).
-- **Concurrency controls**: unique sequences (quote numbers, project numbers) are serialized via advisory locks (see [AdvisoryLock](file:///c:/bobsolar/src/lib/utils/advisory-lock.ts)).
-- **Finance is double-entry**: monetary events write balanced journal entries (see [createBalancedJournalEntry](file:///c:/bobsolar/src/lib/finance/ledger.ts#L105-L184)).
-
-## Runtime Flow
-
-The README describes the operational “Solar Flow” (Customers → Inventory → Quotations → Projects → Warranty) ([README.md](file:///c:/bobsolar/README.md#L38-L49)). In code, this roughly maps to:
-- Customers: [customer-actions.ts](file:///c:/bobsolar/src/actions/customer-actions.ts) + routes under [src/app/(dashboard)/customers](file:///c:/bobsolar/src/app/(dashboard)/customers)
-- Inventory: [inventory-actions.ts](file:///c:/bobsolar/src/actions/inventory-actions.ts) + routes under [src/app/(dashboard)/inventory](file:///c:/bobsolar/src/app/(dashboard)/inventory)
-- Quotations: [quotation-actions.ts](file:///c:/bobsolar/src/actions/quotation-actions.ts) + routes under [src/app/(dashboard)/quotations](file:///c:/bobsolar/src/app/(dashboard)/quotations)
-- Projects: [project-actions.ts](file:///c:/bobsolar/src/actions/project-actions.ts) + routes under [src/app/(dashboard)/projects](file:///c:/bobsolar/src/app/(dashboard)/projects)
-- Finance reporting: modules under [src/actions](file:///c:/bobsolar/src/actions) and pages under [src/app/(dashboard)/finance](file:///c:/bobsolar/src/app/(dashboard)/finance)
-- Warranty: [warranty-actions.ts](file:///c:/bobsolar/src/actions/warranty-actions.ts) + routes under [src/app/(dashboard)/warranty](file:///c:/bobsolar/src/app/(dashboard)/warranty)
-
-## Module Reference
-
-### App Router (`src/app`)
-
-**Responsibilities**
-- Defines routes, layouts, loading/error boundaries, and route handlers (API endpoints).
-- Orchestrates Server Action calls during server renders, and uses client components for interactive areas.
-
-**Key entrypoints**
-- Root layout: [layout.tsx](file:///c:/bobsolar/src/app/layout.tsx)
-- Dashboard layout (auth-gated): [(dashboard)/layout.tsx](file:///c:/bobsolar/src/app/(dashboard)/layout.tsx)
-- Auth pages: [src/app/(auth)](file:///c:/bobsolar/src/app/(auth))
-- Upload API route: [route.ts](file:///c:/bobsolar/src/app/api/upload/route.ts)
-- PDF routes (server handlers under route segments): [src/app/(dashboard)/quotations/\[id\]/pdf/route.ts](file:///c:/bobsolar/src/app/(dashboard)/quotations/%5Bid%5D/pdf/route.ts), [src/app/(dashboard)/vouchers/\[id\]/pdf/route.ts](file:///c:/bobsolar/src/app/(dashboard)/vouchers/%5Bid%5D/pdf/route.ts)
-
-### Server Actions (`src/actions`)
-
-**Responsibilities**
-- Implements all main use cases: permission gates → input validation → DB queries/transactions → side-effects (ledger, notifications) → cache invalidation.
-
-**Common patterns**
-- Permissions: [requireAuth](file:///c:/bobsolar/src/lib/auth/validate.ts#L41-L47), [requireAdmin](file:///c:/bobsolar/src/lib/auth/validate.ts#L49-L55), [requireFinanceAccess](file:///c:/bobsolar/src/lib/auth/validate.ts#L57-L63)
-- Standardized responses: [action-response.ts](file:///c:/bobsolar/src/lib/utils/action-response.ts)
-- Error mapping: [error.ts](file:///c:/bobsolar/src/lib/utils/error.ts)
-- Cache invalidation: `revalidatePath`, `revalidateTag` usage (example: [quotation-actions.ts](file:///c:/bobsolar/src/actions/quotation-actions.ts))
-
-**Feature highlights**
-- Authentication: [auth-actions.ts](file:///c:/bobsolar/src/actions/auth-actions.ts)
-- Inventory: [inventory-actions.ts](file:///c:/bobsolar/src/actions/inventory-actions.ts)
-- Quotations: [quotation-actions.ts](file:///c:/bobsolar/src/actions/quotation-actions.ts)
-- Projects + costing + inventory consumption: [project-actions.ts](file:///c:/bobsolar/src/actions/project-actions.ts)
-- Payments: [payment-actions.ts](file:///c:/bobsolar/src/actions/payment-actions.ts)
-- Ledger/journals: [ledger-actions.ts](file:///c:/bobsolar/src/actions/ledger-actions.ts), [manual-journal-actions.ts](file:///c:/bobsolar/src/actions/manual-journal-actions.ts)
-- Reports: [profit-loss-actions.ts](file:///c:/bobsolar/src/actions/profit-loss-actions.ts), [cash-movement-actions.ts](file:///c:/bobsolar/src/actions/cash-movement-actions.ts), [receivable-aging-actions.ts](file:///c:/bobsolar/src/actions/receivable-aging-actions.ts)
-- Settings (branding + user mgmt): [settings-actions.ts](file:///c:/bobsolar/src/actions/settings-actions.ts)
-- Notifications: [notification-actions.ts](file:///c:/bobsolar/src/actions/notification-actions.ts)
-
-### Authentication (`src/lib/auth`)
-
-**Responsibilities**
-- Implements DB-backed sessions with encrypted cookie sealing and role-based access gates.
-
-**Key files and functions**
-- Session lifecycle: [session.ts](file:///c:/bobsolar/src/lib/auth/session.ts)
-  - Startup validation: [assertSessionSecretAtStartup](file:///c:/bobsolar/src/lib/auth/session.ts#L20-L25)
-  - Create session row + cookie: [createSession](file:///c:/bobsolar/src/lib/auth/session.ts#L127-L147)
-  - Resolve session from cookie + periodic refresh: [getSessionAndRefresh](file:///c:/bobsolar/src/lib/auth/session.ts#L216-L255)
-  - Revoke sessions: [revokeAllUserSessions](file:///c:/bobsolar/src/lib/auth/session.ts#L177-L191)
-- Access policies: [validate.ts](file:///c:/bobsolar/src/lib/auth/validate.ts)
-  - Current-user resolution memoized per request via React `cache()`: [resolveCurrentAuth](file:///c:/bobsolar/src/lib/auth/validate.ts#L25-L39)
-  - Guards: [requireAuth](file:///c:/bobsolar/src/lib/auth/validate.ts#L41-L47), [requireAdmin](file:///c:/bobsolar/src/lib/auth/validate.ts#L49-L55), [requireFinanceAccess](file:///c:/bobsolar/src/lib/auth/validate.ts#L57-L63)
-
-### Database (`src/lib/db`) and migrations (`drizzle/`)
-
-**Responsibilities**
-- Provides a Neon serverless connection pool and Drizzle client and defines the schema.
-
-**Key files and functions**
-- Lazy Drizzle client: [`db`](file:///c:/bobsolar/src/lib/db/index.ts)
-- Schema:
-  - Central schema definitions: [schema.ts](file:///c:/bobsolar/src/lib/db/schema.ts)
-- Seeding:
-  - Seed runner: [seed.ts](file:///c:/bobsolar/src/lib/db/seed.ts)
-  - Seed config: [seed-config.ts](file:///c:/bobsolar/src/lib/db/seed-config.ts)
-- Migration artifacts:
-  - SQL migrations: [drizzle/migrations](file:///c:/bobsolar/drizzle/migrations)
-
-### Finance Ledger (`src/lib/finance`)
-
-**Responsibilities**
-- Enforces double-entry bookkeeping invariants and provides helpers to post balanced journal entries tied to domain events (payments, costs, conversions).
-
-**Key files and functions**
-- Ledger engine: [ledger.ts](file:///c:/bobsolar/src/lib/finance/ledger.ts)
-  - Account mapping helpers:
-    - [mapPaymentMethodNameToAssetAccount](file:///c:/bobsolar/src/lib/finance/ledger.ts#L44-L54)
-    - [mapCostTypeToExpenseAccount](file:///c:/bobsolar/src/lib/finance/ledger.ts#L56-L62)
-  - SSoT drift check (payment methods + cost types): [assertFinanceSsotDrift](file:///c:/bobsolar/src/lib/finance/ledger.ts#L64-L82)
-  - Balanced journal post: [createBalancedJournalEntry](file:///c:/bobsolar/src/lib/finance/ledger.ts#L105-L184)
-
-### Pricing (`src/lib/pricing`)
-
-**Responsibilities**
-- Provides pure calculation logic for quotation totals and line item computations.
-
-**Key file**
-- Pricing engine: [engine.ts](file:///c:/bobsolar/src/lib/pricing/engine.ts)
-
-### Notifications (`src/lib/notifications`)
-
-**Responsibilities**
-- Writes notifications to the DB (and supports broadcast-like behaviors by inserting per-user notifications).
-
-**Key file**
-- Broadcast helpers: [broadcast.ts](file:///c:/bobsolar/src/lib/notifications/broadcast.ts)
-
-### Validators (`src/lib/validators`)
-
-**Responsibilities**
-- Defines Zod schemas for every major action input and shared primitives.
-
-**Key examples**
-- UUID and numeric helpers: [common.ts](file:///c:/bobsolar/src/lib/validators/common.ts)
-- Quotation schemas: [quotation.ts](file:///c:/bobsolar/src/lib/validators/quotation.ts)
-- Project schemas: [project.ts](file:///c:/bobsolar/src/lib/validators/project.ts)
-- Ledger schemas: [ledger.ts](file:///c:/bobsolar/src/lib/validators/ledger.ts)
-
-### Client data hooks (`src/hooks`)
-
-**Responsibilities**
-- Wraps Server Action calls using TanStack Query and standardizes invalidation/toast behavior.
-
-**Key file**
-- Hook factories and standardized mutation flow: [mutation-factory.ts](file:///c:/bobsolar/src/hooks/mutation-factory.ts)
-
-### UI components and state (`src/components`, `src/stores`)
-
-**Responsibilities**
-- Reusable UI widgets, layout components, PDF HTML templates, and client-side state.
-
-**Notable files**
-- App providers (Query client + theme + global handlers): [providers.tsx](file:///c:/bobsolar/src/components/providers.tsx)
-- PDF HTML templates:
-  - Quotation HTML: [quote-html.tsx](file:///c:/bobsolar/src/components/pdf/quote-html.tsx)
-  - Voucher HTML: [voucher-html.tsx](file:///c:/bobsolar/src/components/pdf/voucher-html.tsx)
-- Quotation builder store: [quote-builder-store.ts](file:///c:/bobsolar/src/stores/quote-builder-store.ts)
-
-## Dependency Map
-
-### Practical “imports” shape
-
-- `src/app/**` depends on:
-  - `src/actions/**` (server-side use cases)
-  - `src/components/**` (shared UI)
-  - `src/hooks/**` (client-side actions/data)
-- `src/actions/**` depends on:
-  - `src/lib/auth/**` for access control
-  - `src/lib/db/**` for persistence
-  - `src/lib/validators/**` for input parsing
-  - `src/lib/domain/**` for constants and canonical enums
-  - `src/lib/finance/**` for journal posting
-  - `src/lib/notifications/**` for side effects
-- `src/lib/**` is the “foundation layer” and should not import from `src/app/**` or `src/components/**`.
-
-### End-to-end call flow examples
-
-```mermaid
-sequenceDiagram
-  participant UI as UI (src/app)
-  participant Hook as Hook (src/hooks)
-  participant Action as Server Action (src/actions)
-  participant Auth as Auth (src/lib/auth)
-  participant DB as DB (src/lib/db)
-  participant Ledger as Ledger (src/lib/finance)
-
-  UI->>Hook: user interaction
-  Hook->>Action: call action
-  Action->>Auth: requireAuth / requireFinanceAccess
-  Action->>DB: transaction + queries
-  Action->>Ledger: createBalancedJournalEntry (if financial event)
-  Action-->>UI: ActionResponse + revalidateTag/path
+```bash
+pnpm typecheck
+pnpm biome:check
 ```
 
-## Data Model (Database)
+- Run unit tests:
 
-The canonical schema is defined in [schema.ts](file:///c:/bobsolar/src/lib/db/schema.ts) and enforced via Drizzle migrations under [drizzle/migrations](file:///c:/bobsolar/drizzle/migrations).
+```bash
+pnpm test
+```
 
-At a conceptual level, the system’s core entities are:
-- **Auth**: users, sessions
-- **CRM**: customers, suppliers
-- **Inventory/Warehouse**: inventory items (unit price, cost price, stock)
-- **Sales**: quotations + quotation items (pricing snapshots)
-- **Operations**: projects + project costs + remarks
-- **Finance**: payment methods, project payments, ledger accounts, journal entries/lines
-- **Notifications**: notification rows per recipient
-- **Warranty**: warranty alerts tied to projects and due dates
+- Run DB-heavy tests (requires `DATABASE_URL` and test DB configured):
 
-## Running Locally
+```bash
+pnpm test:db
+```
 
-### Prerequisites
-- Node.js v24+
-- pnpm v11+ (repo is pinned via `packageManager` in [package.json](file:///c:/bobsolar/package.json#L5))
-- A Postgres database (Neon recommended)
+- Run migrations (safe in CI if `DATABASE_URL` points to a disposable DB):
 
-### Setup steps
+```bash
+pnpm db:migrate
+```
+
+- Seed baseline data (after migrations):
+
+```bash
+pnpm db:seed
+```
+
+Notes about `.env` and DB:
+
+- Create local env from the example:
+
+```powershell
+Copy-Item .\.env.example .\.env.local
+```
+
+- Required keys include `DATABASE_URL`, `SESSION_SECRET`, and `BLOB_READ_WRITE_TOKEN` (if using blob uploads).
+
+## Helpful file links (quick jump)
+
+- App root layout: [src/app/layout.tsx](src/app/layout.tsx#L1)
+- Dashboard layout: [src/app/(dashboard)/layout.tsx](src/app/(dashboard)/layout.tsx#L1)
+- Server Actions folder: [src/actions](src/actions)
+- DB client: [src/lib/db/index.ts](src/lib/db/index.ts#L1)
+- Schema definitions: [src/lib/db/schema.ts](src/lib/db/schema.ts#L1)
+- Session and auth guards: [src/lib/auth/session.ts](src/lib/auth/session.ts#L1), [src/lib/auth/validate.ts](src/lib/auth/validate.ts#L1)
+- Ledger engine: [src/lib/finance/ledger.ts](src/lib/finance/ledger.ts#L1)
+- Pricing engine: [src/lib/pricing/engine.ts](src/lib/pricing/engine.ts#L1)
+- Validators: [src/lib/validators](src/lib/validators)
+- Mutation factory: [src/hooks/mutation-factory.ts](src/hooks/mutation-factory.ts#L1)
+
+## Where to start reading
+
+1. `README.md` — project overview and Solar Flow
+2. `src/lib/auth/validate.ts` and `src/lib/auth/session.ts` — understand auth and guards
+3. `src/lib/db/index.ts` and `src/lib/db/schema.ts` — DB connection and schema
+4. `src/actions/quotation-actions.ts` and `src/actions/project-actions.ts` — representative Server Actions showing validation, transactions, and side-effects
+5. `src/lib/finance/ledger.ts` — double-entry posting semantics
+
+---
+
+If you'd like, I can also:
+- Expand a short developer HOWTO for adding a new Server Action (validation → transaction → side effects), or
+- Generate a checklist for safe local DB resets and test runs.
+
+Tell me which follow-up you'd prefer and I'll add it to the docs.# BOB Solar — Code Wiki
+
+This document is a concise, accurate reference for the repository structure, runtime flow, key modules, developer commands, and suggested reading order. Links are workspace-relative.
+
+Contents
+- [Repository overview](#repository-overview)
+- [Architecture & conventions](#architecture--conventions)
+- [Runtime flows (quick map)](#runtime-flows-quick-map)
+- [Module reference (by folder)](#module-reference-by-folder)
+- [Database & migrations](#database--migrations)
+- [Local developer setup](#local-developer-setup)
+- [Testing and quality gates](#testing-and-quality-gates)
+- [Operational scripts](#operational-scripts)
+- [Where to start reading](#where-to-start-reading)
+
+## Repository overview
+
+- Primary language: TypeScript (strict), targeting Node.js + Next.js App Router.
+- App root: [src/app](src/app)
+- Server actions / use-cases: [src/actions](src/actions)
+- Shared infra: [src/lib](src/lib)
+- Client hooks: [src/hooks](src/hooks)
+- UI components: [src/components](src/components)
+- Client state stores: [src/stores](src/stores)
+- DB migrations: [drizzle/migrations](drizzle/migrations)
+- Dev scripts: [scripts](scripts)
+
+Key files
+- Project config: [package.json](package.json), [tsconfig.json](tsconfig.json)
+- Lint/format: [eslint.config.mjs](eslint.config.mjs), [biome.json](biome.json)
+- Next config: [next.config.mjs](next.config.mjs)
+
+## Architecture & conventions
+
+- Layered boundaries
+  - UI / routes: `src/app` — server & client components, layouts, route handlers.
+  - Use-case layer: `src/actions` — Server Actions implement permission checks, input validation, DB transactions, side effects, and cache revalidation.
+  - Foundation layer: `src/lib` — DB client, auth, finance ledger, validators, utilities. This layer must not import from UI layers.
+
+- Conventions used throughout the codebase
+  - Validation-first: inputs are parsed with Zod validators in `src/lib/validators`.
+  - Server Actions return an `ActionResponse` shape (see `src/lib/utils/action-response.ts`).
+  - Side effects (ledger posts, notifications, file uploads) are explicit and happen inside transactions where atomicity is required.
+  - Cache invalidation: uses `revalidateTag` / `revalidatePath` from Next where appropriate.
+  - Concurrency: sequence numbers and other serialized operations use advisory locks (`src/lib/utils/advisory-lock.ts`).
+
+## Runtime flows (quick map)
+
+- Typical flow for a user action that mutates domain state:
+  1. Client component -> hook in `src/hooks`.
+  2. Hook invokes a Server Action in `src/actions`.
+  3. Server Action calls `requireAuth` / role guards (`src/lib/auth/validate.ts`).
+  4. Server Action validates inputs (`src/lib/validators/*`) and runs DB queries via the Drizzle client (`src/lib/db`).
+  5. If needed, Server Action posts journals via `src/lib/finance/ledger.ts` and writes notifications (`src/lib/notifications`).
+  6. Action returns an `ActionResponse` and triggers any cache revalidation.
+
+## Module reference (by folder)
+
+- `src/app`
+  - App Router pages, route handlers, layouts. Entry points: [src/app/layout.tsx](src/app/layout.tsx) and dashboard layout [src/app/(dashboard)/layout.tsx](src/app/(dashboard)/layout.tsx).
+
+- `src/actions`
+  - All feature use-cases. Each file follows the pattern: auth gate -> zod parsing -> DB transaction -> side-effects -> response. Examples: [src/actions/quotation-actions.ts](src/actions/quotation-actions.ts), [src/actions/project-actions.ts](src/actions/project-actions.ts).
+
+- `src/lib`
+  - `auth`: session lifecycle and guards (`src/lib/auth/session.ts`, `src/lib/auth/validate.ts`).
+  - `db`: lazy Drizzle client and helpers (`src/lib/db/index.ts`, `src/lib/db/schema.ts`).
+  - `finance`: double-entry ledger helpers (`src/lib/finance/ledger.ts`).
+  - `pricing`: pure pricing calculations (`src/lib/pricing/engine.ts`).
+  - `notifications`: write/broadcast helpers (`src/lib/notifications/broadcast.ts`).
+  - `validators`: Zod schemas for domain inputs (`src/lib/validators`).
+
+- `src/hooks`
+  - TanStack Query wrappers and mutation factory: [src/hooks/mutation-factory.ts](src/hooks/mutation-factory.ts).
+
+- `src/components` and `src/stores`
+  - UI primitives, PDF templates, and Zustand stores (e.g. `src/stores/quote-builder-store.ts`).
+
+## Database & migrations
+
+- Schema canonical source: [src/lib/db/schema.ts](src/lib/db/schema.ts).
+- Migrations: `drizzle/migrations` — each migration is a timestamped SQL file.
+- Seeding utilities: [src/lib/db/seed.ts](src/lib/db/seed.ts), config in [src/lib/db/seed-config.ts](src/lib/db/seed-config.ts).
+
+Best practices for DB changes
+- Add Drizzle migrations for schema changes; commit SQL files.
+- For new domain entities: add Zod validators, DB schema, server actions, and tests in that order.
+
+## Local developer setup
+
+Prerequisites
+- Node.js v24+ (as declared by the project tooling).
+- `pnpm` (the repo uses pnpm; `packageManager` is set in `package.json`).
+- A Postgres-compatible database for `DATABASE_URL` (Neon recommended for parity with production).
+
+Quick setup commands
 
 1) Install dependencies
 
@@ -281,73 +264,74 @@ At a conceptual level, the system’s core entities are:
 pnpm install
 ```
 
-2) Create a local env file
+2) Create local env
 
 ```powershell
 Copy-Item .\.env.example .\.env.local
 ```
 
-3) Configure `.env.local`
+3) Edit `.env.local` — minimum required keys
+- `DATABASE_URL` — Postgres connection string used by Drizzle.
+- `SESSION_SECRET` — must be set for session cookie sealing (see `src/lib/auth/session.ts`).
+- `BLOB_READ_WRITE_TOKEN` — for upload endpoints when using Vercel Blob.
 
-See required keys in [.env.example](file:///c:/bobsolar/.env.example). The most important are:
-- `DATABASE_URL` (required by [db](file:///c:/bobsolar/src/lib/db/index.ts))
-- `SESSION_SECRET` (required by [session.ts](file:///c:/bobsolar/src/lib/auth/session.ts#L12-L18))
-- `BLOB_READ_WRITE_TOKEN` (used for Vercel Blob-based uploads)
-
-4) Create/update DB schema
-
-The repository provides migrations:
+4) Run DB migrations
 
 ```bash
 pnpm db:migrate
 ```
 
-5) Seed baseline data
+5) (Optional) Seed baseline data
 
 ```bash
 pnpm db:seed
 ```
 
-6) Run the dev server
+6) Start dev server
 
 ```bash
 pnpm dev
 ```
 
-Open `http://localhost:3000` (matches [README.md](file:///c:/bobsolar/README.md#L90-L99)).
+Notes
+- If you change schema files, run migrations and update seeds if necessary.
+- Use `pnpm test:db` to run DB-heavy tests (see testing section).
 
-## Testing & Quality Gates
+## Testing and quality gates
 
-**Unit/integration tests**
-- Test runner: Vitest ([vitest.config.mts](file:///c:/bobsolar/vitest.config.mts))
-- Tests live under [src/__tests__](file:///c:/bobsolar/src/__tests__) and module-local `__tests__` folders.
+- Test runner: Vitest. Config: [vitest.config.mts](vitest.config.mts).
+- Typechecking: `pnpm typecheck`.
+- Formatting/linting: `pnpm biome:check` and any repo formatting tasks aggregated under `pnpm green` scripts.
 
-**Useful scripts** (from [package.json](file:///c:/bobsolar/package.json#L6-L37))
+Useful scripts (from `package.json`)
 
 ```bash
 pnpm typecheck
 pnpm biome:check
 pnpm test
-pnpm green:code
 pnpm test:db
-pnpm green
+pnpm green:code
 ```
 
-`pnpm test:db` runs a connectivity probe + schema push against a test database config and then executes DB-heavy tests (see [package.json](file:///c:/bobsolar/package.json#L28-L35)).
+`pnpm test:db` notes
+- This script requires a test database configured in environment variables used by the DB test config. It pushes the schema and runs DB-integrated tests; use with caution when running against shared databases.
 
-## Operational Scripts
+## Operational scripts
 
-Scripts in [scripts](file:///c:/bobsolar/scripts) are invoked with `tsx` (see [package.json](file:///c:/bobsolar/package.json#L19-L27)). Common ones include:
-- DB reset: [db-reset.ts](file:///c:/bobsolar/scripts/db-reset.ts)
-- Handover reset/verify: [db-handover-reset.ts](file:///c:/bobsolar/scripts/db-handover-reset.ts), [db-handover-verify.ts](file:///c:/bobsolar/scripts/db-handover-verify.ts)
+- Scripts live under [scripts](scripts) and are executed with `tsx`.
+- Common helpers:
+  - DB reset: [scripts/db-reset.ts](scripts/db-reset.ts)
+  - DB handover reset/verify: [scripts/db-handover-reset.ts](scripts/db-handover-reset.ts), [scripts/db-handover-verify.ts](scripts/db-handover-verify.ts)
 
-## Where To Start Reading
+## Where to start reading (developer onboarding path)
 
-- Architecture overview and intended flow: [README.md](file:///c:/bobsolar/README.md)
-- Auth model and guards: [validate.ts](file:///c:/bobsolar/src/lib/auth/validate.ts), [session.ts](file:///c:/bobsolar/src/lib/auth/session.ts)
-- Database and schema: [db/index.ts](file:///c:/bobsolar/src/lib/db/index.ts), [schema.ts](file:///c:/bobsolar/src/lib/db/schema.ts)
-- The core business flows:
-  - Quotations: [quotation-actions.ts](file:///c:/bobsolar/src/actions/quotation-actions.ts)
-  - Projects + costing + inventory consumption: [project-actions.ts](file:///c:/bobsolar/src/actions/project-actions.ts)
-  - Payments: [payment-actions.ts](file:///c:/bobsolar/src/actions/payment-actions.ts)
-- Finance engine: [ledger.ts](file:///c:/bobsolar/src/lib/finance/ledger.ts)
+1. `README.md` — high-level product flow and run instructions ([README.md](README.md)).
+2. Auth internals: `src/lib/auth/session.ts`, `src/lib/auth/validate.ts` — learn session lifecycle and guards.
+3. DB client and schema: `src/lib/db/index.ts`, `src/lib/db/schema.ts`.
+4. One end-to-end use-case: `src/actions/quotation-actions.ts` → `src/lib/pricing/engine.ts` → `src/lib/finance/ledger.ts`.
+5. Hooks + UI: `src/hooks/mutation-factory.ts` → `src/components` and `src/app` routes.
+
+If you'd like, I can run a quick link-check to assert referenced files exist and optionally update any broken references.
+
+---
+Last updated: automated edit to improve clarity and workspace-relative links.

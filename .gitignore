@@ -87,3 +87,6 @@ backups/
 # Documentation
 
 .agent/instructions/
+.github/
+.playwright/
+.playwright-mcp
