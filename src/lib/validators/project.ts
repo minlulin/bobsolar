@@ -25,10 +25,9 @@ export const updateProjectSchema = z.object({
 
 export const addProjectCostSchema = z.object({
   projectId: z.uuid(),
-  itemId: z.uuid().optional().nullable(),
   paymentMethodId: z.uuid(),
   description: z.string().min(1).max(500),
-  amount: z.number().min(0.01, "Cost amount must be at least 0.01"),
+  amount: z.number().int().min(1, "Cost amount must be a positive whole number (MMK)"),
   costType: costTypeSchema,
   incurredDate: z.coerce.date(),
 });

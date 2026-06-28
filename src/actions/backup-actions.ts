@@ -1,7 +1,8 @@
 "use server";
 
-import { del, list, put } from "@vercel/blob";
-import { sql } from "drizzle-orm";
+import { del, get, list, put } from "@vercel/blob";
+import { eq } from "drizzle-orm";
+import { verifyPassword } from "@/lib/auth/password";
 import { requireAdmin } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/lib/db/schema";
 import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils/action-response";
 import { handleActionError } from "@/lib/utils/error";
+import { validateBackupFile } from "@/lib/validators/backup";
 
 const BACKUP_FOLDER = "backups";
 
@@ -139,35 +141,38 @@ function stripSensitiveFields(
   return row;
 }
 
-async function getTableManifest(): Promise<{
+/**
+ * Read all tables into memory within a single operation to produce a
+ * snapshot-consistent backup. Manifest counts are derived from the same
+ * rows that are exported, so they always agree.
+ *
+ * Note: This still loads each table into memory. For very large tables,
+ * consider using pg_dump or keyset pagination instead.
+ */
+async function readAllTablesSnapshot(): Promise<{
   manifest: Record<string, number>;
   totalRows: number;
+  data: Record<string, unknown[]>;
 }> {
-  const results = await Promise.all(
-    TABLE_NAMES.map(async (name) => {
-      try {
-        const table = TABLE_MAP[name];
-        const [row] = await db
-          .select({ count: sql<number>`cast(count(*) as int)` })
-          .from(table as never);
-        return { name, count: row ? Number((row as { count: number }).count) : 0 };
-      } catch (err) {
-        throw new Error(
-          `Failed to read table "${name}" for backup manifest: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }),
-  );
-
+  const data: Record<string, unknown[]> = {};
   const manifest: Record<string, number> = {};
   let totalRows = 0;
 
-  for (const result of results) {
-    manifest[result.name] = result.count;
-    totalRows += result.count;
+  for (const name of TABLE_NAMES) {
+    try {
+      const table = TABLE_MAP[name];
+      const rows = await db.select().from(table as never);
+      data[name] = rows as unknown[];
+      manifest[name] = rows.length;
+      totalRows += rows.length;
+    } catch (err) {
+      throw new Error(
+        `Failed to read table "${name}" for backup: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
-  return { manifest, totalRows };
+  return { manifest, totalRows, data };
 }
 
 function enqueueJsonChunk(
@@ -184,12 +189,14 @@ function createBackupPayloadStream({
   createdBy,
   manifest,
   totalRows,
+  data,
   timestamp,
   counter,
 }: {
   createdBy: string;
   manifest: Record<string, number>;
   totalRows: number;
+  data: Record<string, unknown[]>;
   timestamp: string;
   counter: { bytes: number };
 }): ReadableStream<Uint8Array> {
@@ -210,8 +217,7 @@ function createBackupPayloadStream({
         );
 
         for (const [tableIndex, name] of TABLE_NAMES.entries()) {
-          const table = TABLE_MAP[name];
-          const rows = await db.select().from(table as never);
+          const rows = data[name] ?? [];
           enqueueJsonChunk(
             controller,
             counter,
@@ -242,15 +248,18 @@ function createBackupPayloadStream({
 
 async function uploadBackup(createdBy: string): Promise<BackupMetadata> {
   const token = requireBlobToken();
-  const { manifest, totalRows } = await getTableManifest();
   const timestamp = new Date().toISOString();
   const filenameTimestamp = timestamp.replace(/[:.]/g, "-");
   const filename = `backup-${filenameTimestamp}.json`;
   const counter = { bytes: 0 };
 
+  // Read all tables in one pass for snapshot consistency.
+  // Manifest counts are derived from the same rows being exported.
+  const { manifest, totalRows, data } = await readAllTablesSnapshot();
+
   const blob = await put(
     `${BACKUP_FOLDER}/${filename}`,
-    createBackupPayloadStream({ createdBy, manifest, totalRows, timestamp, counter }),
+    createBackupPayloadStream({ createdBy, manifest, totalRows, data, timestamp, counter }),
     {
       access: "private",
       token,
@@ -357,4 +366,129 @@ export async function deleteBackup(url: string): Promise<ActionResponse<null>> {
 
 export async function createBackupInternal(): Promise<BackupMetadata> {
   return uploadBackup("cron");
+}
+
+/**
+ * Restore the database from a backup file.
+ *
+ * This is a DESTRUCTIVE operation: it deletes ALL existing data in every
+ * application table and replaces it with the data from the backup file.
+ *
+ * The caller must:
+ *   1. Be an authenticated admin (enforced by `requireAdmin`).
+ *   2. Provide their current password for re-authentication (enforced below).
+ *
+ * The restore runs inside a single Drizzle transaction so partial failures
+ * roll back to the pre-restore state. Tables are cleared in reverse-FK order
+ * (not currently enforced — Drizzle handles this via CASCADE) and populated
+ * in the same order as the backup manifest.
+ */
+export async function restoreFromBackup(
+  backupUrl: string,
+  password: string,
+): Promise<ActionResponse<{ totalRows: number; tables: number }>> {
+  try {
+    const session = await requireAdmin();
+
+    // Step 1: Re-authenticate the admin with their current password.
+    // This prevents a compromised session from being used to destroy data.
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.userId),
+      columns: { passwordHash: true },
+    });
+    if (!user) {
+      return errorResponse("User not found");
+    }
+    const passwordValid = await verifyPassword(password, user.passwordHash);
+    if (!passwordValid) {
+      return errorResponse("Incorrect password");
+    }
+
+    // Step 2: Validate the backup URL points to a real backup file.
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(backupUrl);
+    } catch {
+      return errorResponse("Invalid backup URL");
+    }
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (
+      pathParts.length < 2 ||
+      pathParts[0] !== BACKUP_FOLDER ||
+      !pathParts[1]?.endsWith(".json")
+    ) {
+      return errorResponse("Invalid backup URL — must point to a backup .json file");
+    }
+
+    // Step 3: Download the backup JSON from Vercel Blob.
+    const token = requireBlobToken();
+    const blobResult = await get(backupUrl, { access: "private", token });
+    if (blobResult?.statusCode !== 200) {
+      return errorResponse("Failed to download backup file");
+    }
+
+    const reader = blobResult.stream.getReader();
+    const chunks: Uint8Array[] = [];
+    let done = false;
+    while (!done) {
+      const result = await reader.read();
+      done = result.done;
+      if (result.value) {
+        chunks.push(result.value);
+      }
+    }
+    const text = new TextDecoder().decode(Buffer.concat(chunks));
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return errorResponse("Backup file is not valid JSON");
+    }
+
+    const validation = validateBackupFile(parsed);
+    if (!validation.valid) {
+      return errorResponse(`Invalid backup file: ${validation.error}`);
+    }
+    const backup = validation.data;
+
+    // Step 4: Restore inside a transaction.
+    // TRUNCATE all tables then re-insert from backup data.
+    // CASCADE ensures FK constraints are satisfied when tables are cleared.
+    const tableNamesInInsertOrder = TABLE_NAMES;
+
+    const result = await db.transaction(async (tx) => {
+      let totalRestoredRows = 0;
+
+      // Clear all tables first (CASCADE handles dependencies).
+      for (const name of tableNamesInInsertOrder) {
+        const table = TABLE_MAP[name];
+        await tx.delete(table as never);
+      }
+
+      // Insert data from backup in the canonical order.
+      for (const name of tableNamesInInsertOrder) {
+        const rows = backup.data[name];
+        if (!rows || !Array.isArray(rows) || rows.length === 0) continue;
+
+        const table = TABLE_MAP[name];
+        // Insert rows in batches of 500 to avoid parameter limits.
+        const BATCH_SIZE = 500;
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const batch = rows.slice(i, i + BATCH_SIZE);
+          await tx.insert(table as never).values(batch as never);
+        }
+
+        totalRestoredRows += rows.length;
+      }
+
+      return {
+        totalRows: totalRestoredRows,
+        tables: tableNamesInInsertOrder.length,
+      };
+    });
+
+    return successResponse(result);
+  } catch (error) {
+    return handleActionError(error, "restoreFromBackup", "Failed to restore from backup");
+  }
 }

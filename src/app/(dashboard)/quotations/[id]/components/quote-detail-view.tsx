@@ -163,7 +163,7 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {(status === "draft" || status === "sent") && (
+          {status === "draft" && (
             <>
               <Button
                 onClick={() => {
@@ -183,17 +183,29 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
-              {status === "sent" && (
-                <Button
-                  onClick={() => {
-                    handleStatusChange("accepted");
-                  }}
-                  disabled={isPending}
-                  className="h-12 rounded-xl bg-emerald-600 px-6 font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700"
-                >
-                  Approve & Finalize
-                </Button>
-              )}
+            </>
+          )}
+
+          {status === "sent" && (
+            <>
+              <Button
+                onClick={handleDelete}
+                disabled={isPending}
+                variant="destructive"
+                className="h-12 rounded-xl px-6 font-bold shadow-lg"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+              <Button
+                onClick={() => {
+                  handleStatusChange("accepted");
+                }}
+                disabled={isPending}
+                className="h-12 rounded-xl bg-emerald-600 px-6 font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700"
+              >
+                Approve & Finalize
+              </Button>
             </>
           )}
 

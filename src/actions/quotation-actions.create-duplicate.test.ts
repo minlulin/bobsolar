@@ -165,7 +165,7 @@ describe("quotation create/duplicate branches", () => {
     expect(state.insertedQuotationItems[0]?.["costPrice"]).toBe("88");
   });
 
-  it("createQuotation writes user-selected quotation date as createdAt", async () => {
+  it("createQuotation writes user-selected quotation date as quotationDate (not createdAt)", async () => {
     const { createQuotation } = await import("@/actions/quotation-actions");
     const quotationDate = new Date("2026-05-22T00:00:00.000Z");
 
@@ -178,6 +178,9 @@ describe("quotation create/duplicate branches", () => {
     });
 
     expect(res.success).toBe(true);
-    expect(state.insertedQuotation?.["createdAt"]).toEqual(quotationDate);
+    // quotationDate is stored separately from immutable createdAt
+    expect(state.insertedQuotation?.["quotationDate"]).toEqual(quotationDate);
+    // createdAt should NOT be the backdated value — it's the DB default
+    expect(state.insertedQuotation?.["createdAt"]).toBeUndefined();
   });
 });

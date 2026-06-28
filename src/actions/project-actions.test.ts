@@ -458,21 +458,18 @@ describe("project-actions high-impact branches", () => {
     expect(spies.createBalancedJournalEntry).toHaveBeenCalled();
   });
 
-  it("blocks inventory-backed cost through generic addProjectCost", async () => {
+  it("rejects sub-MMK amounts in addProjectCost (integer-only)", async () => {
     state.projectStatus = "in_progress";
     const { addProjectCost } = await import("@/actions/project-actions");
     const res = await addProjectCost({
       projectId: "11111111-1111-4111-8111-111111111111",
-      itemId: "44444444-4444-4444-8444-444444444444",
       paymentMethodId: "22222222-2222-4222-8222-222222222222",
       description: "Material",
-      amount: 10000,
+      amount: 0.5,
       costType: "material",
       incurredDate: new Date("2026-05-20"),
     });
     expect(res.success).toBe(false);
-    if (res.success) return;
-    expect(res.error).toContain("Use inventory consumption");
   });
 
   it("consumes inventory into project cost and COGS", async () => {

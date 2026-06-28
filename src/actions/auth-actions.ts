@@ -80,7 +80,8 @@ export async function login(data: LoginInput): Promise<ActionResponse<null>> {
       .onConflictDoUpdate({
         target: authRateLimits.key,
         set: {
-          attempts: sql`${authRateLimits.attempts} + 1`,
+          // Reset to 1 if the previous window expired, otherwise increment
+          attempts: sql`CASE WHEN ${authRateLimits.lastAttemptAt} < ${windowStart} THEN 1 ELSE ${authRateLimits.attempts} + 1 END`,
           lastAttemptAt: now,
           updatedAt: now,
           // Preserve existing lockedUntil if still locked; otherwise allow reset

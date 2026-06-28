@@ -414,7 +414,6 @@ export function ProjectDetailShell({
             amount: "",
             reference: "",
             notes: "",
-            paymentType: "final",
             paymentDate: format(new Date(), "yyyy-MM-dd"),
           }));
           void refetch();

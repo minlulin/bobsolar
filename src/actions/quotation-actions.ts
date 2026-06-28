@@ -310,7 +310,7 @@ export async function createQuotation(raw: unknown): Promise<ActionResponse<Quot
               total: toDbDecimal(pricing.total),
               notes: validated.notes,
               validUntil: validated.validUntil,
-              createdAt: validated.quotationDate ?? undefined,
+              quotationDate: validated.quotationDate ?? undefined,
               status: "draft",
             })
             .returning();
@@ -456,6 +456,18 @@ export async function updateQuotation(
 
     const validated = updateQuotationSchema.parse(raw);
 
+    // Block edits on quotations already linked to a project — the quote's
+    // pricing is frozen once a project is created from it.
+    const linkedProject = await db.query.projects.findFirst({
+      where: eq(projects.quotationId, validatedId),
+      columns: { id: true },
+    });
+    if (linkedProject) {
+      return handleStateError(
+        "Cannot edit quotation — it has already been converted to a project.",
+      );
+    }
+
     // Discount validation BEFORE transaction — these checks don't need DB access
     // and must not be inside db.transaction() where `return errorResponse(...)` would
     // return from the callback, silently discarding the error.
@@ -521,6 +533,7 @@ export async function updateQuotation(
       if (validated.customerId !== undefined) patch.customerId = validated.customerId;
       if (validated.notes !== undefined) patch.notes = validated.notes;
       if (validated.validUntil !== undefined) patch.validUntil = validated.validUntil;
+      if (validated.quotationDate !== undefined) patch.quotationDate = validated.quotationDate;
 
       let shouldRecalculatePricing = false;
       if (validated.items !== undefined) shouldRecalculatePricing = true;
@@ -684,6 +697,7 @@ export async function duplicateQuotation(id: string): Promise<ActionResponse<Quo
               total: original.total,
               notes: original.notes,
               validUntil: original.validUntil ? addDays(new Date(), 30) : null,
+              quotationDate: original.quotationDate ?? undefined,
               status: "draft",
             })
             .returning();

@@ -279,6 +279,13 @@ export const quotations = pgTable(
     total: decimal("total", { precision: 15, scale: 2 }).notNull(),
     notes: text("notes"),
     validUntil: timestamp("valid_until"),
+    /**
+     * Business/display date chosen by the user (e.g. backdated quote).
+     * Immutable `createdAt` is the real DB creation timestamp and is used
+     * for quote-number sequence generation so that backdating cannot
+     * produce duplicate quote numbers.
+     */
+    quotationDate: timestamp("quotation_date"),
     isArchived: boolean("is_archived").default(false).notNull(),
     archivedAt: timestamp("archived_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),

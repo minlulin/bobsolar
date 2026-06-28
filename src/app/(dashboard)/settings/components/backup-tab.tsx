@@ -1,11 +1,29 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Database, Download, Loader2, Trash2 } from "lucide-react";
+import { Database, Download, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { createBackup, deleteBackup, getBackupHistory } from "@/actions/backup-actions";
+import {
+  createBackup,
+  deleteBackup,
+  getBackupHistory,
+  restoreFromBackup,
+} from "@/actions/backup-actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { settingsKeys } from "@/lib/query-keys";
 
 function formatBytes(bytes: number): string {
@@ -27,6 +45,8 @@ function formatDate(iso: string): string {
 
 export function BackupTab(): React.JSX.Element {
   const queryClient = useQueryClient();
+  const [restoreTargetUrl, setRestoreTargetUrl] = useState<string | null>(null);
+  const [passwordInput, setPasswordInput] = useState("");
 
   const historyQuery = useQuery({
     queryKey: settingsKeys.backups(),
@@ -64,6 +84,40 @@ export function BackupTab(): React.JSX.Element {
       }
     },
   });
+
+  const restoreMutation = useMutation({
+    mutationFn: async ({ url, password }: { url: string; password: string }) => {
+      return restoreFromBackup(url, password);
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success(
+          `Restore complete: ${res.data.totalRows} rows across ${res.data.tables} tables`,
+        );
+        closeRestoreDialog();
+      } else {
+        toast.error(res.error);
+      }
+    },
+    onError: () => {
+      toast.error("Restore failed");
+    },
+  });
+
+  function openRestoreDialog(url: string): void {
+    setRestoreTargetUrl(url);
+    setPasswordInput("");
+  }
+
+  function closeRestoreDialog(): void {
+    setRestoreTargetUrl(null);
+    setPasswordInput("");
+  }
+
+  function confirmRestore(): void {
+    if (!restoreTargetUrl) return;
+    restoreMutation.mutate({ url: restoreTargetUrl, password: passwordInput });
+  }
 
   return (
     <div className="space-y-6">
@@ -154,6 +208,14 @@ export function BackupTab(): React.JSX.Element {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => openRestoreDialog(backup.url)}
+                      title="Restore from this backup"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         const params = new URLSearchParams({ url: backup.url });
                         window.open(`/api/backup/download?${params}`, "_blank");
@@ -176,6 +238,60 @@ export function BackupTab(): React.JSX.Element {
           )}
         </CardContent>
       </Card>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog
+        open={restoreTargetUrl !== null}
+        onOpenChange={(open) => {
+          if (!open) closeRestoreDialog();
+        }}
+      >
+        <AlertDialogContent className="border-border bg-card text-foreground">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore from backup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will <strong>permanently delete</strong> all current data in every table and
+              replace it with the selected backup. This action cannot be undone.
+              {restoreTargetUrl ? (
+                <span className="mt-2 block font-mono text-[11px]">
+                  Backup: {restoreTargetUrl.split("/").pop()}
+                </span>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="restore-password" className="text-muted-foreground text-xs">
+              Enter your password to confirm
+            </Label>
+            <Input
+              id="restore-password"
+              type="password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              placeholder="Current login password"
+              className="border-border/70 bg-muted/45"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeRestoreDialog} disabled={restoreMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRestore}
+              disabled={!passwordInput || restoreMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {restoreMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="mr-2 h-4 w-4" />
+              )}
+              Restore
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

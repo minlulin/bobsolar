@@ -1,8 +1,9 @@
 "use server";
 
 import { desc, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireOwner } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import type {
   InventoryItem,
@@ -244,6 +245,8 @@ export async function receivePurchaseOrder(id: string): Promise<ActionResponse<n
     revalidatePath(`/purchases/${validatedId}`);
     revalidatePath("/purchases");
     revalidatePath("/suppliers");
+    revalidatePath("/inventory");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     await invalidateFinanceCacheForWrite();
     return successResponse(null);
   } catch (error) {

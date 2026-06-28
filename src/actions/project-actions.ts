@@ -424,6 +424,7 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
           }
 
           revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
+          revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
           revalidatePath("/projects");
           revalidatePath(`/quotations/${quotation.id}`);
           revalidatePath("/quotations");
@@ -975,6 +976,7 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
     if (!updated) return handleNotFoundError("Project", data.id);
 
     revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
+    revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
     revalidatePath("/projects");
     revalidatePath(`/projects/${data.id}`);
     revalidatePath("/projects/completed");
@@ -1017,6 +1019,7 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
     if (!updated) return handleNotFoundError("Project", validatedId);
 
     revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
+    revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
     revalidatePath("/projects");
     revalidatePath(`/projects/${validatedId}`);
     revalidatePath("/projects/completed");
@@ -1072,9 +1075,6 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
     const auth = await requireOwner();
     assertFinanceSsotDrift();
     const data = addProjectCostSchema.parse(raw);
-    if (data.itemId) {
-      return handleStateError("Use inventory consumption to attach inventory items to a project.");
-    }
 
     const projectRow = await db.query.projects.findFirst({
       where: eq(projects.id, data.projectId),
@@ -1096,7 +1096,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
         .insert(projectCosts)
         .values({
           projectId: data.projectId,
-          itemId: data.itemId ?? null,
+          itemId: null,
           paymentMethodId: data.paymentMethodId,
           description: data.description,
           amount: String(amountRounded),
@@ -1159,6 +1159,7 @@ export async function addProjectCost(raw: unknown): Promise<ActionResponse<Proje
 
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
+    revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
     await invalidateFinanceCacheForWrite();
 
     return successResponse([createdCost]);
@@ -1222,6 +1223,8 @@ export async function consumeProjectInventory(
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
     revalidatePath("/inventory");
+    revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
     await invalidateFinanceCacheForWrite();
 
     return successResponse(costs);
@@ -1319,6 +1322,8 @@ export async function deleteProjectCost(
 
     revalidatePath(`/projects/${cost.projectId}`);
     revalidatePath("/projects");
+    revalidatePath("/inventory");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
 
     return successResponse({ projectId: cost.projectId });
   } catch (error) {

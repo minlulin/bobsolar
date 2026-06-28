@@ -241,7 +241,7 @@ export async function getMonthEndCloseReport(
         label: "All project payments posted",
         description:
           "Asset-debit side of payment journal entries matches non-reversed operational payment totals (project scope)",
-        status: incomeMatch ? "pass" : "fail",
+        status: incomeMatch ? "pass" : "warning",
         detail: incomeMatch
           ? `Journal: ${postedPaymentsSum.toLocaleString()} = Payments: ${operationalPayments.toLocaleString()}`
           : `Journal: ${postedPaymentsSum.toLocaleString()} ≠ Payments: ${operationalPayments.toLocaleString()}`,
@@ -250,7 +250,7 @@ export async function getMonthEndCloseReport(
         id: "costs-posted",
         label: "All project costs posted",
         description: "Journal expense matches non-reversed operational cost totals (project scope)",
-        status: expenseMatch ? "pass" : "fail",
+        status: expenseMatch ? "pass" : "warning",
         detail: expenseMatch
           ? `Journal: ${postedCostsSum.toLocaleString()} = Costs: ${operationalCosts.toLocaleString()}`
           : `Journal: ${postedCostsSum.toLocaleString()} ≠ Costs: ${operationalCosts.toLocaleString()}`,
@@ -277,6 +277,8 @@ export async function getMonthEndCloseReport(
       },
     ];
 
+    // "allPassed" is true only when every check is "pass". Warnings indicate
+    // discrepancies that should be reviewed but don't block the close process.
     const allPassed = checks.every((c) => c.status === "pass");
 
     return successResponse({

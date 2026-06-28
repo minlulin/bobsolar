@@ -59,7 +59,7 @@ describe("getMonthEndCloseReport", () => {
     expect(result.data.projectCount).toBe(3);
     expect(result.data.allPassed).toBe(false);
     expect(result.data.checks[0]?.status).toBe("pass");
-    expect(result.data.checks[1]?.status).toBe("fail");
+    expect(result.data.checks[1]?.status).toBe("warning");
     expect(result.data.paymentCount).toBe(1);
     expect(result.data.costCount).toBe(1);
   });
