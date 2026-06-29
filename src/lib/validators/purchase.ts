@@ -24,6 +24,19 @@ export const payPurchaseOrderSchema = z.object({
   notes: z.string().max(1000).optional().nullable(),
 });
 
+export const receivePartialPurchaseOrderSchema = z.object({
+  purchaseOrderId: z.uuid(),
+  items: z
+    .array(
+      z.object({
+        lineItemId: z.uuid(),
+        quantity: z.number().positive("Quantity must be positive"),
+      }),
+    )
+    .min(1, "At least one line item is required"),
+});
+
 export type PurchaseOrderItemInput = z.input<typeof purchaseOrderItemSchema>;
 export type CreatePurchaseOrder = z.input<typeof createPurchaseOrderSchema>;
 export type PayPurchaseOrder = z.input<typeof payPurchaseOrderSchema>;
+export type ReceivePartialPurchaseOrder = z.input<typeof receivePartialPurchaseOrderSchema>;

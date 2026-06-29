@@ -1,7 +1,7 @@
 "use server";
 
 import { addDays } from "date-fns";
-import { and, count, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, lt, or, sql } from "drizzle-orm";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { requireAdmin, requireAuth, requireOwner } from "@/lib/auth/validate";
 import { CACHE_TAGS } from "@/lib/cache-tags";
@@ -27,6 +27,7 @@ import { extractQuoteSequence, formatQuoteNumber } from "@/lib/utils/quote-numbe
 import { escapeLikePattern } from "@/lib/utils/search";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
+  createQuotationRevisionSchema,
   createQuotationSchema,
   type QuotationFilterInput,
   quotationFilterSchema,
@@ -873,5 +874,171 @@ export async function expireOverdueQuotations(): Promise<ActionResponse<{ expire
       "expireOverdueQuotations",
       "Failed to expire overdue quotations",
     );
+  }
+}
+
+export async function createQuotationRevision(raw: unknown): Promise<ActionResponse<Quotation>> {
+  try {
+    const auth = await requireOwner();
+    const data = createQuotationRevisionSchema.parse(raw);
+
+    const original = await db.query.quotations.findFirst({
+      where: eq(quotations.id, data.originalQuotationId),
+      with: { items: true },
+    });
+
+    if (!original) {
+      return handleNotFoundError("Quotation", data.originalQuotationId);
+    }
+
+    if (original.status !== "sent" && original.status !== "rejected") {
+      return handleStateError("Only sent or rejected quotations can be revised");
+    }
+
+    // Standard user limit validations if not admin
+    if (auth.role !== "admin") {
+      if (data.discountPercent !== undefined && data.discountPercent > 15) {
+        return errorResponse("Standard users cannot apply a global discount greater than 15%");
+      }
+      for (const item of data.items) {
+        if (item.discountPercentage !== undefined && item.discountPercentage > 15) {
+          return errorResponse("Standard users cannot apply an item discount greater than 15%");
+        }
+      }
+    }
+
+    const itemIds = data.items.map((item) => item.itemId).filter((id): id is string => id != null);
+
+    const unitPriceMap = new Map<string, number>();
+    if (itemIds.length > 0) {
+      const invRows = await db
+        .select({ id: inventoryItems.id, unitPrice: inventoryItems.unitPrice })
+        .from(inventoryItems)
+        .where(inArray(inventoryItems.id, itemIds));
+      for (const row of invRows) {
+        unitPriceMap.set(row.id, Number(row.unitPrice));
+      }
+    }
+
+    const enrichedItems = data.items.map((item) => ({
+      ...item,
+      unitPrice: item.itemId ? (unitPriceMap.get(item.itemId) ?? item.unitPrice) : item.unitPrice,
+    }));
+
+    const lineItems: LineItem[] = enrichedItems.map((item) => ({
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discountPercentage: item.discountPercentage,
+    }));
+
+    const pricing = calculateQuotation(lineItems, data.discountPercent, data.taxPercent);
+
+    const revisionNumber = original.revisionNumber + 1;
+    const originalQuotationId = original.originalQuotationId ?? original.id;
+
+    // Revision quote number format: QT-{YEAR}-{SEQ}-R{REV}
+    const baseQuoteNumber = original.quoteNumber.split("-R")[0] ?? original.quoteNumber;
+    const quoteNumber = `${baseQuoteNumber}-R${revisionNumber}`;
+
+    const result = await db.transaction(async (tx) => {
+      const [quote] = await tx
+        .insert(quotations)
+        .values({
+          quoteNumber,
+          customerId: data.customerId,
+          createdBy: auth.userId,
+          subtotal: toDbDecimal(pricing.subtotal),
+          discountPercent: toDbDecimal(data.discountPercent),
+          discountAmount: toDbDecimal(pricing.discountAmount),
+          taxPercent: toDbDecimal(data.taxPercent),
+          taxAmount: toDbDecimal(pricing.taxAmount),
+          total: toDbDecimal(pricing.total),
+          notes: data.notes,
+          validUntil: data.validUntil,
+          quotationDate: data.quotationDate ?? undefined,
+          status: "draft",
+          revisionNumber,
+          originalQuotationId,
+          revisionReason: data.revisionReason,
+        })
+        .returning();
+
+      if (!quote) throw new Error("Failed to create revised quotation record in database");
+
+      const costLookupItemIds = enrichedItems
+        .map((item) => item.itemId)
+        .filter((id): id is string => id != null);
+
+      const costPriceMap = new Map<string, number>();
+      if (costLookupItemIds.length > 0) {
+        const inventoryRows = await tx
+          .select({ id: inventoryItems.id, costPrice: inventoryItems.costPrice })
+          .from(inventoryItems)
+          .where(inArray(inventoryItems.id, costLookupItemIds));
+        for (const row of inventoryRows) {
+          costPriceMap.set(row.id, Math.round(Number(row.costPrice)));
+        }
+      }
+
+      const itemsToInsert = enrichedItems.map((item, index) => {
+        const itemCostPrice = item.itemId ? (costPriceMap.get(item.itemId) ?? 0) : 0;
+        return {
+          quotationId: quote.id,
+          itemId: item.itemId,
+          description: item.description,
+          quantity: toDbDecimal(item.quantity),
+          unitPrice: toDbDecimal(item.unitPrice),
+          costPrice: toDbDecimal(itemCostPrice),
+          discountPercentage: toDbDecimal(item.discountPercentage),
+          totalPrice: toDbDecimal(
+            calculateLineItem({
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discountPercentage: item.discountPercentage,
+            }),
+          ),
+          costTotal: toDbDecimal(Math.round(itemCostPrice * item.quantity)),
+          sortOrder: index,
+        };
+      });
+
+      await tx.insert(quotationItems).values(itemsToInsert);
+      return quote;
+    });
+
+    revalidateTag(CACHE_TAGS.QUOTATIONS_LIST, "max");
+    revalidateTag(CACHE_TAGS.DASHBOARD_STATS, "max");
+    revalidatePath("/quotations");
+    return successResponse(result);
+  } catch (error) {
+    return handleActionError(error, "createQuotationRevision", "Failed to revise quotation");
+  }
+}
+
+export async function getQuotationRevisions(id: string): Promise<ActionResponse<Quotation[]>> {
+  try {
+    await requireAuth();
+    const validatedId = uuidSchema.parse(id);
+
+    const quote = await db.query.quotations.findFirst({
+      where: eq(quotations.id, validatedId),
+    });
+
+    if (!quote) return handleNotFoundError("Quotation", validatedId);
+
+    const rootId = quote.originalQuotationId ?? quote.id;
+
+    // Fetch the root quotation + all revisions order by revisionNumber asc
+    const revisionsList = await db.query.quotations.findMany({
+      where: and(
+        eq(quotations.isArchived, false),
+        or(eq(quotations.id, rootId), eq(quotations.originalQuotationId, rootId)),
+      ),
+      orderBy: [asc(quotations.revisionNumber)],
+    });
+
+    return successResponse(revisionsList);
+  } catch (error) {
+    return handleActionError(error, "getQuotationRevisions", "Failed to fetch quotation revisions");
   }
 }

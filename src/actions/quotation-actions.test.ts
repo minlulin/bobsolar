@@ -472,4 +472,39 @@ describe("quotation-actions high-impact branches", () => {
     if (res.success) return;
     expect(res.error).toContain("Only draft and sent quotations can be updated");
   });
+
+  it("creates revision with incremented number and starting as draft", async () => {
+    state.quote = {
+      id: "11111111-1111-4111-8111-111111111111",
+      status: "sent",
+      quoteNumber: "QT-2026-0001",
+      createdBy: state.auth.userId,
+      revisionNumber: 1,
+      originalQuotationId: null,
+      // biome-ignore lint/suspicious/noExplicitAny: test mock typecast
+    } as any;
+
+    state.quotationDetail = {
+      ...(state.quotationDetail as Record<string, unknown>),
+      status: "sent",
+    };
+
+    const { createQuotationRevision } = await import("@/actions/quotation-actions");
+    const res = await createQuotationRevision({
+      originalQuotationId: "11111111-1111-4111-8111-111111111111",
+      revisionReason: "Adjusted pricing",
+      customerId: "00000000-0000-4000-8000-000000000002",
+      discountPercent: 5,
+      taxPercent: 5,
+      items: [
+        {
+          description: "Panel",
+          quantity: 2,
+          unitPrice: 100000,
+          discountPercentage: 0,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+  });
 });

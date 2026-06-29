@@ -20,6 +20,9 @@ const state = vi.hoisted(() => ({
 
 const spies = vi.hoisted(() => ({
   uploadFileFromBufferOrBlob: vi.fn(async () => state.uploadedUrl),
+  onConflictDoUpdate: vi.fn(() => ({
+    returning: vi.fn(async () => []),
+  })),
 }));
 
 vi.mock("@/lib/auth/validate", () => ({
@@ -32,29 +35,19 @@ vi.mock("@/lib/storage/blob", () => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
-    transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
-      const tx = {
-        query: {
-          authRateLimits: {
-            findFirst: vi.fn(async () => state.limitRow),
-          },
-        },
-        insert: vi.fn(() => ({
-          values: vi.fn(async (payload: Record<string, unknown>) => {
-            state.inserted = payload;
-          }),
-        })),
-        update: vi.fn(() => ({
-          set: vi.fn((payload: Record<string, unknown>) => {
-            state.updated = payload;
-            return {
-              where: vi.fn(async () => undefined),
-            };
-          }),
-        })),
-      };
-      return await fn(tx);
-    }),
+    insert: vi.fn(() => ({
+      values: vi.fn((payload: Record<string, unknown>) => {
+        state.inserted = payload;
+        return {
+          onConflictDoUpdate: spies.onConflictDoUpdate,
+        };
+      }),
+    })),
+    query: {
+      authRateLimits: {
+        findFirst: vi.fn(async () => state.limitRow),
+      },
+    },
   },
 }));
 
@@ -72,6 +65,7 @@ function makeRequest(fileType = "image/png"): Request {
       "x-forwarded-for": "1.2.3.4",
     }),
     formData: async () => formData,
+    nextUrl: new URL("http://localhost:3000/api/upload"),
   } as unknown as Request;
 }
 

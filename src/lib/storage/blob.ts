@@ -3,14 +3,24 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { del, put } from "@vercel/blob";
 
+let selectedTokenSource: string | null = null;
+
 function getToken(): string | undefined {
+  // Prefer the explicit, documented env var
   if (process.env["BLOB_READ_WRITE_TOKEN"]) {
+    if (!selectedTokenSource) {
+      selectedTokenSource = "BLOB_READ_WRITE_TOKEN";
+      console.log(`[blob] Using token from ${selectedTokenSource}`);
+    }
     return process.env["BLOB_READ_WRITE_TOKEN"];
   }
-  for (const key of Object.keys(process.env)) {
-    if (key.endsWith("_READ_WRITE_TOKEN") && process.env[key]) {
-      return process.env[key];
-    }
+
+  // No fallback scan — if the explicit token is not set, fail fast.
+  // Scanning all env vars for `*_READ_WRITE_TOKEN` could silently select
+  // the wrong token if multiple blob stores are configured.
+  if (!selectedTokenSource) {
+    selectedTokenSource = null;
+    console.warn("[blob] BLOB_READ_WRITE_TOKEN is not configured. Blob operations will fail.");
   }
   return undefined;
 }

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { type LoginInput, loginSchema } from "@/lib/validators/auth";
 
 export default function LoginPage(): React.JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const brandingQuery = useQuery({
@@ -50,7 +51,14 @@ export default function LoginPage(): React.JSX.Element {
       if (!result.success) {
         toast.error(result.error);
       } else {
-        router.push("/");
+        // SECURITY: Validate the `next` parameter to prevent open redirect.
+        // Only accept relative paths (starting with "/") that don't begin with "//".
+        const next = searchParams.get("next");
+        if (next?.startsWith("/") && !next.startsWith("//")) {
+          router.push(next);
+        } else {
+          router.push("/");
+        }
       }
     } catch (err) {
       console.error("[login]", err);

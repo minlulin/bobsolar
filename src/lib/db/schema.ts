@@ -128,6 +128,7 @@ export const journalSourceTypeEnum = pgEnum("journal_source_type", [
   "equity_distribution",
   "owner_draw",
   "capital_call",
+  "project_change_order",
 ]);
 
 export type JournalSourceType = (typeof journalSourceTypeEnum.enumValues)[number];
@@ -161,6 +162,9 @@ export const auditActionEnum = pgEnum("audit_action", [
   "login",
   "logout",
   "session_revoke",
+  "csrf_blocked",
+  "rate_limit_hit",
+  "quota_exceeded",
 ]);
 
 export type AuditAction = (typeof auditActionEnum.enumValues)[number];
@@ -288,6 +292,11 @@ export const quotations = pgTable(
     quotationDate: timestamp("quotation_date"),
     isArchived: boolean("is_archived").default(false).notNull(),
     archivedAt: timestamp("archived_at"),
+    revisionNumber: integer("revision_number").default(1).notNull(),
+    originalQuotationId: uuid("original_quotation_id")
+      // biome-ignore lint/suspicious/noExplicitAny: self-reference requires cast to avoid type circularity
+      .references((): any => (quotations as any).id, { onDelete: "cascade" }),
+    revisionReason: text("revision_reason"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -308,7 +317,8 @@ export const quotationItems = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     quotationId: uuid("quotation_id")
-      .references(() => quotations.id, { onDelete: "cascade" })
+      // biome-ignore lint/suspicious/noExplicitAny: break circular dependency
+      .references(() => (quotations as any).id, { onDelete: "cascade" })
       .notNull(),
     itemId: uuid("item_id").references(() => inventoryItems.id),
     description: text("description").notNull(),
@@ -331,7 +341,9 @@ export const projects = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     projectNumber: text("project_number").unique().notNull(), // PJ-2026-0001
-    quotationId: uuid("quotation_id").references(() => quotations.id),
+    quotationId: uuid("quotation_id")
+      // biome-ignore lint/suspicious/noExplicitAny: break circular dependency
+      .references(() => (quotations as any).id),
     customerId: uuid("customer_id")
       .references(() => customers.id)
       .notNull(),
@@ -350,6 +362,13 @@ export const projects = pgTable(
     startDate: timestamp("start_date"),
     targetCompletion: timestamp("target_completion"),
     actualCompletion: timestamp("actual_completion"),
+    depositRequired: boolean("deposit_required").default(false).notNull(),
+    depositAmount: decimal("deposit_amount", { precision: 15, scale: 2 }).default("0").notNull(),
+    depositReceived: boolean("deposit_received").default(false).notNull(),
+    handoverDate: timestamp("handover_date"),
+    handoverAcknowledgedBy: text("handover_acknowledged_by"),
+    handoverAcknowledgedAt: timestamp("handover_acknowledged_at"),
+    handoverPdfUrl: text("handover_pdf_url"),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -406,6 +425,59 @@ export const projectRemarks = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [index("project_remarks_project_id_idx").on(table.projectId)],
+);
+
+export const changeOrderStatusEnum = pgEnum("change_order_status", [
+  "draft",
+  "approved",
+  "rejected",
+  "cancelled",
+]);
+
+export type ChangeOrderStatus = (typeof changeOrderStatusEnum.enumValues)[number];
+
+export const projectChangeOrders = pgTable(
+  "project_change_orders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "restrict" })
+      .notNull(),
+    changeOrderNumber: text("change_order_number").unique().notNull(),
+    status: changeOrderStatusEnum("status").default("draft").notNull(),
+    description: text("description").notNull(),
+    additionalAmount: decimal("additional_amount", { precision: 15, scale: 2 })
+      .default("0")
+      .notNull(),
+    originalQuotationId: uuid("original_quotation_id")
+      // biome-ignore lint/suspicious/noExplicitAny: break circular dependency
+      .references(() => (quotations as any).id),
+    approvedBy: uuid("approved_by").references(() => users.id),
+    approvedAt: timestamp("approved_at"),
+    createdBy: uuid("created_by")
+      .references(() => users.id)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("project_change_orders_project_id_idx").on(table.projectId)],
+);
+
+export const projectChangeOrderItems = pgTable(
+  "project_change_order_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    changeOrderId: uuid("change_order_id")
+      .references(() => projectChangeOrders.id, { onDelete: "cascade" })
+      .notNull(),
+    itemId: uuid("item_id").references(() => inventoryItems.id),
+    description: text("description").notNull(),
+    quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
+    unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
+    totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
+    isAddition: boolean("is_addition").default(true).notNull(),
+  },
+  (table) => [index("project_change_order_items_change_order_id_idx").on(table.changeOrderId)],
 );
 
 export const warrantyAlerts = pgTable(
@@ -654,6 +726,9 @@ export const purchaseOrderItems = pgTable(
     unitPrice: decimal("unit_price", { precision: 15, scale: 2 }).notNull(),
     totalPrice: decimal("total_price", { precision: 15, scale: 2 }).notNull(),
     sortOrder: integer("sort_order").notNull(),
+    receivedQuantity: decimal("received_quantity", { precision: 12, scale: 2 })
+      .default("0")
+      .notNull(),
   },
   (table) => [index("purchase_order_items_purchase_order_id_idx").on(table.purchaseOrderId)],
 );
@@ -884,6 +959,14 @@ export const quotationsRelations = relations(quotations, ({ one, many }) => ({
     fields: [quotations.id],
     references: [projects.quotationId],
   }),
+  parentQuotation: one(quotations, {
+    fields: [quotations.originalQuotationId],
+    references: [quotations.id],
+    relationName: "quotationRevisions",
+  }),
+  revisions: many(quotations, {
+    relationName: "quotationRevisions",
+  }),
 }));
 
 export const quotationItemsRelations = relations(quotationItems, ({ one }) => ({
@@ -1069,6 +1152,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   vouchers: many(projectVouchers),
   payments: many(projectPayments),
   journalLines: many(journalLines),
+  changeOrders: many(projectChangeOrders),
 }));
 
 export const suppliersRelations = relations(suppliers, ({ many }) => ({
@@ -1193,6 +1277,37 @@ export const auditLogs = pgTable(
   ],
 );
 
+export const projectChangeOrdersRelations = relations(projectChangeOrders, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [projectChangeOrders.projectId],
+    references: [projects.id],
+  }),
+  originalQuotation: one(quotations, {
+    fields: [projectChangeOrders.originalQuotationId],
+    references: [quotations.id],
+  }),
+  approvedBy: one(users, {
+    fields: [projectChangeOrders.approvedBy],
+    references: [users.id],
+  }),
+  createdBy: one(users, {
+    fields: [projectChangeOrders.createdBy],
+    references: [users.id],
+  }),
+  items: many(projectChangeOrderItems),
+}));
+
+export const projectChangeOrderItemsRelations = relations(projectChangeOrderItems, ({ one }) => ({
+  changeOrder: one(projectChangeOrders, {
+    fields: [projectChangeOrderItems.changeOrderId],
+    references: [projectChangeOrders.id],
+  }),
+  inventoryItem: one(inventoryItems, {
+    fields: [projectChangeOrderItems.itemId],
+    references: [inventoryItems.id],
+  }),
+}));
+
 // --- Types ---
 
 export type User = InferSelectModel<typeof users>;
@@ -1215,6 +1330,12 @@ export type NewQuotationItem = InferInsertModel<typeof quotationItems>;
 
 export type Project = InferSelectModel<typeof projects>;
 export type NewProject = InferInsertModel<typeof projects>;
+
+export type ProjectChangeOrder = InferSelectModel<typeof projectChangeOrders>;
+export type NewProjectChangeOrder = InferInsertModel<typeof projectChangeOrders>;
+
+export type ProjectChangeOrderItem = InferSelectModel<typeof projectChangeOrderItems>;
+export type NewProjectChangeOrderItem = InferInsertModel<typeof projectChangeOrderItems>;
 
 export type ProjectCost = InferSelectModel<typeof projectCosts>;
 export type NewProjectCost = InferInsertModel<typeof projectCosts>;

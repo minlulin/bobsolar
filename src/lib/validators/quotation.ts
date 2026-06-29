@@ -67,3 +67,10 @@ export const updateQuotationWithIdSchema = createQuotationSchema.partial().exten
 export const updateQuotationSchema = createQuotationSchema.partial();
 
 export type UpdateQuotation = z.input<typeof updateQuotationSchema>;
+
+export const createQuotationRevisionSchema = createQuotationSchema.extend({
+  originalQuotationId: z.uuid("Original quotation ID is required"),
+  revisionReason: z.string().min(1, "Revision reason is required"),
+});
+
+export type CreateQuotationRevision = z.input<typeof createQuotationRevisionSchema>;

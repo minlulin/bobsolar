@@ -154,25 +154,24 @@ export async function updateInventoryItem(
       updateData.modelNumber,
     );
 
-    const dbUpdateData: Record<string, unknown> = {
-      ...updateData,
+    // Build a typed update object explicitly instead of spreading Record<string, unknown>
+    const patch: Partial<typeof inventoryItems.$inferInsert> = {
       durationMonths: updateData.durationMonths ?? undefined,
     };
 
-    if (updateData.brand !== undefined) dbUpdateData["brand"] = extracted.brand || null;
-    if (updateData.modelNumber !== undefined)
-      dbUpdateData["modelNumber"] = extracted.modelNumber || null;
-    if (updateData.costPrice !== undefined)
-      dbUpdateData["costPrice"] = toDbDecimal(updateData.costPrice);
-    if (updateData.unitPrice !== undefined)
-      dbUpdateData["unitPrice"] = toDbDecimal(updateData.unitPrice);
+    if (updateData.name !== undefined) patch.name = updateData.name;
+    if (updateData.category !== undefined) patch.category = updateData.category;
+    if (updateData.brand !== undefined) patch.brand = extracted.brand || null;
+    if (updateData.modelNumber !== undefined) patch.modelNumber = extracted.modelNumber || null;
+    if (updateData.costPrice !== undefined) patch.costPrice = toDbDecimal(updateData.costPrice);
+    if (updateData.unitPrice !== undefined) patch.unitPrice = toDbDecimal(updateData.unitPrice);
+    if (updateData.stockQty !== undefined) patch.stockQty = updateData.stockQty;
+    if (updateData.specifications !== undefined) patch.specifications = updateData.specifications;
+    if (updateData.isActive !== undefined) patch.isActive = updateData.isActive;
 
     const [item] = await db
       .update(inventoryItems)
-      .set({
-        ...dbUpdateData,
-        updatedAt: new Date(),
-      })
+      .set({ ...patch, updatedAt: new Date() })
       .where(eq(inventoryItems.id, validatedId))
       .returning();
 

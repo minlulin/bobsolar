@@ -171,16 +171,13 @@ export async function changePassword(formData: FormData): Promise<ActionResponse
     const newHash = await hashPassword(newPassword);
     const newSessionVersion = user.sessionVersion + 1;
 
-    // Bump session_version in the same UPDATE that writes the new password.
-    // Both must land atomically; if the password update succeeds but the bump
-    // fails, the next request would log the user in with the new password
-    // without revoking other devices.
-    await db.transaction(async (tx) => {
-      await tx
-        .update(users)
-        .set({ passwordHash: newHash, sessionVersion: newSessionVersion })
-        .where(eq(users.id, user.id));
-    });
+    // Both fields are written in a single UPDATE statement, which is inherently
+    // atomic. No transaction wrapper needed — a single statement cannot partially
+    // succeed.
+    await db
+      .update(users)
+      .set({ passwordHash: newHash, sessionVersion: newSessionVersion })
+      .where(eq(users.id, user.id));
 
     // Re-create session with new sessionVersion so current device stays logged in
     // while all other devices are invalidated.

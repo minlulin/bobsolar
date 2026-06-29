@@ -8,7 +8,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import type { ProjectDetail } from "@/actions/project-actions";
+import {
+  approveChangeOrder,
+  cancelChangeOrder,
+  createChangeOrder,
+  getProjectChangeOrders,
+  rejectChangeOrder,
+} from "@/actions/change-order-actions";
+import { acknowledgeProjectHandover, type ProjectDetail } from "@/actions/project-actions";
 import {
   reopenWarrantyAlert as reopenWarrantyAlertAction,
   resolveWarrantyAlert as resolveWarrantyAlertAction,
@@ -52,7 +59,7 @@ import {
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 
-type ProjectTab = "overview" | "costs" | "remarks" | "warranty";
+type ProjectTab = "overview" | "costs" | "remarks" | "warranty" | "change_orders";
 
 import { useInventoryItems } from "@/hooks/use-inventory";
 import { usePaymentMethods, useProjectPayments, useRecordPayment } from "@/hooks/use-payments";
@@ -182,6 +189,134 @@ export function ProjectDetailShell({
   const [costFilter, setCostFilter] = React.useState<(typeof COST_FILTERS)[number]>("all");
   const [consumeOpen, setConsumeOpen] = React.useState(false);
 
+  // biome-ignore lint/suspicious/noExplicitAny: Change orders fetched from action response
+  const [changeOrders, setChangeOrders] = React.useState<any[]>([]);
+  const [loadingCOs, setLoadingCOs] = React.useState(false);
+  const [coDialogOpen, setCoDialogOpen] = React.useState(false);
+  const [coDescription, setCoDescription] = React.useState("");
+  const [coItems, setCoItems] = React.useState<
+    Array<{
+      description: string;
+      quantity: string;
+      unitPrice: string;
+      isAddition: boolean;
+    }>
+  >([{ description: "", quantity: "1", unitPrice: "", isAddition: true }]);
+  const [processingCoId, setProcessingCoId] = React.useState<string | null>(null);
+  const [ackName, setAckName] = React.useState("");
+  const [acknowledging, setAcknowledging] = React.useState(false);
+
+  const fetchCOs = React.useCallback(async () => {
+    setLoadingCOs(true);
+    const res = await getProjectChangeOrders(id);
+    if (res.success) {
+      setChangeOrders(res.data);
+    }
+    setLoadingCOs(false);
+  }, [id]);
+
+  React.useEffect(() => {
+    if (activeProjectTab === "change_orders") {
+      void fetchCOs();
+    }
+  }, [activeProjectTab, fetchCOs]);
+
+  const handleAddCoItem = () => {
+    setCoItems((prev) => [
+      ...prev,
+      { description: "", quantity: "1", unitPrice: "", isAddition: true },
+    ]);
+  };
+
+  const handleRemoveCoItem = (index: number) => {
+    setCoItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // biome-ignore lint/suspicious/noExplicitAny: field values can be text or boolean
+  const handleCoItemChange = (index: number, field: string, value: any) => {
+    setCoItems((prev) => prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)));
+  };
+
+  const [submittingCo, setSubmittingCo] = React.useState(false);
+
+  const handleSubmitCo = async (ev: React.SyntheticEvent) => {
+    ev.preventDefault();
+    if (!coDescription.trim()) {
+      toast.error("Description is required");
+      return;
+    }
+    const invalidItem = coItems.some(
+      (item) =>
+        !item.description.trim() || Number(item.quantity) <= 0 || Number(item.unitPrice) < 0,
+    );
+    if (invalidItem) {
+      toast.error("Please fill all item fields with valid values");
+      return;
+    }
+
+    setSubmittingCo(true);
+    const res = await createChangeOrder({
+      projectId: id,
+      description: coDescription.trim(),
+      items: coItems.map((item) => ({
+        description: item.description.trim(),
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        isAddition: item.isAddition,
+      })),
+    });
+
+    setSubmittingCo(false);
+    if (res.success) {
+      toast.success("Change order created as draft");
+      setCoDialogOpen(false);
+      setCoDescription("");
+      setCoItems([{ description: "", quantity: "1", unitPrice: "", isAddition: true }]);
+      void fetchCOs();
+      void refetch();
+    } else {
+      toast.error(res.error || "Failed to create change order");
+    }
+  };
+
+  const handleApproveCo = async (coId: string) => {
+    setProcessingCoId(coId);
+    const res = await approveChangeOrder(coId);
+    setProcessingCoId(null);
+    if (res.success) {
+      toast.success("Change order approved and project total updated");
+      void fetchCOs();
+      void refetch();
+    } else {
+      toast.error(res.error || "Failed to approve change order");
+    }
+  };
+
+  const handleRejectCo = async (coId: string) => {
+    setProcessingCoId(coId);
+    const res = await rejectChangeOrder(coId);
+    setProcessingCoId(null);
+    if (res.success) {
+      toast.success("Change order rejected");
+      void fetchCOs();
+    } else {
+      toast.error(res.error || "Failed to reject change order");
+    }
+  };
+
+  const handleCancelCo = async (coId: string) => {
+    setProcessingCoId(coId);
+    const res = await cancelChangeOrder(coId);
+    setProcessingCoId(null);
+    if (res.success) {
+      toast.success("Change order cancelled and project total reversed");
+      void fetchCOs();
+      void refetch();
+    } else {
+      toast.error(res.error || "Failed to cancel change order");
+    }
+  };
+
   const [costForm, setCostForm] = React.useState<{
     paymentMethodId: string;
     description: string;
@@ -237,6 +372,16 @@ export function ProjectDetailShell({
     reference: "",
     notes: "",
   });
+
+  const handleRecordDepositQuickAction = React.useCallback((): void => {
+    if (!proj) return;
+    setPaymentForm((prev) => ({
+      ...prev,
+      paymentType: "advance",
+      amount: String(Math.round(Number(proj.depositAmount))),
+      notes: "Deposit payment",
+    }));
+  }, [proj]);
 
   React.useEffect(() => {
     if (costForm.paymentMethodId.length > 0) return;
@@ -549,25 +694,51 @@ export function ProjectDetailShell({
 
       {proj.status === "completed" ? <CompletedProjectVouchers projectId={proj.id} /> : null}
 
+      {proj.status === "completed" ? (
+        <div className="bg-card border-border rounded-3xl border p-7">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-muted-foreground mb-1 text-[10px] font-bold uppercase">
+                Next step
+              </p>
+              <h3 className="text-foreground text-lg font-bold">Create Invoice</h3>
+              <p className="text-muted-foreground text-sm">
+                Generate an invoice for {formatMMK(quoted)} to bill your customer.
+              </p>
+            </div>
+            <Button
+              className="rounded-full"
+              onClick={() => {
+                router.push(`/invoices/new?projectId=${proj.id}`);
+              }}
+            >
+              Create Invoice
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <ProjectTimeline project={proj} />
 
       <div className="space-y-6">
         <div className="bg-muted/50 border-border/70 flex h-auto flex-wrap gap-3 rounded-4xl border p-3">
-          {(["overview", "costs", "remarks", "warranty"] as ProjectTab[]).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setActiveProjectTab(item)}
-              className={[
-                "rounded-full px-5 py-3 text-[10px] font-bold uppercase transition-colors",
-                activeProjectTab === item
-                  ? "border border-amber-500/65 bg-amber-500/10 text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              ].join(" ")}
-            >
-              {item}
-            </button>
-          ))}
+          {(["overview", "costs", "change_orders", "remarks", "warranty"] as ProjectTab[]).map(
+            (item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setActiveProjectTab(item)}
+                className={[
+                  "rounded-full px-5 py-3 text-[10px] font-bold uppercase transition-colors",
+                  activeProjectTab === item
+                    ? "border border-amber-500/65 bg-amber-500/10 text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                {item.replace("_", " ")}
+              </button>
+            ),
+          )}
         </div>
 
         {activeProjectTab === "overview" && (
@@ -577,6 +748,21 @@ export function ProjectDetailShell({
                 <span className="text-xl">⚠️</span>
                 Warning: This project has quoted materials (e.g. panels, inverters) but no inventory
                 has been consumed yet. Profitability may be overstated.
+              </div>
+            ) : null}
+
+            {proj.depositRequired && !proj.depositReceived ? (
+              <div className="bg-amber-500/15 border-amber-500/50 text-amber-200 mb-6 flex items-center gap-3 rounded-4xl border px-6 py-4 text-sm font-semibold">
+                <span className="text-xl">⚠️</span>
+                Deposit outstanding: A deposit of {formatMMK(Number(proj.depositAmount))} is
+                required. Project cannot start until received.
+                <button
+                  type="button"
+                  onClick={handleRecordDepositQuickAction}
+                  className="ml-auto underline hover:text-white font-bold"
+                >
+                  Record Deposit
+                </button>
               </div>
             ) : null}
 
@@ -668,10 +854,194 @@ export function ProjectDetailShell({
               </div>
             </div>
 
+            {/* Project Handover Document Section */}
+            <div className="bg-card border-border rounded-3xl border p-7">
+              <p className="text-muted-foreground mb-5 text-[10px] font-bold uppercase">
+                Project Handover Document
+              </p>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                    Handover Date
+                  </p>
+                  {proj.handoverDate ? (
+                    <p className="font-mono text-base font-bold mt-1">
+                      {format(new Date(proj.handoverDate), "MMM dd, yyyy")}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground text-sm italic mt-1">Not set</p>
+                  )}
+                  {canEditOperational && (
+                    <Input
+                      type="date"
+                      value={
+                        proj.handoverDate ? format(new Date(proj.handoverDate), "yyyy-MM-dd") : ""
+                      }
+                      onChange={(e) => {
+                        const dateVal = e.target.value;
+                        updateProjectMutation.mutate({
+                          id: proj.id,
+                          handoverDate: dateVal ? new Date(dateVal) : null,
+                        });
+                      }}
+                      className="mt-2 h-9 text-xs rounded-xl"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                    Handover PDF Document
+                  </p>
+                  {proj.handoverPdfUrl ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <a
+                        href={proj.handoverPdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-solar underline font-semibold text-sm hover:text-solar-hover"
+                      >
+                        View Handover Document
+                      </a>
+                      {canEditOperational && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            updateProjectMutation.mutate({
+                              id: proj.id,
+                              handoverPdfUrl: null,
+                            });
+                          }}
+                          className="h-7 px-2 text-rose-400 hover:text-rose-500 text-xs"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm italic mt-1">
+                      No document uploaded
+                    </p>
+                  )}
+
+                  {canEditOperational && !proj.handoverPdfUrl && (
+                    <div className="mt-2">
+                      <Input
+                        type="text"
+                        placeholder="Paste PDF Document URL..."
+                        onBlur={(e) => {
+                          const urlVal = e.target.value.trim();
+                          if (urlVal) {
+                            updateProjectMutation.mutate({
+                              id: proj.id,
+                              handoverPdfUrl: urlVal,
+                            });
+                          }
+                        }}
+                        className="h-9 text-xs rounded-xl"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                    Acknowledgment Status
+                  </p>
+                  {proj.handoverAcknowledgedAt ? (
+                    <div className="mt-1">
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                        Acknowledged
+                      </Badge>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        By {proj.handoverAcknowledgedBy} on{" "}
+                        {format(new Date(proj.handoverAcknowledgedAt), "MMM dd, yyyy")}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-1 space-y-2">
+                      <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
+                        Pending Acknowledgment
+                      </Badge>
+                      {proj.handoverDate && proj.handoverPdfUrl && (
+                        <div className="flex gap-2">
+                          <Input
+                            id="ack-by"
+                            placeholder="Signee Name..."
+                            value={ackName}
+                            onChange={(e) => setAckName(e.target.value)}
+                            className="h-8 text-xs rounded-lg w-28"
+                          />
+                          <Button
+                            size="sm"
+                            disabled={!ackName.trim() || acknowledging}
+                            onClick={async () => {
+                              setAcknowledging(true);
+                              const res = await acknowledgeProjectHandover(proj.id, ackName);
+                              setAcknowledging(false);
+                              if (res.success) {
+                                toast.success("Handover document acknowledged!");
+                                setAckName("");
+                                void refetch();
+                              } else {
+                                toast.error(res.error || "Failed to acknowledge");
+                              }
+                            }}
+                            className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                          >
+                            Sign
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="bg-card border-border rounded-3xl border p-7">
               <p className="text-muted-foreground mb-5 text-[10px] font-bold uppercase">
                 Payment receive
               </p>
+
+              {proj.depositRequired && (
+                <div className="mb-6 flex flex-wrap items-center gap-4 bg-muted/20 border border-border/45 rounded-3xl p-5">
+                  <div>
+                    <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                      Required Deposit
+                    </p>
+                    <p className="font-mono text-lg font-bold">
+                      {formatMMK(Number(proj.depositAmount))}
+                    </p>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-muted-foreground text-[10px] uppercase font-bold">
+                      Deposit Status
+                    </p>
+                    {proj.depositReceived ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold mt-1">
+                        Received
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold mt-1">
+                        Outstanding
+                      </Badge>
+                    )}
+                  </div>
+                  {!proj.depositReceived && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleRecordDepositQuickAction}
+                      className="ml-auto rounded-xl border-amber-500/30 text-amber-300 hover:bg-amber-500/10 font-bold text-xs"
+                    >
+                      Quick Fill Deposit
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="mb-5 grid gap-4 md:grid-cols-4">
                 <div>
                   <p className="text-muted-foreground text-[10px] uppercase">Quoted</p>
@@ -1267,6 +1637,291 @@ export function ProjectDetailShell({
                 ))}
               </div>
             </ScrollArea>
+          </div>
+        )}
+
+        {activeProjectTab === "change_orders" && (
+          <div className="space-y-6">
+            <div className="bg-card border-border flex flex-wrap items-center justify-between gap-4 rounded-4xl border px-8 py-6">
+              <div>
+                <p className="text-foreground text-lg font-semibold tracking-[0.4em] uppercase">
+                  Change Orders
+                </p>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Track modifications, additions, and deductions to project value.
+                </p>
+              </div>
+              <Dialog open={coDialogOpen} onOpenChange={setCoDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold px-6 shadow-lg shadow-amber-500/20">
+                    Create Change Order
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                  <form onSubmit={handleSubmitCo}>
+                    <DialogHeader>
+                      <DialogTitle>New Change Order</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="co-description">Change Order Description</Label>
+                        <Input
+                          id="co-description"
+                          placeholder="e.g. Added 2 extra panels, 1 backup battery..."
+                          value={coDescription}
+                          onChange={(e) => setCoDescription(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-wider">
+                          Line Items
+                        </Label>
+                        <div className="space-y-3">
+                          {coItems.map((item, index) => (
+                            <div
+                              // biome-ignore lint/suspicious/noArrayIndexKey: form items keys are stable enough for local draft form
+                              key={index}
+                              className="flex flex-wrap items-end gap-3 rounded-2xl border border-border/60 p-4 bg-muted/10"
+                            >
+                              <div className="flex-1 min-w-[200px] space-y-1">
+                                <Label className="text-[10px]">Description</Label>
+                                <Input
+                                  value={item.description}
+                                  onChange={(e) =>
+                                    handleCoItemChange(index, "description", e.target.value)
+                                  }
+                                  placeholder="Item details..."
+                                  required
+                                />
+                              </div>
+                              <div className="w-20 space-y-1">
+                                <Label className="text-[10px]">Qty</Label>
+                                <Input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) =>
+                                    handleCoItemChange(index, "quantity", e.target.value)
+                                  }
+                                  min={1}
+                                  required
+                                />
+                              </div>
+                              <div className="w-36 space-y-1">
+                                <Label className="text-[10px]">Unit Price (MMK)</Label>
+                                <Input
+                                  type="number"
+                                  value={item.unitPrice}
+                                  onChange={(e) =>
+                                    handleCoItemChange(index, "unitPrice", e.target.value)
+                                  }
+                                  placeholder="0"
+                                  required
+                                />
+                              </div>
+                              <div className="w-32 space-y-2">
+                                <Label className="text-[10px]">Type</Label>
+                                <Select
+                                  value={item.isAddition ? "addition" : "deduction"}
+                                  onValueChange={(v) =>
+                                    handleCoItemChange(index, "isAddition", v === "addition")
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="addition">Addition</SelectItem>
+                                    <SelectItem value="deduction">Deduction</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {coItems.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => handleRemoveCoItem(index)}
+                                  className="h-10 w-10 shrink-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleAddCoItem}
+                          className="mt-2 rounded-xl text-xs font-bold"
+                        >
+                          + Add Line Item
+                        </Button>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setCoDialogOpen(false);
+                          setCoDescription("");
+                          setCoItems([
+                            { description: "", quantity: "1", unitPrice: "", isAddition: true },
+                          ]);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={submittingCo}
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                      >
+                        {submittingCo ? "Creating..." : "Create Change Order"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {loadingCOs ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-amber-500 h-8 w-8" />
+              </div>
+            ) : changeOrders.length === 0 ? (
+              <p className="text-muted-foreground text-center py-12 text-sm">
+                No change orders recorded for this project yet.
+              </p>
+            ) : (
+              <div className="grid gap-5">
+                {changeOrders.map((co) => {
+                  const amt = Number(co.additionalAmount);
+                  const isPositive = amt >= 0;
+                  return (
+                    <div
+                      key={co.id}
+                      className="bg-card border border-border/80 rounded-[1.75rem] p-6 shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono font-bold text-lg text-primary">
+                              {co.changeOrderNumber}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "font-semibold text-xs py-0.5",
+                                co.status === "approved" &&
+                                  "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+                                co.status === "draft" &&
+                                  "border-amber-500/30 bg-amber-500/10 text-amber-300",
+                                co.status === "rejected" &&
+                                  "border-rose-500/30 bg-rose-500/10 text-rose-300",
+                                co.status === "cancelled" &&
+                                  "border-gray-500/30 bg-gray-500/10 text-gray-300",
+                              )}
+                            >
+                              {co.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Created on {format(new Date(co.createdAt), "MMM dd, yyyy")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "font-mono text-xl font-black",
+                              isPositive ? "text-emerald-400" : "text-rose-400",
+                            )}
+                          >
+                            {isPositive ? "+" : ""}
+                            {formatMMK(amt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-primary font-medium text-sm mb-4">{co.description}</p>
+
+                      <div className="border-t border-border/40 pt-4 mt-4">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                          Items
+                        </p>
+                        <div className="space-y-2">
+                          {co.items?.map(
+                            (item: {
+                              id: string;
+                              description: string;
+                              quantity: number;
+                              totalPrice: string;
+                              isAddition: boolean;
+                            }) => (
+                              <div
+                                key={item.id}
+                                className="flex justify-between items-center text-xs"
+                              >
+                                <span className="text-muted-foreground">
+                                  {item.description} (x{item.quantity})
+                                </span>
+                                <span
+                                  className={cn(
+                                    "font-mono",
+                                    item.isAddition ? "text-emerald-400" : "text-rose-400",
+                                  )}
+                                >
+                                  {item.isAddition ? "+" : "-"}
+                                  {formatMMK(Number(item.totalPrice))}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+
+                      {co.status === "draft" && (
+                        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRejectCo(co.id)}
+                            disabled={processingCoId !== null}
+                            className="rounded-xl border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                          >
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveCo(co.id)}
+                            disabled={processingCoId !== null}
+                            className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4"
+                          >
+                            {processingCoId === co.id ? "Approving..." : "Approve & Recalculate"}
+                          </Button>
+                        </div>
+                      )}
+
+                      {co.status === "approved" && (
+                        <div className="flex justify-end mt-6 pt-4 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCancelCo(co.id)}
+                            disabled={processingCoId !== null}
+                            className="rounded-xl border-gray-500/30 text-gray-300 hover:bg-gray-500/10"
+                          >
+                            {processingCoId === co.id ? "Cancelling..." : "Cancel Change Order"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

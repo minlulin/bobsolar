@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   auth: { userId: "u1", role: "admin" as const },
-  project: { id: "11111111-1111-4111-8111-111111111111", status: "completed" },
+  // biome-ignore lint/suspicious/noExplicitAny: test mock state
+  project: { id: "11111111-1111-4111-8111-111111111111", status: "completed" } as any,
   method: { id: "22222222-2222-4222-8222-222222222222", name: "Cash" },
   // biome-ignore lint/suspicious/noExplicitAny: test mock state
   paymentRows: [] as Array<any>,
@@ -63,9 +64,14 @@ vi.mock("@/lib/db", () => {
             returning: vi.fn(async () => [state.createdPayment]),
           })),
         })),
+        update: vi.fn(() => ({
+          set: vi.fn(() => ({
+            where: vi.fn(async () => undefined),
+          })),
+        })),
         query: {
           projectPayments: {
-            findFirst: vi.fn(async () => null), // No existing payment (no duplicate)
+            findFirst: vi.fn(async () => null),
           },
         },
       };
@@ -142,5 +148,23 @@ describe("payment-actions", () => {
     }
     const methods = await getPaymentMethods();
     expect(methods.success).toBe(true);
+  });
+
+  it("auto-marks depositReceived when advance payment is recorded on a project with depositRequired", async () => {
+    state.project = {
+      id: "11111111-1111-4111-8111-111111111111",
+      status: "in_progress",
+      depositRequired: true,
+      depositReceived: false,
+    };
+    const { recordPayment } = await import("@/actions/payment-actions");
+    const res = await recordPayment({
+      projectId: state.project.id,
+      amount: 100000,
+      paymentMethodId: state.method.id,
+      paymentDate: new Date(),
+      paymentType: "advance",
+    });
+    expect(res.success).toBe(true);
   });
 });

@@ -14,7 +14,7 @@ This file serves as the central command center for all coding agents working on 
 - **Tests**: `e2e/` - End-to-end tests, `src/lib/tests/` - unit tests
 
 ### Configuration Files
-- **Package Manager**: `package.json` (pnpm@11.5.2)
+- **Package Manager**: `package.json` (pnpm@11.9.0)
 - **TypeScript**: `tsconfig.json`, `tsconfig.sw.json`
 - **Linting**: `biome.json`, `eslint.config.mjs`
 - **Testing**: `vitest.config.mts`

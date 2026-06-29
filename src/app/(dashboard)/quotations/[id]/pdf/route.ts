@@ -8,7 +8,7 @@ import { quotations } from "@/lib/db/schema";
 import { uuidSchema } from "@/lib/validators/common";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   try {
@@ -18,6 +18,10 @@ export async function GET(
 
     const { id } = await params;
     const validatedId = uuidSchema.parse(id);
+
+    // Check if download mode is requested
+    const { searchParams } = new URL(request.url);
+    const isDownload = searchParams.get("download") === "1";
 
     // Fetch quotation with items and customer
     const quotation = await db.query.quotations.findFirst({
@@ -68,12 +72,18 @@ export async function GET(
       type: "quotation",
     });
 
+    const headers: Record<string, string> = {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-cache",
+    };
+
+    if (isDownload) {
+      headers["Content-Disposition"] = `attachment; filename="QUOTE-${quotation.quoteNumber}.html"`;
+    }
+
     return new NextResponse(html, {
       status: 200,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-cache",
-      },
+      headers,
     });
   } catch (error) {
     console.error("Print page generation error:", error);

@@ -47,6 +47,7 @@ import {
   reverseJournalEntry,
 } from "@/lib/finance/ledger";
 import { notifyAdminUsers, notifyAllUsers } from "@/lib/notifications/broadcast";
+import { formatMMK } from "@/lib/utils";
 import { type ActionResponse, successResponse } from "@/lib/utils/action-response";
 import { AdvisoryLock } from "@/lib/utils/advisory-lock";
 import { handleActionError, handleNotFoundError, handleStateError } from "@/lib/utils/error";
@@ -56,6 +57,7 @@ import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
 import {
   addProjectCostSchema,
   addProjectRemarkSchema,
+  consumeBulkProjectInventorySchema,
   consumeProjectInventorySchema,
   convertToProjectSchema,
   createWarrantyAlertSchema,
@@ -415,6 +417,10 @@ export async function convertQuotationToProject(raw: unknown): Promise<ActionRes
               actualTotal: "0",
               startDate: data.startDate ?? null,
               targetCompletion: data.targetCompletion ?? null,
+              depositRequired: data.depositRequired ?? false,
+              depositAmount:
+                data.depositAmount !== undefined ? toDbDecimal(data.depositAmount) : "0",
+              depositReceived: false,
               notes: data.notes ?? null,
             })
             .returning();
@@ -896,6 +902,14 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
         return handleStateError(`Invalid status transition to ${data.status}`);
       }
 
+      if (existing.status === "planning" && data.status === "in_progress") {
+        if (existing.depositRequired && !existing.depositReceived) {
+          return handleStateError(
+            `Cannot start project: deposit of ${formatMMK(Number(existing.depositAmount))} required`,
+          );
+        }
+      }
+
       if (data.status === "completed") {
         const patch: Partial<typeof projects.$inferInsert> = {};
         if (data.siteAddress !== undefined) {
@@ -937,6 +951,12 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
         if (data.targetCompletion !== undefined) {
           patch.targetCompletion = data.targetCompletion;
         }
+        if (data.handoverDate !== undefined) {
+          patch.handoverDate = data.handoverDate;
+        }
+        if (data.handoverPdfUrl !== undefined) {
+          patch.handoverPdfUrl = data.handoverPdfUrl;
+        }
         if (data.notes !== undefined) patch.notes = data.notes;
         await db
           .update(projects)
@@ -960,6 +980,12 @@ export async function updateProject(raw: unknown): Promise<ActionResponse<Projec
       }
       if (data.targetCompletion !== undefined) {
         patch.targetCompletion = data.targetCompletion;
+      }
+      if (data.handoverDate !== undefined) {
+        patch.handoverDate = data.handoverDate;
+      }
+      if (data.handoverPdfUrl !== undefined) {
+        patch.handoverPdfUrl = data.handoverPdfUrl;
       }
       if (data.notes !== undefined) patch.notes = data.notes;
       if (Object.keys(patch).length > 0) {
@@ -1008,6 +1034,15 @@ export async function markProjectCompleted(id: string): Promise<ActionResponse<P
     if (!canTransitionProjectStatus(existing.status, "completed")) {
       return handleStateError(
         "Project must be in Installation Completed state before final completion.",
+      );
+    }
+
+    if (!existing.handoverDate) {
+      return handleStateError("Cannot complete project: Handover date must be specified.");
+    }
+    if (!existing.handoverAcknowledgedAt) {
+      return handleStateError(
+        "Cannot complete project: Handover document must be acknowledged by the customer.",
       );
     }
 
@@ -1251,6 +1286,116 @@ export async function consumeProjectInventory(
   }
 }
 
+export async function consumeBulkProjectInventory(
+  raw: unknown,
+): Promise<ActionResponse<ProjectCost[]>> {
+  try {
+    const auth = await requireOwner();
+    assertFinanceSsotDrift();
+    const data = consumeBulkProjectInventorySchema.parse(raw);
+
+    const projectRow = await db.query.projects.findFirst({
+      where: eq(projects.id, data.projectId),
+    });
+    if (!projectRow) return handleNotFoundError("Project", data.projectId);
+    if (
+      projectRow.status === "on_hold" ||
+      projectRow.status === "installation_completed" ||
+      projectRow.status === "completed" ||
+      projectRow.status === "cancelled"
+    ) {
+      return handleStateError(
+        "Cannot consume inventory on on-hold, completed, or cancelled projects.",
+      );
+    }
+
+    let actualSpend = 0;
+    let totalConsumedAmount = 0;
+    await db.transaction(async (tx) => {
+      // Sort items by inventoryItemId to prevent deadlocks when locking rows
+      const sortedItems = [...data.items].sort((a, b) =>
+        a.inventoryItemId.localeCompare(b.inventoryItemId),
+      );
+
+      // Pre-validate all items: check stock availability before consuming any
+      for (const item of sortedItems) {
+        const [invItem] = await tx
+          .select({
+            id: inventoryItems.id,
+            name: inventoryItems.name,
+            costPrice: inventoryItems.costPrice,
+            stockQty: inventoryItems.stockQty,
+            isActive: inventoryItems.isActive,
+          })
+          .from(inventoryItems)
+          .where(eq(inventoryItems.id, item.inventoryItemId))
+          .for("update");
+
+        if (!invItem) throw new Error("inventory_not_found");
+        if (!invItem.isActive) throw new Error("inventory_inactive");
+        if (invItem.stockQty < item.quantity) throw new Error("insufficient_stock");
+      }
+
+      // All validations passed — consume all items
+      for (const item of sortedItems) {
+        const result = await postInventoryConsumptionToProject({
+          tx,
+          projectId: data.projectId,
+          inventoryItemId: item.inventoryItemId,
+          quantity: item.quantity,
+          description: `Bulk consume: ${item.quantity} units`,
+          incurredDate: data.incurredDate,
+          createdBy: auth.userId,
+        });
+
+        actualSpend = result.actualSpend;
+        totalConsumedAmount += result.consumedAmount;
+      }
+    });
+
+    const costs = await db.query.projectCosts.findMany({
+      where: eq(projectCosts.projectId, data.projectId),
+      orderBy: [desc(projectCosts.incurredDate)],
+    });
+
+    await maybeNotifyBudgetOverrun(
+      data.projectId,
+      Math.round(Number(projectRow.quotedTotal)),
+      actualSpend - totalConsumedAmount,
+      actualSpend,
+    );
+
+    revalidatePath(`/projects/${data.projectId}`);
+    revalidatePath("/projects");
+    revalidatePath("/inventory");
+    revalidateTag(CACHE_TAGS.PROJECTS_LIST, "max");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
+    await invalidateFinanceCacheForWrite();
+
+    return successResponse(costs);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "inventory_not_found") {
+        return handleStateError("Inventory item not found.");
+      }
+      if (error.message === "inventory_inactive") {
+        return handleStateError("Inventory item is inactive.");
+      }
+      if (error.message === "insufficient_stock") {
+        return handleStateError("Insufficient stock for one or more items.");
+      }
+      if (error.message === "inventory_cost_required") {
+        return handleStateError("Inventory item must have a positive cost before consumption.");
+      }
+    }
+    return handleActionError(
+      error,
+      "consumeBulkProjectInventory",
+      "Failed to bulk consume inventory for project",
+    );
+  }
+}
+
 export async function deleteProjectCost(
   costId: string,
 ): Promise<ActionResponse<{ projectId: string }>> {
@@ -1430,5 +1575,43 @@ export async function createWarrantyAlertForProject(
       "createWarrantyAlertForProject",
       "Failed to create warranty alert",
     );
+  }
+}
+
+export async function acknowledgeProjectHandover(
+  projectId: string,
+  acknowledgedBy: string,
+): Promise<ActionResponse<Project>> {
+  try {
+    await requireAuth();
+    const validatedId = uuidSchema.parse(projectId);
+    if (!acknowledgedBy || acknowledgedBy.trim().length === 0) {
+      return handleStateError("Customer name is required for acknowledgment");
+    }
+
+    const projectRow = await db.query.projects.findFirst({
+      where: eq(projects.id, validatedId),
+    });
+    if (!projectRow) return handleNotFoundError("Project", validatedId);
+
+    const [updated] = await db
+      .update(projects)
+      .set({
+        handoverAcknowledgedBy: acknowledgedBy.trim(),
+        handoverAcknowledgedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, validatedId))
+      .returning();
+
+    if (!updated) {
+      return handleStateError("Failed to update project handover acknowledgment");
+    }
+
+    revalidatePath(`/projects/${validatedId}`);
+    revalidatePath("/projects");
+    return successResponse(updated);
+  } catch (error) {
+    return handleActionError(error, "acknowledgeProjectHandover", "Failed to acknowledge handover");
   }
 }

@@ -18,6 +18,7 @@ import {
 } from "@/actions/notification-actions";
 import { getPaymentMethods, recordPayment } from "@/actions/payment-actions";
 import {
+  acknowledgeProjectHandover,
   addProjectCost,
   addProjectRemark,
   consumeProjectInventory,
@@ -350,8 +351,11 @@ describeDb("Master workflow integration: DB + server actions", () => {
       await updateProject({
         id: projectId,
         status: "installation_completed",
+        handoverDate: new Date(),
+        handoverPdfUrl: "https://example.com/handover.pdf",
       }),
     );
+    unwrap(await acknowledgeProjectHandover(projectId, "Test Customer"));
     unwrap(await markProjectCompleted(projectId));
 
     const invoiceResult = unwrap(

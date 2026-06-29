@@ -6,6 +6,9 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
 const BACKUP_FOLDER = "backups";
+// Strict pattern: backups/<uuid>.json — no path traversal, no subdirectories
+const BACKUP_FILENAME_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.json$/i;
 
 export async function GET(request: Request): Promise<Response> {
   try {
@@ -38,33 +41,45 @@ export async function GET(request: Request): Promise<Response> {
       return NextResponse.json({ error: "Missing url parameter" }, { status: 400 });
     }
 
+    // SECURITY: Parse the URL and validate only the pathname. Never trust the
+    // host/origin from attacker input — reconstruct the blob URL from the known
+    // store origin to prevent SSRF via crafted URLs.
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(blobUrl);
     } catch {
       return NextResponse.json({ error: "Invalid backup URL" }, { status: 400 });
     }
+
     const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    const filename = pathParts[1];
     if (
-      pathParts.length < 2 ||
+      pathParts.length !== 2 ||
       pathParts[0] !== BACKUP_FOLDER ||
-      !pathParts[1]?.endsWith(".json")
+      !filename ||
+      !BACKUP_FILENAME_PATTERN.test(filename)
     ) {
       return NextResponse.json({ error: "Invalid backup URL" }, { status: 400 });
     }
+
+    // Reconstruct the blob URL from the known store origin + validated pathname.
+    // This prevents an attacker from supplying a URL that points to a different host.
+    const storeOrigin = process.env["BLOB_STORE_ORIGIN"];
+    if (!storeOrigin) {
+      return NextResponse.json({ error: "Storage not configured" }, { status: 500 });
+    }
+    const safeBlobUrl = `${storeOrigin.replace(/\/$/, "")}/${BACKUP_FOLDER}/${filename}`;
 
     const token = process.env["BLOB_READ_WRITE_TOKEN"];
     if (!token) {
       return NextResponse.json({ error: "Storage not configured" }, { status: 500 });
     }
 
-    const result = await get(blobUrl, { access: "private", token });
+    const result = await get(safeBlobUrl, { access: "private", token });
 
     if (result?.statusCode !== 200) {
       return NextResponse.json({ error: "Backup not found" }, { status: 404 });
     }
-
-    const filename = blobUrl.split("/").pop() ?? "backup.json";
 
     return new Response(result.stream, {
       headers: {

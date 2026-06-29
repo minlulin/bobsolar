@@ -52,7 +52,7 @@ function isSameOrigin(req: NextRequest): boolean {
  *   export const POST = withCsrf(async (req) => { ... });
  *
  * Safe methods (GET, HEAD, OPTIONS) bypass the check.
- * In development (localhost), the check is relaxed.
+ * In development (localhost), the check is relaxed but logged.
  */
 export function withCsrf(
   handler: (req: NextRequest) => Promise<Response> | Response,
@@ -63,12 +63,24 @@ export function withCsrf(
       return handler(req);
     }
 
-    // Skip in development for local testing
+    // In development, relax the check but log for visibility
     if (process.env.NODE_ENV !== "production") {
+      if (!isSameOrigin(req)) {
+        console.warn(
+          `[CSRF] Non-production request with mismatched/missing origin: ${req.method} ${req.nextUrl.pathname}`,
+        );
+      }
       return handler(req);
     }
 
-    // Validate origin in production
+    // Production: require a matching origin header
+    const requestOrigin = getOriginFromHeader(req);
+    if (!requestOrigin) {
+      // No origin/referer header present — could be a privacy-mode browser or proxy.
+      // In production, fail closed for state-changing requests.
+      return NextResponse.json({ error: "Forbidden: missing origin" }, { status: 403 });
+    }
+
     if (!isSameOrigin(req)) {
       return NextResponse.json({ error: "Forbidden: invalid origin" }, { status: 403 });
     }

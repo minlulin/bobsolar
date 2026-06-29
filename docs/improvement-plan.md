@@ -1,4 +1,5 @@
 # Improvement Plan: Quotation → Completed Project Workflow
+
 **Date:** 2026-06-28  
 **Source:** `docs/workflow-audit-quotation-to-completion.md` (GAP-1 through GAP-7, FRICTION-1, FRICTION-3, FRICTION-4)
 
@@ -7,6 +8,7 @@
 ## Phase 1: Short-term Workflow Improvements
 
 ### GAP-1: Partial PO Receipt Support
+
 **Goal:** Allow receiving partial quantities per line item on a purchase order.
 
 - [ ] **1.1** Add `receivedQuantity` column to `purchaseOrderItems` table (decimal, default 0) — `drizzle/00XX_partial-po-receipt.sql`
@@ -35,6 +37,7 @@
 ---
 
 ### GAP-6: Post-Completion Invoice Creation CTA
+
 **Goal:** Guide users from "project completed" → "create invoice" with a prominent CTA.
 
 - [ ] **2.1** Add `useCreateInvoice` hook in `src/hooks/use-invoices.ts` (if not exists)
@@ -52,6 +55,7 @@
 ---
 
 ### FRICTION-1: Inline Project Conversion Modal
+
 **Goal:** Allow converting an accepted quotation to a project without a separate page load.
 
 - [ ] **3.1** Create `src/app/(dashboard)/quotations/[id]/components/convert-to-project-dialog.tsx`:
@@ -68,6 +72,7 @@
 ---
 
 ### FRICTION-3: Bulk Inventory Consumption
+
 **Goal:** Allow consuming multiple inventory items in a single form submission.
 
 - [ ] **4.1** Create `consumeBulkProjectInventorySchema` in `src/lib/validators/project.ts`:
@@ -93,6 +98,7 @@
 ---
 
 ### FRICTION-4: Direct PDF Download for Quotations
+
 **Goal:** Add a download button that triggers file download instead of opening a new tab.
 
 - [ ] **5.1** Check if `/quotations/[id]/pdf/route.ts` exists and returns a `Response` with `Content-Disposition: attachment` header
@@ -106,6 +112,7 @@
 ## Phase 2: Medium-term Real-World Features
 
 ### GAP-2: Quotation Revision History
+
 **Goal:** Track revisions to quotations with version numbers and history.
 
 - [ ] **6.1** Add columns to `quotations` table:
@@ -132,6 +139,7 @@
 ---
 
 ### GAP-3: Deposit Tracking and Enforcement
+
 **Goal:** Require advance deposit before project can start.
 
 - [ ] **7.1** Add columns to `projects` table:
@@ -156,6 +164,7 @@
 ---
 
 ### GAP-5: Change Order Workflow
+
 **Goal:** Handle mid-project variations (add/remove items, adjust pricing).
 
 - [ ] **8.1** Create `projectChangeOrders` table in `src/lib/db/schema.ts`:
@@ -182,6 +191,7 @@
 ---
 
 ### GAP-7: Project Handover Document Workflow
+
 **Goal:** Generate handover PDF and require customer acknowledgment before final completion.
 
 - [ ] **9.1** Add columns to `projects` table:
@@ -211,9 +221,10 @@
 
 ---
 
-## Phase 3: Long-term Operational Excellence
+## Phase 3: Long-term Operational Excellence (Deferred)
 
 ### GAP-4: Installation Team Assignment and Checklist
+
 **Goal:** Track installation progress with team assignment and checklist.
 
 - [ ] **10.1** Create `installationTeams` table:
@@ -280,9 +291,9 @@ Phase 3 (after Phase 2):
 
 ## Estimated Effort
 
-| Phase | Tasks | Est. Time | Risk |
-|-------|-------|-----------|------|
-| Phase 1: Short-term | 5 features, ~20 atomic tasks | 2-3 days | Low (additive changes) |
-| Phase 2: Medium-term | 4 features, ~30 atomic tasks | 4-5 days | Medium (schema changes) |
-| Phase 3: Long-term | 1 feature, ~12 atomic tasks | 3-4 days | Medium (new entities) |
-| **Total** | **10 features, ~62 atomic tasks** | **9-12 days** | — |
+| Phase                | Tasks                             | Est. Time     | Risk                    |
+| -------------------- | --------------------------------- | ------------- | ----------------------- |
+| Phase 1: Short-term  | 5 features, ~20 atomic tasks      | 2-3 days      | Low (additive changes)  |
+| Phase 2: Medium-term | 4 features, ~30 atomic tasks      | 4-5 days      | Medium (schema changes) |
+| Phase 3: Long-term   | 1 feature, ~12 atomic tasks       | 3-4 days      | Medium (new entities)   |
+| **Total**            | **10 features, ~62 atomic tasks** | **9-12 days** | —                       |

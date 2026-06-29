@@ -140,6 +140,13 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
         throw new Error("payment_insert_failed");
       }
 
+      if (data.paymentType === "advance" && project.depositRequired) {
+        await tx
+          .update(projects)
+          .set({ depositReceived: true, updatedAt: new Date() })
+          .where(eq(projects.id, project.id));
+      }
+
       await createBalancedJournalEntry({
         tx,
         entryDate: data.paymentDate,

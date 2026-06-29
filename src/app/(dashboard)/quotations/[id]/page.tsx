@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getQuotation } from "@/actions/quotation-actions";
+import { getQuotation, getQuotationRevisions } from "@/actions/quotation-actions";
 import { QuoteDetailView } from "./components/quote-detail-view";
 import { QuoteEditorWrapper } from "./components/quote-editor-wrapper";
 
@@ -24,6 +24,9 @@ export default async function QuotationPage({
     return <QuoteEditorWrapper quotation={quotation} />;
   }
 
+  const revisionsRes = await getQuotationRevisions(id);
+  const revisions = revisionsRes.success ? revisionsRes.data : [];
+
   // Otherwise, show the read-only detail view
-  return <QuoteDetailView quotation={quotation} />;
+  return <QuoteDetailView quotation={quotation} revisions={revisions} />;
 }

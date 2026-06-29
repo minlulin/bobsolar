@@ -9,15 +9,27 @@ import * as React from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import {
+  createQuotationRevision,
   deleteQuotation,
   duplicateQuotation,
   updateQuotationStatus,
 } from "@/actions/quotation-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { Customer, Quotation, QuotationItem } from "@/lib/db/schema";
 import { cn, formatMMK } from "@/lib/utils";
 import { groupQuotationItems } from "@/lib/utils/quotation-grouping";
+import { ConvertToProjectDialog } from "./convert-to-project-dialog";
 
 const QuotePreview = dynamic(
   () =>
@@ -47,9 +59,10 @@ interface QuoteDetailViewProps {
     customer: Customer;
     project?: { id: string; projectNumber: string } | null;
   };
+  revisions?: Quotation[];
 }
 
-export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.Element {
+export function QuoteDetailView({ quotation, revisions }: QuoteDetailViewProps): React.JSX.Element {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticStatus, setOptimisticStatus] = React.useOptimistic<
@@ -57,6 +70,43 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
     Quotation["status"]
   >(quotation.status, (_prev, next) => next);
   const loadFromQuotation = useQuoteBuilderStore((state) => state.loadFromQuotation);
+  const [revisionDialogOpen, setRevisionDialogOpen] = React.useState(false);
+  const [revisionReason, setRevisionReason] = React.useState("");
+
+  const handleRevise = (): void => {
+    if (!revisionReason.trim()) {
+      toast.error("Please enter a reason for revision");
+      return;
+    }
+    startTransition(async () => {
+      const res = await createQuotationRevision({
+        originalQuotationId: quotation.id,
+        revisionReason: revisionReason.trim(),
+        customerId: quotation.customerId,
+        discountPercent: Number(quotation.discountPercent),
+        taxPercent: Number(quotation.taxPercent),
+        notes: quotation.notes,
+        validUntil: quotation.validUntil ? new Date(quotation.validUntil) : null,
+        quotationDate: quotation.quotationDate ? new Date(quotation.quotationDate) : null,
+        items: quotation.items.map((item) => ({
+          itemId: item.itemId,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          discountPercentage: Number(item.discountPercentage),
+          sortOrder: item.sortOrder,
+        })),
+      });
+      if (res.success) {
+        toast.success("New revision created as draft");
+        setRevisionDialogOpen(false);
+        setRevisionReason("");
+        router.push(`/quotations/${res.data.id}`);
+      } else {
+        toast.error(res.error || "Failed to create revision");
+      }
+    });
+  };
 
   const handleStatusChange = (newStatus: Quotation["status"]): void => {
     const previousStatus = optimisticStatus;
@@ -209,16 +259,23 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
             </>
           )}
 
-          {status === "accepted" && !quotation.project && (
+          {(status === "sent" || status === "rejected") && (
             <Button
-              className="bg-accent hover:bg-accent/90 shadow-accent/20 h-12 rounded-xl px-6 font-bold text-white shadow-lg"
-              onClick={() => {
-                router.push(`/projects/new?quoteId=${quotation.id}`);
-              }}
+              onClick={() => setRevisionDialogOpen(true)}
+              disabled={isPending}
+              className="h-12 rounded-xl bg-amber-600 px-6 font-bold text-white shadow-lg shadow-amber-500/20 hover:bg-amber-700"
             >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Initialize Project
+              Revise Quote
             </Button>
+          )}
+
+          {status === "accepted" && !quotation.project && (
+            <ConvertToProjectDialog quotation={quotation}>
+              <Button className="bg-accent hover:bg-accent/90 shadow-accent/20 h-12 rounded-xl px-6 font-bold text-white shadow-lg">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Initialize Project
+              </Button>
+            </ConvertToProjectDialog>
           )}
 
           {status === "accepted" && quotation.project && (
@@ -244,6 +301,20 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
             <Download className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
+
+          <a
+            href={`/quotations/${quotation.id}/pdf?download=1`}
+            download={`QUOTE-${quotation.quoteNumber}.html`}
+          >
+            <Button
+              variant="outline"
+              className="border-border bg-muted/20 h-12 rounded-xl border px-4 font-bold"
+              type="button"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </Button>
+          </a>
 
           <Button
             variant="ghost"
@@ -367,6 +438,62 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
             </div>
           </div>
         </div>
+
+        {/* Revision History Module */}
+        {revisions && revisions.length > 0 && (
+          <div className="border-border bg-card rounded-2xl border p-8 shadow-sm">
+            <h3 className="text-accent mb-6 text-xs font-bold tracking-[0.2em] uppercase">
+              Revision History
+            </h3>
+            <div className="relative border-l border-border pl-6 space-y-6">
+              {revisions.map((rev) => {
+                const isCurrent = rev.id === quotation.id;
+                return (
+                  <div key={rev.id} className="relative">
+                    {/* Timeline Dot */}
+                    <div
+                      className={cn(
+                        "absolute -left-[31px] top-1.5 h-4 w-4 rounded-full border-2 bg-background transition-colors",
+                        isCurrent ? "border-amber-500 bg-amber-500/20" : "border-border",
+                      )}
+                    />
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/quotations/${rev.id}`}
+                            className={cn(
+                              "font-bold hover:underline",
+                              isCurrent ? "text-amber-500" : "text-primary",
+                            )}
+                          >
+                            {rev.quoteNumber} (v{rev.revisionNumber})
+                          </Link>
+                          {isCurrent && (
+                            <Badge className="bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-md text-[9px] px-1.5 py-0.5">
+                              Current
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-[9px] font-semibold uppercase">
+                            {rev.status}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground text-xs mt-1">
+                          Revised on {format(new Date(rev.createdAt), "MMM dd, yyyy 'at' hh:mm a")}
+                        </p>
+                        {rev.revisionReason && (
+                          <p className="text-muted-foreground text-xs italic mt-1.5 bg-muted/30 border border-border/40 rounded-lg p-2">
+                            &ldquo;{rev.revisionReason}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Preview Sidebar Bento */}
@@ -385,6 +512,49 @@ export function QuoteDetailView({ quotation }: QuoteDetailViewProps): React.JSX.
           </div>
         )}
       </div>
+
+      <Dialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Revise Quotation</DialogTitle>
+            <DialogDescription>
+              Create a new draft revision of this quotation. Please provide a reason for the
+              revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Revision Reason</Label>
+              <Textarea
+                id="reason"
+                placeholder="e.g. Adjusted discount, added accessories..."
+                value={revisionReason}
+                onChange={(e) => setRevisionReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRevisionDialogOpen(false);
+                setRevisionReason("");
+              }}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRevise}
+              disabled={isPending || !revisionReason.trim()}
+              className="bg-amber-600 text-white hover:bg-amber-700"
+            >
+              {isPending ? "Creating..." : "Create Revision"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

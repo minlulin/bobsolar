@@ -39,6 +39,9 @@ async function main(): Promise<void> {
     const userName = infoResult.rows[0]?.current_user ?? "unknown";
 
     await pool.query("create extension if not exists vector");
+    try {
+      await pool.query("truncate table notifications cascade");
+    } catch (_) {}
 
     console.log(
       `DB test setup ok: connected to "${databaseName}" as "${userName}" with vector enabled`,

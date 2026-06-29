@@ -6,11 +6,8 @@ import { type AuditAction, auditLogs, type NewAuditLog } from "@/lib/db/schema";
  * Security audit trail.
  *
  * Records security-relevant events (login, logout, password change,
- * session revocation) for compliance and forensic analysis.
- *
- * The `audit_action` enum is limited to 4 values. Custom event types
- * (csrf_blocked, rate_limit_hit, quota_exceeded) are stored in the
- * `details` field with an `eventType` key.
+ * session revocation, CSRF blocks, rate limit hits, quota exceeded)
+ * for compliance and forensic analysis.
  */
 
 /** Event types tracked in the audit trail. */
@@ -34,11 +31,15 @@ function toAuditAction(eventType: SecurityEventType): AuditAction {
       return "password_change";
     case "session_revoke":
       return "session_revoke";
+    case "csrf_blocked":
+      return "csrf_blocked";
+    case "rate_limit_hit":
+      return "rate_limit_hit";
+    case "quota_exceeded":
+      return "quota_exceeded";
     default:
-      // Map security events that don't have a dedicated enum value
-      // to "session_revoke" (closest security-related action).
-      // The real type is captured in details.eventType.
-      return "session_revoke";
+      // Exhaustive check — this should never happen with valid SecurityEventType
+      return eventType;
   }
 }
 

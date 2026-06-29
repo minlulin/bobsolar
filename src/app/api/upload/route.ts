@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/validate";
 import { db } from "@/lib/db";
@@ -9,6 +9,7 @@ import {
   UPLOAD_RATE_LIMIT_WINDOW_MS,
 } from "@/lib/domain/policies";
 import { isAllowedMimeType } from "@/lib/domain/upload";
+import { withCsrf } from "@/lib/security/csrf";
 import { uploadFileFromBufferOrBlob } from "@/lib/storage/blob";
 
 const ALLOWED_FOLDERS: Readonly<Record<string, string>> = {
@@ -76,93 +77,49 @@ function makeUploadRateLimitKey(rateKey: string): string {
 
 async function isRateLimited(rateKey: string): Promise<boolean> {
   const now = new Date();
-  const lockUntil = new Date(now.getTime() + UPLOAD_RATE_LIMIT_WINDOW_MS);
+  const windowStart = new Date(now.getTime() - UPLOAD_RATE_LIMIT_WINDOW_MS);
   const key = makeUploadRateLimitKey(rateKey);
 
-  return db.transaction(async (tx) => {
-    const existing = await tx.query.authRateLimits.findFirst({
-      where: eq(authRateLimits.key, key),
-    });
-
-    if (!existing?.lockedUntil || existing.lockedUntil <= now) {
-      if (existing) {
-        await tx
-          .update(authRateLimits)
-          .set({
-            attempts: 1,
-            lockedUntil: lockUntil,
-            lastAttemptAt: now,
-            updatedAt: now,
-          })
-          .where(eq(authRateLimits.key, key));
-      } else {
-        await tx.insert(authRateLimits).values({
-          key,
-          attempts: 1,
-          lockedUntil: lockUntil,
-          lastAttemptAt: now,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
-      return false;
-    }
-
-    if (existing.attempts >= UPLOAD_RATE_LIMIT_MAX_REQUESTS) {
-      await tx
-        .update(authRateLimits)
-        .set({
-          lastAttemptAt: now,
-          updatedAt: now,
-        })
-        .where(eq(authRateLimits.key, key));
-      return true;
-    }
-
-    await tx
-      .update(authRateLimits)
-      .set({
-        attempts: existing.attempts + 1,
+  // Atomic upsert matching the proven auth rate-limiter pattern.
+  // Reset attempts to 1 if the previous window expired, otherwise increment.
+  const [updated] = await db
+    .insert(authRateLimits)
+    .values({
+      key,
+      attempts: 1,
+      lastAttemptAt: now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: authRateLimits.key,
+      set: {
+        attempts: sql`CASE WHEN ${authRateLimits.lastAttemptAt} < ${windowStart} THEN 1 ELSE ${authRateLimits.attempts} + 1 END`,
         lastAttemptAt: now,
         updatedAt: now,
-      })
-      .where(eq(authRateLimits.key, key));
-    return false;
-  });
+      },
+      where: sql`${authRateLimits.lastAttemptAt} < ${windowStart} OR ${authRateLimits.lockedUntil} IS NULL`,
+    })
+    .returning();
+
+  // If the upsert didn't match (e.g., still within window and locked), fetch current state
+  let limitRow = updated;
+  if (!limitRow) {
+    limitRow = await db.query.authRateLimits.findFirst({
+      where: eq(authRateLimits.key, key),
+    });
+  }
+
+  // Check if we just hit the rate limit threshold
+  if (limitRow && limitRow.attempts >= UPLOAD_RATE_LIMIT_MAX_REQUESTS) {
+    return true;
+  }
+
+  return false;
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handlePost(request: NextRequest): Promise<NextResponse> {
   try {
-    // CSRF protection: validate origin header matches host for all POST requests
-    const origin = request.headers.get("origin");
-    const host = request.headers.get("host");
-    const referer = request.headers.get("referer");
-
-    if (!origin && !referer) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    if (origin) {
-      try {
-        const originHost = new URL(origin).host;
-        if (originHost !== host) {
-          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-      } catch {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    } else if (referer) {
-      // Fallback: validate referer when origin is absent (some proxies strip it)
-      try {
-        const refererHost = new URL(referer).host;
-        if (refererHost !== host) {
-          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-      } catch {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-    }
-
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -226,3 +183,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
+
+export const POST = withCsrf(handlePost);

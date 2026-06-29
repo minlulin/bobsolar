@@ -12,6 +12,8 @@ export const convertToProjectSchema = z.object({
   startDate: z.coerce.date().optional().nullable(),
   targetCompletion: z.coerce.date().optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
+  depositRequired: z.boolean().default(false),
+  depositAmount: z.number().nonnegative().default(0),
 });
 
 export const updateProjectSchema = z.object({
@@ -21,6 +23,8 @@ export const updateProjectSchema = z.object({
   systemSizeKwp: z.number().min(0).max(99999).optional(),
   targetCompletion: z.coerce.date().optional().nullable(),
   notes: z.string().max(5000).optional().nullable(),
+  handoverDate: z.coerce.date().optional().nullable(),
+  handoverPdfUrl: z.string().optional().nullable(),
 });
 
 export const addProjectCostSchema = z.object({
@@ -53,6 +57,19 @@ export const createWarrantyAlertSchema = z.object({
   dueDate: z.coerce.date(),
 });
 
+export const consumeBulkProjectInventorySchema = z.object({
+  projectId: z.uuid(),
+  items: z
+    .array(
+      z.object({
+        inventoryItemId: z.uuid(),
+        quantity: z.number().int().min(1, "Quantity must be a whole number at least 1"),
+      }),
+    )
+    .min(1, "At least one item is required"),
+  incurredDate: z.coerce.date(),
+});
+
 export const projectListFilterSchema = z.object({
   scope: z.enum(["active", "completed"]).default("active"),
   status: projectStatusSchema.optional(),
@@ -68,6 +85,7 @@ export type ConvertToProject = z.infer<typeof convertToProjectSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export type AddProjectCost = z.infer<typeof addProjectCostSchema>;
 export type ConsumeProjectInventory = z.infer<typeof consumeProjectInventorySchema>;
+export type ConsumeBulkProjectInventory = z.infer<typeof consumeBulkProjectInventorySchema>;
 export type AddProjectRemark = z.infer<typeof addProjectRemarkSchema>;
 export type CreateWarrantyAlert = z.infer<typeof createWarrantyAlertSchema>;
 export type ProjectListFilter = z.infer<typeof projectListFilterSchema>;

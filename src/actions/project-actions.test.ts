@@ -32,6 +32,11 @@ const state = vi.hoisted(() => ({
   dbUpdateCalled: false,
   revalidateCalls: [] as string[],
   queryProjectCall: 0,
+  depositRequired: false,
+  depositAmount: "0",
+  depositReceived: false,
+  handoverDate: new Date() as Date | null,
+  handoverAcknowledgedAt: new Date() as Date | null,
   projectDetailRow: {
     id: "11111111-1111-4111-8111-111111111111",
     projectNumber: "PJ-2026-0001",
@@ -105,24 +110,8 @@ const spies = vi.hoisted(() => ({
   createBalancedJournalEntry: vi.fn(async () => undefined),
 }));
 
-function makeProject(status = state.projectStatus): {
-  id: string;
-  projectNumber: string;
-  status:
-    | "planning"
-    | "in_progress"
-    | "on_hold"
-    | "installation_completed"
-    | "completed"
-    | "cancelled";
-  quotedTotal: string;
-  estimatedCogs: string;
-  startDate: Date | null;
-  siteAddress: string;
-  systemSizeKwp: string;
-  targetCompletion: Date | null;
-  notes: string | null;
-} {
+// biome-ignore lint/suspicious/noExplicitAny: test mock project factory
+function makeProject(status = state.projectStatus): any {
   return {
     id: "11111111-1111-4111-8111-111111111111",
     projectNumber: "PJ-2026-0001",
@@ -133,6 +122,11 @@ function makeProject(status = state.projectStatus): {
     siteAddress: "Site",
     systemSizeKwp: "10",
     targetCompletion: null,
+    depositRequired: state.depositRequired,
+    depositAmount: state.depositAmount,
+    depositReceived: state.depositReceived,
+    handoverDate: state.handoverDate,
+    handoverAcknowledgedAt: state.handoverAcknowledgedAt,
     notes: null,
   };
 }
@@ -637,5 +631,67 @@ describe("project-actions high-impact branches", () => {
     expect(spies.createBalancedJournalEntry).not.toHaveBeenCalled();
     // Revalidation is called
     expect(spies.revalidatePath).toHaveBeenCalledWith("/projects");
+  });
+
+  it("blocks starting project if deposit is required but not received", async () => {
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
+    state.projectStatus = "planning";
+    state.depositRequired = true;
+    state.depositAmount = "1500000";
+    state.depositReceived = false;
+
+    const { updateProject } = await import("@/actions/project-actions");
+    const res = await updateProject({
+      id: "11111111-1111-4111-8111-111111111111",
+      status: "in_progress",
+    });
+
+    expect(res.success).toBe(false);
+    if (res.success) return;
+    expect(res.error).toContain("deposit of 1,500,000 MMK required");
+  });
+
+  it("allows starting project if deposit is received", async () => {
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
+    state.projectStatus = "planning";
+    state.depositRequired = true;
+    state.depositAmount = "1500000";
+    state.depositReceived = true;
+
+    const { updateProject } = await import("@/actions/project-actions");
+    const res = await updateProject({
+      id: "11111111-1111-4111-8111-111111111111",
+      status: "in_progress",
+    });
+
+    expect(res.success).toBe(true);
+  });
+
+  it("blocks completion if handoverDate is missing", async () => {
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
+    state.projectStatus = "installation_completed";
+    state.handoverDate = null;
+    state.handoverAcknowledgedAt = new Date();
+
+    const { markProjectCompleted } = await import("@/actions/project-actions");
+    const res = await markProjectCompleted("11111111-1111-4111-8111-111111111111");
+
+    expect(res.success).toBe(false);
+    if (res.success) return;
+    expect(res.error).toContain("Handover date must be specified");
+  });
+
+  it("blocks completion if handover document is not acknowledged", async () => {
+    state.auth = { userId: "00000000-0000-4000-8000-000000000001", role: "admin" };
+    state.projectStatus = "installation_completed";
+    state.handoverDate = new Date();
+    state.handoverAcknowledgedAt = null;
+
+    const { markProjectCompleted } = await import("@/actions/project-actions");
+    const res = await markProjectCompleted("11111111-1111-4111-8111-111111111111");
+
+    expect(res.success).toBe(false);
+    if (res.success) return;
+    expect(res.error).toContain("Handover document must be acknowledged");
   });
 });

@@ -31,7 +31,11 @@ import { type ActionResponse, errorResponse, successResponse } from "@/lib/utils
 import { handleActionError } from "@/lib/utils/error";
 import { withIdempotency } from "@/lib/utils/idempotency";
 import { toDbDecimal, uuidSchema } from "@/lib/validators/common";
-import { createPurchaseOrderSchema, payPurchaseOrderSchema } from "@/lib/validators/purchase";
+import {
+  createPurchaseOrderSchema,
+  payPurchaseOrderSchema,
+  receivePartialPurchaseOrderSchema,
+} from "@/lib/validators/purchase";
 
 export async function getPurchaseOrders(): Promise<
   ActionResponse<
@@ -251,6 +255,163 @@ export async function receivePurchaseOrder(id: string): Promise<ActionResponse<n
     return successResponse(null);
   } catch (error) {
     return handleActionError(error, "receivePurchaseOrder", "Failed to receive purchase order");
+  }
+}
+
+// 2b. Receive Partial PO (incremental stock + per-line receivedQuantity tracking)
+export async function receivePartialPurchaseOrder(
+  raw: unknown,
+): Promise<ActionResponse<{ status: string; fullyReceived: boolean }>> {
+  try {
+    const user = await requireOwner();
+    const validated = receivePartialPurchaseOrderSchema.parse(raw);
+
+    const result = await db.transaction(async (tx) => {
+      // Lock the PO row to prevent concurrent receipt race conditions
+      const [po] = await tx
+        .select()
+        .from(purchaseOrders)
+        .where(eq(purchaseOrders.id, validated.purchaseOrderId))
+        .for("update");
+
+      if (!po) throw new Error("PO not found");
+      if (po.status !== "draft") throw new Error("PO is not in draft status");
+
+      // Fetch PO with items and supplier for journal entry
+      const poWithItems = await tx.query.purchaseOrders.findFirst({
+        where: eq(purchaseOrders.id, validated.purchaseOrderId),
+        with: { items: true, supplier: true },
+      });
+      if (!poWithItems) throw new Error("PO not found");
+
+      let totalReceivedValue = 0;
+
+      // Process each line item
+      for (const receiveItem of validated.items) {
+        const lineItem = poWithItems.items.find((li) => li.id === receiveItem.lineItemId);
+        if (!lineItem) throw new Error(`Line item not found: ${receiveItem.lineItemId}`);
+
+        const currentReceived = Number(lineItem.receivedQuantity);
+        const orderedQty = Number(lineItem.quantity);
+        const newReceived = currentReceived + receiveItem.quantity;
+
+        // Validate: received + new <= ordered
+        if (newReceived > orderedQty) {
+          throw new Error(
+            `Over-reception: line item ${lineItem.description} — received (${currentReceived}) + new (${receiveItem.quantity}) exceeds ordered (${orderedQty})`,
+          );
+        }
+
+        // Update receivedQuantity on the line item
+        await tx
+          .update(purchaseOrderItems)
+          .set({ receivedQuantity: newReceived.toString() })
+          .where(eq(purchaseOrderItems.id, receiveItem.lineItemId));
+
+        // Increment inventory stock
+        const [invItem] = await tx
+          .select({ stockQty: inventoryItems.stockQty })
+          .from(inventoryItems)
+          .where(eq(inventoryItems.id, lineItem.itemId))
+          .for("update");
+
+        if (!invItem) {
+          throw new Error(`inventory_item_not_found:${lineItem.itemId}`);
+        }
+
+        await tx
+          .update(inventoryItems)
+          .set({ stockQty: invItem.stockQty + Math.round(receiveItem.quantity) })
+          .where(eq(inventoryItems.id, lineItem.itemId));
+
+        // Accumulate value for journal entry (quantity * unitPrice)
+        totalReceivedValue += Math.round(receiveItem.quantity * Number(lineItem.unitPrice));
+      }
+
+      // Check if all lines are now fully received
+      const updatedItems = await tx
+        .select({
+          quantity: purchaseOrderItems.quantity,
+          receivedQuantity: purchaseOrderItems.receivedQuantity,
+        })
+        .from(purchaseOrderItems)
+        .where(eq(purchaseOrderItems.purchaseOrderId, validated.purchaseOrderId));
+
+      const allFullyReceived = updatedItems.every(
+        (item) => Number(item.receivedQuantity) >= Number(item.quantity),
+      );
+
+      if (allFullyReceived) {
+        // Set PO to received
+        await tx
+          .update(purchaseOrders)
+          .set({
+            status: "received",
+            receivedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(purchaseOrders.id, validated.purchaseOrderId));
+      }
+      // If partially received, keep status as "draft" (no status change needed)
+
+      // Create journal entry for the received portion only
+      if (totalReceivedValue > 0) {
+        await createBalancedJournalEntry({
+          tx,
+          entryDate: new Date(),
+          memo: `Partial PO Received: ${po.poNumber} from ${poWithItems.supplier.name}`,
+          sourceType: "supplier_purchase",
+          sourceId: po.id,
+          createdBy: user.userId,
+          lines: [
+            {
+              accountCode: "raw_materials" as LedgerAccountCode,
+              debit: totalReceivedValue,
+              credit: 0,
+            },
+            {
+              accountCode: "accounts_payable" as LedgerAccountCode,
+              debit: 0,
+              credit: totalReceivedValue,
+            },
+          ],
+        });
+
+        // Update Supplier Total Owed
+        const [supplier] = await tx
+          .select()
+          .from(suppliers)
+          .where(eq(suppliers.id, po.supplierId))
+          .for("update");
+        if (supplier) {
+          await tx
+            .update(suppliers)
+            .set({
+              totalOwed: (Math.round(Number(supplier.totalOwed)) + totalReceivedValue).toString(),
+            })
+            .where(eq(suppliers.id, po.supplierId));
+        }
+      }
+
+      return {
+        status: allFullyReceived ? "received" : "draft",
+        fullyReceived: allFullyReceived,
+      };
+    });
+
+    revalidatePath(`/purchases/${validated.purchaseOrderId}`);
+    revalidatePath("/purchases");
+    revalidatePath("/suppliers");
+    revalidatePath("/inventory");
+    revalidateTag(CACHE_TAGS.INVENTORY_LIST, "max");
+    await invalidateFinanceCacheForWrite();
+    return successResponse(result);
+  } catch (error) {
+    return handleActionError(
+      error,
+      "receivePartialPurchaseOrder",
+      "Failed to receive partial purchase order",
+    );
   }
 }
 
