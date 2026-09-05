@@ -93,7 +93,7 @@ export function QuotationsGridClient({
         <div className="relative w-full max-w-md">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
-            placeholder="Search by quote number..."
+            placeholder="Search by quote number or customer name..."
             className="bg-background/80 pl-10"
             value={search}
             onChange={(e) => {

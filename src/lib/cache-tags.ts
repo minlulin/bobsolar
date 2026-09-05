@@ -15,6 +15,7 @@ export const CACHE_TAGS = {
   SUPPLIERS_LIST: "suppliers:list",
   PURCHASES_LIST: "purchases:list",
   WARRANTY_LIST: "warranty:list",
+  INVOICES_LIST: "invoices:list",
   FINANCE_REPORTS: "finance:reports",
   LEDGER: "ledger:entries",
   OWNER_PORTAL: "owner:portal",

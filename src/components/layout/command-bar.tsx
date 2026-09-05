@@ -9,6 +9,7 @@ import {
   Package,
   Plus,
   Receipt,
+  ReceiptText,
   Search,
   Settings,
   ShieldCheck,
@@ -148,6 +149,16 @@ export function CommandBar(): React.JSX.Element {
               >
                 <Zap className="mr-2 h-4 w-4" />
                 <span>Projects</span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() => {
+                  runCommand(() => {
+                    router.push("/invoices");
+                  });
+                }}
+              >
+                <ReceiptText className="mr-2 h-4 w-4" />
+                <span>Invoices</span>
               </CommandItem>
               <CommandItem
                 onSelect={() => {
