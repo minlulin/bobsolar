@@ -2,8 +2,9 @@
 
 import { startOfMonth, subMonths } from "date-fns";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireOwner } from "@/lib/auth/validate";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { db } from "@/lib/db";
 import {
   journalEntries,
@@ -227,6 +228,10 @@ export async function recordPayment(raw: unknown): Promise<ActionResponse<Projec
 
     revalidatePath(`/projects/${data.projectId}`);
     revalidatePath("/projects");
+    // Payment allocations mutate invoice paidAmount/balanceDue/status — the
+    // invoices hub must reflect the new balances immediately.
+    revalidatePath("/invoices");
+    revalidateTag(CACHE_TAGS.INVOICES_LIST, "max");
     await invalidateFinanceCacheForWrite();
 
     return successResponse(payment);

@@ -1,5 +1,10 @@
 import type { FinancePeriodFilter } from "@/lib/validators/finance";
 import { type InventoryFilter, inventoryFilterSchema } from "@/lib/validators/inventory";
+import {
+  type InvoiceListFilter,
+  type InvoiceListFilterInput,
+  invoiceListFilterSchema,
+} from "@/lib/validators/invoice";
 import type { LedgerFilter } from "@/lib/validators/ledger";
 import type { ProjectListFilter } from "@/lib/validators/project";
 import { type QuotationFilterInput, quotationFilterSchema } from "@/lib/validators/quotation";
@@ -100,6 +105,23 @@ export const inventoryKeys = {
   detail: (id: string) => [...inventoryKeys.all, "detail", id] as const,
   search: (search: string) => [...inventoryKeys.all, "search", search] as const,
 };
+
+export const invoiceKeys = {
+  all: ["invoices"] as const,
+  list: (filters: InvoiceListFilterInput = {}) =>
+    [...invoiceKeys.all, "list", normalizeInvoiceFilters(filters)] as const,
+};
+
+export function normalizeInvoiceFilters(filters: InvoiceListFilterInput = {}): InvoiceListFilter {
+  const parsed = invoiceListFilterSchema.parse(filters);
+  return {
+    tab: parsed.tab,
+    customerId: parsed.customerId ?? null,
+    search: normalizeOptionalString(parsed.search),
+    page: parsed.page,
+    limit: parsed.limit,
+  };
+}
 
 export const projectKeys = {
   all: ["projects"] as const,

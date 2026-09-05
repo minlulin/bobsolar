@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "@/lib/domain/policies";
 
 export const invoiceLineSchema = z.object({
   description: z.string().min(1, "Description is required"),
@@ -29,3 +30,20 @@ export const postInvoiceSchema = z.object({
 export const voidInvoiceSchema = z.object({
   invoiceId: z.string().uuid(),
 });
+
+export const INVOICE_LIST_TABS = ["open", "overdue", "draft", "paid", "all"] as const;
+
+export type InvoiceListTab = (typeof INVOICE_LIST_TABS)[number];
+
+export const invoiceListFilterSchema = z.object({
+  tab: z.enum(INVOICE_LIST_TABS).default("open"),
+  customerId: z.string().uuid().optional().nullable(),
+  search: z.string().max(100, "Search query is too long").optional().nullable(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(DEFAULT_PAGE_LIMIT),
+});
+
+/** Input type for callers (defaults are optional at the boundary). */
+export type InvoiceListFilterInput = z.input<typeof invoiceListFilterSchema>;
+/** Parsed type after Zod defaults are applied. */
+export type InvoiceListFilter = z.output<typeof invoiceListFilterSchema>;

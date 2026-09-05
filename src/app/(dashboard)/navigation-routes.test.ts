@@ -12,6 +12,7 @@ const navigationRoutes = [
   { href: "/quotations/new", routeFile: path.join(appDir, "quotations", "new", "page.tsx") },
   { href: "/projects", routeFile: path.join(appDir, "projects", "page.tsx") },
   { href: "/projects/new", routeFile: path.join(appDir, "projects", "new", "page.tsx") },
+  { href: "/invoices", routeFile: path.join(appDir, "invoices", "page.tsx") },
   { href: "/inventory", routeFile: path.join(appDir, "inventory", "page.tsx") },
   { href: "/finance", routeFile: path.join(appDir, "finance", "page.tsx") },
   { href: "/finance/expenses", routeFile: path.join(appDir, "finance", "expenses", "page.tsx") },

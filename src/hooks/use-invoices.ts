@@ -1,6 +1,26 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { createInvoice } from "@/actions/invoice-actions";
+import { createInvoice, getInvoices } from "@/actions/invoice-actions";
+import { STALE_TIME } from "@/lib/query-config";
+import { invoiceKeys } from "@/lib/query-keys";
+import type { ActionData } from "@/lib/utils/action-response";
+import type { InvoiceListFilterInput } from "@/lib/validators/invoice";
+
+export function useInvoices(
+  filters: InvoiceListFilterInput = {},
+  initialData?: ActionData<Awaited<ReturnType<typeof getInvoices>>>,
+): ReturnType<typeof useQuery<ActionData<Awaited<ReturnType<typeof getInvoices>>>>> {
+  return useQuery({
+    queryKey: invoiceKeys.list(filters),
+    queryFn: async () => {
+      const response = await getInvoices(filters);
+      if (!response.success) throw new Error(response.error);
+      return response.data;
+    },
+    ...(initialData !== undefined ? { initialData } : {}),
+    staleTime: STALE_TIME.SHORT,
+  });
+}
 
 export function useCreateInvoice(): ReturnType<
   typeof useMutation<

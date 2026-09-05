@@ -68,17 +68,18 @@ Purchases (PO draft→received, partial receipts) ──► supplier payments �
 
 ## 2. Track A — Real-World Daily-Life UX
 
-### A-1 · No invoices hub (highest daily-life impact)
+### A-1 · No invoices hub (highest daily-life impact) ✅ **IMPLEMENTED (2026-09-06)**
 
-**Evidence:** `src/app/(dashboard)/invoices/` contains only `new/`. Invoice visibility is per-project (`CompletedProjectVouchers`, project detail) or via `finance/reports/receivable-aging`.
-**Impact:** "Who owes me money, which invoice, how late?" — the most frequent finance question — requires project-hopping.
-**Fix:**
+**Evidence:** `src/app/(dashboard)/invoices/` contained only `new/`. Invoice visibility was per-project (`CompletedProjectVouchers`, project detail) or via `finance/reports/receivable-aging`.
+**Impact:** "Who owes me money, which invoice, how late?" — the most frequent finance question — required project-hopping.
 
-- [ ] **A1.1** Create `getInvoices(filters)` in `src/actions/invoice-actions.ts` (join project + customer; filters: `status`, `overdue`, `customerId`, `search` by invoice number / project / customer, `page/limit` — mirror `getProjects`).
-- [ ] **A1.2** Create `src/app/(dashboard)/invoices/page.tsx` + grid client (tabs: `Open` (unpaid+partial), `Overdue`, `Draft`, `Paid`, `All`), each row: invoice №, project №, customer, total, balance, due date with overdue chip, "Record Payment" deep-link to project.
-- [ ] **A1.3** Reuse `projectPaymentAllocations` to show per-invoice paid/balance accurately (server values exist; don't recompute client-side).
-- [ ] **A1.4** Add "Invoices" to `navItems` (nav-orbit) or fold into an existing dock item's page — at minimum add to Command Bar Navigation group.
-- [ ] **A1.5** Tests: list pagination, overdue computation (dueDate < today && status in unpaid/partial), search by customer name.
+**Delivered:**
+
+- ✅ **A1.1** `getInvoices(filters)` in `src/actions/invoice-actions.ts` — joins project + customer; tabs `open / overdue / draft / paid / all`; search by invoice № / project № / customer name; `page/limit`; global tab-count + outstanding-balance summary; overdue computed via `isInvoiceOverdue` domain helper (boundary = start of day; drafts/paid/voided never overdue).
+- ✅ **A1.2** `src/app/(dashboard)/invoices/page.tsx` + `components/invoices-grid-client.tsx` (+ `layout/loading/error.tsx`): tab pills with live counts, debounced search, pagination, row cards (invoice №, status badge, OVERDUE chip, customer · project, invoiced/due dates with relative "N days overdue", total/paid/balance, open-project deep-link). Header shows outstanding total across open invoices.
+- ✅ **A1.3** Paid/balance come from the transactionally maintained `paidAmount`/`balanceDue` columns (updated by payment allocations) — no client-side recomputation.
+- ✅ **A1.4** "Invoices" added to Command Bar Navigation group (dock left untouched — 10 items already near mobile overflow; revisit with A-12/A-2.2 audit).
+- ✅ **A1.5** Tests: `src/lib/domain/__tests__/invoice.test.ts` (overdue boundary semantics), `src/actions/invoice-actions.test.ts` (row mapping, overdue flags, summary, auth failure, invalid filters), `/invoices` added to `navigation-routes.test.ts`. Cache: new `CACHE_TAGS.INVOICES_LIST` invalidated by `createInvoice`, `postInvoice`, and `recordPayment` (allocations mutate balances).
 
 ### A-2 · Warranty invisible in primary navigation ✅ (implemented this session)
 
@@ -342,7 +343,7 @@ All verified: `pnpm typecheck` ✅ · `pnpm biome:check` (461 files) ✅ · `pnp
 
 | Phase | Items | Est. | Risk |
 | --- | --- | --- | --- |
-| **1 — Close the daily loops** (1–2 wks) | A-1 invoices hub · A-8 expiry cron (+C-4) · C-3 deposit accumulation · A-7 digest v1 (overdue invoices/alerts/stale quotes) · B-5 undo for archive | 4–6 days | Low–Medium (one migration-free path; C-3 needs care) |
+| **1 — Close the daily loops** (1–2 wks) | ~~A-1 invoices hub~~ ✅ done · A-8 expiry cron (+C-4) · C-3 deposit accumulation · A-7 digest v1 (overdue invoices/alerts/stale quotes) · B-5 undo for archive | 3–5 days remaining | Low–Medium (C-3 needs care) |
 | **2 — Operations depth** (2–4 wks) | A-9 reorder levels (migration) · C-6 invoice numbering (migration/backfill) · A-6 purchases pagination · B-2 split project shell · C-5 role gates + audit · C-8 activity feed · A-11 MoneyInput | 7–10 days | Medium (schema changes, bundle refactor) |
 | **3 — Roles & field readiness** (3–5 wks) | A-10/C-9 technician matrix + role-adapted nav/dashboard · A-12 mobile/offline audit + fixes · B-7 a11y audit · B-4 dashboard deep-links | 8–12 days | Medium (product decisions, cross-cutting) |
 
