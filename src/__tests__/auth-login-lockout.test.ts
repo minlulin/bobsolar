@@ -54,7 +54,15 @@ vi.mock("@/lib/db", () => {
         spies.insertValues(payload);
         return {
           onConflictDoUpdate: vi.fn().mockReturnValue({
-            returning: vi.fn(() => Promise.resolve([{ attempts: 5, lockedUntil: new Date() }])),
+            // lockedUntil must be strictly in the future relative to the
+            // `now` captured at the start of the login call. Using a bare
+            // `new Date()` made this flaky on fast machines: when the mocked
+            // async chain resolves within the same millisecond, the action's
+            // `lockedUntil > now` check is false and it returns
+            // "Invalid credentials" instead of the lockout message.
+            returning: vi.fn(() =>
+              Promise.resolve([{ attempts: 5, lockedUntil: new Date(Date.now() + 60_000) }]),
+            ),
           }),
         };
       }),

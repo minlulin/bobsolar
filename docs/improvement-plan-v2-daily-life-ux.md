@@ -318,7 +318,7 @@ Purchases (PO draft→received, partial receipts) ──► supplier payments �
 
 ### C-10 · QA hygiene
 
-- [ ] **C10.1** `src/__tests__/auth-login-lockout.test.ts` is flaky in this environment (failed one run, passed the next — timing-dependent lockout window). Stabilize with fake timers or an injected clock.
+- [x] **C10.1** ✅ **FIXED (2026-09-06):** `src/__tests__/auth-login-lockout.test.ts` was flaky on fast machines — the mocked upsert returned `lockedUntil: new Date()` captured *after* the action's `now`, so same-millisecond resolution made `lockedUntil > now` false and the assertion saw "Invalid credentials". Mock now returns a deterministically future `lockedUntil` (`+60s`); verified 8/8 consecutive green runs. This flake was also blocking `git push` via the lefthook `green:code` quality gate.
 - [ ] **C10.2** `.env.example` mentions `pnpm v11+ / Node 20+` in README vs `engines: >=24 <26` — align docs (CI uses Node 24).
 
 ---
