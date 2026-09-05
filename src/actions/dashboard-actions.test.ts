@@ -72,6 +72,9 @@ describe("dashboard-actions", () => {
     if (!res.success) return;
     expect(res.data.userName).toBe("Admin");
     expect(res.data.totalCustomers).toBe(10);
+    // accepted=6, rejected=1, expired=1 → conversion 6/8 = 75%.
+    // Regression: `sent` (2) must NOT deflate the closed-outcome denominator.
+    expect(res.data.quotationConversionRate).toBe(75);
   });
 
   it("builds dashboard pipeline", async () => {

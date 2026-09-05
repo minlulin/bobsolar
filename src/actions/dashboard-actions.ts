@@ -1,7 +1,7 @@
 "use server";
 
 import { endOfMonth, startOfDay, startOfMonth, subMonths } from "date-fns";
-import { and, asc, count, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { requireAuth } from "@/lib/auth/validate";
@@ -144,8 +144,10 @@ export const getDashboardStats = cache(async (): Promise<ActionResponse<Dashboar
     const acceptedTotal = toInt(quotationSummary?.acceptedTotal);
     const rejectedTotal = toInt(quotationSummary?.rejectedTotal);
     const expiredTotal = toInt(quotationSummary?.expiredTotal);
-    const sentTotal = toInt(quotationSummary?.sentTotal);
-    const closedTotal = acceptedTotal + rejectedTotal + expiredTotal + sentTotal;
+    // Conversion rate = accepted / decided outcomes. `sent` quotes are still
+    // open (awaiting a customer decision), so they must NOT count in the
+    // denominator — including them systematically understated the rate.
+    const closedTotal = acceptedTotal + rejectedTotal + expiredTotal;
     const quotationConversionRate = closedTotal <= 0 ? 0 : (acceptedTotal / closedTotal) * 100;
 
     return successResponse({
@@ -384,6 +386,11 @@ const getCachedFinanceQuickView = unstable_cache(
             gte(journalEntries.entryDate, monthStart),
             eq(journalEntries.isReversed, false),
             inArray(ledgerAccounts.code, cashAccountCodes),
+            // Internal transfers move money between our own cash accounts
+            // (e.g. cashbox → bank). Both legs hit cash accounts, so counting
+            // them would inflate both "cash in" and "cash out" without any
+            // real economic movement. Exclude them from flow metrics.
+            ne(journalEntries.sourceType, "cash_transfer"),
           ),
         ),
       db

@@ -6,6 +6,7 @@ import {
   Home,
   Landmark,
   Package,
+  ShieldCheck,
   ShoppingCart,
   Store,
   Users,
@@ -66,6 +67,13 @@ const navItems = [
     href: "/inventory",
     icon: Package,
     bg: "bg-emerald-500",
+    text: "text-white",
+  },
+  {
+    name: "Warranty",
+    href: "/warranty",
+    icon: ShieldCheck,
+    bg: "bg-cyan-600",
     text: "text-white",
   },
 ];

@@ -1,14 +1,16 @@
 "use client";
 
-import { AlertCircle, Search, UserPlus, Users } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Search, UserPlus, Users } from "lucide-react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startTransition, useOptimistic, useState } from "react";
 import { toast } from "sonner";
 import { deleteCustomer } from "@/actions/customer-actions";
 import { CustomerCard } from "@/components/customers/customer-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/use-debounce";
 import type { Customer } from "@/lib/db/schema";
 import { staggerContainer } from "@/lib/motion";
 
@@ -20,12 +22,19 @@ const CustomerDialog = dynamic(
 import { ListGridSkeleton } from "@/components/skeletons/list-grid-skeleton";
 import { useCustomers } from "@/hooks/use-customers";
 
+const PAGE_SIZE = 50;
+
 export function CustomersPageClient({
   initialData,
 }: {
   initialData: { items: Customer[]; total: number };
 }): React.JSX.Element {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const pageParam = Number(searchParams.get("page") ?? "1");
+  const currentPage = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
@@ -35,9 +44,9 @@ export function CustomersPageClient({
     isError,
     error,
   } = useCustomers(
-    { search, limit: 50 },
-    // Only use initialData if there is no search query active.
-    search === "" ? initialData : undefined,
+    { search: debouncedSearch, page: currentPage, limit: PAGE_SIZE },
+    // Only use initialData if there is no search query active and we are on page 1.
+    debouncedSearch === "" && currentPage === 1 ? initialData : undefined,
   );
 
   const handleEdit = (customer: Customer): void => {
@@ -51,6 +60,15 @@ export function CustomersPageClient({
   };
 
   const customers = response?.items ?? [];
+  const total = response?.total ?? 0;
+  const hasPrevious = currentPage > 1;
+  const hasNext = currentPage * PAGE_SIZE < total;
+
+  const navigatePage = (nextPage: number): void => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(nextPage));
+    router.push(`/customers?${params.toString()}`);
+  };
   const [optimisticCustomers, removeOptimisticCustomer] = useOptimistic(
     customers,
     (state: Customer[], removedId: string) => state.filter((customer) => customer.id !== removedId),
@@ -157,6 +175,39 @@ export function CustomersPageClient({
               Add your first customer
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between">
+          <p className="text-muted-foreground text-xs font-medium">
+            Page {currentPage} · {total} customers
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!hasPrevious}
+              onClick={() => {
+                navigatePage(currentPage - 1);
+              }}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!hasNext}
+              onClick={() => {
+                navigatePage(currentPage + 1);
+              }}
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 

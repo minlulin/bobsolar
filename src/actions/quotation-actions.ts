@@ -88,7 +88,18 @@ function buildQuotationsWhere({
       ? eq(quotations.isArchived, isArchived)
       : eq(quotations.isArchived, false),
     customerId ? eq(quotations.customerId, customerId) : undefined,
-    search ? ilike(quotations.quoteNumber, `%${escapeLikePattern(search)}%`) : undefined,
+    search
+      ? or(
+          ilike(quotations.quoteNumber, `%${escapeLikePattern(search)}%`),
+          // Daily-life search: users look up quotes by the customer's name,
+          // not only the generated quote number (mirrors getProjects).
+          sql`exists (
+            select 1 from ${customers} c
+            where c.id = ${quotations.customerId}
+            and c.name ilike ${`%${escapeLikePattern(search)}%`}
+          )`,
+        )
+      : undefined,
   );
 }
 
